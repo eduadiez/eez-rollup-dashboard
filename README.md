@@ -18,6 +18,11 @@ The application preserves the original sync-rollups POC screens:
 - Faucet
 - Execution visualizer
 
+The repository also contains the independently deployed, read-only
+[Network Observatory](network-observatory/README.md). It monitors L1/L2 heads,
+recent blocks, EIP-4844 blobs and Beacon sidecars, registry commitments, and
+bidirectional settlement correlations without holding signing keys.
+
 Feature availability depends on the contracts deployed by the target network.
 The current defensive-checks devnet supports the counter, bridge, faucet, and
 forward flash-loan flows. Its reverse-flash and aggregator contracts are not yet
@@ -97,3 +102,6 @@ npm run build
 docker compose config --quiet
 docker build -t eez-rollup-ui:local .
 ```
+
+The Network Observatory has its own Docker Compose project and validation
+commands documented in `network-observatory/README.md`.

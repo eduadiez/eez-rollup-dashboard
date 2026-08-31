@@ -1,0 +1,41 @@
+name: eez-network-dashboard
+
+services:
+  dashboard:
+    build:
+      context: .
+    image: eez-network-dashboard:local
+    container_name: eez-monitor
+    restart: unless-stopped
+    ports:
+      - "${EEZ_DASHBOARD_BIND:-127.0.0.1}:${EEZ_DASHBOARD_HOST_PORT:-18080}:8080"
+    environment:
+      EEZ_L1_RPC_URL: "${EEZ_L1_RPC_URL:-http://el-1-reth-lighthouse:8545}"
+      EEZ_L2_RPC_URL: "${EEZ_L2_RPC_URL:-http://eez-node:18688}"
+      EEZ_BEACON_URL: "${EEZ_BEACON_URL:-http://cl-1-lighthouse-reth:4000}"
+      EEZ_REGISTRY_ADDRESS: "${EEZ_REGISTRY_ADDRESS:-}"
+      EEZ_ROLLUP_ID: "${EEZ_ROLLUP_ID:-1}"
+      EEZ_RECENT_BLOCKS: "${EEZ_RECENT_BLOCKS:-12}"
+      EEZ_REFRESH_SECONDS: "${EEZ_REFRESH_SECONDS:-4}"
+      EEZ_REQUEST_TIMEOUT_SECONDS: "${EEZ_REQUEST_TIMEOUT_SECONDS:-4}"
+      EEZ_L1_EXPLORER_URL: "${EEZ_L1_EXPLORER_URL:-}"
+      EEZ_L2_EXPLORER_URL: "${EEZ_L2_EXPLORER_URL:-}"
+      EEZ_BLOBSCAN_URL: "${EEZ_BLOBSCAN_URL:-}"
+      EEZ_BLOBSCAN_API_URL: "${EEZ_BLOBSCAN_API_URL:-http://blobscan-api:3001}"
+      EEZ_L1_COMPOSER_RPC_URL: "${EEZ_L1_COMPOSER_RPC_URL:-}"
+      EEZ_L2_COMPOSER_RPC_URL: "${EEZ_L2_COMPOSER_RPC_URL:-}"
+    networks:
+      - eez
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+
+networks:
+  eez:
+    external: true
+    name: "${EEZ_DOCKER_NETWORK:-kt-eez-devnet}"
