@@ -103,7 +103,7 @@
         <section class="panel decoder-panel">
           <div class="panel-heading">
             <div><p class="eyebrow">PROTOCOL PAYLOAD</p><h2>EEZ blob decoder</h2></div>
-            <p class="muted">Strict compatibility-profile decoding</p>
+            <p class="muted">Strict native semantic-stream decoding</p>
           </div>
           <form id="decoder-form">
             <label class="selector-input"><span>L1 blob transaction hash</span><input id="decoder-transaction" required autocomplete="off" spellcheck="false" placeholder="0x…"></label>
@@ -121,7 +121,11 @@
                 <li>
                   <h3>EEZ version-0 message envelope</h3>
                   <div class="wire-layout mono"><span>00</span><i>version</i><span>02</span><i>ChainOperation</i><span>chain_id</span><i>u64 little-endian</i><span>length</span><i>base-128 u32 varint</i><span>operations</span><i>payload bytes</i><span>01</span><i>CloseBlobStream</i><span>00…</span><i>padding</i></div>
-                  <p>The compatibility profile accepts exactly one <code>ChainOperation</code> for the configured rollup, followed by one <code>CloseBlobStream</code>. Every remaining logical byte must be zero.</p>
+                  <p>The native profile accepts one <code>ChainOperation</code> for synchronization, followed by complete <code>InitiateCrossChainTransaction</code> brackets containing <code>Call</code>, <code>StaticCall</code>, returns, and optional <code>Snapshot</code>/<code>Revert</code> regions. One <code>CloseBlobStream</code> ends meaningful bytes; all remaining blob bytes must be zero.</p>
+                </li>
+                <li>
+                  <h3>Cross-chain semantics</h3>
+                  <p>Each semantic transaction names its origin chain and carries opaque chain-defined <code>tx_data</code>. Calls encode the destination chain, source and target addresses, value for mutable calls, zero gas in this deployment, and exact calldata. <code>ReturnSuccess</code>/<code>ReturnFail</code> carry exact result bytes. The context stack derives every call's source chain, and balanced snapshot regions explain forced rollback.</p>
                 </li>
                 <li>
                   <h3>Tagged operation payload</h3>

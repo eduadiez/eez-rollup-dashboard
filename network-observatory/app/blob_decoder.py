@@ -1,4 +1,4 @@
-"""Strict, bounded decoder for EEZ's current blob-DA compatibility profile."""
+"""Strict, bounded decoder for EEZ's native version-00 semantic blob profile."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ MAX_RLP_ITEMS = 2_000_000
 
 
 class BlobDecodeError(ValueError):
-    """The supplied blobs are not one canonical EEZ compatibility stream."""
+    """The supplied blobs are not one canonical native EEZ stream."""
 
 
 @dataclass
@@ -271,6 +271,26 @@ def _varint(data: bytes, position: int) -> tuple[int, int]:
     raise BlobDecodeError("message length varint uses more than five bytes")
 
 
+def _fixed(stream: bytes, position: int, size: int, field: str) -> tuple[bytes, int]:
+    end = position + size
+    if end > len(stream):
+        raise BlobDecodeError(f"{field} is truncated")
+    return stream[position:end], end
+
+
+def _message_bytes(stream: bytes, position: int, field: str) -> tuple[bytes, int]:
+    size, position = _varint(stream, position)
+    end = position + size
+    if end > len(stream):
+        raise BlobDecodeError(f"{field} is truncated")
+    return stream[position:end], end
+
+
+def _preview(value: bytes, maximum: int = 64) -> str:
+    suffix = "…" if len(value) > maximum else ""
+    return f"0x{value[:maximum].hex()}{suffix}"
+
+
 def unpack_blobs(blobs: list[bytes]) -> bytes:
     if not blobs:
         raise BlobDecodeError("blob list is empty")
@@ -292,7 +312,7 @@ def unpack_blobs(blobs: list[bytes]) -> bytes:
     return bytes(logical)
 
 
-def decode_compatibility_blobs(
+def decode_native_blobs(
     blobs: list[bytes], expected_chain_id: int
 ) -> dict[str, Any]:
     stream = unpack_blobs(blobs)
@@ -301,38 +321,193 @@ def decode_compatibility_blobs(
         raise BlobDecodeError(f"unsupported blob protocol version {version!r}")
     position = 1
     if position >= len(stream) or stream[position] != 2:
-        raise BlobDecodeError("compatibility stream must start with ChainOperation")
+        raise BlobDecodeError("native stream must start with ChainOperation")
     position += 1
-    if position + 8 > len(stream):
-        raise BlobDecodeError("ChainOperation chain id is truncated")
-    chain_id = int.from_bytes(stream[position : position + 8], "little")
-    position += 8
+    raw_chain_id, position = _fixed(
+        stream, position, 8, "ChainOperation chain id"
+    )
+    chain_id = int.from_bytes(raw_chain_id, "little")
     if chain_id != expected_chain_id:
         raise BlobDecodeError(
             f"ChainOperation chain id {chain_id} does not match rollup {expected_chain_id}"
         )
-    operation_length, position = _varint(stream, position)
-    end = position + operation_length
-    if end > len(stream):
-        raise BlobDecodeError("ChainOperation payload is truncated")
-    operations = stream[position:end]
-    position = end
-    if position >= len(stream) or stream[position] != 1:
-        raise BlobDecodeError("ChainOperation must be followed by CloseBlobStream")
-    position += 1
+    operations, position = _message_bytes(
+        stream, position, "ChainOperation payload"
+    )
+    messages = ["ChainOperation"]
+    semantic_messages: list[dict[str, Any]] = []
+    semantic_transactions: list[dict[str, Any]] = []
+    contexts: list[int] = []
+    open_calls: list[int] = []
+    snapshots: list[int] = []
+    current: dict[str, Any] | None = None
+
+    while position < len(stream):
+        message_type = stream[position]
+        position += 1
+        if message_type == 1:
+            if current is not None or contexts or open_calls or snapshots:
+                raise BlobDecodeError("CloseBlobStream appears inside a semantic transaction")
+            messages.append("CloseBlobStream")
+            break
+        if message_type == 0:
+            raise BlobDecodeError("CloseBlobStream is missing before zero padding")
+        if message_type == 2:
+            raise BlobDecodeError("native profile contains an extra ChainOperation")
+        if message_type == 3:
+            if current is not None or contexts:
+                raise BlobDecodeError("cross-chain transactions cannot nest")
+            raw_origin, position = _fixed(stream, position, 8, "transaction chain id")
+            origin = int.from_bytes(raw_origin, "little")
+            tx_data, position = _message_bytes(stream, position, "transaction tx_data")
+            current = {
+                "originChain": origin,
+                "txDataBytes": len(tx_data),
+                "txDataPreview": _preview(tx_data),
+                "calls": [],
+                "snapshotCount": 0,
+                "maxCallDepth": 0,
+            }
+            contexts.append(origin)
+            messages.append("InitiateCrossChainTransaction")
+            semantic_messages.append({
+                "type": "InitiateCrossChainTransaction",
+                "chainId": origin,
+                "txDataBytes": len(tx_data),
+                "txDataPreview": _preview(tx_data),
+            })
+            continue
+        if message_type in (4, 5):
+            if current is None or not contexts:
+                raise BlobDecodeError("Call appears outside a cross-chain transaction")
+            if len(contexts) >= 64:
+                raise BlobDecodeError("maximum call depth 64 exceeded")
+            raw_target, position = _fixed(stream, position, 8, "Call to_chain")
+            raw_from, position = _fixed(stream, position, 20, "Call from_address")
+            raw_to, position = _fixed(stream, position, 20, "Call to_address")
+            value = 0
+            if message_type == 4:
+                raw_value, position = _fixed(stream, position, 32, "Call value")
+                value = int.from_bytes(raw_value, "little")
+            raw_gas, position = _fixed(stream, position, 8, "Call gas")
+            gas = int.from_bytes(raw_gas, "little")
+            if gas != 0:
+                raise BlobDecodeError(
+                    f"semantic call gas {gas} is unsupported; expected zero"
+                )
+            data, position = _message_bytes(stream, position, "Call data")
+            target = int.from_bytes(raw_target, "little")
+            mode = "Call" if message_type == 4 else "StaticCall"
+            call = {
+                "index": len(current["calls"]),
+                "depth": len(contexts) - 1,
+                "type": mode,
+                "fromChain": contexts[-1],
+                "toChain": target,
+                "fromAddress": f"0x{raw_from.hex()}",
+                "toAddress": f"0x{raw_to.hex()}",
+                "value": str(value),
+                "gas": gas,
+                "dataBytes": len(data),
+                "dataPreview": _preview(data),
+                "result": None,
+            }
+            current["calls"].append(call)
+            current["maxCallDepth"] = max(current["maxCallDepth"], len(contexts))
+            open_calls.append(call["index"])
+            contexts.append(target)
+            messages.append(mode)
+            semantic_messages.append({key: value for key, value in call.items() if key != "result"})
+            continue
+        if message_type in (6, 7):
+            if current is None or not open_calls or len(contexts) < 2:
+                raise BlobDecodeError("semantic return has no open Call")
+            if snapshots and snapshots[-1] == len(contexts):
+                raise BlobDecodeError("semantic return crosses an open Snapshot")
+            return_data, position = _message_bytes(stream, position, "return_data")
+            call_index = open_calls.pop()
+            contexts.pop()
+            outcome = "ReturnSuccess" if message_type == 6 else "ReturnFail"
+            result = {
+                "type": outcome,
+                "returnDataBytes": len(return_data),
+                "returnDataPreview": _preview(return_data),
+            }
+            current["calls"][call_index]["result"] = result
+            messages.append(outcome)
+            semantic_messages.append(result | {"callIndex": call_index})
+            continue
+        if message_type == 8:
+            if current is None:
+                raise BlobDecodeError("Snapshot appears outside a cross-chain transaction")
+            if len(snapshots) >= 64:
+                raise BlobDecodeError("maximum snapshot depth 64 exceeded")
+            snapshots.append(len(contexts))
+            current["snapshotCount"] += 1
+            messages.append("Snapshot")
+            semantic_messages.append({"type": "Snapshot", "contextDepth": len(contexts)})
+            continue
+        if message_type == 9:
+            if current is None or not snapshots:
+                raise BlobDecodeError("Revert has no open Snapshot")
+            if snapshots[-1] != len(contexts):
+                raise BlobDecodeError("Revert crosses an open Call")
+            snapshots.pop()
+            messages.append("Revert")
+            semantic_messages.append({"type": "Revert", "contextDepth": len(contexts)})
+            continue
+        if message_type == 10:
+            if current is None:
+                raise BlobDecodeError("FinishCrossChainTransaction has no open transaction")
+            if len(contexts) != 1 or open_calls:
+                raise BlobDecodeError("FinishCrossChainTransaction has an open Call")
+            if snapshots:
+                raise BlobDecodeError("FinishCrossChainTransaction has an open Snapshot")
+            contexts.pop()
+            current["callCount"] = len(current["calls"])
+            current["mutableCallCount"] = sum(
+                call["type"] == "Call" for call in current["calls"]
+            )
+            current["staticCallCount"] = sum(
+                call["type"] == "StaticCall" for call in current["calls"]
+            )
+            current["successReturnCount"] = sum(
+                call["result"] and call["result"]["type"] == "ReturnSuccess"
+                for call in current["calls"]
+            )
+            current["failedReturnCount"] = sum(
+                call["result"] and call["result"]["type"] == "ReturnFail"
+                for call in current["calls"]
+            )
+            semantic_transactions.append(current)
+            current = None
+            messages.append("FinishCrossChainTransaction")
+            semantic_messages.append({"type": "FinishCrossChainTransaction"})
+            continue
+        raise BlobDecodeError(f"unknown blob message type {message_type}")
+    else:
+        raise BlobDecodeError("CloseBlobStream is missing")
+
     if any(stream[position:]):
         raise BlobDecodeError("blob stream contains non-zero bytes after CloseBlobStream")
     return {
         "protocolVersion": 0,
-        "profile": "compatibility",
+        "profile": "native-semantics",
         "blobCount": len(blobs),
         "physicalBytes": len(blobs) * BLOB_BYTES,
         "logicalCapacityBytes": len(stream),
         "usedStreamBytes": position,
         "paddingBytes": len(stream) - position,
-        "messages": ["ChainOperation", "CloseBlobStream"],
+        "messages": messages,
+        "semanticMessages": semantic_messages,
+        "semanticTransactions": semantic_transactions,
         "chainOperation": {
             "chainId": chain_id,
             "operations": decode_operations(operations),
         },
     }
+
+
+# Backward-compatible import for older deployments and focused callers. New
+# code should use the name that reflects the native semantic profile.
+decode_compatibility_blobs = decode_native_blobs

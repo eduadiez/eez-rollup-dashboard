@@ -52,7 +52,7 @@ renderDecoded({
   registryAddress: "0x" + "66".repeat(20),
   blobVersionedHashes: [blobHash],
   protocolVersion: 0,
-  profile: "compatibility",
+  profile: "native-semantics",
   blobCount: 1,
   physicalBytes: 131072,
   logicalCapacityBytes: 126976,
@@ -68,6 +68,12 @@ renderDecoded({
     blocks: [{ number: 673, parentHash, stateRoot, transactionCount: 2,
       gasUsed: 42000, gasLimit: 30000000, timestamp: 1700000000, rlpBytes: 900 }],
   } },
+  semanticTransactions: [{ originChain: 1, txDataBytes: 128, callCount: 1,
+    snapshotCount: 0, maxCallDepth: 1, calls: [{ index: 0, depth: 0,
+      type: "Call", fromChain: 1, toChain: 0,
+      fromAddress: "0x" + "77".repeat(20), toAddress: "0x" + "88".repeat(20),
+      value: "7", dataBytes: 4, dataPreview: "0xdeadbeef",
+      result: { type: "ReturnSuccess", returnDataBytes: 2 } }] }],
 });
 const decoded = element("decoder-result").innerHTML;
 assert.match(decoded, /:4444\/tx\/0x11/);
@@ -78,6 +84,8 @@ assert.match(decoded, /:4445\/block\/673/);
 assert.match(decoded, /:4445\/block\/0x44/);
 assert.match(decoded, /How this result maps to the blob bytes/);
 assert.match(decoded, /RLP\(\[blocks, l2Entries, outboundGroupSizes\]\)/);
+assert.match(decoded, /Semantic tx 1/);
+assert.match(decoded, /ReturnSuccess/);
 
 const correlation = renderCorrelationResult({ result: {
   canonicalL2: true,

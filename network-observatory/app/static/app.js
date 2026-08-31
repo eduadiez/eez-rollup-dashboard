@@ -284,6 +284,7 @@ function decodedByteLayout(payload, operation) {
         <span><b>02</b><small>ChainOperation</small></span>
         <span><b>${number(payload.chainOperation?.chainId)}</b><small>u64 little-endian rollup</small></span>
         <span><b>${number(operation.bytes)} B</b><small>varint-sized operations</small></span>
+        <span><b>${number(payload.semanticTransactions?.length || 0)} tx</b><small>native semantic brackets</small></span>
         <span><b>01</b><small>CloseBlobStream</small></span>
         <span><b>${number(payload.paddingBytes)} B</b><small>zero padding</small></span>
       </div>
@@ -291,6 +292,24 @@ function decodedByteLayout(payload, operation) {
       <p class="muted">This UI checks canonical RLP lengths, bounds, the expected rollup ID, message order, RLP shape, and contiguous block numbers. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
     </div>
   </details>`;
+}
+
+function decodedSemantics(transactions) {
+  if (!transactions?.length) return `<p class="muted">This settlement has no cross-chain semantic transaction brackets.</p>`;
+  return `<div class="semantic-transactions">${transactions.map((transaction, index) => `<details>
+    <summary>Semantic tx ${index + 1} · chain ${number(transaction.originChain)} · ${number(transaction.callCount)} call(s)</summary>
+    <div class="table-scroll compact-table"><table>
+      <thead><tr><th>#</th><th>Mode</th><th>Route</th><th>Addresses</th><th>Value</th><th>Data</th><th>Result</th></tr></thead>
+      <tbody>${(transaction.calls || []).map((call) => `<tr>
+        <td>${number(call.index)} · depth ${number(call.depth)}</td><td>${h(call.type)}</td>
+        <td>${number(call.fromChain)} → ${number(call.toChain)}</td>
+        <td><span class="mono hash" title="${h(call.fromAddress)}">${h(compactHash(call.fromAddress))}</span> → <span class="mono hash" title="${h(call.toAddress)}">${h(compactHash(call.toAddress))}</span></td>
+        <td class="mono">${h(call.value)}</td><td>${number(call.dataBytes)} B · <span class="mono">${h(call.dataPreview)}</span></td>
+        <td>${h(call.result?.type || "unresolved")} · ${number(call.result?.returnDataBytes || 0)} B</td>
+      </tr>`).join("")}</tbody>
+    </table></div>
+    <p class="muted">tx_data: ${number(transaction.txDataBytes)} B · snapshots: ${number(transaction.snapshotCount)} · maximum call depth: ${number(transaction.maxCallDepth)}</p>
+  </details>`).join("")}</div>`;
 }
 
 function renderDecoded(payload) {
@@ -310,9 +329,11 @@ function renderDecoded(payload) {
       <div><dt>Payload</dt><dd>tag ${number(operation.tag)} · ${h(operation.format)}</dd></div>
       <div><dt>Blocks / txs</dt><dd>${number(operation.blockCount)} / ${number(operation.transactionCount)}</dd></div>
       <div><dt>L2 entries</dt><dd>${number(operation.l2EntryCount)}</dd></div>
+      <div><dt>Semantic txs / calls</dt><dd>${number(payload.semanticTransactions?.length || 0)} / ${number((payload.semanticTransactions || []).reduce((total, transaction) => total + (transaction.callCount || 0), 0))}</dd></div>
       <div><dt>Stream use</dt><dd>${number(payload.usedStreamBytes)} / ${number(payload.logicalCapacityBytes)} bytes</dd></div>
     </dl>
     ${decodedBlocks(operation.blocks)}
+    ${decodedSemantics(payload.semanticTransactions)}
     ${decodedByteLayout(payload, operation)}
     <details><summary>Full structural decode</summary><pre>${h(JSON.stringify(payload, null, 2))}</pre></details>
   </div>`;

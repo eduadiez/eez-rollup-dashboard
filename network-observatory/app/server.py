@@ -26,7 +26,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
-from blob_decoder import BlobDecodeError, decode_compatibility_blobs
+from blob_decoder import BlobDecodeError, decode_native_blobs
 
 
 LOG = logging.getLogger("eez-dashboard")
@@ -384,7 +384,7 @@ class Collector:
                     f"Blobscan returned non-hex data for {versioned_hash}"
                 ) from error
 
-        decoded = decode_compatibility_blobs(
+        decoded = decode_native_blobs(
             physical_blobs, self.settings.rollup_id
         )
         return {

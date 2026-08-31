@@ -14,9 +14,11 @@ A standalone, read-only dashboard for an EEZ development network. It monitors:
 - contextual deep links from heads, commitments, block numbers and hashes,
   settlement transactions, correlation results, and every versioned blob hash
   to the corresponding L1/L2 Blockscout or Blobscan page;
-- strict, server-side decoding of the current EEZ compatibility blob envelope
+- strict, server-side decoding of the native EEZ semantic blob envelope
   and its chain-operation payload, including self-contained L2 block summaries;
-- an expandable ChainOperation guide and a per-result byte-layout explanation
+- decoded cross-chain transaction boundaries, calls, static calls, exact result
+  kinds, snapshot/revert regions, and context-derived chain routes;
+- an expandable ChainOperation/semantic guide and a per-result byte-layout explanation
   covering field-element packing, message framing, payload tags, and the
   structural-versus-cryptographic evidence boundary;
 - a top-of-page Composer RPC bar that distinguishes the L1→L2 and L2→L1

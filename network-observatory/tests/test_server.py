@@ -61,6 +61,19 @@ def compatibility_blobs(rollup_id, payload):
     return pack_stream(stream)
 
 
+def native_semantic_blobs(rollup_id, payload):
+    stream = b"\x00\x02" + rollup_id.to_bytes(8, "little")
+    stream += varint(len(payload)) + payload
+    stream += b"\x03" + rollup_id.to_bytes(8, "little") + varint(2) + b"tx"
+    stream += b"\x04" + (0).to_bytes(8, "little")
+    stream += bytes.fromhex("11" * 20) + bytes.fromhex("22" * 20)
+    stream += (7).to_bytes(32, "little") + (0).to_bytes(8, "little")
+    stream += varint(4) + b"call"
+    stream += b"\x06" + varint(6) + b"result"
+    stream += b"\x0a\x01"
+    return pack_stream(stream)
+
+
 class DashboardUnitTests(unittest.TestCase):
     def test_quantities_are_decoded_without_floating_point(self):
         self.assertEqual(server.quantity("0x2a"), 42)
@@ -110,7 +123,7 @@ class DashboardUnitTests(unittest.TestCase):
 
     def test_blob_decoder_decodes_compatibility_payload(self):
         payload = b"\x00" + rlp([[1], [b"\x02\xaa"], []])
-        decoded = server.decode_compatibility_blobs(
+        decoded = server.decode_native_blobs(
             compatibility_blobs(1, payload), 1
         )
         operation = decoded["chainOperation"]["operations"]
@@ -136,7 +149,7 @@ class DashboardUnitTests(unittest.TestCase):
         ]
         encoded_block = rlp([header, [b"\x02\xaa"], []])
         payload = b"\x02" + rlp([[encoded_block], [], []])
-        decoded = server.decode_compatibility_blobs(
+        decoded = server.decode_native_blobs(
             compatibility_blobs(1, payload), 1
         )
         operation = decoded["chainOperation"]["operations"]
@@ -145,15 +158,40 @@ class DashboardUnitTests(unittest.TestCase):
         self.assertEqual(operation["blocks"][0]["number"], 7)
         self.assertEqual(operation["blocks"][0]["transactionCount"], 1)
 
+    def test_blob_decoder_decodes_native_cross_chain_semantics(self):
+        payload = b"\x00" + rlp([[], [], []])
+        decoded = server.decode_native_blobs(
+            native_semantic_blobs(1, payload), 1
+        )
+        self.assertEqual(decoded["profile"], "native-semantics")
+        self.assertEqual(
+            decoded["messages"],
+            [
+                "ChainOperation",
+                "InitiateCrossChainTransaction",
+                "Call",
+                "ReturnSuccess",
+                "FinishCrossChainTransaction",
+                "CloseBlobStream",
+            ],
+        )
+        transaction = decoded["semanticTransactions"][0]
+        self.assertEqual(transaction["originChain"], 1)
+        self.assertEqual(transaction["callCount"], 1)
+        self.assertEqual(transaction["calls"][0]["fromChain"], 1)
+        self.assertEqual(transaction["calls"][0]["toChain"], 0)
+        self.assertEqual(transaction["calls"][0]["value"], "7")
+        self.assertEqual(transaction["calls"][0]["result"]["type"], "ReturnSuccess")
+
     def test_blob_decoder_rejects_wrong_rollup_and_invalid_field_element(self):
         payload = b"\x00" + rlp([[], [], []])
         blobs = compatibility_blobs(2, payload)
         with self.assertRaises(server.BlobDecodeError):
-            server.decode_compatibility_blobs(blobs, 1)
+            server.decode_native_blobs(blobs, 1)
         malformed = bytearray(blobs[0])
         malformed[0] = 1
         with self.assertRaises(server.BlobDecodeError):
-            server.decode_compatibility_blobs([bytes(malformed)], 2)
+            server.decode_native_blobs([bytes(malformed)], 2)
 
     def test_settings_reject_non_http_explorer_url(self):
         with mock.patch.dict(
