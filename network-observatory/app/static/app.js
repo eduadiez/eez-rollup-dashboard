@@ -6,6 +6,8 @@ const state = {
   blobQuery: "",
   settlementLookup: null,
   settlementSearchLoading: false,
+  settlementSearchTimer: null,
+  settlementSearchRequest: 0,
 };
 
 function h(value) {
@@ -253,6 +255,11 @@ function blobRows(settlements, query = "", historical = false) {
 }
 
 function renderBlobSettlements() {
+  if (state.settlementSearchLoading && state.settlementLookup === null) {
+    byId("blob-rows").innerHTML = `<tr><td colspan="7" class="empty">Searching indexed settlement history…</td></tr>`;
+    setText("window-label", "Searching full history");
+    return;
+  }
   const historical = state.settlementLookup !== null;
   const settlements = historical
     ? state.settlementLookup.matches || []
@@ -500,9 +507,10 @@ async function searchSettlements(rawQuery) {
   const query = String(rawQuery || "").trim();
   const status = byId("blob-search-status");
   const submit = byId("blob-search-submit");
+  const requestId = ++state.settlementSearchRequest;
   if (!query) {
     state.settlementLookup = null;
-    status.textContent = "Type to filter the recent window, or submit an exact block / full hash for historical lookup.";
+    status.textContent = "Type to filter the recent window; exact block numbers and full hashes search history automatically.";
     renderBlobSettlements();
     return;
   }
@@ -520,7 +528,7 @@ async function searchSettlements(rawQuery) {
     const response = await fetch(url, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-    if (byId("blob-search").value.trim() !== query) return;
+    if (requestId !== state.settlementSearchRequest || byId("blob-search").value.trim() !== query) return;
     state.settlementLookup = payload;
     renderBlobSettlements();
     const warnings = payload.lookupErrors?.length
@@ -530,11 +538,39 @@ async function searchSettlements(rawQuery) {
       ? `Loaded ${payload.matches.length} canonical historical settlement(s).${warnings}`
       : `No canonical settlement uses this exact selector.${warnings}`;
   } catch (error) {
-    status.textContent = error.message;
+    if (requestId === state.settlementSearchRequest) status.textContent = error.message;
   } finally {
-    state.settlementSearchLoading = false;
-    submit.disabled = false;
+    if (requestId === state.settlementSearchRequest) {
+      state.settlementSearchLoading = false;
+      submit.disabled = false;
+      if (state.settlementLookup === null) renderBlobSettlements();
+    }
   }
+}
+
+function cancelSettlementSearch() {
+  if (state.settlementSearchTimer !== null) {
+    clearTimeout(state.settlementSearchTimer);
+    state.settlementSearchTimer = null;
+  }
+  state.settlementSearchRequest += 1;
+  state.settlementSearchLoading = false;
+  byId("blob-search-submit").disabled = false;
+}
+
+function scheduleSettlementSearch(rawQuery) {
+  const query = String(rawQuery || "").trim();
+  cancelSettlementSearch();
+  if (!isExactSettlementQuery(query)) return false;
+
+  byId("blob-search-status").textContent = "Exact selector detected; searching indexed history automatically…";
+  state.settlementSearchLoading = true;
+  byId("blob-search-submit").disabled = true;
+  state.settlementSearchTimer = setTimeout(() => {
+    state.settlementSearchTimer = null;
+    searchSettlements(query);
+  }, 400);
+  return true;
 }
 
 function decimalQuantity(value) {
@@ -639,18 +675,24 @@ byId("refresh").addEventListener("click", refresh);
 byId("blob-search").addEventListener("input", (event) => {
   state.blobQuery = event.target.value;
   state.settlementLookup = null;
-  byId("blob-search-status").textContent = "Filtering the recent window. Submit an exact selector to search all indexed history.";
+  if (!scheduleSettlementSearch(state.blobQuery)) {
+    byId("blob-search-status").textContent = state.blobQuery.trim()
+      ? "Filtering the recent window. Enter an exact block number or full hash to search indexed history automatically."
+      : "Type to filter the recent window; exact block numbers and full hashes search history automatically.";
+  }
   renderBlobSettlements();
 });
 byId("blob-search-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  cancelSettlementSearch();
   searchSettlements(byId("blob-search").value);
 });
 byId("blob-search-clear").addEventListener("click", () => {
+  cancelSettlementSearch();
   byId("blob-search").value = "";
   state.blobQuery = "";
   state.settlementLookup = null;
-  byId("blob-search-status").textContent = "Type to filter the recent window, or submit an exact block / full hash for historical lookup.";
+  byId("blob-search-status").textContent = "Type to filter the recent window; exact block numbers and full hashes search history automatically.";
   renderBlobSettlements();
 });
 byId("composer-rpc").addEventListener("click", async (event) => {

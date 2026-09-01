@@ -13,8 +13,9 @@ function element(id) {
       disabled: false,
       className: "",
       dataset: {},
+      listeners: {},
       classList: { toggle() {} },
-      addEventListener() {},
+      addEventListener(type, listener) { this.listeners[type] = listener; },
       append() {},
       replaceChildren() {},
       querySelector() { return element(`${id}-submit`); },
@@ -31,6 +32,14 @@ globalThis.document = {
 globalThis.window = { location: { href: "https://eez.asuscomm.com/monitor/" } };
 globalThis.fetch = () => new Promise(() => {});
 globalThis.setInterval = () => 0;
+let nextTimeout = 1;
+const scheduledTimeouts = new Map();
+globalThis.setTimeout = (callback, delay) => {
+  const id = nextTimeout++;
+  scheduledTimeouts.set(id, { callback, delay });
+  return id;
+};
+globalThis.clearTimeout = (id) => scheduledTimeouts.delete(id);
 
 const app = readFileSync(new URL("../app/static/app.js", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../app/static/styles.css", import.meta.url), "utf8");
@@ -185,6 +194,20 @@ assert.equal(isExactSettlementQuery("L1:#114"), true);
 assert.equal(isExactSettlementQuery("0x" + "11".repeat(32)), true);
 assert.equal(isExactSettlementQuery("0x1111zz"), false);
 assert.match(blobRows([], "missing"), /No blob settlements match/);
+
+const searchInput = element("blob-search");
+searchInput.value = "6983";
+searchInput.listeners.input({ target: searchInput });
+assert.match(element("blob-search-status").textContent, /searching indexed history automatically/i);
+assert.match(element("blob-rows").innerHTML, /Searching indexed settlement history/);
+assert.equal(element("window-label").textContent, "Searching full history");
+assert.equal(scheduledTimeouts.size, 1);
+assert.equal([...scheduledTimeouts.values()][0].delay, 400);
+
+searchInput.value = "protocol";
+searchInput.listeners.input({ target: searchInput });
+assert.match(element("blob-search-status").textContent, /Filtering the recent window/);
+assert.equal(scheduledTimeouts.size, 0);
 `;
 
 eval(`${app}\n${assertions}`);
