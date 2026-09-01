@@ -5,8 +5,9 @@ A standalone, read-only dashboard for an EEZ development network. It monitors:
 - L1 and L2 latest, safe, and finalized heads;
 - recent blocks, transaction counts, gas use, sync state, and peers;
 - EIP-4844 type-3 transactions, versioned hashes, receipts, and blob gas;
-- client-side settlement search across transaction hashes, blob hashes, L1
-  blocks, and L2 blocks covered by the currently displayed settlement ranges;
+- immediate client-side filtering of the recent settlement window plus bounded,
+  server-side historical lookup by L1 block, L2 block, posting transaction hash,
+  or blob versioned hash;
 - Beacon blob-sidecar availability and KZG commitments;
 - EEZ registry block-hash commitment resolution against the canonical L2 chain,
   including whether the committed block has reached the safe head;
@@ -17,7 +18,9 @@ A standalone, read-only dashboard for an EEZ development network. It monitors:
 - strict, server-side decoding of the native EEZ semantic blob envelope
   and its chain-operation payload, including self-contained L2 block summaries;
 - decoded cross-chain transaction boundaries, calls, static calls, exact result
-  kinds, snapshot/revert regions, and context-derived chain routes;
+  kinds, snapshot/revert regions, and context-derived chain routes, grouped as
+  one expandable message table per
+  `InitiateCrossChainTransaction … FinishCrossChainTransaction` bracket;
 - an expandable ChainOperation/semantic guide and a per-result byte-layout explanation
   covering field-element packing, message framing, payload tags, and the
   structural-versus-cryptographic evidence boundary;
@@ -77,13 +80,18 @@ reported as a warning while healthy chain data remains visible.
 
 - `GET /api/health`: process liveness only.
 - `GET /api/snapshot`: bounded network telemetry snapshot.
+- `GET /api/settlement-search?q=L1:42`: exact historical settlement lookup.
+- `GET /api/settlement-search?q=L2:250`: exact lookup through the canonical
+  L2-to-L1 index. An unscoped number tries both chains; a full 32-byte hash is
+  resolved as a block, posting transaction, or blob versioned hash.
 - `GET /api/correlation?direction=l2-to-l1&block=0x2a`: exact settlement lookup.
 - `GET /api/correlation?direction=l1-to-l2&block=0x10`: exact L2 ranges lookup.
 - `GET /api/blob-decode?tx=0x...`: validate and structurally decode an EEZ
   type-3 settlement transaction using canonical L1 ordering and Blobscan data.
 
-Correlation selectors accept a decimal block number, Ethereum hex quantity, or
-a full block hash. The blob decoder only accepts a canonical type-3 transaction
+Correlation and settlement-search selectors accept a decimal block number,
+Ethereum hex quantity, or a full hash. Prefixes such as `L1:` and `L2:` remove
+number/hash ambiguity. The blob decoder only accepts a canonical type-3 transaction
 targeting the configured registry, requires its Blobscan blob set to match L1,
 and enforces the current rollup ID and codec bounds. Arbitrary JSON-RPC methods
 are intentionally not exposed.

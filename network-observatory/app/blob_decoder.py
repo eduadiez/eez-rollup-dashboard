@@ -339,7 +339,7 @@ def decode_native_blobs(
     semantic_transactions: list[dict[str, Any]] = []
     contexts: list[int] = []
     open_calls: list[int] = []
-    snapshots: list[int] = []
+    snapshots: list[dict[str, int]] = []
     current: dict[str, Any] | None = None
 
     while position < len(stream):
@@ -365,17 +365,21 @@ def decode_native_blobs(
                 "txDataBytes": len(tx_data),
                 "txDataPreview": _preview(tx_data),
                 "calls": [],
+                "messages": [],
                 "snapshotCount": 0,
+                "rollbackRegions": [],
                 "maxCallDepth": 0,
             }
             contexts.append(origin)
             messages.append("InitiateCrossChainTransaction")
-            semantic_messages.append({
+            decoded_message = {
                 "type": "InitiateCrossChainTransaction",
                 "chainId": origin,
                 "txDataBytes": len(tx_data),
                 "txDataPreview": _preview(tx_data),
-            })
+            }
+            current["messages"].append(decoded_message)
+            semantic_messages.append(decoded_message)
             continue
         if message_type in (4, 5):
             if current is None or not contexts:
@@ -400,7 +404,8 @@ def decode_native_blobs(
             mode = "Call" if message_type == 4 else "StaticCall"
             call = {
                 "index": len(current["calls"]),
-                "depth": len(contexts) - 1,
+                "parentIndex": open_calls[-1] if open_calls else None,
+                "depth": len(open_calls),
                 "type": mode,
                 "fromChain": contexts[-1],
                 "toChain": target,
@@ -413,16 +418,20 @@ def decode_native_blobs(
                 "result": None,
             }
             current["calls"].append(call)
-            current["maxCallDepth"] = max(current["maxCallDepth"], len(contexts))
             open_calls.append(call["index"])
             contexts.append(target)
+            current["maxCallDepth"] = max(current["maxCallDepth"], len(open_calls))
             messages.append(mode)
-            semantic_messages.append({key: value for key, value in call.items() if key != "result"})
+            decoded_message = {
+                key: value for key, value in call.items() if key != "result"
+            }
+            current["messages"].append(decoded_message)
+            semantic_messages.append(decoded_message)
             continue
         if message_type in (6, 7):
             if current is None or not open_calls or len(contexts) < 2:
                 raise BlobDecodeError("semantic return has no open Call")
-            if snapshots and snapshots[-1] == len(contexts):
+            if snapshots and snapshots[-1]["contextDepth"] == len(contexts):
                 raise BlobDecodeError("semantic return crosses an open Snapshot")
             return_data, position = _message_bytes(stream, position, "return_data")
             call_index = open_calls.pop()
@@ -435,26 +444,68 @@ def decode_native_blobs(
             }
             current["calls"][call_index]["result"] = result
             messages.append(outcome)
-            semantic_messages.append(result | {"callIndex": call_index})
+            decoded_message = result | {"callIndex": call_index}
+            current["messages"].append(decoded_message)
+            semantic_messages.append(decoded_message)
             continue
         if message_type == 8:
             if current is None:
                 raise BlobDecodeError("Snapshot appears outside a cross-chain transaction")
             if len(snapshots) >= 64:
                 raise BlobDecodeError("maximum snapshot depth 64 exceeded")
-            snapshots.append(len(contexts))
+            snapshot = {
+                "contextDepth": len(contexts),
+                "callDepth": len(open_calls),
+                "firstCallIndex": len(current["calls"]),
+            }
+            snapshots.append(snapshot)
             current["snapshotCount"] += 1
             messages.append("Snapshot")
-            semantic_messages.append({"type": "Snapshot", "contextDepth": len(contexts)})
+            decoded_message = {
+                "type": "Snapshot",
+                "contextDepth": len(contexts),
+                "callDepth": len(open_calls),
+                "firstCallIndex": len(current["calls"]),
+            }
+            current["messages"].append(decoded_message)
+            semantic_messages.append(decoded_message)
             continue
         if message_type == 9:
             if current is None or not snapshots:
                 raise BlobDecodeError("Revert has no open Snapshot")
-            if snapshots[-1] != len(contexts):
+            snapshot = snapshots[-1]
+            if (
+                snapshot["contextDepth"] != len(contexts)
+                or snapshot["callDepth"] != len(open_calls)
+            ):
                 raise BlobDecodeError("Revert crosses an open Call")
             snapshots.pop()
+            first_call = snapshot["firstCallIndex"]
+            rollback_span = len(current["calls"]) - first_call
+            if rollback_span == 0:
+                raise BlobDecodeError("Snapshot/Revert region contains no calls")
+            rollback_calls = current["calls"][first_call:]
+            if any("rollbackRegion" in call for call in rollback_calls):
+                raise BlobDecodeError(
+                    "nested or overlapping Snapshot/Revert regions are unsupported"
+                )
+            region_index = len(current["rollbackRegions"])
+            for call in rollback_calls:
+                call["rollbackRegion"] = region_index
+                call["forcedRollback"] = True
+            current["calls"][first_call]["rollbackSpan"] = rollback_span
+            region = {
+                "index": region_index,
+                "firstCallIndex": first_call,
+                "lastCallIndex": len(current["calls"]) - 1,
+                "callCount": rollback_span,
+                "contextDepth": len(contexts),
+            }
+            current["rollbackRegions"].append(region)
             messages.append("Revert")
-            semantic_messages.append({"type": "Revert", "contextDepth": len(contexts)})
+            decoded_message = {"type": "Revert", **region}
+            current["messages"].append(decoded_message)
+            semantic_messages.append(decoded_message)
             continue
         if message_type == 10:
             if current is None:
@@ -463,6 +514,10 @@ def decode_native_blobs(
                 raise BlobDecodeError("FinishCrossChainTransaction has an open Call")
             if snapshots:
                 raise BlobDecodeError("FinishCrossChainTransaction has an open Snapshot")
+            if not current["calls"]:
+                raise BlobDecodeError(
+                    "cross-chain semantic transaction contains no calls"
+                )
             contexts.pop()
             current["callCount"] = len(current["calls"])
             current["mutableCallCount"] = sum(
@@ -479,10 +534,16 @@ def decode_native_blobs(
                 call["result"] and call["result"]["type"] == "ReturnFail"
                 for call in current["calls"]
             )
+            current["rollbackRegionCount"] = len(current["rollbackRegions"])
+            current["forcedRollbackCallCount"] = sum(
+                bool(call.get("forcedRollback")) for call in current["calls"]
+            )
+            decoded_message = {"type": "FinishCrossChainTransaction"}
+            current["messages"].append(decoded_message)
             semantic_transactions.append(current)
             current = None
             messages.append("FinishCrossChainTransaction")
-            semantic_messages.append({"type": "FinishCrossChainTransaction"})
+            semantic_messages.append(decoded_message)
             continue
         raise BlobDecodeError(f"unknown blob message type {message_type}")
     else:

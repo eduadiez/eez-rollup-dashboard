@@ -74,6 +74,19 @@ def native_semantic_blobs(rollup_id, payload):
     return pack_stream(stream)
 
 
+def native_blobs_with_messages(rollup_id, payload, messages):
+    stream = b"\x00\x02" + rollup_id.to_bytes(8, "little")
+    stream += varint(len(payload)) + payload + messages + b"\x01"
+    return pack_stream(stream)
+
+
+def mutable_call(to_chain=0, value=7, data=b"call"):
+    message = b"\x04" + to_chain.to_bytes(8, "little")
+    message += bytes.fromhex("11" * 20) + bytes.fromhex("22" * 20)
+    message += value.to_bytes(32, "little") + (0).to_bytes(8, "little")
+    return message + varint(len(data)) + data
+
+
 class DashboardUnitTests(unittest.TestCase):
     def test_quantities_are_decoded_without_floating_point(self):
         self.assertEqual(server.quantity("0x2a"), 42)
@@ -102,6 +115,48 @@ class DashboardUnitTests(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     server.validate_selector(invalid)
+
+    def test_settlement_search_accepts_explicit_chain_scope(self):
+        self.assertEqual(server.validate_settlement_search("L1: #42"), ("l1", "0x2a"))
+        block_hash = "0x" + "AB" * 32
+        self.assertEqual(
+            server.validate_settlement_search(f"l2:{block_hash}"),
+            ("l2", block_hash.lower()),
+        )
+        for invalid in ("", "beacon:42", "l1:latest"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    server.validate_settlement_search(invalid)
+
+    def test_settlement_search_resolves_ambiguous_number_in_both_directions(self):
+        collector = object.__new__(server.Collector)
+        collector.blobscan = None
+        collector.l1 = mock.Mock()
+        collector.l2 = mock.Mock()
+        transaction_hash = "0x" + "11" * 32
+        row = {
+            "transactionHash": transaction_hash,
+            "l1BlockNumber": 42,
+            "transactionIndex": 0,
+        }
+        collector.l1.rpc.return_value = {
+            "number": "0x2a",
+            "transactions": [{"hash": transaction_hash, "type": "0x3"}],
+        }
+        collector.l2.rpc.return_value = {"l1TransactionHash": transaction_hash}
+        collector._settlements = mock.Mock(return_value=[row])
+        collector._settlement_by_transaction_hash = mock.Mock(return_value=row)
+
+        result = collector.settlement_search("42")
+
+        self.assertEqual(result["selector"], "0x2a")
+        self.assertEqual(result["matches"], [row])
+        collector.l1.rpc.assert_called_once_with(
+            "eth_getBlockByNumber", ["0x2a", True]
+        )
+        collector.l2.rpc.assert_called_once_with(
+            "eez_getSettlementByL2Block", ["0x2a"]
+        )
 
     def test_block_summary_counts_type_three_transactions(self):
         summary = server.summarize_block(
@@ -182,6 +237,55 @@ class DashboardUnitTests(unittest.TestCase):
         self.assertEqual(transaction["calls"][0]["toChain"], 0)
         self.assertEqual(transaction["calls"][0]["value"], "7")
         self.assertEqual(transaction["calls"][0]["result"]["type"], "ReturnSuccess")
+        self.assertEqual(transaction["maxCallDepth"], 1)
+        self.assertEqual(
+            [message["type"] for message in transaction["messages"]],
+            [
+                "InitiateCrossChainTransaction",
+                "Call",
+                "ReturnSuccess",
+                "FinishCrossChainTransaction",
+            ],
+        )
+        self.assertEqual(transaction["messages"][1]["toChain"], 0)
+        self.assertEqual(transaction["messages"][2]["callIndex"], 0)
+
+    def test_blob_decoder_exposes_forced_rollback_regions(self):
+        payload = b"\x00" + rlp([[], [], []])
+        messages = b"\x03" + (1).to_bytes(8, "little") + varint(2) + b"tx"
+        messages += b"\x08" + mutable_call()
+        messages += b"\x06" + varint(6) + b"result" + b"\x09\x0a"
+
+        decoded = server.decode_native_blobs(
+            native_blobs_with_messages(1, payload, messages), 1
+        )
+
+        transaction = decoded["semanticTransactions"][0]
+        self.assertEqual(transaction["rollbackRegionCount"], 1)
+        self.assertEqual(transaction["forcedRollbackCallCount"], 1)
+        self.assertEqual(transaction["rollbackRegions"][0]["callCount"], 1)
+        self.assertTrue(transaction["calls"][0]["forcedRollback"])
+        self.assertEqual(transaction["calls"][0]["rollbackSpan"], 1)
+        self.assertEqual(
+            [message["type"] for message in transaction["messages"]],
+            [
+                "InitiateCrossChainTransaction",
+                "Snapshot",
+                "Call",
+                "ReturnSuccess",
+                "Revert",
+                "FinishCrossChainTransaction",
+            ],
+        )
+
+    def test_blob_decoder_rejects_empty_snapshot_region(self):
+        payload = b"\x00" + rlp([[], [], []])
+        messages = b"\x03" + (1).to_bytes(8, "little") + varint(2) + b"tx"
+        messages += b"\x08\x09\x0a"
+        with self.assertRaisesRegex(server.BlobDecodeError, "contains no calls"):
+            server.decode_native_blobs(
+                native_blobs_with_messages(1, payload, messages), 1
+            )
 
     def test_blob_decoder_rejects_wrong_rollup_and_invalid_field_element(self):
         payload = b"\x00" + rlp([[], [], []])

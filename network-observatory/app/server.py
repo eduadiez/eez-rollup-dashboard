@@ -252,6 +252,20 @@ def validate_selector(raw: str) -> str:
     return hex(value)
 
 
+def validate_settlement_search(raw: str) -> tuple[str | None, str]:
+    query = raw.strip()
+    if not query:
+        raise ValueError("search query is required")
+    scope: str | None = None
+    scoped = re.fullmatch(r"(l1|l2)\s*:\s*(.+)", query, re.IGNORECASE)
+    if scoped:
+        scope = scoped.group(1).lower()
+        query = scoped.group(2).strip()
+    elif ":" in query:
+        raise ValueError("block scope must be l1: or l2:")
+    return scope, validate_selector(query.removeprefix("#"))
+
+
 class Collector:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -335,6 +349,120 @@ class Collector:
         if direction == "l1-to-l2":
             return self.l2.rpc("eez_getSettledL2RangesByL1Block", [normalized])
         raise ValueError("direction must be l2-to-l1 or l1-to-l2")
+
+    def settlement_search(self, query: str) -> dict[str, Any]:
+        scope, normalized = validate_settlement_search(query)
+        is_hash = bool(HASH_RE.fullmatch(normalized))
+        lookup_errors: list[str] = []
+        l1_blocks: list[dict[str, Any]] = []
+        transaction_hashes: set[str] = set()
+
+        tasks: dict[str, tuple[Callable[..., Any], tuple[Any, ...]]] = {}
+        if scope in (None, "l1"):
+            method = "eth_getBlockByHash" if is_hash else "eth_getBlockByNumber"
+            tasks["L1 block"] = (self.l1.rpc, (method, [normalized, True]))
+        if scope in (None, "l2"):
+            tasks["L2 block"] = (
+                self.l2.rpc,
+                ("eez_getSettlementByL2Block", [normalized]),
+            )
+        if scope is None and is_hash:
+            tasks["L1 transaction"] = (
+                self.l1.rpc,
+                ("eth_getTransactionByHash", [normalized]),
+            )
+            if self.blobscan:
+                tasks["blob versioned hash"] = (
+                    self.blobscan.get_json,
+                    (f"blobs/{normalized}",),
+                )
+
+        resolved: dict[str, Any] = {}
+        with ThreadPoolExecutor(max_workers=4, thread_name_prefix="settlement-search") as executor:
+            futures = {
+                executor.submit(operation, *arguments): label
+                for label, (operation, arguments) in tasks.items()
+            }
+            for future in as_completed(futures):
+                label = futures[future]
+                try:
+                    resolved[label] = future.result()
+                except Exception as error:
+                    # A full hash is intentionally tried as several object kinds.
+                    # Blobscan uses HTTP 404 for a valid hash of another kind.
+                    if "upstream HTTP 404" not in str(error):
+                        lookup_errors.append(f"{label}: {error}")
+
+        l1_block = resolved.get("L1 block")
+        if isinstance(l1_block, dict):
+            l1_blocks.append(l1_block)
+
+        transaction = resolved.get("L1 transaction")
+        if isinstance(transaction, dict) and transaction.get("hash"):
+            transaction_hashes.add(str(transaction["hash"]).lower())
+
+        blob = resolved.get("blob versioned hash")
+        if isinstance(blob, dict):
+            for occurrence in blob.get("transactions") or []:
+                if isinstance(occurrence, dict) and occurrence.get("txHash"):
+                    transaction_hashes.add(str(occurrence["txHash"]).lower())
+
+        correlation = resolved.get("L2 block")
+        correlation_records = correlation if isinstance(correlation, list) else [correlation]
+        for record in correlation_records:
+            if isinstance(record, dict) and record.get("l1TransactionHash"):
+                transaction_hashes.add(str(record["l1TransactionHash"]).lower())
+
+        matches: dict[str, dict[str, Any]] = {}
+        for settlement in self._settlements(l1_blocks):
+            transaction_hash = str(settlement.get("transactionHash") or "").lower()
+            if transaction_hash:
+                matches[transaction_hash] = settlement
+
+        for transaction_hash in sorted(transaction_hashes):
+            if transaction_hash in matches:
+                continue
+            try:
+                settlement = self._settlement_by_transaction_hash(transaction_hash)
+                if settlement is not None:
+                    matches[transaction_hash] = settlement
+            except Exception as error:
+                lookup_errors.append(f"settlement {transaction_hash}: {error}")
+
+        ordered = sorted(
+            matches.values(),
+            key=lambda item: (
+                item.get("l1BlockNumber", 0),
+                item.get("transactionIndex", 0),
+            ),
+            reverse=True,
+        )
+        return {
+            "query": query.strip(),
+            "scope": scope,
+            "selector": normalized,
+            "matches": ordered,
+            "lookupErrors": lookup_errors,
+        }
+
+    def _settlement_by_transaction_hash(
+        self, transaction_hash: str
+    ) -> dict[str, Any] | None:
+        transaction = self.l1.rpc("eth_getTransactionByHash", [transaction_hash])
+        if not isinstance(transaction, dict):
+            return None
+        if (
+            str(transaction.get("type", "")).lower() != "0x3"
+            and not transaction.get("blobVersionedHashes")
+        ):
+            return None
+        block_hash = transaction.get("blockHash")
+        if not block_hash:
+            return None
+        block = self.l1.rpc("eth_getBlockByHash", [block_hash, False])
+        if not isinstance(block, dict):
+            return None
+        return self._settlement(block, transaction)
 
     def decode_blob_transaction(self, transaction_hash: str) -> dict[str, Any]:
         normalized = transaction_hash.strip().lower()
@@ -739,6 +867,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     cache: SnapshotCache
     collector: Collector
     blob_decode_slots = threading.BoundedSemaphore(2)
+    settlement_search_slots = threading.BoundedSemaphore(4)
     server_version = "EEZDashboard/1"
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
@@ -760,6 +889,37 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     {"error": "snapshot unavailable", "detail": str(error)},
                     cache="no-store",
                 )
+            return
+        if parsed.path == "/api/settlement-search":
+            query = parse_qs(parsed.query).get("q", [""])[0]
+            if not self.settlement_search_slots.acquire(blocking=False):
+                self._json(
+                    HTTPStatus.TOO_MANY_REQUESTS,
+                    {"error": "settlement search is busy; retry shortly"},
+                    cache="no-store",
+                )
+                return
+            try:
+                try:
+                    self._json(
+                        HTTPStatus.OK,
+                        self.collector.settlement_search(query),
+                        cache="no-store",
+                    )
+                except ValueError as error:
+                    self._json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": str(error)},
+                        cache="no-store",
+                    )
+                except Exception as error:
+                    self._json(
+                        HTTPStatus.BAD_GATEWAY,
+                        {"error": str(error)},
+                        cache="no-store",
+                    )
+            finally:
+                self.settlement_search_slots.release()
             return
         if parsed.path == "/api/correlation":
             query = parse_qs(parsed.query)

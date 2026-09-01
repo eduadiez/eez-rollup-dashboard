@@ -33,6 +33,15 @@ globalThis.fetch = () => new Promise(() => {});
 globalThis.setInterval = () => 0;
 
 const app = readFileSync(new URL("../app/static/app.js", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../app/static/styles.css", import.meta.url), "utf8");
+assert.match(
+  styles,
+  /\.decoder-summary \.semantic-message-details dl \{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
+);
+assert.match(
+  styles,
+  /\.decoder-summary \.semantic-message-details dd \{[^}]*overflow: visible/,
+);
 const assertions = String.raw`
 state.snapshot = { configuration: { explorers: {
   l1: "https://eez.asuscomm.com:4444",
@@ -58,6 +67,7 @@ renderDecoded({
   logicalCapacityBytes: 126976,
   usedStreamBytes: 4096,
   paddingBytes: 122880,
+  messages: ["ChainOperation", "InitiateCrossChainTransaction", "Call", "ReturnSuccess", "FinishCrossChainTransaction", "CloseBlobStream"],
   chainOperation: { chainId: 1, operations: {
     tag: 2,
     format: "self-contained-blocks",
@@ -68,12 +78,23 @@ renderDecoded({
     blocks: [{ number: 673, parentHash, stateRoot, transactionCount: 2,
       gasUsed: 42000, gasLimit: 30000000, timestamp: 1700000000, rlpBytes: 900 }],
   } },
-  semanticTransactions: [{ originChain: 1, txDataBytes: 128, callCount: 1,
-    snapshotCount: 0, maxCallDepth: 1, calls: [{ index: 0, depth: 0,
+  semanticTransactions: [{ originChain: 1, txDataBytes: 128, txDataPreview: "0x7478", callCount: 1,
+    snapshotCount: 0, rollbackRegionCount: 0, forcedRollbackCallCount: 0,
+    maxCallDepth: 1, successReturnCount: 1, failedReturnCount: 0,
+    messages: [
+      { type: "InitiateCrossChainTransaction", chainId: 1, txDataBytes: 128, txDataPreview: "0x7478" },
+      { type: "Call", index: 0, parentIndex: null, depth: 0, fromChain: 1, toChain: 0,
+        fromAddress: "0x" + "77".repeat(20), toAddress: "0x" + "88".repeat(20),
+        value: "7", gas: 0, dataBytes: 4, dataPreview: "0xdeadbeef" },
+      { type: "ReturnSuccess", callIndex: 0, returnDataBytes: 2, returnDataPreview: "0xbeef" },
+      { type: "FinishCrossChainTransaction" },
+    ],
+    calls: [{ index: 0, parentIndex: null, depth: 0,
       type: "Call", fromChain: 1, toChain: 0,
       fromAddress: "0x" + "77".repeat(20), toAddress: "0x" + "88".repeat(20),
       value: "7", dataBytes: 4, dataPreview: "0xdeadbeef",
-      result: { type: "ReturnSuccess", returnDataBytes: 2 } }] }],
+      result: { type: "ReturnSuccess", returnDataBytes: 2, returnDataPreview: "0xbeef" } }],
+    rollbackRegions: [] }],
 });
 const decoded = element("decoder-result").innerHTML;
 assert.match(decoded, /:4444\/tx\/0x11/);
@@ -84,8 +105,24 @@ assert.match(decoded, /:4445\/block\/673/);
 assert.match(decoded, /:4445\/block\/0x44/);
 assert.match(decoded, /How this result maps to the blob bytes/);
 assert.match(decoded, /RLP\(\[blocks, l2Entries, outboundGroupSizes\]\)/);
-assert.match(decoded, /Semantic tx 1/);
+assert.match(decoded, /Cross-chain tx 1/);
 assert.match(decoded, /ReturnSuccess/);
+assert.match(decoded, /CROSS-CHAIN MESSAGE STREAM/);
+assert.match(decoded, /InitiateCrossChainTransaction/);
+assert.match(decoded, /0xdeadbeef/);
+assert.match(decoded, /0xbeef/);
+assert.match(decoded, /4 messages/);
+assert.match(decoded, /Message type/);
+assert.match(decoded, /Important parameters/);
+assert.match(decoded, /Expand info/);
+assert.doesNotMatch(decoded, /<i>2<\/i>Call/);
+assert.match(decoded, /Cross-chain information is not hidden inside this RLP/);
+
+const noSemantics = decodedSemantics({
+  messages: ["ChainOperation", "CloseBlobStream"],
+  semanticTransactions: [],
+});
+assert.match(noSemantics, /chain-local synchronization batch/);
 
 const correlation = renderCorrelationResult({ result: {
   canonicalL2: true,
@@ -137,9 +174,16 @@ const searchableSettlement = {
 assert.equal(settlementMatches(searchableSettlement, "0x111111"), true);
 assert.equal(settlementMatches(searchableSettlement, "0x333333"), true);
 assert.equal(settlementMatches(searchableSettlement, "#114"), true);
+assert.equal(settlementMatches(searchableSettlement, "L1:0x72"), true);
+assert.equal(settlementMatches(searchableSettlement, "L1:114"), true);
+assert.equal(settlementMatches(searchableSettlement, "L2:674"), true);
+assert.equal(settlementMatches(searchableSettlement, "L2:114"), false);
 assert.equal(settlementMatches(searchableSettlement, "674"), true);
 assert.equal(settlementMatches(searchableSettlement, "EEZ batch"), true);
 assert.equal(settlementMatches(searchableSettlement, "999999"), false);
+assert.equal(isExactSettlementQuery("L1:#114"), true);
+assert.equal(isExactSettlementQuery("0x" + "11".repeat(32)), true);
+assert.equal(isExactSettlementQuery("0x1111zz"), false);
 assert.match(blobRows([], "missing"), /No blob settlements match/);
 `;
 

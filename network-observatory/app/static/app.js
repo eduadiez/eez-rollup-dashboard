@@ -1,5 +1,12 @@
 const byId = (id) => document.getElementById(id);
-const state = { loading: false, timer: null, snapshot: null, blobQuery: "" };
+const state = {
+  loading: false,
+  timer: null,
+  snapshot: null,
+  blobQuery: "",
+  settlementLookup: null,
+  settlementSearchLoading: false,
+};
 
 function h(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -183,41 +190,41 @@ function searchQuantity(value) {
 function settlementMatches(item, rawQuery) {
   const query = String(rawQuery ?? "").trim().toLowerCase();
   if (!query) return true;
-  const plainQuery = query.replace(/^#/, "");
+  const scoped = query.match(/^(l1|l2)\s*:\s*(.+)$/i);
+  const scope = scoped?.[1]?.toLowerCase() || null;
+  const plainQuery = (scoped?.[2] || query).trim().replace(/^#/, "");
   const ranges = Array.isArray(item.l2Ranges) ? item.l2Ranges : [];
+  const blockSyntax = scope !== null || query.startsWith("#") || /^[0-9]+$/.test(plainQuery);
+  const requestedBlock = blockSyntax ? searchQuantity(plainQuery) : null;
+
+  if (requestedBlock !== null) {
+    const l1Block = searchQuantity(item.l1BlockNumber);
+    if (scope !== "l2" && l1Block === requestedBlock) return true;
+    if (scope === "l1") return false;
+    return ranges.some((itemRange) => {
+      const range = itemRange?.l2Range || {};
+      const first = searchQuantity(range.firstBlockNumber);
+      const last = searchQuantity(range.lastBlockNumber);
+      return first !== null && last !== null && requestedBlock >= first && requestedBlock <= last;
+    });
+  }
+
   const values = [
     item.transactionHash,
-    item.l1BlockNumber,
     item.l1BlockHash,
     item.status,
-    item.beacon?.slot,
     item.isProtocolSettlement ? "eez batch protocol" : "other blob",
     ...(item.blobVersionedHashes || []),
   ];
-  for (const itemRange of ranges) {
-    const range = itemRange?.l2Range || {};
-    values.push(range.firstBlockNumber, range.lastBlockNumber, range.blockCount);
-    for (const value of [range.firstBlockNumber, range.lastBlockNumber]) {
-      const quantity = searchQuantity(value);
-      if (quantity !== null) values.push(quantity.toString(10));
-    }
-  }
-  if (values.some((value) => String(value ?? "").toLowerCase().includes(plainQuery))) return true;
-
-  const requestedBlock = searchQuantity(plainQuery);
-  if (requestedBlock === null) return false;
-  return ranges.some((itemRange) => {
-    const range = itemRange?.l2Range || {};
-    const first = searchQuantity(range.firstBlockNumber);
-    const last = searchQuantity(range.lastBlockNumber);
-    return first !== null && last !== null && requestedBlock >= first && requestedBlock <= last;
-  });
+  return scope === null && values.some((value) => String(value ?? "").toLowerCase().includes(plainQuery));
 }
 
-function blobRows(settlements, query = "") {
+function blobRows(settlements, query = "", historical = false) {
   if (!settlements?.length) {
     const message = String(query).trim()
-      ? `No blob settlements match “${h(String(query).trim())}” in this L1 window`
+      ? historical
+        ? `No canonical settlement was found for “${h(String(query).trim())}”`
+        : `No blob settlements match “${h(String(query).trim())}” in this L1 window`
       : "No blob transactions in this block window";
     return `<tr><td colspan="7" class="empty">${message}</td></tr>`;
   }
@@ -246,12 +253,19 @@ function blobRows(settlements, query = "") {
 }
 
 function renderBlobSettlements() {
-  const settlements = state.snapshot?.blobSettlements || [];
+  const historical = state.settlementLookup !== null;
+  const settlements = historical
+    ? state.settlementLookup.matches || []
+    : state.snapshot?.blobSettlements || [];
   const matching = settlements.filter((item) => settlementMatches(item, state.blobQuery));
-  byId("blob-rows").innerHTML = blobRows(matching, state.blobQuery);
+  byId("blob-rows").innerHTML = blobRows(matching, state.blobQuery, historical);
   const window = state.snapshot?.configuration?.recentBlockWindow || "—";
-  const matchLabel = state.blobQuery.trim() ? `${matching.length} of ${settlements.length} matches · ` : "";
-  setText("window-label", `${matchLabel}Last ${window} L1 blocks`);
+  if (historical) {
+    setText("window-label", `${matching.length} exact historical match(es)`);
+  } else {
+    const matchLabel = state.blobQuery.trim() ? `${matching.length} of ${settlements.length} matches · ` : "";
+    setText("window-label", `${matchLabel}Last ${window} L1 blocks`);
+  }
 }
 
 function decodedBlocks(blocks) {
@@ -289,27 +303,142 @@ function decodedByteLayout(payload, operation) {
         <span><b>${number(payload.paddingBytes)} B</b><small>zero padding</small></span>
       </div>
       <p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${number(operation.blockCount)} blocks, ${number(operation.transactionCount)} transactions, and ${number(operation.l2EntryCount)} reconstructed L2 entries.</p>
+      <p><code>ChainOperation.operations</code> ends after that RLP body. Cross-chain information is not hidden inside this RLP: each originating transaction is encoded afterward as its own <code>InitiateCrossChainTransaction … FinishCrossChainTransaction</code> message bracket before the final close marker.</p>
       <p class="muted">This UI checks canonical RLP lengths, bounds, the expected rollup ID, message order, RLP shape, and contiguous block numbers. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
     </div>
   </details>`;
 }
 
-function decodedSemantics(transactions) {
-  if (!transactions?.length) return `<p class="muted">This settlement has no cross-chain semantic transaction brackets.</p>`;
-  return `<div class="semantic-transactions">${transactions.map((transaction, index) => `<details>
-    <summary>Semantic tx ${index + 1} · chain ${number(transaction.originChain)} · ${number(transaction.callCount)} call(s)</summary>
-    <div class="table-scroll compact-table"><table>
-      <thead><tr><th>#</th><th>Mode</th><th>Route</th><th>Addresses</th><th>Value</th><th>Data</th><th>Result</th></tr></thead>
-      <tbody>${(transaction.calls || []).map((call) => `<tr>
-        <td>${number(call.index)} · depth ${number(call.depth)}</td><td>${h(call.type)}</td>
-        <td>${number(call.fromChain)} → ${number(call.toChain)}</td>
-        <td><span class="mono hash" title="${h(call.fromAddress)}">${h(compactHash(call.fromAddress))}</span> → <span class="mono hash" title="${h(call.toAddress)}">${h(compactHash(call.toAddress))}</span></td>
-        <td class="mono">${h(call.value)}</td><td>${number(call.dataBytes)} B · <span class="mono">${h(call.dataPreview)}</span></td>
-        <td>${h(call.result?.type || "unresolved")} · ${number(call.result?.returnDataBytes || 0)} B</td>
-      </tr>`).join("")}</tbody>
-    </table></div>
-    <p class="muted">tx_data: ${number(transaction.txDataBytes)} B · snapshots: ${number(transaction.snapshotCount)} · maximum call depth: ${number(transaction.maxCallDepth)}</p>
-  </details>`).join("")}</div>`;
+function semanticChain(chainId) {
+  return String(chainId) === "0" ? "L1 (rollup 0)" : `rollup ${number(chainId)}`;
+}
+
+function semanticBytes(size, preview, emptyLabel = "empty") {
+  if (!size) return `<span class="muted">0 B · ${h(emptyLabel)}</span>`;
+  return `<span class="semantic-bytes"><b>${number(size)} B</b><code title="${h(preview)}">${h(preview)}</code></span>`;
+}
+
+function groupedSemanticMessages(transaction) {
+  if (Array.isArray(transaction.messages) && transaction.messages.length) {
+    return transaction.messages;
+  }
+
+  // Compatibility for a monitor frontend briefly served alongside an older
+  // decoder. The current decoder always supplies the exact wire order.
+  const messages = [{
+    type: "InitiateCrossChainTransaction",
+    chainId: transaction.originChain,
+    txDataBytes: transaction.txDataBytes,
+    txDataPreview: transaction.txDataPreview,
+  }];
+  for (const call of transaction.calls || []) {
+    messages.push(Object.fromEntries(Object.entries(call).filter(([key]) => key !== "result")));
+    if (call.result) messages.push({ ...call.result, callIndex: call.index });
+  }
+  messages.push({ type: "FinishCrossChainTransaction" });
+  return messages;
+}
+
+function semanticMessageImportant(message) {
+  switch (message.type) {
+    case "InitiateCrossChainTransaction":
+      return `<span class="primary">origin ${h(semanticChain(message.chainId))}</span>${semanticBytes(message.txDataBytes, message.txDataPreview, "empty tx_data")}`;
+    case "Call":
+    case "StaticCall":
+      return `<span class="primary">${h(semanticChain(message.fromChain))} → ${h(semanticChain(message.toChain))}</span><span class="secondary">call #${number(message.index)} · depth ${number(message.depth)} · ${message.type === "Call" ? `value ${h(message.value)}` : "read-only"}</span><span class="secondary mono" title="${h(message.fromAddress)} → ${h(message.toAddress)}">${h(compactHash(message.fromAddress))} → ${h(compactHash(message.toAddress))}</span>`;
+    case "ReturnSuccess":
+    case "ReturnFail":
+      return `<span class="badge ${message.type === "ReturnSuccess" ? "good" : "bad"}">${h(message.type)}</span><span class="secondary">result for call #${number(message.callIndex)}</span>${semanticBytes(message.returnDataBytes, message.returnDataPreview, "empty return data")}`;
+    case "Snapshot":
+      return `<span class="primary">open rollback region</span><span class="secondary">before call #${number(message.firstCallIndex)} · call depth ${number(message.callDepth)}</span>`;
+    case "Revert":
+      return `<span class="badge warn">forced rollback</span><span class="secondary">calls #${number(message.firstCallIndex)}–#${number(message.lastCallIndex)} (${number(message.callCount)} total)</span>`;
+    case "FinishCrossChainTransaction":
+      return `<span class="primary">transaction bracket complete</span><span class="secondary">all calls and rollback regions are closed</span>`;
+    default:
+      return `<span class="muted">No summary available</span>`;
+  }
+}
+
+function semanticMessageFields(message) {
+  const labels = {
+    type: "Message type",
+    chainId: "Origin chain",
+    txDataBytes: "tx_data bytes",
+    txDataPreview: "tx_data preview",
+    index: "Call index",
+    parentIndex: "Parent call",
+    depth: "Call depth",
+    fromChain: "From chain",
+    toChain: "To chain",
+    fromAddress: "From address",
+    toAddress: "To address",
+    value: "Value",
+    gas: "Gas field",
+    dataBytes: "Calldata bytes",
+    dataPreview: "Calldata preview",
+    callIndex: "Result call index",
+    returnDataBytes: "Return-data bytes",
+    returnDataPreview: "Return-data preview",
+    contextDepth: "Context depth",
+    callDepth: "Open-call depth",
+    firstCallIndex: "First call index",
+    lastCallIndex: "Last call index",
+    callCount: "Call count",
+    rollbackSpan: "Rollback span",
+    rollbackRegion: "Rollback region",
+    forcedRollback: "Forced rollback",
+  };
+  return Object.entries(message).map(([key, value]) => [
+    labels[key] || key,
+    value === null ? "root" : String(value),
+  ]);
+}
+
+function semanticMessageDetails(message) {
+  return `<details class="semantic-message-details"><summary>Expand info</summary><dl>${semanticMessageFields(message).map(([label, value]) => `<div><dt>${h(label)}</dt><dd class="mono">${h(value)}</dd></div>`).join("")}</dl></details>`;
+}
+
+function decodedSemantics(payload) {
+  const transactions = payload.semanticTransactions || [];
+  const sequence = payload.messages || [];
+  const groupedSequence = transactions.length
+    ? ["ChainOperation", ...transactions.map((_, index) => `Cross-chain tx ${index + 1}`), "CloseBlobStream"]
+    : sequence.filter((message) => message === "ChainOperation" || message === "CloseBlobStream");
+  const timeline = groupedSequence.length
+    ? `<div class="semantic-timeline" aria-label="Grouped blob message sequence">${groupedSequence.map((message, index) => `<span class="${message === "ChainOperation" || message === "CloseBlobStream" ? "carrier" : "transaction"}"><i>${index}</i>${h(message)}</span>`).join("")}</div>`
+    : "";
+  const intro = `<div class="semantic-heading"><div><p class="eyebrow">CROSS-CHAIN MESSAGE STREAM</p><h3>${number(transactions.length)} semantic transaction(s)</h3></div><p>These brackets follow <code>ChainOperation</code> in the same logical blob stream. They describe cross-chain authorization and effects; the operation RLP separately carries the blocks and entries needed to synchronize this rollup.</p></div>${timeline}`;
+
+  if (!transactions.length) {
+    return `<section class="semantic-section">${intro}<p class="semantic-empty">No <code>InitiateCrossChainTransaction</code> bracket is present. This is a chain-local synchronization batch, so there is no cross-chain call forest to display.</p></section>`;
+  }
+
+  const details = transactions.map((transaction, index) => {
+    const transactionMessages = groupedSemanticMessages(transaction);
+    const regions = transaction.rollbackRegions || [];
+    return `<details class="semantic-transaction" open>
+      <summary><span>Cross-chain tx ${index + 1}</span><b>${h(semanticChain(transaction.originChain))}</b><em>${number(transactionMessages.length)} messages</em><em>${number(transaction.callCount)} call(s)</em><em>${number(transaction.successReturnCount)} success / ${number(transaction.failedReturnCount)} fail</em>${transaction.forcedRollbackCallCount ? `<em class="rollback">${number(transaction.forcedRollbackCallCount)} rolled back</em>` : ""}</summary>
+      <div class="semantic-origin">
+        <div><small>Origin context</small><strong>${h(semanticChain(transaction.originChain))}</strong></div>
+        <div><small>Opaque origin <code>tx_data</code></small>${semanticBytes(transaction.txDataBytes, transaction.txDataPreview)}</div>
+        <div><small>Maximum nested call depth</small><strong>${number(transaction.maxCallDepth)}</strong></div>
+        <div><small>Forced rollback regions</small><strong>${number(transaction.rollbackRegionCount || 0)}</strong></div>
+      </div>
+      <div class="table-scroll compact-table"><table class="semantic-messages">
+        <thead><tr><th>#</th><th>Message type</th><th>Important parameters</th><th>Debug details</th></tr></thead>
+        <tbody>${transactionMessages.map((message, messageIndex) => `<tr>
+          <td class="mono">${number(messageIndex)}</td>
+          <td><span class="semantic-message-type">${h(message.type)}</span></td>
+          <td class="semantic-message-summary">${semanticMessageImportant(message)}</td>
+          <td>${semanticMessageDetails(message)}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+      ${regions.length ? `<div class="rollback-regions"><strong>Snapshot / Revert regions</strong>${regions.map((region) => `<span>region ${number(region.index)}: calls #${number(region.firstCallIndex)}–#${number(region.lastCallIndex)} (${number(region.callCount)} total)</span>`).join("")}</div>` : ""}
+      <p class="semantic-note"><code>ReturnFail</code> is the observed result of one call. A <code>Snapshot … Revert</code> region is different: it marks an otherwise resolved contiguous call span whose state effects are forcibly rolled back.</p>
+    </details>`;
+  }).join("");
+  return `<section class="semantic-section">${intro}<div class="semantic-transactions">${details}</div></section>`;
 }
 
 function renderDecoded(payload) {
@@ -333,7 +462,7 @@ function renderDecoded(payload) {
       <div><dt>Stream use</dt><dd>${number(payload.usedStreamBytes)} / ${number(payload.logicalCapacityBytes)} bytes</dd></div>
     </dl>
     ${decodedBlocks(operation.blocks)}
-    ${decodedSemantics(payload.semanticTransactions)}
+    ${decodedSemantics(payload)}
     ${decodedByteLayout(payload, operation)}
     <details><summary>Full structural decode</summary><pre>${h(JSON.stringify(payload, null, 2))}</pre></details>
   </div>`;
@@ -354,6 +483,56 @@ async function decodeTransaction(transactionHash) {
   } catch (error) {
     result.innerHTML = `<p class="decoder-error">${h(error.message)}</p>`;
   } finally {
+    submit.disabled = false;
+  }
+}
+
+function isExactSettlementQuery(rawQuery) {
+  let query = String(rawQuery || "").trim();
+  const scoped = query.match(/^(l1|l2)\s*:\s*(.+)$/i);
+  if (scoped) query = scoped[2].trim();
+  else if (query.includes(":")) return false;
+  query = query.replace(/^#/, "");
+  return /^(?:[0-9]+|0x[0-9a-f]+)$/i.test(query);
+}
+
+async function searchSettlements(rawQuery) {
+  const query = String(rawQuery || "").trim();
+  const status = byId("blob-search-status");
+  const submit = byId("blob-search-submit");
+  if (!query) {
+    state.settlementLookup = null;
+    status.textContent = "Type to filter the recent window, or submit an exact block / full hash for historical lookup.";
+    renderBlobSettlements();
+    return;
+  }
+  if (!isExactSettlementQuery(query)) {
+    status.textContent = "Text and hash prefixes filter the recent window only. Historical lookup needs a block number or a full 32-byte hash.";
+    return;
+  }
+
+  state.settlementSearchLoading = true;
+  submit.disabled = true;
+  status.textContent = "Resolving this selector as an L1 block, L2 block, transaction, or blob…";
+  try {
+    const url = apiUrl("api/settlement-search");
+    url.searchParams.set("q", query);
+    const response = await fetch(url, { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    if (byId("blob-search").value.trim() !== query) return;
+    state.settlementLookup = payload;
+    renderBlobSettlements();
+    const warnings = payload.lookupErrors?.length
+      ? ` ${payload.lookupErrors.length} optional resolver(s) were unavailable.`
+      : "";
+    status.textContent = payload.matches?.length
+      ? `Loaded ${payload.matches.length} canonical historical settlement(s).${warnings}`
+      : `No canonical settlement uses this exact selector.${warnings}`;
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    state.settlementSearchLoading = false;
     submit.disabled = false;
   }
 }
@@ -459,6 +638,19 @@ async function refresh() {
 byId("refresh").addEventListener("click", refresh);
 byId("blob-search").addEventListener("input", (event) => {
   state.blobQuery = event.target.value;
+  state.settlementLookup = null;
+  byId("blob-search-status").textContent = "Filtering the recent window. Submit an exact selector to search all indexed history.";
+  renderBlobSettlements();
+});
+byId("blob-search-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  searchSettlements(byId("blob-search").value);
+});
+byId("blob-search-clear").addEventListener("click", () => {
+  byId("blob-search").value = "";
+  state.blobQuery = "";
+  state.settlementLookup = null;
+  byId("blob-search-status").textContent = "Type to filter the recent window, or submit an exact block / full hash for historical lookup.";
   renderBlobSettlements();
 });
 byId("composer-rpc").addEventListener("click", async (event) => {

@@ -88,8 +88,13 @@
           <div class="panel-heading">
             <div><p class="eyebrow">DATA AVAILABILITY</p><h2>Recent blob settlements</h2></div>
             <div class="blob-heading-actions">
-              <label class="blob-search"><span>Find settlement</span><input id="blob-search" type="search" autocomplete="off" spellcheck="false" placeholder="Tx, blob, or L1/L2 block"></label>
+              <form id="blob-search-form" class="blob-search-form">
+                <label class="blob-search"><span>Find settlement</span><input id="blob-search" type="search" autocomplete="off" spellcheck="false" placeholder="L1:5433, L2:32592, or full tx/blob hash"></label>
+                <button id="blob-search-submit" class="small-action" type="submit">Search history</button>
+                <button id="blob-search-clear" class="small-action secondary-action" type="button">Clear</button>
+              </form>
               <p id="window-label" class="muted">Scanning recent L1 blocks</p>
+              <p id="blob-search-status" class="blob-search-status muted">Type to filter the recent window, or submit an exact block / full hash for historical lookup.</p>
             </div>
           </div>
           <div class="table-scroll">
@@ -125,7 +130,16 @@
                 </li>
                 <li>
                   <h3>Cross-chain semantics</h3>
-                  <p>Each semantic transaction names its origin chain and carries opaque chain-defined <code>tx_data</code>. Calls encode the destination chain, source and target addresses, value for mutable calls, zero gas in this deployment, and exact calldata. <code>ReturnSuccess</code>/<code>ReturnFail</code> carry exact result bytes. The context stack derives every call's source chain, and balanced snapshot regions explain forced rollback.</p>
+                  <p>These are separate envelope messages after <code>ChainOperation</code>, not fields inside <code>ChainOperation.operations</code>. Each semantic transaction names its origin chain and carries opaque chain-defined <code>tx_data</code>. Calls encode the destination chain, source and target addresses, value for mutable calls, zero gas in this deployment, and exact calldata. <code>ReturnSuccess</code>/<code>ReturnFail</code> carry exact result bytes. The context stack derives every call's source chain.</p>
+                  <div class="table-scroll"><table class="semantic-wire"><thead><tr><th>Byte / message</th><th>Wire fields</th><th>Meaning</th></tr></thead><tbody>
+                    <tr><td><code>0x03</code> Initiate</td><td><code>origin_chain:u64 LE · len:varint · tx_data</code></td><td>Starts one originating cross-chain transaction.</td></tr>
+                    <tr><td><code>0x04</code> Call</td><td><code>to_chain · from · to · value:u256 LE · gas · len · data</code></td><td>Opens a mutable nested call.</td></tr>
+                    <tr><td><code>0x05</code> StaticCall</td><td><code>to_chain · from · to · gas · len · data</code></td><td>Opens a read-only nested call; no value field.</td></tr>
+                    <tr><td><code>0x06/07</code> Return</td><td><code>len:varint · return_data</code></td><td>Closes the most recent call with success or failure.</td></tr>
+                    <tr><td><code>0x08/09</code> Snapshot/Revert</td><td>no payload</td><td>Brackets a non-empty contiguous call region whose state effects are forcibly rolled back.</td></tr>
+                    <tr><td><code>0x0a</code> Finish</td><td>no payload</td><td>Closes the semantic transaction after all calls and snapshots close.</td></tr>
+                  </tbody></table></div>
+                  <p>A failed return and a forced rollback are different facts: <code>ReturnFail</code> records one call's result, while <code>Snapshot … Revert</code> marks the whole enclosed call span as rolled back. The result view exposes both independently.</p>
                 </li>
                 <li>
                   <h3>Tagged operation payload</h3>
