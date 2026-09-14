@@ -75,7 +75,7 @@
   font-size: 9px;
   font-weight: 700;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 100px;
   letter-spacing: 0.06em;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -84,25 +84,25 @@
 
 .pillL1 {
   background: linear-gradient(135deg, rgba(129, 140, 248, 0.15), rgba(129, 140, 248, 0.08));
-  color: #818cf8;
+  color: var(--chain-l1);
   border: 1px solid rgba(129, 140, 248, 0.25);
 }
 
 .pillL1:hover {
   background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(129, 140, 248, 0.15));
-  border-color: rgba(129, 140, 248, 0.4);
+  border-color: var(--chain-l1);
   box-shadow: 0 0 10px rgba(129, 140, 248, 0.15);
 }
 
 .pillL2 {
   background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.08));
-  color: #34d399;
+  color: var(--chain-l2);
   border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
 .pillL2:hover {
   background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(52, 211, 153, 0.15));
-  border-color: rgba(52, 211, 153, 0.4);
+  border-color: var(--chain-l2);
   box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
 }
 
@@ -123,20 +123,20 @@
 
 /* L1 block number — indigo tint */
 .chainGroup[data-chain="l1"] .blockLink {
-  color: rgba(129, 140, 248, 0.9);
+  color: var(--chain-l1);
 }
 
 .chainGroup[data-chain="l1"] .blockLink:hover {
-  color: #818cf8;
+  color: var(--chain-l1);
 }
 
 /* L2 block number — emerald tint */
 .chainGroup[data-chain="l2"] .blockLink {
-  color: rgba(52, 211, 153, 0.9);
+  color: var(--chain-l2);
 }
 
 .chainGroup[data-chain="l2"] .blockLink:hover {
-  color: #34d399;
+  color: var(--chain-l2);
 }
 
 .blockNum {
@@ -151,18 +151,6 @@
 .meta {
   font-size: 10px;
   color: var(--text-dim);
-  opacity: 0.65;
-}
-
-/* L1 meta — subtle indigo */
-.chainGroup[data-chain="l1"] .meta {
-  color: rgba(129, 140, 248, 0.55);
-  opacity: 1;
-}
-
-/* L2 meta — subtle emerald */
-.chainGroup[data-chain="l2"] .meta {
-  color: rgba(52, 211, 153, 0.65);
   opacity: 1;
 }
 
@@ -171,18 +159,6 @@
 .age {
   font-size: 10px;
   color: var(--text-dim);
-  opacity: 0.45;
-}
-
-/* L1 age — subtle indigo */
-.chainGroup[data-chain="l1"] .age {
-  color: rgba(129, 140, 248, 0.35);
-  opacity: 1;
-}
-
-/* L2 age — subtle emerald */
-.chainGroup[data-chain="l2"] .age {
-  color: rgba(52, 211, 153, 0.4);
   opacity: 1;
 }
 
@@ -229,7 +205,7 @@
   padding: 1px 6px;
   background: rgba(251, 191, 36, 0.08);
   border: 1px solid rgba(251, 191, 36, 0.15);
-  border-radius: 4px;
+  border-radius: 100px;
 }
 
 .rewindBadge {
@@ -239,7 +215,7 @@
   padding: 1px 6px;
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.15);
-  border-radius: 4px;
+  border-radius: 100px;
 }
 
 /* Sync dot — mobile replacement for syncBadge */

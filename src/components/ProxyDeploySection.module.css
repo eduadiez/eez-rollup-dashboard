@@ -1,6 +1,7 @@
 /* ── Proxy Manager — table of proxies + collapsible deploy ── */
 
 .card {
+  composes: eez-card from global;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -48,7 +49,7 @@
   height: 20px;
   padding: 0 6px;
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid var(--green-border);
   border-radius: 10px;
   font-family: var(--mono);
   font-size: 10px;
@@ -57,14 +58,14 @@
 }
 
 .deployToggle {
+  border-radius: 100px;
   font-family: var(--sans);
   font-size: 10px;
   font-weight: 600;
   color: var(--accent-light);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--green-border);
   padding: 4px 12px;
-  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: all 0.15s ease;
   letter-spacing: 0.02em;
@@ -424,7 +425,7 @@
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--green-border);
   font-size: 11px;
   color: var(--text);
   font-weight: 500;

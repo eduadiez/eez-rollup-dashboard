@@ -1,4 +1,5 @@
 .card {
+  composes: eez-card from global;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -133,7 +134,7 @@
   margin-bottom: 18px;
   border-radius: var(--radius-sm);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--green-border);
   font-size: 11px;
   animation: slideDown 0.2s ease-out;
 }

@@ -30,6 +30,7 @@ import { useAggregator } from "./hooks/useAggregator";
 import { FaucetPanel } from "./components/FaucetPanel";
 import { VisualizerView } from "./components/VisualizerView";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
+import styles from "./App.module.css";
 
 
 type DashboardTab = "dashboard" | "counter-demo" | "bridge" | "flash-loan" | "aggregator";
@@ -65,41 +66,13 @@ function getHashParam(key: string): string | null {
   return params.get(key);
 }
 
-/* ---- Sub-tab bar inline styles (matches VisualizerView.module.css .modeTabs pattern) ---- */
-const subTabBarStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 4,
-  marginBottom: 20,
-  padding: 4,
-  background: "var(--bg)",
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius)",
-};
-
-const subTabStyle: React.CSSProperties = {
-  flex: 1,
-  fontFamily: "var(--sans)",
-  fontSize: 11,
-  fontWeight: 600,
-  color: "var(--text-dim)",
-  background: "none",
-  border: "none",
-  padding: "8px 16px",
-  borderRadius: "var(--radius-sm, 6px)",
-  cursor: "pointer",
-  transition: "all 0.15s ease",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-};
-
-const subTabActiveExtra: React.CSSProperties = {
-  color: "var(--text-bright)",
-  background: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  boxShadow: "0 1px 6px rgba(0,0,0,0.15)",
-};
+const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "counter-demo", label: "Counter Demo" },
+  { id: "bridge", label: "Bridge" },
+  { id: "flash-loan", label: "Flash Loan" },
+  { id: "aggregator", label: "Aggregator" },
+];
 
 export function App() {
   const configLoaded = useConfigLoader();
@@ -111,7 +84,7 @@ export function App() {
   const counter = useCounter(log, wallet.sendTx);
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
-  const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address);
+  const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
   const flashDeploy = useFlashLoanDeploy(log, wallet.sendTx, wallet.sendL1Tx, wallet.address);
   const flashLoan = useFlashLoan(log, wallet.sendL1ProxyTx, wallet.address ?? undefined, {
     executorL1: flashDeploy.state.executorL1 || undefined,
@@ -360,6 +333,7 @@ export function App() {
 
   return (
     <>
+      <a className="eez-skip-link" href="#main" onClick={(event) => { event.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
       <Header
         wallet={wallet}
         onConnect={wallet.connect}
@@ -400,58 +374,32 @@ export function App() {
           initialBlock={initialBlock}
         />
       ) : (
-        <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 24px 48px" }}>
-          {/* Sub-tab bar */}
-          <div style={subTabBarStyle}>
-            <button
-              style={{
-                ...subTabStyle,
-                ...(dashboardTab === "dashboard" ? subTabActiveExtra : {}),
-              }}
-              onClick={() => switchTab("dashboard")}
-            >
-              Dashboard
-            </button>
-            <button
-              style={{
-                ...subTabStyle,
-                ...(dashboardTab === "counter-demo" ? subTabActiveExtra : {}),
-              }}
-              onClick={() => switchTab("counter-demo")}
-            >
-              Counter Demo
-            </button>
-            <button
-              style={{
-                ...subTabStyle,
-                ...(dashboardTab === "bridge" ? subTabActiveExtra : {}),
-              }}
-              onClick={() => switchTab("bridge")}
-            >
-              Bridge
-            </button>
-            <button
-              style={{
-                ...subTabStyle,
-                ...(dashboardTab === "flash-loan" ? subTabActiveExtra : {}),
-              }}
-              onClick={() => switchTab("flash-loan")}
-            >
-              Flash Loan
-            </button>
-            <button
-              style={{
-                ...subTabStyle,
-                ...(dashboardTab === "aggregator" ? subTabActiveExtra : {}),
-              }}
-              onClick={() => switchTab("aggregator")}
-            >
-              Aggregator
-            </button>
-          </div>
+        <main id="main" tabIndex={-1} className={styles.page}>
+          <section className={`eez-intro ${styles.intro}`} aria-labelledby="page-heading">
+            <div>
+              <p className="eez-eyebrow">[ EEZ ROLLUP DASHBOARD ]</p>
+              <h1 id="page-heading" className="eez-page-heading"><strong>Build across chains.</strong> With EEZ.</h1>
+              <p className="eez-description">Explore synchronous execution. Deploy, connect, and interact across L1 and L2.</p>
+            </div>
+            <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
+              EEZ quickstarts <span className="eez-arrow" aria-hidden="true">↗</span>
+            </a>
+          </section>
 
-          {/* Tab content */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <nav className={styles.tabs} aria-label="Dashboard sections">
+            {DASHBOARD_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                className={`${styles.tab} ${dashboardTab === tab.id ? styles.tabActive : ""}`}
+                aria-current={dashboardTab === tab.id ? "page" : undefined}
+                onClick={() => switchTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className={styles.content}>
             {dashboardTab === "dashboard" && (
               <>
                 <FaucetPanel
@@ -584,6 +532,10 @@ export function App() {
           </div>
         </main>
       )}
+      <footer className={styles.footer}>
+        <span>[ EEZ NETWORK ]</span>
+        <a href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">Learn how EEZ works ↗</a>
+      </footer>
     </>
   );
 }

@@ -7,7 +7,7 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--sp-5, 20px) var(--sp-6, 24px) var(--sp-8, 48px);
+  padding: 40px 32px 48px;
   animation: fadeIn 0.25s ease-out;
 }
 
@@ -23,7 +23,7 @@
 
 .pageTitle {
   font-family: var(--sans);
-  font-size: 16px;
+  font-size: clamp(24px, 3vw, 36px);
   font-weight: 700;
   color: var(--text-bright);
   margin: 0;
@@ -40,24 +40,20 @@
 
 .modeTabs {
   display: flex;
-  gap: var(--sp-1, 4px);
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: var(--sp-5, 20px);
-  padding: var(--sp-1, 4px);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
 }
 
 .modeTab {
-  flex: 1;
-  font-family: var(--sans);
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
-  background: none;
-  border: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
   padding: var(--sp-2, 8px) var(--sp-4, 16px);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: 100px;
   cursor: pointer;
   transition: all var(--duration, 0.15s) var(--ease, ease);
   display: flex;
@@ -72,11 +68,12 @@
 }
 
 .modeTabActive {
-  color: var(--text-bright);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+  color: var(--eez-pill-ink);
+  background: var(--eez-pill-bg);
+  border-color: var(--eez-pill-bg);
 }
+
+.modeTabActive:hover { color: var(--eez-pill-ink); background: var(--eez-pill-bg); }
 
 .modeTabDot {
   width: 6px;

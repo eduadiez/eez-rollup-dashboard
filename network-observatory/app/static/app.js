@@ -2,6 +2,13 @@ const byId = (id) => document.getElementById(id);
 const state = {
   loading: false,
   timer: null,
+  socket: null,
+  reconnectTimer: null,
+  liveTimer: null,
+  reconnectDelay: 1000,
+  pollMilliseconds: 5000,
+  revision: 0,
+  stopped: false,
   snapshot: null,
   blobQuery: "",
   settlementLookup: null,
@@ -44,10 +51,62 @@ function percent(used, limit) {
 
 function formatEth(wei) {
   if (wei === null || wei === undefined) return "—";
+  if (typeof wei === "number" && !Number.isSafeInteger(wei)) return "—";
   const raw = BigInt(wei);
+  if (raw < 0n) return "—";
   const whole = raw / 1000000000000000000n;
-  const fraction = (raw % 1000000000000000000n).toString().padStart(18, "0").slice(0, 4).replace(/0+$/, "");
-  return `${whole.toLocaleString()}${fraction ? `.${fraction}` : ""} ETH`;
+  const fraction = (raw % 1000000000000000000n).toString().padStart(18, "0").slice(0, 8).replace(/0+$/, "");
+  const symbol = state.snapshot?.configuration?.nativeCurrency || "ETH";
+  if (raw > 0n && whole === 0n && !fraction) return `<0.00000001 ${symbol}`;
+  return `${whole.toLocaleString()}${fraction ? `.${fraction}` : ""} ${symbol}`;
+}
+
+function duration(milliseconds) {
+  if (milliseconds === null || milliseconds === undefined) return "—";
+  const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  if (seconds < 60) return `${seconds} s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min${seconds % 60 ? ` ${seconds % 60} s` : ""}`;
+  return `${Math.floor(seconds / 3600)} h${seconds % 3600 ? ` ${Math.floor(seconds % 3600 / 60)} min` : ""}`;
+}
+
+function renderSettlementPolicy(snapshot) {
+  const policy = snapshot.configuration?.settlementPolicy;
+  const progress = snapshot.settlementProgress;
+  const history = snapshot.settlementHistory;
+  if (!policy?.enabled) {
+    setStatus(byId("policy-status"), "loading", policy ? "Legacy mode" : "Not supplied");
+    setHtml("policy-rules", `<p class="muted">${policy ? "The configurable settlement policy is disabled." : "The monitor has not been supplied with the node’s settlement policy."}</p>`);
+    setHtml("policy-progress", `<p class="muted">Canonical posts and commitment checks remain available below.</p>`);
+  } else {
+    const cadence = policy.nominalGeneralIntervalMs === null ? `${number(policy.maxUnsettledL2Blocks)} blocks` : duration(policy.nominalGeneralIntervalMs);
+    const pure = policy.pureL2Mode === "always" ? "Always" : duration(policy.pureL2IntervalMs);
+    setHtml("policy-rules", `<div><p>General consolidation</p><strong>${h(cadence)}</strong><small>${number(policy.maxUnsettledL2Blocks)} L2 blocks · including empty history</small></div>
+      <div><p>Pure L2 transactions</p><strong>${h(pure)}</strong><small>${policy.pureL2Mode === "always" ? "Next eligible L1 opportunity, including reverted transactions" : "If transactions are pending; the earlier general rule still applies"}</small></div>
+      <div><p>Cross-chain transactions</p><strong>Always</strong><small>Valid cross-chain work triggers posting; empty Sync blocks do not</small></div>`);
+    const usable = progress?.available && !snapshot.stale;
+    setStatus(byId("policy-status"), usable && !progress.generalThresholdReached ? "" : "loading",
+      !usable ? "Awaiting data" : progress.generalThresholdReached ? "Threshold reached" : "Accumulating");
+    if (usable) {
+      const limit = policy.maxUnsettledL2Blocks;
+      const explanation = progress.generalThresholdReached
+        ? "The general threshold is reached. Waiting for canonical L1 inclusion."
+        : `${number(progress.remainingL2Blocks)} L2 blocks to the general threshold${progress.estimatedGeneralRemainingMs !== null ? ` · approximately ${h(duration(progress.estimatedGeneralRemainingMs))}` : ""}.`;
+      setHtml("policy-progress", `<div class="progress-heading"><span>Unsettled history</span><strong>${number(progress.unsettledL2Blocks)} <span>/ ${number(limit)} L2 blocks</span></strong></div>
+        <progress value="${Math.min(progress.unsettledL2Blocks, limit)}" max="${limit}" aria-label="L2 blocks toward the general settlement threshold"></progress>
+        <p>${explanation} Transaction activity can settle earlier.</p>`);
+    } else {
+      setHtml("policy-progress", `<p class="muted">${snapshot.stale ? "Snapshot is stale. Waiting for fresh chain data." : "Waiting for the canonical L1 commitment and current L2 head."}</p>`);
+    }
+    const fullness = policy.blobFullnessBps === null ? "off" : `${policy.blobFullnessBps / 100}% across all permitted blobs`;
+    byId("policy-progress").innerHTML += `<p class="policy-source">Configured rules · fullness trigger ${h(fullness)}. Timing is an estimate from the configured L2 cadence; inclusion depends on L1.</p>`;
+  }
+  const last = history?.available ? snapshot.blobSettlements?.find((item) => item.isProtocolSettlement && item.receiptStatus === 1) : null;
+  const explorers = snapshot.configuration?.explorers || {};
+  setHtml("latest-settlement", last ? `<div><small>Last canonical post</small><strong>${age(last.timestamp)} ago</strong><span>${transactionLink(explorers.l1, last.transactionHash)}</span></div>
+    <div><small>L1 inclusion</small><strong>${blockLink(explorers.l1, last.l1BlockNumber, `#${number(last.l1BlockNumber)}`)}</strong><span>${h(new Date(last.timestamp * 1000).toLocaleString())}</span></div>
+    <div><small>Posted L2 range</small>${rangeText(last.l2Ranges)}</div>
+    <div><small>Data availability</small><strong>${number(last.blobCount)} ${last.blobCount === 1 ? "blob" : "blobs"}</strong><span>${last.beacon?.available ? "Full bytes available on Beacon" : "Beacon availability not confirmed"}</span></div>`
+    : `<p class="muted">${history?.available ? "No canonical posts found in the configured history window." : "Settlement history is unavailable. See collector warnings or configure the registry."}</p>`);
 }
 
 function setText(id, value) { byId(id).textContent = value ?? "—"; }
@@ -228,16 +287,18 @@ function blobRows(settlements, query = "", historical = false) {
         ? `No canonical settlement was found for “${h(String(query).trim())}”`
         : `No blob settlements match “${h(String(query).trim())}” in this L1 window`
       : "No blob transactions in this block window";
-    return `<tr><td colspan="7" class="empty">${message}</td></tr>`;
+    return `<tr><td colspan="8" class="empty">${message}</td></tr>`;
   }
   const explorers = state.snapshot?.configuration?.explorers || {};
   return settlements.map((item) => {
     const beacon = item.beacon || {};
-    const resultClass = item.status === "confirmed" ? "good" : "bad";
+    const resultClass = item.status === "confirmed" ? "good" : item.status === "failed" ? "bad" : "warn";
     const protocol = item.isProtocolSettlement ? `<span class="badge good">EEZ batch</span>` : `<span class="badge warn">other blob</span>`;
-    const beaconText = beacon.available
-      ? `<span class="primary">slot ${number(beacon.slot)}</span><span class="secondary">${number(beacon.sidecarCount)} sidecars</span>`
-      : `<span class="badge bad" title="${h(beacon.error || "Unavailable")}">unavailable</span>`;
+    const beaconText = beacon.configured === false
+      ? `<span class="muted">not configured</span>`
+      : beacon.available
+        ? `<span class="primary">slot ${number(beacon.slot)}</span><span class="secondary">${number(beacon.blobCount ?? beacon.sidecarCount)} ${beacon.source === "full-blobs" ? "full blobs" : "sidecars"}</span>`
+        : `<span class="badge bad" title="${h(beacon.error || "Unavailable")}">unavailable</span>`;
     const blobLinks = item.blobVersionedHashes?.length
       ? item.blobVersionedHashes.map((hash, index) =>
           explorerLink(explorers.blobscan, `blob/${hash}`, `${index + 1}: ${compactHash(hash)}`, "secondary mono hash explorer-value", hash)
@@ -248,6 +309,7 @@ function blobRows(settlements, query = "", historical = false) {
       <td>${transactionLink(explorers.l1, item.transactionHash, "primary mono hash explorer-value")}<span class="secondary">${protocol}</span></td>
       <td><span class="primary">${number(item.blobCount)}</span>${blobLinks}</td>
       <td>${beaconText}</td><td>${rangeText(item.l2Ranges)}</td>
+      <td class="post-cost"><span class="primary" title="${h(item.totalCostWei === null || item.totalCostWei === undefined ? "Receipt cost unavailable" : `${item.totalCostWei} wei`)}">${h(formatEth(item.totalCostWei))}</span><span class="secondary">Execution ${h(formatEth(item.executionCostWei))}</span><span class="secondary">Blobs ${h(formatEth(item.blobCostWei))}</span></td>
       <td><span class="badge ${resultClass}">${h(item.status || "unknown")}</span>${item.errors?.length ? `<span class="secondary" title="${h(item.errors.join("\n"))}">${item.errors.length} warning(s)</span>` : ""}</td>
       <td>${item.isProtocolSettlement ? `<button class="small-action decode-trigger" type="button" data-transaction="${h(item.transactionHash)}">Decode</button>` : "—"}</td>
     </tr>`;
@@ -256,7 +318,7 @@ function blobRows(settlements, query = "", historical = false) {
 
 function renderBlobSettlements() {
   if (state.settlementSearchLoading && state.settlementLookup === null) {
-    byId("blob-rows").innerHTML = `<tr><td colspan="7" class="empty">Searching indexed settlement history…</td></tr>`;
+    byId("blob-rows").innerHTML = `<tr><td colspan="8" class="empty">Searching indexed settlement history…</td></tr>`;
     setText("window-label", "Searching full history");
     return;
   }
@@ -267,11 +329,14 @@ function renderBlobSettlements() {
   const matching = settlements.filter((item) => settlementMatches(item, state.blobQuery));
   byId("blob-rows").innerHTML = blobRows(matching, state.blobQuery, historical);
   const window = state.snapshot?.configuration?.recentBlockWindow || "—";
+  const history = state.snapshot?.settlementHistory;
   if (historical) {
     setText("window-label", `${matching.length} exact historical match(es)`);
   } else {
     const matchLabel = state.blobQuery.trim() ? `${matching.length} of ${settlements.length} matches · ` : "";
-    setText("window-label", `${matchLabel}Last ${window} L1 blocks`);
+    setText("window-label", history?.available
+      ? `${matchLabel}${settlements.length} recent posts · L1 #${number(history.fromL1Block)}–#${number(history.toL1Block)}`
+      : `${matchLabel}Last ${window} L1 blocks${history?.configured ? " · history unavailable" : ""}`);
   }
 }
 
@@ -612,6 +677,7 @@ function renderCorrelationResult(payload) {
 
 function render(snapshot) {
   state.snapshot = snapshot;
+  renderSettlementPolicy(snapshot);
   const l1 = snapshot.chains?.l1;
   const l2 = snapshot.chains?.l2;
   renderChain("L1", l1);
@@ -622,10 +688,14 @@ function render(snapshot) {
     l2: l2?.chainId,
   });
   setText("l2-lag", number(snapshot.metrics?.l2UnsafeLag));
-  setText("protocol-batches", number(snapshot.metrics?.protocolSettlementsInWindow));
-  setText("blob-transactions", number(snapshot.metrics?.blobTransactionsInWindow));
-  setText("blob-count", number(snapshot.metrics?.blobsInWindow));
-  setText("sidecar-count", number(snapshot.metrics?.availableBlobSidecarsInWindow));
+  const historyAvailable = snapshot.settlementHistory?.available;
+  const posts = snapshot.blobSettlements || [];
+  const latestPost = historyAvailable ? posts.find((item) => item.isProtocolSettlement && item.receiptStatus === 1) : null;
+  setText("protocol-batches", number(historyAvailable ? posts.filter((item) => item.isProtocolSettlement).length : snapshot.metrics?.protocolSettlementsInWindow));
+  setText("history-scope", historyAvailable ? `up to ${snapshot.settlementHistory.limit} latest posts` : "recent L1 block window");
+  setText("settlement-interval", duration(snapshot.settlementHistory?.intervalsSeconds?.[0] === undefined ? null : snapshot.settlementHistory.intervalsSeconds[0] * 1000));
+  setText("blob-count", number(historyAvailable ? posts.reduce((sum, item) => sum + (item.blobCount || 0), 0) : snapshot.metrics?.blobsInWindow));
+  setText("latest-post-cost", formatEth(latestPost?.totalCostWei));
   setText("finality-lag", number(snapshot.metrics?.l2FinalityLag));
   const l2Explorer = snapshot.configuration?.explorers?.l2;
   setHtml("registry-root", snapshot.rollup?.commitment ? blockHashLink(l2Explorer, snapshot.rollup.commitment) : "—");
@@ -650,7 +720,9 @@ function render(snapshot) {
   const errors = snapshot.errors || [];
   byId("error-panel").classList.toggle("hidden", errors.length === 0);
   byId("errors").innerHTML = errors.map((error) => `<li><b>${h(error.component)}:</b> ${h(error.message)}</li>`).join("");
-  setStatus(byId("network-status"), snapshot.healthy ? "" : "bad", snapshot.healthy ? "Live" : "Degraded");
+  const brokenCommitment = ["missing", "non-canonical"].includes(snapshot.rollup?.status);
+  setStatus(byId("network-status"), snapshot.stale || errors.length ? "loading" : snapshot.healthy && !brokenCommitment ? "" : "bad",
+    snapshot.stale ? "Stale" : !snapshot.healthy || brokenCommitment ? "Degraded" : errors.length ? "Partial data" : "Healthy");
   setText("last-update", `Updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}`);
 }
 
@@ -658,17 +730,116 @@ async function refresh() {
   if (state.loading) return;
   state.loading = true;
   byId("refresh").disabled = true;
+  const revision = state.revision;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(apiUrl("api/snapshot"), { cache: "no-store" });
+    const response = await fetch(apiUrl("api/snapshot"), { cache: "no-store", signal: controller.signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    render(await response.json());
+    const snapshot = await response.json();
+    // A delayed HTTP response must not replace a newer pushed snapshot.
+    if (state.revision === revision && !state.stopped) applySnapshot(snapshot);
   } catch (error) {
-    setStatus(byId("network-status"), "bad", "Offline");
-    setText("last-update", error.message);
+    if (state.revision === revision && !state.stopped) {
+      setStatus(byId("network-status"), "bad", "Offline");
+      setText("last-update", error.message);
+    }
   } finally {
+    clearTimeout(timeout);
     state.loading = false;
     byId("refresh").disabled = false;
   }
+}
+
+function applySnapshot(snapshot) {
+  state.revision += 1;
+  const seconds = snapshot.configuration?.refreshSeconds;
+  if (Number.isFinite(seconds) && seconds >= 2 && seconds <= 60) {
+    const interval = seconds * 1000;
+    if (interval !== state.pollMilliseconds && state.timer !== null) {
+      clearInterval(state.timer);
+      state.timer = null;
+      state.pollMilliseconds = interval;
+      startPolling();
+    } else state.pollMilliseconds = interval;
+  }
+  // Full canonical snapshots support reorgs and several posts in one L1 block.
+  render(snapshot);
+}
+
+function startPolling() {
+  if (state.stopped || state.timer !== null) return;
+  setStatus(byId("live-status"), "loading", "Polling · reconnecting");
+  state.timer = setInterval(refresh, state.pollMilliseconds);
+}
+
+function armLiveTimeout(socket) {
+  clearTimeout(state.liveTimer);
+  state.liveTimer = setTimeout(() => {
+    if (state.socket !== socket) return;
+    setStatus(byId("network-status"), "loading", "Updates delayed");
+    socket.close();
+  }, Math.max(15000, state.pollMilliseconds * 3));
+}
+
+function reconnectLive() {
+  if (state.stopped) return;
+  startPolling();
+  refresh();
+  state.reconnectTimer = setTimeout(connectLive, state.reconnectDelay);
+  state.reconnectDelay = Math.min(15000, state.reconnectDelay * 2);
+}
+
+function connectLive() {
+  if (state.stopped || state.socket) return;
+  if (typeof WebSocket === "undefined") {
+    startPolling();
+    refresh();
+    return;
+  }
+  clearTimeout(state.reconnectTimer);
+  const url = apiUrl("api/live");
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  let socket;
+  try {
+    socket = new WebSocket(url);
+  } catch (_) {
+    reconnectLive();
+    return;
+  }
+  state.socket = socket;
+  setStatus(byId("live-status"), "loading", "Connecting live feed");
+  armLiveTimeout(socket);
+  socket.onmessage = (event) => {
+    if (state.socket !== socket || state.stopped) return;
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === "unavailable") {
+        startPolling();
+        refresh();
+        return;
+      }
+      const snapshot = message.snapshot;
+      if (message.type !== "snapshot" || !snapshot?.generatedAt || !snapshot.chains) {
+        throw new Error("Invalid live snapshot");
+      }
+      if (state.timer !== null) clearInterval(state.timer);
+      state.timer = null;
+      state.reconnectDelay = 1000;
+      applySnapshot(snapshot);
+      setStatus(byId("live-status"), snapshot.stale ? "loading" : "", snapshot.stale ? "Live · stale data" : "Live updates");
+      armLiveTimeout(socket);
+    } catch (_) {
+      socket.close(1002, "Invalid snapshot");
+    }
+  };
+  socket.onerror = () => socket.close();
+  socket.onclose = () => {
+    if (state.socket !== socket) return;
+    state.socket = null;
+    clearTimeout(state.liveTimer);
+    reconnectLive();
+  };
 }
 
 byId("refresh").addEventListener("click", refresh);
@@ -740,5 +911,17 @@ byId("correlation-form").addEventListener("submit", async (event) => {
   }
 });
 
-refresh();
-state.timer = setInterval(refresh, 5000);
+window.addEventListener?.("pagehide", () => {
+  state.stopped = true;
+  clearTimeout(state.liveTimer);
+  clearTimeout(state.reconnectTimer);
+  if (state.timer !== null) clearInterval(state.timer);
+  state.timer = null;
+  state.socket?.close();
+  state.socket = null;
+});
+window.addEventListener?.("pageshow", () => {
+  state.stopped = false;
+  connectLive();
+});
+connectLive();

@@ -5,6 +5,8 @@ import { L1_CHAIN, L2_CHAIN, config } from "../config";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
 import nhStyles from "./NodeHealth.module.css";
+import eezLogo from "../../network-observatory/app/static/brand/eez-logo.svg";
+import eezLogoLight from "../../network-observatory/app/static/brand/eez-logo-light.svg";
 
 interface ChainData {
   blockNumber: number | null;
@@ -158,23 +160,24 @@ export function Header({
       <header className={styles.header}>
         {/* ── Left: logo + desktop nav ── */}
         <div className={styles.left}>
-          <div className={styles.logo}>
+          <a className={styles.logo} href="#" aria-label="EEZ rollup dashboard" onClick={(event) => { event.preventDefault(); onNavigate?.("dashboard"); }}>
             <img
-              src={theme === "light" ? "/logo-icon-dark.png" : "/logo-icon.png"}
-              alt=""
+              src={theme === "light" ? eezLogoLight : eezLogo}
+              alt="EEZ"
               className={styles.logoIcon}
             />
-            <span>Based Rollup</span>
-          </div>
+            <span className={styles.productName}>Rollup</span>
+          </a>
 
           <div className={styles.sep} />
 
           {onNavigate && (
-            <nav className={styles.nav}>
+            <nav className={styles.nav} aria-label="Main navigation">
               {NAV_ITEMS.map((item) => (
                 <button
                   key={item.id}
                   className={`${styles.navLink} ${currentView === item.id ? styles.navActive : ""}`}
+                  aria-current={currentView === item.id ? "page" : undefined}
                   onClick={() => onNavigate(item.id)}
                 >
                   {item.label}

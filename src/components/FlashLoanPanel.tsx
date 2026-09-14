@@ -5,6 +5,7 @@ import { DeployState } from "../hooks/useFlashLoanDeploy";
 import { TxLink } from "./TxLink";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./FlashLoanPanel.module.css";
+import eezIcon from "../../network-observatory/app/static/brand/eez-icon.svg";
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 
@@ -560,7 +561,7 @@ function NftCardL2({ nftAddress, executorL2 }: { nftAddress: string; executorL2:
         </div>
         <div className={styles.nftTitle}>FlashLoaners</div>
         <div className={styles.nftIconWrap} aria-hidden>
-          <img src="/logo.png" alt="" className={styles.nftLogoImg} />
+          <img src={eezIcon} alt="" className={styles.nftLogoImg} />
         </div>
         <div className={styles.nftSubtitle}>L1 → L2 Flash Loan</div>
         <div className={styles.nftDetail}>10,000 tokens bridged L1 to L2 and back atomically</div>
@@ -607,7 +608,7 @@ function NftCardL1({ nftAddress, executorL2 }: { nftAddress: string; executorL2:
         </div>
         <div className={styles.nftTitle}>ReverseFlashLoaners</div>
         <div className={styles.nftIconWrap} aria-hidden>
-          <img src="/logo.png" alt="" className={`${styles.nftLogoImg} ${styles.nftLogoImgReverse}`} />
+          <img src={eezIcon} alt="" className={`${styles.nftLogoImg} ${styles.nftLogoImgReverse}`} />
         </div>
         <div className={styles.nftSubtitle}>L2 → L1 Flash Loan</div>
         <div className={styles.nftDetail}>Cross-chain execution: L2 trigger, L1 delivery</div>

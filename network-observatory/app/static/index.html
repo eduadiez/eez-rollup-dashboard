@@ -4,22 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>EEZ Network Observatory</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="Follow the EEZ network: L1 and L2 activity, blob settlements, and cross-chain commitments in one view.">
+    <title>EEZ Monitor Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="brand/eez-icon.svg">
+    <link rel="stylesheet" href="styles.css?v=settlement-policy-1">
   </head>
   <body>
+    <a class="eez-skip-link" href="#main">Skip to content</a>
     <div class="shell">
       <header class="topbar">
-        <div class="brand">
-          <div class="mark" aria-hidden="true"><span></span><span></span><span></span></div>
-          <div>
-            <p class="eyebrow">EEZ OPERATIONS</p>
-            <h1>Network Observatory</h1>
-          </div>
-        </div>
+        <a class="brand" href="./" aria-label="EEZ Monitor home">
+          <img class="brand-logo" src="brand/eez-logo.svg" alt="EEZ" width="85" height="40">
+          <span class="brand-product">Monitor</span>
+        </a>
         <div class="topbar-actions">
           <nav id="resource-links" class="resource-links" aria-label="Network explorers"></nav>
           <div class="live-controls">
+            <span id="live-status" class="status-pill loading" role="status"><i></i> Connecting live feed</span>
             <span id="network-status" class="status-pill loading"><i></i> Connecting</span>
             <span id="last-update" class="muted">Waiting for first snapshot</span>
             <button id="refresh" type="button" aria-label="Refresh dashboard">Refresh</button>
@@ -27,11 +29,29 @@
         </div>
       </header>
 
+      <section class="eez-intro monitor-intro" aria-labelledby="page-heading">
+        <div>
+          <p class="eez-eyebrow">[ EEZ NETWORK MONITOR ]</p>
+          <h1 id="page-heading" class="eez-page-heading"><strong>Every chain.</strong> One view.</h1>
+          <p class="eez-description">Follow L1 and L2 activity, blob settlements, and cross-chain commitments.</p>
+        </div>
+        <a class="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">Explore EEZ <span class="eez-arrow" aria-hidden="true">↗</span></a>
+      </section>
+
       <aside id="composer-rpc" class="composer-rpc" aria-label="Composer RPC endpoints">
         <div><p class="eyebrow">COMPOSER RPC</p><span class="muted">Loading transaction fronts…</span></div>
       </aside>
 
-      <main>
+      <main id="main" tabindex="-1">
+        <section class="panel settlement-policy" aria-labelledby="settlement-heading">
+          <div class="panel-heading">
+            <div><p class="eyebrow">SETTLEMENT POLICY</p><h2 id="settlement-heading">Settle when it matters.</h2></div>
+            <span id="policy-status" class="status-pill loading"><i></i>Loading</span>
+          </div>
+          <div id="policy-rules" class="policy-rules"><p class="muted">Loading configured rules…</p></div>
+          <div id="policy-progress" class="policy-progress"><p class="muted">Waiting for canonical settlement data…</p></div>
+          <div id="latest-settlement" class="latest-settlement"></div>
+        </section>
         <section class="hero-grid" aria-label="Network summary">
           <article class="chain-card l1-card">
             <div class="card-heading">
@@ -57,7 +77,7 @@
             <div class="head-row">
               <div><small>SAFE</small><b id="l2-safe">—</b></div>
               <div><small>FINALIZED</small><b id="l2-finalized">—</b></div>
-              <div><small>UNSAFE LAG</small><b id="l2-lag">—</b></div>
+              <div><small>UNSETTLED L2</small><b id="l2-lag">—</b></div>
             </div>
           </article>
 
@@ -76,11 +96,11 @@
           </article>
         </section>
 
-        <section class="metric-strip" aria-label="Blob metrics">
-          <div><p>Protocol batches</p><strong id="protocol-batches">—</strong><small>recent L1 window</small></div>
-          <div><p>Blob transactions</p><strong id="blob-transactions">—</strong><small>type-3 envelopes</small></div>
-          <div><p>Blob commitments</p><strong id="blob-count">—</strong><small>versioned hashes</small></div>
-          <div><p>Beacon sidecars</p><strong id="sidecar-count">—</strong><small>available now</small></div>
+        <section class="metric-strip" aria-label="Settlement metrics">
+          <div><p>Protocol posts</p><strong id="protocol-batches">—</strong><small id="history-scope">recent settlement history</small></div>
+          <div><p>Last interval</p><strong id="settlement-interval" class="metric-duration">—</strong><small>between L1 posts</small></div>
+          <div><p>Blobs posted</p><strong id="blob-count">—</strong><small>in the displayed history</small></div>
+          <div class="cost-metric"><p>Last post cost</p><strong id="latest-post-cost">—</strong><small>execution + blob fee</small></div>
           <div><p>Finality lag</p><strong id="finality-lag">—</strong><small>L2 blocks</small></div>
         </section>
 
@@ -99,10 +119,11 @@
           </div>
           <div class="table-scroll">
             <table>
-              <thead><tr><th>L1 block</th><th>Posting transaction</th><th>Blobs</th><th>Beacon</th><th>L2 range</th><th>Result</th><th>Inspect</th></tr></thead>
-              <tbody id="blob-rows"><tr><td colspan="7" class="empty">Loading blob activity…</td></tr></tbody>
+              <thead><tr><th>L1 block</th><th>Posting transaction</th><th>Blobs</th><th>Beacon</th><th>L2 range</th><th>Post tx cost</th><th>Result</th><th>Inspect</th></tr></thead>
+              <tbody id="blob-rows"><tr><td colspan="8" class="empty">Loading settlement history…</td></tr></tbody>
             </table>
           </div>
+          <p class="muted settlement-cost-note">Receipt costs include this posting transaction’s execution and blobs. Companion transactions and builder payments are separate.</p>
         </section>
 
         <section class="panel decoder-panel">
@@ -195,6 +216,6 @@
 
       <footer><span>Read-only telemetry — no signing keys</span><span id="duration">—</span></footer>
     </div>
-    <script src="app.js" defer></script>
+    <script src="app.js?v=live-updates-1" defer></script>
   </body>
 </html>

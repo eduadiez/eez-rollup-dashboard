@@ -15,6 +15,7 @@ import os
 import re
 import threading
 import time
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -27,6 +28,7 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
 from blob_decoder import BlobDecodeError, decode_native_blobs
+from live import SnapshotFeed, serve_websocket
 
 
 LOG = logging.getLogger("eez-dashboard")
@@ -35,10 +37,16 @@ ROLLUPS_SELECTOR = "ef678d27"  # rollups(uint64)
 SELECTOR_RE = re.compile(r"^(?:0x[0-9a-fA-F]{1,64}|[0-9]{1,20})$")
 HASH_RE = re.compile(r"^0x[0-9a-fA-F]{64}$")
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
+BATCH_POSTED_TOPIC = "0xd6f8d71ce42a799b91f399271f4b0e91f85eb87fac7bb2cedd4b3a52fad36182"
+BLOB_BYTES = 131072
 
 
 class RemoteCallError(RuntimeError):
     """An upstream RPC or HTTP request failed."""
+
+    def __init__(self, message: str, *, http_status: int | None = None):
+        super().__init__(message)
+        self.http_status = http_status
 
 
 def env_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -54,16 +62,83 @@ def env_int(name: str, default: int, minimum: int, maximum: int) -> int:
     return value
 
 
-def env_http_url(name: str, default: str | None = None) -> str | None:
-    raw = os.getenv(name, default)
+def env_http_url(
+    name: str, *, required: bool = False, allow_query: bool = False
+) -> str | None:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        if required:
+            raise ValueError(f"{name} is required; set an absolute HTTP(S) URL")
+        return None
+    try:
+        parsed = urlparse(raw)
+        valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+        # Accessing port also validates malformed and out-of-range ports.
+        valid = valid and (parsed.port is None or parsed.port > 0)
+    except ValueError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{name} must be an absolute HTTP(S) URL")
+    if parsed.username is not None or parsed.password is not None or parsed.fragment:
+        raise ValueError(f"{name} must not contain user information or a fragment")
+    if parsed.query and not allow_query:
+        raise ValueError(f"{name} must not contain a query")
+    return raw
+
+
+def env_ws_url(name: str) -> str | None:
+    raw = os.getenv(name, "").strip()
     if not raw:
         return None
-    parsed = urlparse(raw)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise ValueError(f"{name} must be an absolute HTTP(S) URL")
-    if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise ValueError(f"{name} must not contain credentials, a query, or a fragment")
-    return raw.rstrip("/")
+    try:
+        parsed = urlparse(raw)
+        valid = (parsed.scheme in {"ws", "wss"} and bool(parsed.hostname)
+                 and (parsed.port is None or parsed.port > 0)
+                 and parsed.username is None and parsed.password is None
+                 and not parsed.fragment)
+    except ValueError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{name} must be an absolute WS(S) URL without user information or a fragment")
+    return raw
+
+
+def settlement_policy_from_env() -> dict[str, Any] | None:
+    """Public operator configuration, not a runtime policy decision source."""
+    names = {
+        "mode": "EEZ_SETTLEMENT_PURE_L2_MODE",
+        "interval": "EEZ_SETTLEMENT_PURE_L2_INTERVAL_MS",
+        "general": "EEZ_SETTLEMENT_MAX_UNSETTLED_L2_BLOCKS",
+        "fullness": "EEZ_SETTLEMENT_BLOB_FULLNESS_BPS",
+    }
+    raw = os.getenv("EEZ_SETTLEMENT_POLICY_ENABLED", "").strip()
+    if raw not in {"", "0", "false", "no", "off", "1", "true", "yes", "on"}:
+        raise ValueError("EEZ_SETTLEMENT_POLICY_ENABLED must be a boolean")
+    enabled = raw in {"1", "true", "yes", "on"}
+    supplied = {key: os.getenv(name, "").strip() for key, name in names.items()}
+    if not enabled:
+        if any(supplied.values()):
+            raise ValueError("settlement policy settings require EEZ_SETTLEMENT_POLICY_ENABLED=true")
+        return {"enabled": False} if raw else None
+    mode = supplied["mode"]
+    if mode not in {"always", "interval"}:
+        raise ValueError("EEZ_SETTLEMENT_PURE_L2_MODE must be always or interval")
+    if not supplied["general"]:
+        raise ValueError("EEZ_SETTLEMENT_MAX_UNSETTLED_L2_BLOCKS is required")
+    general = env_int(names["general"], 0, 1, 2**53 - 1)
+    interval = env_int(names["interval"], 0, 1, 2**53 - 1) if supplied["interval"] else None
+    if mode == "interval" and interval is None:
+        raise ValueError("EEZ_SETTLEMENT_PURE_L2_INTERVAL_MS is required for interval mode")
+    fullness = supplied["fullness"]
+    fullness_bps = None if fullness in {"", "off"} else env_int(names["fullness"], 0, 1, 10000)
+    block_ms = env_int("EEZ_L2_BLOCK_TIME_MS", 0, 1, 2**53 - 1) if os.getenv("EEZ_L2_BLOCK_TIME_MS") else None
+    return {
+        "enabled": True, "source": "operator-configuration", "pureL2Mode": mode,
+        "pureL2IntervalMs": interval if mode == "interval" else None,
+        "maxUnsettledL2Blocks": general, "blobFullnessBps": fullness_bps,
+        "l2BlockTimeMs": block_ms,
+        "nominalGeneralIntervalMs": general * block_ms if block_ms is not None else None,
+    }
 
 
 @dataclass(frozen=True)
@@ -84,25 +159,38 @@ class Settings:
     blobscan_api_url: str | None
     l1_composer_rpc_url: str | None
     l2_composer_rpc_url: str | None
+    settlement_policy: dict[str, Any] | None = None
+    settlement_lookback_blocks: int = 512
+    recent_settlements: int = 12
+    l1_native_currency: str = "ETH"
+    l1_ws_url: str | None = None
+    l2_ws_url: str | None = None
+    live_update_seconds: int = 1
 
     @classmethod
     def from_env(cls) -> "Settings":
         registry = os.getenv("EEZ_REGISTRY_ADDRESS")
         if registry and not ADDRESS_RE.fullmatch(registry):
             raise ValueError("EEZ_REGISTRY_ADDRESS must be a 20-byte hex address")
+        currency = os.getenv("EEZ_L1_NATIVE_CURRENCY", "ETH").strip()
+        if not re.fullmatch(r"[A-Z][A-Z0-9]{0,9}", currency):
+            raise ValueError("EEZ_L1_NATIVE_CURRENCY must be a short uppercase currency symbol")
+        refresh_seconds = env_int("EEZ_REFRESH_SECONDS", 4, 2, 60)
+        live_update_seconds = env_int("EEZ_LIVE_UPDATE_SECONDS", 1, 1, 60)
+        if live_update_seconds > refresh_seconds:
+            raise ValueError("EEZ_LIVE_UPDATE_SECONDS must not exceed EEZ_REFRESH_SECONDS")
         return cls(
-            l1_rpc_url=os.getenv(
-                "EEZ_L1_RPC_URL", "http://el-1-reth-lighthouse:8545"
+            l1_rpc_url=env_http_url(
+                "EEZ_L1_RPC_URL", required=True, allow_query=True
             ),
-            l2_rpc_url=os.getenv("EEZ_L2_RPC_URL", "http://eez-node:18688"),
-            beacon_url=os.getenv(
-                "EEZ_BEACON_URL", "http://cl-1-lighthouse-reth:4000"
-            )
-            or None,
+            l2_rpc_url=env_http_url(
+                "EEZ_L2_RPC_URL", required=True, allow_query=True
+            ),
+            beacon_url=env_http_url("EEZ_BEACON_URL", allow_query=True),
             registry_address=registry.lower() if registry else None,
             rollup_id=env_int("EEZ_ROLLUP_ID", 1, 0, 2**64 - 1),
             recent_blocks=env_int("EEZ_RECENT_BLOCKS", 12, 4, 32),
-            refresh_seconds=env_int("EEZ_REFRESH_SECONDS", 4, 2, 60),
+            refresh_seconds=refresh_seconds,
             request_timeout_seconds=env_int(
                 "EEZ_REQUEST_TIMEOUT_SECONDS", 4, 1, 30
             ),
@@ -112,16 +200,23 @@ class Settings:
             l2_explorer_url=env_http_url("EEZ_L2_EXPLORER_URL"),
             blobscan_url=env_http_url("EEZ_BLOBSCAN_URL"),
             blobscan_api_url=env_http_url(
-                "EEZ_BLOBSCAN_API_URL", "http://blobscan-api:3001"
+                "EEZ_BLOBSCAN_API_URL", allow_query=True
             ),
             l1_composer_rpc_url=env_http_url("EEZ_L1_COMPOSER_RPC_URL"),
             l2_composer_rpc_url=env_http_url("EEZ_L2_COMPOSER_RPC_URL"),
+            settlement_policy=settlement_policy_from_env(),
+            settlement_lookback_blocks=env_int("EEZ_SETTLEMENT_LOOKBACK_BLOCKS", 512, 32, 4096),
+            recent_settlements=env_int("EEZ_RECENT_SETTLEMENTS", 12, 2, 64),
+            l1_native_currency=currency,
+            l1_ws_url=env_ws_url("EEZ_L1_WS_URL"),
+            l2_ws_url=env_ws_url("EEZ_L2_WS_URL"),
+            live_update_seconds=live_update_seconds,
         )
 
 
 class JsonClient:
     def __init__(self, base_url: str, timeout: int):
-        self.base_url = base_url.rstrip("/")
+        self.base_url = base_url
         self.timeout = timeout
         self._ids = itertools.count(1)
         self._id_lock = threading.Lock()
@@ -158,8 +253,10 @@ class JsonClient:
         return payload["result"]
 
     def get_json(self, path: str) -> Any:
+        base = urlparse(self.base_url)
+        url = base._replace(path=f"{base.path.rstrip('/')}/{path.lstrip('/')}")
         request = Request(
-            f"{self.base_url}/{path.lstrip('/')}",
+            url.geturl(),
             headers={"Accept": "application/json", "User-Agent": "eez-network-dashboard/1"},
         )
         return self._open_json(request)
@@ -171,7 +268,7 @@ class JsonClient:
         except HTTPError as error:
             detail = error.read(512).decode("utf-8", "replace")
             raise RemoteCallError(
-                f"upstream HTTP {error.code}: {detail or error.reason}"
+                f"upstream HTTP {error.code}: {detail or error.reason}", http_status=error.code
             ) from error
         except (URLError, TimeoutError, OSError, json.JSONDecodeError) as error:
             raise RemoteCallError(f"upstream request failed: {error}") from error
@@ -283,6 +380,8 @@ class Collector:
         )
         self._beacon_meta: tuple[int, int] | None = None
         self._beacon_meta_lock = threading.Lock()
+        self._beacon_cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
+        self._beacon_cache_lock = threading.Lock()
 
     def collect(self) -> dict[str, Any]:
         started = time.monotonic()
@@ -316,6 +415,13 @@ class Collector:
             or []
         )
         metrics = self._metrics(chains, settlements)
+        history = self._capture(
+            errors, "settlement-history", self._settlement_history,
+            chains.get("l1", {}).get("latest"), settlements,
+        ) or {"configured": bool(self.settings.registry_address), "available": False}
+        if history.get("available"):
+            settlements = history.pop("settlements")
+        progress = self._settlement_progress(chains, rollup)
 
         return {
             "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -326,6 +432,10 @@ class Collector:
                 "rollupId": self.settings.rollup_id,
                 "registryAddress": self.settings.registry_address,
                 "recentBlockWindow": self.settings.recent_blocks,
+                "refreshSeconds": self.settings.refresh_seconds,
+                "liveUpdateSeconds": self.settings.live_update_seconds,
+                "settlementPolicy": self.settings.settlement_policy,
+                "nativeCurrency": self.settings.l1_native_currency,
                 "explorers": {
                     "l1": self.settings.l1_explorer_url,
                     "l2": self.settings.l2_explorer_url,
@@ -339,6 +449,8 @@ class Collector:
             "chains": chains,
             "rollup": rollup,
             "blobSettlements": settlements,
+            "settlementHistory": history,
+            "settlementProgress": progress,
             "metrics": metrics,
         }
 
@@ -476,6 +588,15 @@ class Collector:
             raise ValueError("transaction does not exist on canonical L1")
         if str(transaction.get("type", "")).lower() != "0x3":
             raise ValueError("transaction is not an EIP-4844 type-3 transaction")
+        block_number = transaction.get("blockNumber")
+        if block_number is None or not transaction.get("blockHash"):
+            raise ValueError("transaction has no canonical L1 inclusion")
+        canonical = self.l1.rpc("eth_getBlockByNumber", [block_number, False])
+        position = quantity(transaction.get("transactionIndex"))
+        if (not isinstance(canonical, dict) or canonical.get("hash") != transaction["blockHash"]
+                or position is None or not 0 <= position < len(canonical.get("transactions") or [])
+                or canonical["transactions"][position].lower() != normalized):
+            raise ValueError("transaction is not included in the canonical L1 block")
         if self.settings.registry_address and str(transaction.get("to") or "").lower() != self.settings.registry_address:
             raise ValueError("transaction does not target the configured EEZ registry")
 
@@ -515,6 +636,9 @@ class Collector:
         decoded = decode_native_blobs(
             physical_blobs, self.settings.rollup_id
         )
+        checked = self.l1.rpc("eth_getBlockByNumber", [block_number, False])
+        if not isinstance(checked, dict) or checked.get("hash") != canonical["hash"]:
+            raise RemoteCallError("L1 inclusion changed while decoding the transaction")
         return {
             "transactionHash": normalized,
             "l1BlockNumber": quantity(transaction.get("blockNumber")),
@@ -607,7 +731,9 @@ class Collector:
         if not address:
             return {"configured": False, "status": "not-configured"}
         calldata = f"0x{ROLLUPS_SELECTOR}{self.settings.rollup_id:064x}"
-        raw = self.l1.rpc("eth_call", [{"to": address, "data": calldata}, "latest"])
+        l1_head = chains.get("l1", {}).get("latest") or {}
+        tag = l1_head.get("numberHex", "latest")
+        raw = self.l1.rpc("eth_call", [{"to": address, "data": calldata}, tag])
         result = decode_rollup_call(raw)
         commitment = result["commitment"]
         safe = chains.get("l2", {}).get("safe") or {}
@@ -642,6 +768,97 @@ class Collector:
                 else None
             ),
             **result,
+        }
+
+    def _settlement_progress(self, chains: dict[str, Any], rollup: dict[str, Any]) -> dict[str, Any]:
+        """Describe general-threshold progress; never predict a runtime trigger."""
+        policy = self.settings.settlement_policy
+        if not policy or not policy.get("enabled"):
+            return {"available": False}
+        latest = (chains.get("l2", {}).get("latest") or {}).get("number")
+        committed = (rollup.get("committedBlock") or {}).get("number")
+        if (rollup.get("status") not in {"safe", "pending-safe"}
+                or latest is None or committed is None or latest < committed):
+            return {"available": False}
+        unsettled = latest - committed
+        remaining = max(0, policy["maxUnsettledL2Blocks"] - unsettled)
+        block_ms = policy["l2BlockTimeMs"]
+        return {
+            "available": True, "anchorL2Block": committed,
+            "anchorL2Hash": rollup["commitment"], "unsettledL2Blocks": unsettled,
+            "remainingL2Blocks": remaining, "generalThresholdReached": remaining == 0,
+            "estimatedGeneralRemainingMs": remaining * block_ms if block_ms is not None else None,
+        }
+
+    def _settlement_history(
+        self, head: dict[str, Any] | None, recent: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        if not self.settings.registry_address:
+            return {"configured": False, "available": False}
+        if not head or head.get("number") is None or not head.get("hash"):
+            raise RemoteCallError("canonical L1 head unavailable for settlement history")
+        first = max(0, head["number"] - self.settings.settlement_lookback_blocks + 1)
+        events = self.l1.rpc("eth_getLogs", [{
+            "address": self.settings.registry_address,
+            "fromBlock": hex(first), "toBlock": hex(head["number"]),
+            "topics": [BATCH_POSTED_TOPIC],
+        }])
+        if not isinstance(events, list):
+            raise RemoteCallError("settlement history returned malformed logs")
+        unique: dict[str, dict[str, Any]] = {}
+        for event in events:
+            if event.get("removed"):
+                continue
+            number = quantity(event.get("blockNumber"))
+            if (str(event.get("address", "")).lower() != self.settings.registry_address
+                    or not event.get("topics") or event["topics"][0].lower() != BATCH_POSTED_TOPIC
+                    or number is None or not first <= number <= head["number"]
+                    or not HASH_RE.fullmatch(event.get("transactionHash", ""))):
+                raise RemoteCallError("settlement history log does not match the requested window")
+            key = event["transactionHash"].lower()
+            if key in unique and unique[key]["blockHash"] != event["blockHash"]:
+                raise RemoteCallError("conflicting canonical settlement events")
+            unique[key] = event
+        ordered = sorted(unique.values(), key=lambda event: (
+            quantity(event["blockNumber"]), quantity(event.get("transactionIndex")) or 0,
+        ), reverse=True)
+        selected = ordered[:self.settings.recent_settlements]
+        existing = {item.get("transactionHash", "").lower(): item for item in recent}
+
+        def hydrate(event: dict[str, Any]) -> dict[str, Any]:
+            tx_hash = event["transactionHash"].lower()
+            cached = existing.get(tx_hash)
+            if cached and cached.get("l1BlockHash") == event["blockHash"] and cached.get("receiptStatus") == 1:
+                return cached
+            block = self.l1.rpc("eth_getBlockByNumber", [event["blockNumber"], False])
+            transaction = self.l1.rpc("eth_getTransactionByHash", [tx_hash])
+            if (not isinstance(block, dict) or block.get("hash") != event.get("blockHash")
+                    or not isinstance(transaction, dict)
+                    or transaction.get("blockHash") != block["hash"]
+                    or transaction.get("hash", "").lower() != tx_hash
+                    or str(transaction.get("to", "")).lower() != self.settings.registry_address):
+                raise RemoteCallError("settlement changed canonical inclusion during collection")
+            index = quantity(transaction.get("transactionIndex"))
+            transactions = block.get("transactions") or []
+            if index is None or not 0 <= index < len(transactions) or transactions[index].lower() != tx_hash:
+                raise RemoteCallError("settlement transaction position does not match canonical L1")
+            return self._settlement(block, transaction)
+
+        with ThreadPoolExecutor(max_workers=4, thread_name_prefix="settlement-history") as executor:
+            settlements = list(executor.map(hydrate, selected))
+        canonical = self.l1.rpc("eth_getBlockByNumber", [hex(head["number"]), False])
+        if not isinstance(canonical, dict) or canonical.get("hash") != head["hash"]:
+            raise RemoteCallError("L1 snapshot reorganized while collecting settlement history")
+        timestamps = [item["timestamp"] for item in settlements if item.get("receiptStatus") == 1]
+        intervals = [newer - older for newer, older in zip(timestamps, timestamps[1:])]
+        if any(interval < 0 for interval in intervals):
+            raise RemoteCallError("non-monotonic settlement timestamps")
+        return {
+            "configured": True, "available": True, "fromL1Block": first,
+            "toL1Block": head["number"], "lookbackBlocks": self.settings.settlement_lookback_blocks,
+            "limit": self.settings.recent_settlements, "postsShown": len(settlements),
+            "postsInLookback": len(ordered), "hasMore": len(ordered) > len(selected),
+            "intervalsSeconds": intervals, "settlements": settlements,
         }
 
     def _settlements(self, blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -719,6 +936,10 @@ class Collector:
             and str(value.get("l1TransactionHash", "")).lower()
             == str(transaction_hash).lower()
         ]
+        if receipt and (receipt.get("blockHash") != block_hash
+                        or str(receipt.get("transactionHash", "")).lower() != str(transaction_hash).lower()
+                        or quantity(receipt.get("transactionIndex")) != quantity(transaction.get("transactionIndex"))):
+            raise RemoteCallError("receipt does not match canonical settlement inclusion")
         beacon = self._beacon_for_block(block)
         if beacon.get("error"):
             detail_errors.append(f"beacon: {beacon['error']}")
@@ -726,6 +947,12 @@ class Collector:
         versioned_hashes = transaction.get("blobVersionedHashes") or []
         to = str(transaction.get("to") or "").lower()
         registry = self.settings.registry_address
+        gas_used = quantity(receipt.get("gasUsed")) if receipt else None
+        gas_price = quantity(receipt.get("effectiveGasPrice")) if receipt else None
+        blob_gas = quantity(receipt.get("blobGasUsed")) if receipt else None
+        blob_price = quantity(receipt.get("blobGasPrice")) if receipt else None
+        execution_cost = gas_used * gas_price if gas_used is not None and gas_price is not None else None
+        blob_cost = blob_gas * blob_price if blob_gas is not None and blob_price is not None else None
         return {
             "transactionHash": transaction_hash,
             "transactionIndex": quantity(transaction.get("transactionIndex")),
@@ -742,15 +969,24 @@ class Collector:
             "receiptStatus": quantity(receipt.get("status")) if receipt else None,
             "blobGasUsed": quantity(receipt.get("blobGasUsed")) if receipt else None,
             "blobGasPrice": quantity(receipt.get("blobGasPrice")) if receipt else None,
+            "gasUsed": gas_used,
+            "effectiveGasPrice": str(gas_price) if gas_price is not None else None,
+            "executionCostWei": str(execution_cost) if execution_cost is not None else None,
+            "blobCostWei": str(blob_cost) if blob_cost is not None else None,
+            "totalCostWei": str(execution_cost + blob_cost) if execution_cost is not None and blob_cost is not None else None,
             "l2Ranges": matching_ranges,
             "beacon": beacon,
-            "status": "confirmed" if receipt and quantity(receipt.get("status")) == 1 else "failed",
+            "status": ("confirmed" if quantity(receipt.get("status")) == 1 else "failed") if receipt else "unavailable",
             "errors": detail_errors,
         }
 
     def _beacon_for_block(self, block: dict[str, Any]) -> dict[str, Any]:
         if not self.beacon:
             return {"configured": False, "available": None}
+        cache_key = block.get("hash")
+        with self._beacon_cache_lock:
+            if cache_key and cache_key in self._beacon_cache:
+                return self._beacon_cache[cache_key]
         try:
             genesis_time, seconds_per_slot = self._get_beacon_meta()
             timestamp = quantity(block.get("timestamp"))
@@ -760,20 +996,47 @@ class Collector:
             if elapsed % seconds_per_slot:
                 raise RemoteCallError("block timestamp is not aligned to a beacon slot")
             slot = elapsed // seconds_per_slot
-            payload = self.beacon.get_json(f"eth/v1/beacon/blob_sidecars/{slot}")
-            sidecars = payload.get("data", []) if isinstance(payload, dict) else []
-            return {
+            source = "full-blobs"
+            try:
+                payload = self.beacon.get_json(f"eth/v1/beacon/blobs/{slot}")
+            except RemoteCallError as error:
+                if error.http_status not in {404, 405, 501}:
+                    raise
+                source = "blob-sidecars"
+                payload = self.beacon.get_json(f"eth/v1/beacon/blob_sidecars/{slot}")
+            blobs = payload.get("data") if isinstance(payload, dict) else None
+            if not isinstance(blobs, list) or not blobs:
+                raise RemoteCallError("Beacon returned no full blob data for the settlement slot")
+            for item in blobs:
+                encoded = item.get("blob") if isinstance(item, dict) else item
+                if not isinstance(encoded, str) or not encoded.startswith("0x") or len(encoded) != BLOB_BYTES * 2 + 2:
+                    raise RemoteCallError("Beacon returned a malformed full blob")
+                try:
+                    bytes.fromhex(encoded[2:])
+                except ValueError as error:
+                    raise RemoteCallError("Beacon returned non-hex blob bytes") from error
+            expected_gas = quantity(block.get("blobGasUsed"))
+            if expected_gas is not None and len(blobs) * BLOB_BYTES != expected_gas:
+                raise RemoteCallError("Beacon blob count does not match canonical L1 blob gas")
+            result = {
                 "configured": True,
                 "available": True,
                 "slot": slot,
-                "sidecarCount": len(sidecars),
-                "indices": [quantity(sidecar.get("index")) for sidecar in sidecars],
+                "source": source,
+                "blobCount": len(blobs),
+                "sidecarCount": len(blobs),  # Compatibility for existing API consumers.
+                "indices": [quantity(item.get("index")) for item in blobs if isinstance(item, dict)],
                 "kzgCommitments": [
-                    sidecar.get("kzg_commitment")
-                    for sidecar in sidecars
-                    if sidecar.get("kzg_commitment")
+                    item["kzg_commitment"] for item in blobs
+                    if isinstance(item, dict) and item.get("kzg_commitment")
                 ],
             }
+            if cache_key:
+                with self._beacon_cache_lock:
+                    self._beacon_cache[cache_key] = result
+                    while len(self._beacon_cache) > self.settings.recent_settlements + self.settings.recent_blocks:
+                        self._beacon_cache.popitem(last=False)
+            return result
         except Exception as error:
             return {"configured": True, "available": False, "error": str(error)}
 
@@ -808,11 +1071,15 @@ class Collector:
     @staticmethod
     def _metrics(chains: dict[str, Any], settlements: list[dict[str, Any]]) -> dict[str, Any]:
         def block_number(chain: str, tag: str) -> int | None:
-            return chains.get(chain, {}).get(tag, {}).get("number")
+            return (chains.get(chain, {}).get(tag) or {}).get("number")
 
         l2_latest = block_number("l2", "latest")
         l2_safe = block_number("l2", "safe")
         l2_finalized = block_number("l2", "finalized")
+        beacon_blocks = {
+            item.get("l1BlockHash", item.get("l1BlockNumber")): item.get("beacon", {})
+            for item in settlements if item.get("beacon", {}).get("available")
+        }
         return {
             "l2UnsafeLag": (
                 l2_latest - l2_safe
@@ -832,9 +1099,8 @@ class Collector:
                 settlement.get("blobCount", 0) or 0 for settlement in settlements
             ),
             "availableBlobSidecarsInWindow": sum(
-                settlement.get("beacon", {}).get("sidecarCount", 0) or 0
-                for settlement in settlements
-                if settlement.get("beacon", {}).get("available")
+                beacon.get("blobCount", beacon.get("sidecarCount", 0)) or 0
+                for beacon in beacon_blocks.values()
             ),
         }
 
@@ -847,10 +1113,10 @@ class SnapshotCache:
         self._value: dict[str, Any] | None = None
         self._updated_at = 0.0
 
-    def get(self) -> dict[str, Any]:
+    def get(self, *, force: bool = False) -> dict[str, Any]:
         with self._lock:
             age = time.monotonic() - self._updated_at
-            if self._value is None or age >= self.ttl_seconds:
+            if force or self._value is None or age >= self.ttl_seconds:
                 previous = self._value
                 try:
                     self._value = self.collector.collect()
@@ -866,12 +1132,18 @@ class SnapshotCache:
 class DashboardHandler(BaseHTTPRequestHandler):
     cache: SnapshotCache
     collector: Collector
+    feed: SnapshotFeed
+    # WebSocket upgrades hand the socket to the protocol library after headers.
+    rbufsize = 0
     blob_decode_slots = threading.BoundedSemaphore(2)
     settlement_search_slots = threading.BoundedSemaphore(4)
     server_version = "EEZDashboard/1"
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         parsed = urlparse(self.path)
+        if parsed.path == "/api/live":
+            serve_websocket(self, self.feed)
+            return
         if parsed.path == "/api/health":
             self._json(
                 HTTPStatus.OK,
@@ -989,6 +1261,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
             "/index.html": "index.html",
             "/styles.css": "styles.css",
             "/app.js": "app.js",
+            "/brand/eez.css": "brand/eez.css",
+            "/brand/eez-logo.svg": "brand/eez-logo.svg",
+            "/brand/eez-icon.svg": "brand/eez-icon.svg",
+            "/brand/geist-latin.woff2": "brand/geist-latin.woff2",
+            "/brand/geist-mono-latin.woff2": "brand/geist-mono-latin.woff2",
         }
         filename = files.get(path)
         if filename is None:
@@ -1022,10 +1299,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        host = self.headers.get("Host", "")
+        sockets = f" ws://{host} wss://{host}" if re.fullmatch(r"[A-Za-z0-9.\-:\[\]]+", host) else ""
         self.send_header(
             "Content-Security-Policy",
             "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+            f"img-src 'self' data:; connect-src 'self'{sockets}; object-src 'none'; "
             "base-uri 'self'; frame-ancestors 'none'",
         )
 
@@ -1042,19 +1321,20 @@ def main() -> None:
     collector = Collector(settings)
     DashboardHandler.collector = collector
     DashboardHandler.cache = SnapshotCache(collector, settings.refresh_seconds)
+    DashboardHandler.feed = SnapshotFeed(DashboardHandler.cache, settings)
     server = ThreadingHTTPServer((settings.bind_host, settings.bind_port), DashboardHandler)
     LOG.info(
-        "listening on %s:%s; L1=%s L2=%s",
+        "listening on %s:%s",
         settings.bind_host,
         settings.bind_port,
-        settings.l1_rpc_url,
-        settings.l2_rpc_url,
     )
     try:
+        DashboardHandler.feed.start()
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        DashboardHandler.feed.stop()
         server.server_close()
 
 

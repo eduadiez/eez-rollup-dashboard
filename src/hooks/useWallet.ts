@@ -304,8 +304,10 @@ export function useWallet(log: Logger, configLoaded = false) {
    * then forwards to L1. Without the proxy, the execution table is
    * empty and the tx reverts with ExecutionNotFound.
    *
-   * Injected wallets already use the classifying front for this chain. The
-   * fallback signer chooses the composer endpoint for this transaction only.
+   * An injected wallet broadcasts through its selected network RPC. Its saved
+   * chain entry must use the composer URL; matching chain IDs does not prove
+   * that wallet_addEthereumChain updated an existing RPC. The fallback signer
+   * chooses the composer endpoint directly.
    */
   const sendL1ProxyTx = useCallback(
     async (txParams: Record<string, string>): Promise<string> => {

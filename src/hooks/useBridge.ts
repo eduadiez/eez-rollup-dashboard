@@ -47,8 +47,10 @@ export interface BridgeState {
   sourceBalance: string | null;
   sourceBalanceRaw: bigint | null;
   allowance: bigint | null;
-  l1BridgeReady: boolean;
-  l2BridgeReady: boolean;
+  l1BridgeReady: boolean | null;
+  l2BridgeReady: boolean | null;
+  l1BridgeError: string | null;
+  l2BridgeError: string | null;
   gas: BridgeGasState;
 }
 
@@ -189,6 +191,7 @@ export function useBridge(
   sendL1Tx: SendTx,
   sendL1ProxyTx: SendTx,
   walletAddress: string | null,
+  configLoaded: boolean,
 ) {
   const defaultGas: BridgeGasState = {
     status: "idle", estimate: null, estimateWithBuffer: null,
@@ -208,8 +211,10 @@ export function useBridge(
     sourceBalance: null,
     sourceBalanceRaw: null,
     allowance: null,
-    l1BridgeReady: false,
-    l2BridgeReady: false,
+    l1BridgeReady: null,
+    l2BridgeReady: null,
+    l1BridgeError: null,
+    l2BridgeError: null,
     gas: defaultGas,
   });
 
@@ -221,49 +226,63 @@ export function useBridge(
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
 
-  // Check bridge readiness on mount and when addresses change
+  // Configuration loads asynchronously. Unknown or failed reads must not be
+  // presented as a confirmed missing deployment.
   useEffect(() => {
+    if (!configLoaded) return;
     let cancelled = false;
+    let checking = false;
+    setState((s) => ({ ...s, l1BridgeReady: null, l2BridgeReady: null,
+      l1BridgeError: null, l2BridgeError: null }));
 
-    async function checkBridge(rpcUrl: string, bridgeAddr: string): Promise<boolean> {
-      if (!bridgeAddr) return false;
+    async function checkBridge(rpcUrl: string, bridgeAddr: string): Promise<{
+      ready: boolean | null; error: string | null;
+    }> {
+      if (!bridgeAddr) return { ready: false, error: null };
       try {
-        const code = (await rpcCall(rpcUrl, "eth_getCode", [bridgeAddr, "latest"])) as string;
-        if (!code || code === "0x" || code === "0x0") return false;
-        // Check if initialized by calling manager()
-        const result = (await rpcCall(rpcUrl, "eth_call", [
-          { to: bridgeAddr, data: BRIDGE_ABI.manager },
-          "latest",
-        ])) as string;
-        // manager() should return a non-zero address
-        return !!result && result !== "0x" + "0".repeat(64);
-      } catch {
-        return false;
+        const code = await rpcCall(rpcUrl, "eth_getCode", [bridgeAddr, "latest"]);
+        if (code === "0x" || code === "0x0") return { ready: false, error: null };
+        if (typeof code !== "string" || !/^0x[0-9a-fA-F]+$/.test(code)) {
+          throw new Error("Invalid contract code response");
+        }
+        const result = await rpcCall(rpcUrl, "eth_call", [
+          { to: bridgeAddr, data: BRIDGE_ABI.manager }, "latest",
+        ]);
+        if (typeof result !== "string" || !/^0x0{24}[0-9a-fA-F]{40}$/.test(result)) {
+          throw new Error("Invalid bridge manager response");
+        }
+        return { ready: BigInt(result) !== 0n, error: null };
+      } catch (error) {
+        return { ready: null, error: (error as Error).message || "RPC check failed" };
       }
     }
 
     async function checkBoth() {
-      const [l1Ready, l2Ready] = await Promise.all([
-        checkBridge(config.l1Rpc, config.l1Bridge),
-        checkBridge(config.l2Rpc, config.l2Bridge),
-      ]);
-      if (!cancelled) {
-        setState((s) => ({ ...s, l1BridgeReady: l1Ready, l2BridgeReady: l2Ready }));
+      if (checking || cancelled) return false;
+      checking = true;
+      try {
+        const [l1, l2] = await Promise.all([
+          checkBridge(config.l1Rpc, config.l1Bridge),
+          checkBridge(config.l2Rpc, config.l2Bridge),
+        ]);
+        if (!cancelled) {
+          setState((s) => ({ ...s, l1BridgeReady: l1.ready, l2BridgeReady: l2.ready,
+            l1BridgeError: l1.error, l2BridgeError: l2.error }));
+        }
+        return l1.ready === true && l2.ready === true;
+      } finally {
+        checking = false;
       }
-      return l1Ready && l2Ready;
     }
 
-    checkBoth();
-
-    // Retry every 10s until both bridges are ready (bridge-deployer may still
-    // be running when the UI first loads)
+    // Missing deployments and transient RPC errors are rechecked. Successful
+    // initial checks do not have to wait for this retry interval.
     const interval = setInterval(async () => {
-      const bothReady = await checkBoth();
-      if (bothReady) clearInterval(interval);
+      if (await checkBoth()) clearInterval(interval);
     }, 10000);
-
+    void checkBoth().then((ready) => { if (ready) clearInterval(interval); });
     return () => { cancelled = true; clearInterval(interval); };
-  }, []);
+  }, [configLoaded, config.l1Rpc, config.l2Rpc, config.l1Bridge, config.l2Bridge]);
 
   // Fetch balance and allowance
   useEffect(() => {
@@ -629,7 +648,8 @@ export function useBridge(
   const bridge = useCallback(async () => {
     const { direction, asset, amount, tokenAddress, tokenMeta, destinationAddress } = stateRef.current;
     const bridgeAddr = direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge;
-    if (!bridgeAddr || !amount) return;
+    const ready = direction === "l1-to-l2" ? stateRef.current.l1BridgeReady : stateRef.current.l2BridgeReady;
+    if (!bridgeAddr || !amount || ready !== true) return;
 
     const decimals = asset === "eth" ? 18 : (tokenMeta?.decimals ?? 18);
     const rawAmount = parseAmount(amount, decimals);

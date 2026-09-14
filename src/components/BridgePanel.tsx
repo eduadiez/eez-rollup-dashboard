@@ -258,6 +258,8 @@ export function BridgePanel({
 
   const busy = !["idle", "confirmed", "failed"].includes(phase);
   const sourceBridgeReady = direction === "l1-to-l2" ? l1BridgeReady : l2BridgeReady;
+  const sourceBridgeError = direction === "l1-to-l2" ? state.l1BridgeError : state.l2BridgeError;
+  const sourceRpc = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
   const bridgeConfigured = direction === "l1-to-l2" ? !!config.l1Bridge : !!config.l2Bridge;
 
   // Determine if approval is needed
@@ -304,7 +306,14 @@ export function BridgePanel({
           Bridge contract address not configured. Set via URL param ?l1bridge= / ?l2bridge= or rollup.env.
         </div>
       )}
-      {bridgeConfigured && !sourceBridgeReady && (
+      {bridgeConfigured && sourceBridgeReady === null && (
+        <div className={styles.phaseBar} role="status">
+          {sourceBridgeError
+            ? `Unable to check the bridge on ${direction === "l1-to-l2" ? "L1" : "L2"}. Retrying…`
+            : `Checking bridge on ${direction === "l1-to-l2" ? "L1" : "L2"}…`}
+        </div>
+      )}
+      {bridgeConfigured && sourceBridgeReady === false && (
         <div className={styles.warningBar}>
           Bridge contract not deployed or not initialized on {direction === "l1-to-l2" ? "L1" : "L2"}.
         </div>
@@ -317,6 +326,16 @@ export function BridgePanel({
           onSetDirection(direction === "l1-to-l2" ? "l2-to-l1" : "l1-to-l2")
         }
       />
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>Wallet RPC for cross-chain transfers</div>
+        <input className={styles.input} aria-label="Bridge wallet RPC" readOnly
+          value={sourceRpc} onClick={(event) => event.currentTarget.select()} />
+        <div className={styles.validationHint}>
+          Set this RPC for the source network in your wallet before bridging.
+          An existing network may keep its previously selected RPC.
+        </div>
+      </div>
 
       {/* Asset toggle */}
       <AssetToggle asset={asset} onChange={onSetAsset} />

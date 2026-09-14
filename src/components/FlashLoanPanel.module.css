@@ -14,10 +14,11 @@
    ══════════════════════════════════ */
 
 .hero {
+  composes: eez-card from global;
   position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: var(--sp-7) var(--sp-7) var(--sp-6);
   text-align: center;
   overflow: hidden;
@@ -27,15 +28,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
-.heroGlow {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 15% 0%, rgba(99, 102, 241, 0.07) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 100%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
+.heroGlow { display: none; }
 
 .hero > *:not(.heroGlow) {
   position: relative;
@@ -149,7 +142,7 @@
 .prereqCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.24),
     0 4px 16px rgba(0, 0, 0, 0.12),
@@ -520,7 +513,7 @@
 .execPanel {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: var(--sp-6);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.24),
@@ -804,7 +797,7 @@
   min-width: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: var(--sp-5);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.24),
@@ -951,7 +944,7 @@
 .expandable {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   overflow: hidden;
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.24),
@@ -1490,8 +1483,8 @@
 }
 
 .nftLogoImg {
-  width: 48px;
-  height: auto;
+  width: 32px;
+  height: 48px;
   filter: drop-shadow(0 1px 6px rgba(99, 102, 241, 0.4));
 }
 
@@ -1588,7 +1581,7 @@
   gap: var(--sp-3);
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: var(--sp-4) var(--sp-5);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.20),
@@ -1799,7 +1792,7 @@
 .trackerCard {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   padding: var(--sp-5) var(--sp-6);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.20),
@@ -1898,7 +1891,7 @@
 }
 
 .nftLogoImgReverse {
-  filter: drop-shadow(0 1px 6px rgba(34, 211, 238, 0.4)) hue-rotate(180deg);
+  filter: drop-shadow(0 1px 6px rgba(34, 211, 238, 0.4));
 }
 
 /* ══════════════════════════════════

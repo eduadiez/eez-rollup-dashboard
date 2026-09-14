@@ -65,7 +65,7 @@ export function setConfig(updates: Partial<typeof config>) {
 /** L1 chain definition for wallet_addEthereumChain — populated at runtime */
 export const L1_CHAIN = {
   chainId: "0x539", // default 1337, auto-detected on init
-  chainName: "Based Rollup L1",
+  chainName: "EEZ L1",
   rpcUrls: [config.l1ProxyRpc],
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 };
@@ -75,7 +75,7 @@ export const L1_CHAIN = {
  * mempool and holding only L2→L1 cross-chain calls. */
 export const L2_CHAIN = {
   chainId: "0xa455", // default 42069, auto-detected on init
-  chainName: "Based Rollup L2",
+  chainName: "EEZ L2",
   rpcUrls: [config.l2ProxyRpc],
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 };

@@ -63,7 +63,7 @@ export function VisualizerView({ liveState, liveTargetAddress, liveCalldata, onB
   }, []);
 
   return (
-    <div className={styles.page}>
+    <main id="main" tabIndex={-1} className={styles.page}>
       {/* Top bar */}
       <div className={styles.topBar}>
         <button className="btn btn-sm btn-outline" onClick={onBack}>
@@ -76,18 +76,19 @@ export function VisualizerView({ liveState, liveTargetAddress, liveCalldata, onB
       </div>
 
       {/* Mode tabs */}
-      <div className={styles.modeTabs}>
+      <nav className={styles.modeTabs} aria-label="Visualizer modes">
         {(Object.keys(MODE_LABELS) as Mode[]).map((m) => (
           <button
             key={m}
             className={`${styles.modeTab} ${mode === m ? styles.modeTabActive : ""}`}
+            aria-current={mode === m ? "page" : undefined}
             onClick={() => handleSetMode(m)}
           >
             {MODE_LABELS[m]}
             {m === "live" && <span className={styles.modeTabDot} />}
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* Content — key forces remount when explorerBlock changes */}
       {mode === "explorer" && <BlockExplorer key={`be-${effectiveBlock}`} initialBlock={effectiveBlock} />}
@@ -101,6 +102,6 @@ export function VisualizerView({ liveState, liveTargetAddress, liveCalldata, onB
           initialDebugHash={initialDebugHash}
         />
       )}
-    </div>
+    </main>
   );
 }

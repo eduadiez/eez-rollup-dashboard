@@ -185,7 +185,7 @@ export function useConfigLoader() {
         )) as string;
         L1_CHAIN.chainId = l1ChainId;
         const dec = parseInt(l1ChainId, 16);
-        L1_CHAIN.chainName = `Based Rollup L1 (${dec})`;
+        L1_CHAIN.chainName = `EEZ L1 (${dec})`;
       } catch {
         /* keep defaults */
       }
@@ -197,7 +197,7 @@ export function useConfigLoader() {
         )) as string;
         L2_CHAIN.chainId = l2ChainId;
         const dec = parseInt(l2ChainId, 16);
-        L2_CHAIN.chainName = `Based Rollup L2 (${dec})`;
+        L2_CHAIN.chainName = `EEZ L2 (${dec})`;
       } catch {
         /* keep defaults */
       }

@@ -5,14 +5,16 @@ services:
     build:
       context: .
     image: eez-network-dashboard:local
-    container_name: eez-monitor
     restart: unless-stopped
     ports:
       - "${EEZ_DASHBOARD_BIND:-127.0.0.1}:${EEZ_DASHBOARD_HOST_PORT:-18080}:8080"
     environment:
-      EEZ_L1_RPC_URL: "${EEZ_L1_RPC_URL:-http://el-1-reth-lighthouse:8545}"
-      EEZ_L2_RPC_URL: "${EEZ_L2_RPC_URL:-http://eez-node:18688}"
-      EEZ_BEACON_URL: "${EEZ_BEACON_URL:-http://cl-1-lighthouse-reth:4000}"
+      EEZ_L1_RPC_URL: "${EEZ_L1_RPC_URL:?Set EEZ_L1_RPC_URL to a reachable external HTTP(S) RPC URL}"
+      EEZ_L2_RPC_URL: "${EEZ_L2_RPC_URL:?Set EEZ_L2_RPC_URL to a reachable external HTTP(S) RPC URL}"
+      EEZ_L1_WS_URL: "${EEZ_L1_WS_URL:-}"
+      EEZ_L2_WS_URL: "${EEZ_L2_WS_URL:-}"
+      EEZ_LIVE_UPDATE_SECONDS: "${EEZ_LIVE_UPDATE_SECONDS:-1}"
+      EEZ_BEACON_URL: "${EEZ_BEACON_URL:-}"
       EEZ_REGISTRY_ADDRESS: "${EEZ_REGISTRY_ADDRESS:-}"
       EEZ_ROLLUP_ID: "${EEZ_ROLLUP_ID:-1}"
       EEZ_RECENT_BLOCKS: "${EEZ_RECENT_BLOCKS:-12}"
@@ -21,11 +23,18 @@ services:
       EEZ_L1_EXPLORER_URL: "${EEZ_L1_EXPLORER_URL:-}"
       EEZ_L2_EXPLORER_URL: "${EEZ_L2_EXPLORER_URL:-}"
       EEZ_BLOBSCAN_URL: "${EEZ_BLOBSCAN_URL:-}"
-      EEZ_BLOBSCAN_API_URL: "${EEZ_BLOBSCAN_API_URL:-http://blobscan-api:3001}"
+      EEZ_BLOBSCAN_API_URL: "${EEZ_BLOBSCAN_API_URL:-}"
       EEZ_L1_COMPOSER_RPC_URL: "${EEZ_L1_COMPOSER_RPC_URL:-}"
       EEZ_L2_COMPOSER_RPC_URL: "${EEZ_L2_COMPOSER_RPC_URL:-}"
-    networks:
-      - eez
+      EEZ_SETTLEMENT_LOOKBACK_BLOCKS: "${EEZ_SETTLEMENT_LOOKBACK_BLOCKS:-512}"
+      EEZ_RECENT_SETTLEMENTS: "${EEZ_RECENT_SETTLEMENTS:-12}"
+      EEZ_L1_NATIVE_CURRENCY: "${EEZ_L1_NATIVE_CURRENCY:-ETH}"
+      EEZ_SETTLEMENT_POLICY_ENABLED: "${EEZ_SETTLEMENT_POLICY_ENABLED:-}"
+      EEZ_SETTLEMENT_PURE_L2_MODE: "${EEZ_SETTLEMENT_PURE_L2_MODE:-}"
+      EEZ_SETTLEMENT_PURE_L2_INTERVAL_MS: "${EEZ_SETTLEMENT_PURE_L2_INTERVAL_MS:-}"
+      EEZ_SETTLEMENT_MAX_UNSETTLED_L2_BLOCKS: "${EEZ_SETTLEMENT_MAX_UNSETTLED_L2_BLOCKS:-}"
+      EEZ_SETTLEMENT_BLOB_FULLNESS_BPS: "${EEZ_SETTLEMENT_BLOB_FULLNESS_BPS:-}"
+      EEZ_L2_BLOCK_TIME_MS: "${EEZ_L2_BLOCK_TIME_MS:-}"
     read_only: true
     tmpfs:
       - /tmp:size=16m,mode=1777
@@ -34,8 +43,3 @@ services:
     cap_drop:
       - ALL
     pids_limit: 128
-
-networks:
-  eez:
-    external: true
-    name: "${EEZ_DOCKER_NETWORK:-kt-eez-devnet}"

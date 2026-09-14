@@ -1,0 +1,140 @@
+{
+  "verified": true,
+  "url": "https://eez.asuscomm.com/monitor/",
+  "deployed_at": "2026-09-13T17:41:20.530272+00:00",
+  "image": "eez-network-dashboard:settlement-policy-20260913",
+  "image_id": "sha256:634b30dfe08b9c55a8f500b7736f3a5bccb1498bd9a22b626528e9e9ed81617d",
+  "container": "8b90c57711e5ce7a9b382f579e815b43ebee7f5e58b6975302fbe75775b54c52",
+  "rollback_container": "eez-monitor-before-settlement-policy-20260913",
+  "policy_source": "copied from the running composer environment",
+  "configuration": {
+    "enabled": true,
+    "source": "operator-configuration",
+    "pureL2Mode": "always",
+    "pureL2IntervalMs": null,
+    "maxUnsettledL2Blocks": 150,
+    "blobFullnessBps": null,
+    "l2BlockTimeMs": 2000,
+    "nominalGeneralIntervalMs": 300000
+  },
+  "snapshot": {
+    "generatedAt": "2026-09-13T17:42:39.090068Z",
+    "healthy": true,
+    "errors": [],
+    "collectionDurationMs": 99,
+    "history": {
+      "configured": true,
+      "available": true,
+      "fromL1Block": 34,
+      "toL1Block": 545,
+      "lookbackBlocks": 512,
+      "limit": 12,
+      "postsShown": 12,
+      "postsInLookback": 69,
+      "hasMore": true,
+      "intervalsSeconds": [
+        300,
+        300,
+        300,
+        300,
+        300,
+        300,
+        300,
+        300,
+        300,
+        300,
+        300
+      ]
+    },
+    "progress": {
+      "available": true,
+      "anchorL2Block": 3234,
+      "anchorL2Hash": "0xfe08bf0ec17dc20301836cbcbaa6ad10b351c3d5ce65a568edc73166e84ce54f",
+      "unsettledL2Blocks": 33,
+      "remainingL2Blocks": 117,
+      "generalThresholdReached": false,
+      "estimatedGeneralRemainingMs": 234000
+    },
+    "commitment": "0xfe08bf0ec17dc20301836cbcbaa6ad10b351c3d5ce65a568edc73166e84ce54f",
+    "safeL2Block": 3234
+  },
+  "validation": {
+    "python_tests": 35,
+    "python_failed": 0,
+    "ui_tests": "passed",
+    "compose": "passed",
+    "diff_check": "passed",
+    "browser": {
+      "verified": true,
+      "url": "https://eez.asuscomm.com/monitor/",
+      "tlsValidation": true,
+      "hostResolution": "public hostname mapped to local gateway",
+      "desktopOverflow": false,
+      "mobileOverflow": false,
+      "pageErrors": [],
+      "httpErrors": [],
+      "checks": [
+        "prefix redirect and relative assets/API",
+        "5 min / always policy",
+        "12 recent posts and five-minute interval",
+        "desktop and mobile layout",
+        "150-block empty decode",
+        "historical L2 search and clear",
+        "two-blob 198-block decode",
+        "canonical correlation"
+      ]
+    }
+  },
+  "native_decoding": {
+    "verified": true,
+    "decodes": [
+      {
+        "case": "empty",
+        "tx": "0xe7f4fbba12a0fa59168ec27f0bb4465518d801552bd20db6c6816e91d9aedc4c",
+        "blobs": 1,
+        "blocks": 150,
+        "transactions": 0,
+        "semantic_transactions": 0,
+        "meaningful_bytes": 114802,
+        "capacity_bytes": 126976
+      },
+      {
+        "case": "multi_blob",
+        "tx": "0xece00d7f1cd1b89e5f488357e97c2a732f8eb4dbab9e7ff74acea233aaaafcb5",
+        "blobs": 2,
+        "blocks": 198,
+        "transactions": 6,
+        "semantic_transactions": 0,
+        "meaningful_bytes": 174404,
+        "capacity_bytes": 253952
+      },
+      {
+        "case": "cross_chain",
+        "tx": "0x49c2b5369c9a05c112606d8340856c5a570fc39157f3b90c1208d72f6fab0f46",
+        "blobs": 1,
+        "blocks": 6,
+        "transactions": 2,
+        "semantic_transactions": 1,
+        "meaningful_bytes": 7704,
+        "capacity_bytes": 126976
+      }
+    ],
+    "historical_search_matches": 1
+  },
+  "source_files": {
+    ".env.example": "d4585bc6f09c94ebde53101ca0cd2d221a067f44aae82ef4ffa4778121fa0b1e",
+    "docker-compose.yml": "512b9436171479c5581956bff4b5def6bb95743f92bdcab480c4b5751ea2f591",
+    "README.md": "2424d428b6ba1d29b4e8cdb839c905abe75c32c1d07ceb8f96c4f37a9a4a10c8",
+    "tests/test_app.mjs": "60435adbf81416a39fb4d5c54c577ea39be3d0a1b92998a9bd10cccad1ea4fa6",
+    "app/server.py": "c73d0c117af5a92a34c5cde7dea95b8c0150450e8b2c0b4b0b3390e635ef90a0",
+    "app/static/styles.css": "1824f0390616cdc9173251bc087d25bb195a45a19669f04d0637b943e662348e",
+    "app/static/index.html": "1dbdaf0bee697ef8f5d101394abd62db0352bab207e12785a345169ee6cea9bb",
+    "app/static/app.js": "b20d3257d2716c99bb7ac1a50db142b9ce389022f342375d0dd458282cc6af2d",
+    "tests/test_settlement_policy.py": "e1d17a886a14055f1aacc48a0fc06adcac2b8b5a370b85f5642d8ae1c8f1e8b5"
+  },
+  "runtime_file_hashes": [
+    "c73d0c117af5a92a34c5cde7dea95b8c0150450e8b2c0b4b0b3390e635ef90a0  /app/server.py",
+    "b20d3257d2716c99bb7ac1a50db142b9ce389022f342375d0dd458282cc6af2d  /app/static/app.js",
+    "1dbdaf0bee697ef8f5d101394abd62db0352bab207e12785a345169ee6cea9bb  /app/static/index.html"
+  ]
+}

@@ -31,6 +31,7 @@ globalThis.document = {
 };
 globalThis.window = { location: { href: "https://eez.asuscomm.com/monitor/" } };
 globalThis.fetch = () => new Promise(() => {});
+globalThis.WebSocket = undefined;
 globalThis.setInterval = () => 0;
 let nextTimeout = 1;
 const scheduledTimeouts = new Map();
@@ -52,6 +53,9 @@ assert.match(
   /\.decoder-summary \.semantic-message-details dd \{[^}]*overflow: visible/,
 );
 const assertions = String.raw`
+// Search debounce assertions below concern search timers. Transport startup
+// timers have their own coverage in test_live_app.mjs.
+scheduledTimeouts.clear();
 state.snapshot = { configuration: { explorers: {
   l1: "https://eez.asuscomm.com:4444",
   l2: "https://eez.asuscomm.com:4445",
@@ -171,6 +175,9 @@ const searchableSettlement = {
   l1BlockNumber: 114,
   l1BlockHash: l1Hash,
   status: "confirmed",
+  totalCostWei: "112514000918670",
+  executionCostWei: "112514000787598",
+  blobCostWei: "131072",
   isProtocolSettlement: true,
   blobVersionedHashes: [blobHash],
   beacon: { slot: 771 },
@@ -194,6 +201,12 @@ assert.equal(isExactSettlementQuery("L1:#114"), true);
 assert.equal(isExactSettlementQuery("0x" + "11".repeat(32)), true);
 assert.equal(isExactSettlementQuery("0x1111zz"), false);
 assert.match(blobRows([], "missing"), /No blob settlements match/);
+assert.match(blobRows([{
+  ...searchableSettlement, beacon: { configured: false, available: null },
+}]), /not configured/);
+assert.doesNotMatch(blobRows([{
+  ...searchableSettlement, beacon: { configured: false, available: null },
+}]), /unavailable/);
 
 const searchInput = element("blob-search");
 searchInput.value = "6983";
@@ -208,6 +221,53 @@ searchInput.value = "protocol";
 searchInput.listeners.input({ target: searchInput });
 assert.match(element("blob-search-status").textContent, /Filtering the recent window/);
 assert.equal(scheduledTimeouts.size, 0);
+
+assert.equal(apiUrl("api/snapshot").pathname, "/monitor/api/snapshot");
+assert.equal(formatEth("112514000918670"), "0.00011251 ETH");
+assert.equal(formatEth("131072"), "<0.00000001 ETH");
+assert.equal(formatEth(null), "—");
+const policySnapshot = {
+  configuration: { ...state.snapshot.configuration, nativeCurrency: "ETH", settlementPolicy: {
+    enabled: true, source: "operator-configuration", pureL2Mode: "always", pureL2IntervalMs: null,
+    maxUnsettledL2Blocks: 150, nominalGeneralIntervalMs: 300000, blobFullnessBps: null,
+  } },
+  settlementProgress: { available: true, unsettledL2Blocks: 96, remainingL2Blocks: 54,
+    generalThresholdReached: false, estimatedGeneralRemainingMs: 108000 },
+  settlementHistory: { available: true, limit: 12, fromL1Block: 1, toL1Block: 140, intervalsSeconds: [300] },
+  blobSettlements: [{ ...searchableSettlement, receiptStatus: 1, timestamp: 1700000000, blobCount: 2,
+    beacon: { available: true, source: "full-blobs", blobCount: 2 } }],
+};
+state.snapshot = policySnapshot;
+renderSettlementPolicy(policySnapshot);
+assert.match(element("policy-rules").innerHTML, /5 min/);
+assert.match(element("policy-rules").innerHTML, /Always/);
+assert.match(element("policy-rules").innerHTML, /including reverted transactions/);
+assert.match(element("policy-progress").innerHTML, /value="96" max="150"/);
+assert.match(element("policy-progress").innerHTML, /1 min 48 s/);
+assert.match(element("latest-settlement").innerHTML, /2 blobs/);
+assert.match(element("latest-settlement").innerHTML, /:4444\/tx\/0x11/);
+renderSettlementPolicy({ ...policySnapshot, settlementProgress: { ...policySnapshot.settlementProgress,
+  unsettledL2Blocks: 156, remainingL2Blocks: 0, generalThresholdReached: true } });
+assert.match(element("policy-status").innerHTML, /Threshold reached/);
+assert.match(element("policy-progress").innerHTML, /value="150" max="150"/);
+assert.match(element("policy-progress").innerHTML, /Waiting for canonical L1 inclusion/);
+renderSettlementPolicy({ ...policySnapshot, stale: true });
+assert.match(element("policy-progress").innerHTML, /Snapshot is stale/);
+assert.doesNotMatch(element("policy-progress").innerHTML, /<progress/);
+renderSettlementPolicy({ configuration: {} });
+assert.match(element("policy-status").innerHTML, /Not supplied/);
+assert.doesNotMatch(element("policy-rules").innerHTML, /5 min/);
+renderSettlementPolicy({ ...policySnapshot, configuration: { settlementPolicy: {
+  ...policySnapshot.configuration.settlementPolicy, pureL2Mode: "interval", pureL2IntervalMs: 900000,
+  blobFullnessBps: 1000,
+} } });
+assert.match(element("policy-rules").innerHTML, /15 min/);
+assert.match(element("policy-rules").innerHTML, /earlier general rule/);
+assert.match(element("policy-progress").innerHTML, /10% across all permitted blobs/);
+state.snapshot.configuration.nativeCurrency = "GNO";
+assert.equal(formatEth("112514000918670"), "0.00011251 GNO");
+assert.match(blobRows(policySnapshot.blobSettlements), /full blobs/);
+assert.match(blobRows([{ ...searchableSettlement, totalCostWei: null }]), /Receipt cost unavailable/);
 `;
 
 eval(`${app}\n${assertions}`);

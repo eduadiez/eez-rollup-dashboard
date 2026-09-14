@@ -15,6 +15,7 @@
 
 /* Main combined card: header strip + viz + swap form, all in one container */
 .mainCard {
+  composes: eez-card from global;
   position: relative;
   border-radius: var(--radius);
   background: var(--bg-card);
@@ -35,11 +36,7 @@
   gap: 16px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    rgba(99, 102, 241, 0.04) 0%,
-    transparent 100%
-  );
+  background: var(--bg-card);
   flex-wrap: wrap;
 }
 

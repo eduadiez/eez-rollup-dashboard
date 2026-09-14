@@ -5,8 +5,8 @@
 .header {
   display: flex;
   align-items: center;
-  padding: 0 var(--sp-6);
-  height: 54px;
+  padding: 0 var(--sp-7);
+  height: 72px;
   background: var(--header-bg);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -36,12 +36,21 @@
   align-items: center;
   gap: var(--sp-2);
   flex-shrink: 0;
+  text-decoration: none;
 }
 
 .logoIcon {
-  width: 26px;
-  height: 26px;
+  width: 72px;
+  height: 34px;
   object-fit: contain;
+}
+
+.productName {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+  color: var(--text-dim);
+  font: 400 11px var(--mono);
+  letter-spacing: .04em;
 }
 
 .sep {
@@ -60,14 +69,14 @@
 }
 
 .navLink {
-  font-family: var(--sans);
+  font-family: var(--mono);
   font-size: 12px;
   font-weight: 500;
   color: var(--text-dim);
   background: none;
-  border: none;
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  padding: 7px 13px;
+  border-radius: 100px;
   cursor: pointer;
   transition: color var(--duration) var(--ease),
               background var(--duration) var(--ease);
@@ -79,9 +88,11 @@
 }
 
 .navActive {
-  color: var(--text-bright);
-  background: var(--accent-dim);
+  color: var(--eez-pill-ink);
+  background: var(--eez-pill-bg);
 }
+
+.navActive:hover { color: var(--eez-pill-ink); background: var(--eez-pill-bg); }
 
 /* ── Center: health strip (fills space between nav and controls) ── */
 
@@ -117,7 +128,7 @@
   padding: 2px;
   background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
 }
 
 .chainBtn {
@@ -125,7 +136,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 10px;
-  border-radius: 5px;
+  border-radius: 100px;
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 700;
@@ -172,7 +183,7 @@
 
 /* L1 active: indigo */
 .chainBtnL1Active {
-  color: #818cf8;
+  color: var(--chain-l1);
   background: rgba(129, 140, 248, 0.10);
 }
 
@@ -183,7 +194,7 @@
 
 /* L2 active: emerald */
 .chainBtnL2Active {
-  color: #34d399;
+  color: var(--chain-l2);
   background: rgba(52, 211, 153, 0.10);
 }
 
@@ -438,8 +449,11 @@
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 .mobileMenu {
-  position: fixed;
-  inset: 54px 0 0 0;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: calc(100dvh - 100%);
   z-index: 190;
   display: none;
   animation: slideDown var(--duration-slow) var(--ease) both;
@@ -537,19 +551,19 @@
 
 .mobileChainBtnL1:hover {
   border-color: rgba(129, 140, 248, 0.35);
-  color: #818cf8;
+  color: var(--chain-l1);
 }
 
 .mobileChainBtnL2:hover {
   border-color: rgba(52, 211, 153, 0.35);
-  color: #34d399;
+  color: var(--chain-l2);
 }
 
 /* Active L1 */
 .mobileChainBtnL1.mobileChainActive {
   border-color: rgba(129, 140, 248, 0.4);
   background: rgba(129, 140, 248, 0.08);
-  color: #818cf8;
+  color: var(--chain-l1);
 }
 
 .mobileChainBtnL1.mobileChainActive .chainBtnDot {
@@ -561,7 +575,7 @@
 .mobileChainBtnL2.mobileChainActive {
   border-color: rgba(52, 211, 153, 0.4);
   background: rgba(52, 211, 153, 0.08);
-  color: #34d399;
+  color: var(--chain-l2);
 }
 
 .mobileChainBtnL2.mobileChainActive .chainBtnDot {
@@ -607,7 +621,7 @@
    Responsive breakpoints
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .header {
     flex-wrap: wrap;
     height: auto;
