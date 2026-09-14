@@ -202,6 +202,10 @@ function renderChain(name, chain) {
     : "—");
   setHtml(`${prefix}-safe`, blockLink(base, chain?.safe?.number, number(chain?.safe?.number), "explorer-value"));
   setHtml(`${prefix}-finalized`, blockLink(base, chain?.finalized?.number, number(chain?.finalized?.number), "explorer-value"));
+  const freshness = chain?.freshness;
+  setText(`${prefix}-freshness`, freshness?.ageSeconds !== undefined && freshness.ageSeconds !== null
+    ? `Latest block ${duration(freshness.ageSeconds * 1000)} ago${freshness.status === "delayed" ? " · Head delayed" : ""}`
+    : "Block age unavailable");
   if (prefix === "l1") setText("l1-peers", number(chain?.peerCount));
 }
 
@@ -717,13 +721,18 @@ function render(snapshot) {
   byId("l1-blocks").innerHTML = blockRows(l1?.blocks, "l1");
   byId("l2-blocks").innerHTML = blockRows(l2?.blocks, "l2");
 
-  const errors = snapshot.errors || [];
+  const delayedChains = Object.entries(snapshot.chains || {}).filter(([, chain]) => chain.freshness?.status === "delayed");
+  const warnings = delayedChains.map(([name, chain]) => ({ component: name.toUpperCase(),
+    message: `Latest block was ${duration(chain.freshness.ageSeconds * 1000)} old when checked (warning after ${duration(chain.freshness.warningSeconds * 1000)}). ${snapshot.stale ? "Cached snapshot; current chain progress is unconfirmed." : "The snapshot is updating, but this chain head is delayed."}` }));
+  const errors = [...(snapshot.errors || []), ...warnings];
   byId("error-panel").classList.toggle("hidden", errors.length === 0);
   byId("errors").innerHTML = errors.map((error) => `<li><b>${h(error.component)}:</b> ${h(error.message)}</li>`).join("");
   const brokenCommitment = ["missing", "non-canonical"].includes(snapshot.rollup?.status);
   setStatus(byId("network-status"), snapshot.stale || errors.length ? "loading" : snapshot.healthy && !brokenCommitment ? "" : "bad",
-    snapshot.stale ? "Stale" : !snapshot.healthy || brokenCommitment ? "Degraded" : errors.length ? "Partial data" : "Healthy");
-  setText("last-update", `Updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}`);
+    snapshot.stale ? "Stale" : brokenCommitment || !l1?.healthy || !l2?.healthy ? "Degraded"
+      : delayedChains.length ? `${delayedChains.map(([name]) => name.toUpperCase()).join(" + ")} head delayed`
+      : !snapshot.healthy ? "Degraded" : errors.length ? "Partial data" : "Healthy");
+  setText("last-update", `Snapshot updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}`);
 }
 
 async function refresh() {

@@ -166,6 +166,7 @@ class Settings:
     l1_ws_url: str | None = None
     l2_ws_url: str | None = None
     live_update_seconds: int = 1
+    head_delay_warning_seconds: int = 30
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -211,7 +212,16 @@ class Settings:
             l1_ws_url=env_ws_url("EEZ_L1_WS_URL"),
             l2_ws_url=env_ws_url("EEZ_L2_WS_URL"),
             live_update_seconds=live_update_seconds,
+            head_delay_warning_seconds=env_int("EEZ_HEAD_DELAY_WARNING_SECONDS", 30, 1, 3600),
         )
+
+
+def head_freshness(timestamp: Any, observed_at: float, warning_seconds: int) -> dict[str, Any]:
+    """RPC reachability and a fresh snapshot do not prove the chain is advancing."""
+    timestamp = quantity(timestamp)
+    age = max(0, int(observed_at - timestamp)) if timestamp is not None else None
+    return {"ageSeconds": age, "warningSeconds": warning_seconds,
+            "status": "unavailable" if age is None else "delayed" if age > warning_seconds else "current"}
 
 
 class JsonClient:
@@ -422,11 +432,19 @@ class Collector:
         if history.get("available"):
             settlements = history.pop("settlements")
         progress = self._settlement_progress(chains, rollup)
+        generated_at = datetime.now(timezone.utc)
+        for chain in chains.values():
+            chain["freshness"] = head_freshness(
+                (chain.get("latest") or {}).get("timestamp"), generated_at.timestamp(),
+                self.settings.head_delay_warning_seconds,
+            )
 
         return {
-            "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "generatedAt": generated_at.isoformat().replace("+00:00", "Z"),
             "collectionDurationMs": round((time.monotonic() - started) * 1000),
-            "healthy": all(chains.get(name, {}).get("healthy") for name in ("l1", "l2")),
+            "healthy": all(chains.get(name, {}).get("healthy")
+                           and chains[name]["freshness"]["status"] == "current"
+                           for name in ("l1", "l2")),
             "errors": errors,
             "configuration": {
                 "rollupId": self.settings.rollup_id,
@@ -434,6 +452,7 @@ class Collector:
                 "recentBlockWindow": self.settings.recent_blocks,
                 "refreshSeconds": self.settings.refresh_seconds,
                 "liveUpdateSeconds": self.settings.live_update_seconds,
+                "headDelayWarningSeconds": self.settings.head_delay_warning_seconds,
                 "settlementPolicy": self.settings.settlement_policy,
                 "nativeCurrency": self.settings.l1_native_currency,
                 "explorers": {

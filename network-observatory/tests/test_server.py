@@ -94,6 +94,31 @@ def mutable_call(to_chain=0, value=7, data=b"call"):
 
 
 class DashboardUnitTests(unittest.TestCase):
+    def test_head_freshness_boundary_missing_timestamp_and_clock_skew(self):
+        self.assertEqual(server.head_freshness("0x64", 130, 30), {
+            "ageSeconds": 30, "warningSeconds": 30, "status": "current",
+        })
+        self.assertEqual(server.head_freshness(100, 131, 30)["status"], "delayed")
+        self.assertEqual(server.head_freshness(140, 131, 30)["ageSeconds"], 0)
+        for timestamp in (None, "invalid"):
+            with self.subTest(timestamp=timestamp):
+                self.assertEqual(server.head_freshness(timestamp, 131, 30), {
+                    "ageSeconds": None, "warningSeconds": 30, "status": "unavailable",
+                })
+
+    def test_head_delay_warning_configuration(self):
+        with mock.patch.dict(os.environ, EXTERNAL_RPC_ENV, clear=True):
+            self.assertEqual(server.Settings.from_env().head_delay_warning_seconds, 30)
+            for value in (1, 60, 3600):
+                with mock.patch.dict(os.environ, {"EEZ_HEAD_DELAY_WARNING_SECONDS": str(value)}):
+                    self.assertEqual(server.Settings.from_env().head_delay_warning_seconds, value)
+            for value in ("0", "-1", "3601", "1.5", "invalid"):
+                with self.subTest(value=value), mock.patch.dict(
+                    os.environ, {"EEZ_HEAD_DELAY_WARNING_SECONDS": value}
+                ):
+                    with self.assertRaises(ValueError):
+                        server.Settings.from_env()
+
     def test_quantities_are_decoded_without_floating_point(self):
         self.assertEqual(server.quantity("0x2a"), 42)
         self.assertEqual(server.quantity("42"), 42)
@@ -461,7 +486,10 @@ class ExternalEndpointTests(unittest.TestCase):
                 }[method]
             return {"result": result}
 
-        with mock.patch.object(server.JsonClient, "_open_json", side_effect=respond):
+        with mock.patch.object(server.JsonClient, "_open_json", side_effect=respond), mock.patch.object(
+            server, "datetime", wraps=server.datetime
+        ) as clock:
+            clock.now.return_value = server.datetime.fromtimestamp(100, server.timezone.utc)
             snapshot = collector.collect()
 
         self.assertTrue(snapshot["healthy"])
@@ -479,6 +507,45 @@ class ExternalEndpointTests(unittest.TestCase):
         )
         for endpoint in EXTERNAL_RPC_ENV.values():
             self.assertNotIn(endpoint, json.dumps(snapshot))
+
+    def test_fresh_snapshots_report_delayed_heads_and_recover_when_blocks_arrive(self):
+        with mock.patch.dict(os.environ, EXTERNAL_RPC_ENV, clear=True):
+            collector = server.Collector(server.Settings.from_env())
+
+        timestamp = 100
+
+        def respond(request):
+            payload = json.loads(request.data)
+            if payload["method"] == "eth_getBlockByNumber":
+                return {"result": {"number": "0x3", "timestamp": hex(timestamp),
+                                   "hash": "0x" + "11" * 32, "transactions": []}}
+            return {"result": {"eth_chainId": "0x1", "eth_syncing": False,
+                               "net_peerCount": "0x1", "eth_gasPrice": "0x1"}[payload["method"]]}
+
+        with mock.patch.object(server.JsonClient, "_open_json", side_effect=respond), mock.patch.object(
+            server, "datetime", wraps=server.datetime
+        ) as clock:
+            clock.now.return_value = server.datetime.fromtimestamp(130, server.timezone.utc)
+            current = collector.collect()
+            self.assertTrue(current["healthy"])
+
+            clock.now.return_value = server.datetime.fromtimestamp(131, server.timezone.utc)
+            delayed = collector.collect()
+            self.assertNotEqual(delayed["generatedAt"], current["generatedAt"])
+            self.assertFalse(delayed["healthy"], "successful RPCs must not hide delayed chain heads")
+            self.assertEqual(delayed["errors"], [], "head delay is distinct from a failed RPC")
+            self.assertEqual(delayed["configuration"]["headDelayWarningSeconds"], 30)
+            for chain in delayed["chains"].values():
+                self.assertTrue(chain["healthy"])
+                self.assertEqual(chain["freshness"]["status"], "delayed")
+
+            timestamp = 135
+            clock.now.return_value = server.datetime.fromtimestamp(136, server.timezone.utc)
+            recovered = collector.collect()
+            self.assertTrue(recovered["healthy"])
+            for chain in recovered["chains"].values():
+                self.assertEqual(chain["freshness"]["ageSeconds"], 1)
+
 
 
 if __name__ == "__main__":

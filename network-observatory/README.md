@@ -66,7 +66,7 @@ Optional services and links can be added independently:
 | `EEZ_L1_COMPOSER_RPC_URL`, `EEZ_L2_COMPOSER_RPC_URL` | Optional public transaction fronts displayed for copying. |
 | `EEZ_SETTLEMENT_LOOKBACK_BLOCKS` | Registry log history window, default `512` L1 blocks, allowed `32`–`4096`. Independent of the block cards. |
 | `EEZ_RECENT_SETTLEMENTS` | Maximum displayed posts from that history, default `12`, allowed `2`–`64`. |
-| `EEZ_L1_NATIVE_CURRENCY` | Native 18-decimal receipt currency, default `ETH`; configure `GNO` for Gnosis/Chiado. |
+| `EEZ_L1_NATIVE_CURRENCY` | Native 18-decimal receipt currency, default `ETH`; configure `XDAI` for Gnosis/Chiado. |
 
 Use ordinary read RPC endpoints for collection. Exact settlement correlations
 also need the L2 endpoint to expose `eez_getSettlementByL2Block` and
@@ -181,6 +181,16 @@ data is retried on the next collection. A failed optional component is
 reported as a warning while healthy chain data remains visible. Blank Beacon
 and Blobscan API URLs disable their integrations without contacting an assumed
 internal service.
+
+Snapshot delivery and chain progress are reported separately. Each chain card
+shows its latest block age. A head older than `EEZ_HEAD_DELAY_WARNING_SECONDS`
+(default 30 seconds; valid range 1–3600) produces a **head delayed** warning and
+sets snapshot `healthy` to false, even when RPC calls and live updates succeed.
+`chains.*.healthy` continues to indicate RPC reachability; `chains.*.freshness`
+reports block age, warning threshold, and `current`, `delayed`, or `unavailable`
+status. The warning clears when a fresh block arrives. This threshold monitors
+block production and does not change settlement frequency. A fresh snapshot
+with delayed heads is distinct from a cached snapshot marked `stale`.
 
 ### Live updates
 

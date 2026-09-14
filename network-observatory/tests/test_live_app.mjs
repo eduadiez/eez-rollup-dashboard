@@ -57,6 +57,27 @@ assert.equal(f.state.snapshot.chains.l2.latest.number, 12);
 assert.equal(f.intervals.size, 0);
 assert.match(f.elements.get("live-status").innerHTML, /Live updates/);
 
+const delayed = snapshot(12);
+delayed.healthy = false;
+delayed.chains.l1.freshness = { ageSeconds: 138, warningSeconds: 30, status: "delayed" };
+delayed.chains.l2.freshness = { ageSeconds: 133, warningSeconds: 30, status: "delayed" };
+f.sockets[0].push(delayed);
+assert.match(f.elements.get("live-status").innerHTML, /Live updates/, "head delay must not disconnect a working feed");
+assert.match(f.elements.get("network-status").innerHTML, /L1 \+ L2 head delayed/);
+assert.match(f.elements.get("l1-freshness").textContent, /Head delayed/);
+assert.match(f.elements.get("errors").innerHTML, /snapshot is updating/);
+f.sockets[0].push({ ...delayed, stale: true });
+assert.match(f.elements.get("network-status").innerHTML, /Stale/);
+assert.match(f.elements.get("errors").innerHTML, /Cached snapshot/);
+assert.doesNotMatch(f.elements.get("errors").innerHTML, /snapshot is updating/);
+const recovered = snapshot(13);
+recovered.chains.l1.freshness = { ageSeconds: 3, warningSeconds: 30, status: "current" };
+recovered.chains.l2.freshness = { ageSeconds: 2, warningSeconds: 30, status: "current" };
+f.sockets[0].push(recovered);
+assert.match(f.elements.get("network-status").innerHTML, /Healthy/);
+assert.doesNotMatch(f.elements.get("l1-freshness").textContent, /Head delayed/);
+assert.doesNotMatch(f.elements.get("errors").innerHTML, /snapshot is updating/);
+
 const pending = f.refresh();
 assert.equal(f.requests.length, 1);
 f.sockets[0].push(snapshot(13));
