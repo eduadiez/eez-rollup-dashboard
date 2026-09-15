@@ -94,6 +94,34 @@ def mutable_call(to_chain=0, value=7, data=b"call"):
 
 
 class DashboardUnitTests(unittest.TestCase):
+    def test_cross_chain_health_distinguishes_waiting_stalls_unknown_and_inactivity(self):
+        queue = {"queued": 2, "inFlight": 0, "ready": 0, "blocked": 2, "unknown": 0,
+                 "evaluatedAtMs": 100000, "oldestPendingAgeMs": 90000, "lastCanonicalCompletion": None}
+        self.assertEqual(server.cross_chain_health(queue, 101000, 30)["status"], "waiting")
+        self.assertEqual(server.cross_chain_health(queue, 131000, 30)["status"], "unknown")
+        ready = {**queue, "ready": 1, "blocked": 1}
+        self.assertEqual(server.cross_chain_health(ready, 101000, 30)["status"], "stalled")
+        ready["lastCanonicalCompletion"] = {"observedAtMs": 99000}
+        self.assertEqual(server.cross_chain_health(ready, 101000, 30)["status"], "ready")
+        settling = {**queue, "queued": 0, "blocked": 0, "inFlight": 1}
+        self.assertEqual(server.cross_chain_health(settling, 101000, 30)["status"], "stalled")
+        idle = {**queue, "queued": 0, "blocked": 0}
+        self.assertEqual(server.cross_chain_health(idle, 999999, 30)["status"], "idle")
+        self.assertEqual(server.cross_chain_health(None, 101000, 30)["status"], "unknown")
+        self.assertFalse(server.cross_chain_health({"queued": 1}, 101000, 30)["available"])
+        self.assertFalse(server.cross_chain_health({**queue, "blocked": 3}, 101000, 30)["available"])
+
+    def test_cross_chain_service_clock_excludes_idle_time_and_blocked_waits(self):
+        queue = {"queued": 1, "inFlight": 1, "ready": 0, "blocked": 1, "unknown": 0,
+                 "evaluatedAtMs": 999000, "oldestPendingAgeMs": 900000,
+                 "oldestServiceAgeMs": 1000, "lastCanonicalCompletion": {"observedAtMs": 1000}}
+        self.assertEqual(server.cross_chain_health(queue, 1000000, 30)["status"], "settling")
+        queue["oldestServiceAgeMs"] = 31000
+        self.assertEqual(server.cross_chain_health(queue, 1000000, 30)["status"], "stalled")
+        queue.pop("oldestServiceAgeMs")
+        queue["oldestPendingAgeMs"] = 1000
+        self.assertEqual(server.cross_chain_health(queue, 1000000, 30)["status"], "settling")
+
     def test_head_freshness_boundary_missing_timestamp_and_clock_skew(self):
         self.assertEqual(server.head_freshness("0x64", 130, 30), {
             "ageSeconds": 30, "warningSeconds": 30, "status": "current",
@@ -469,6 +497,8 @@ class ExternalEndpointTests(unittest.TestCase):
             requests.append(request)
             payload = json.loads(request.data)
             method = payload["method"]
+            if method == "eez_getCrossChainQueueStatus":
+                return {"result": {"queued": 0, "inFlight": 0, "ready": 0, "blocked": 0, "unknown": 0}}
             if method == "eth_getBlockByNumber":
                 tag = payload["params"][0]
                 if tag in ("safe", "finalized"):
@@ -516,6 +546,8 @@ class ExternalEndpointTests(unittest.TestCase):
 
         def respond(request):
             payload = json.loads(request.data)
+            if payload["method"] == "eez_getCrossChainQueueStatus":
+                return {"result": {"queued": 0, "inFlight": 0, "ready": 0, "blocked": 0, "unknown": 0}}
             if payload["method"] == "eth_getBlockByNumber":
                 return {"result": {"number": "0x3", "timestamp": hex(timestamp),
                                    "hash": "0x" + "11" * 32, "transactions": []}}
