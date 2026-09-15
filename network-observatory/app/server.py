@@ -224,6 +224,48 @@ def head_freshness(timestamp: Any, observed_at: float, warning_seconds: int) -> 
             "status": "unavailable" if age is None else "delayed" if age > warning_seconds else "current"}
 
 
+
+def cross_chain_health(queue: Any, observed_at_ms: int, warning_seconds: int) -> dict[str, Any]:
+    """Head freshness alone does not establish cross-chain processing health."""
+    if not isinstance(queue, dict):
+        return {"available": False, "status": "unknown", "message": "Queue telemetry unavailable"}
+    counts = {key: quantity(queue.get(key)) for key in ("queued", "inFlight", "ready", "blocked", "unknown")}
+    if any(value is None or value < 0 for value in counts.values()):
+        return {"available": False, "status": "unknown", "message": "Queue telemetry incomplete"}
+    if counts["ready"] + counts["blocked"] + counts["unknown"] != counts["queued"]:
+        return {"available": False, "status": "unknown", "message": "Queue counts inconsistent"}
+    result = {**queue, "available": True, "status": "unknown"}
+    warning_ms = warning_seconds * 1000
+    completion_at = quantity((queue.get("lastCanonicalCompletion") or {}).get("observedAtMs"))
+    oldest_age = quantity(queue.get("oldestPendingAgeMs"))
+    # A new request after inactivity, or a newly executable request after a
+    # long source wait, receives a fresh processing window.
+    service_age = quantity(queue.get("oldestServiceAgeMs", oldest_age))
+    since_progress = service_age
+    if completion_at is not None and service_age is not None:
+        since_progress = min(service_age, max(0, observed_at_ms - completion_at))
+    result["noProgressAgeMs"] = since_progress
+    if counts["queued"] + counts["inFlight"] == 0:
+        result.update(status="idle", message="No pending cross-chain requests")
+    elif counts["inFlight"]:
+        stalled = since_progress is not None and since_progress > warning_ms
+        result.update(status="stalled" if stalled else "settling",
+                      message="Awaiting cross-chain settlement progress" if stalled else "Cross-chain settlement in progress")
+    else:
+        evaluated_at = quantity(queue.get("evaluatedAtMs"))
+        if evaluated_at is None or observed_at_ms - evaluated_at > warning_ms:
+            result["message"] = "Queue readiness needs a fresh evaluation"
+        elif counts["ready"]:
+            stalled = since_progress is not None and since_progress > warning_ms
+            result.update(status="stalled" if stalled else "ready",
+                          message="Ready requests have not settled recently" if stalled else "Ready requests awaiting settlement")
+        elif counts["unknown"]:
+            result["message"] = "Some pending requests have not been evaluated"
+        else:
+            result.update(status="waiting", message="Requests are waiting for source conditions to change")
+    return result
+
+
 class JsonClient:
     def __init__(self, base_url: str, timeout: int):
         self.base_url = base_url
@@ -433,6 +475,8 @@ class Collector:
             settlements = history.pop("settlements")
         progress = self._settlement_progress(chains, rollup)
         generated_at = datetime.now(timezone.utc)
+        queue = self._capture(errors, "cross-chain-queue", self.l2.rpc, "eez_getCrossChainQueueStatus", [])
+        cross_chain = cross_chain_health(queue, int(generated_at.timestamp() * 1000), self.settings.head_delay_warning_seconds)
         for chain in chains.values():
             chain["freshness"] = head_freshness(
                 (chain.get("latest") or {}).get("timestamp"), generated_at.timestamp(),
@@ -444,7 +488,7 @@ class Collector:
             "collectionDurationMs": round((time.monotonic() - started) * 1000),
             "healthy": all(chains.get(name, {}).get("healthy")
                            and chains[name]["freshness"]["status"] == "current"
-                           for name in ("l1", "l2")),
+                           for name in ("l1", "l2")) and cross_chain["status"] in ("idle", "ready", "settling"),
             "errors": errors,
             "configuration": {
                 "rollupId": self.settings.rollup_id,
@@ -470,6 +514,7 @@ class Collector:
             "blobSettlements": settlements,
             "settlementHistory": history,
             "settlementProgress": progress,
+            "crossChain": cross_chain,
             "metrics": metrics,
         }
 

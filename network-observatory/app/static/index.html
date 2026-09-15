@@ -52,6 +52,15 @@
           <div id="policy-progress" class="policy-progress"><p class="muted">Waiting for canonical settlement data…</p></div>
           <div id="latest-settlement" class="latest-settlement"></div>
         </section>
+        <section class="panel settlement-policy" aria-labelledby="queue-heading">
+          <div class="panel-heading">
+            <div><p class="eyebrow">CROSS-CHAIN PROCESSING</p><h2 id="queue-heading">Pending requests</h2></div>
+            <span id="queue-status" class="status-pill loading" role="status">Unknown</span>
+          </div>
+          <div id="queue-counts" class="policy-rules"></div>
+          <p id="queue-message" class="muted">Waiting for queue telemetry…</p>
+          <p id="queue-progress" class="muted"></p>
+        </section>
         <section class="hero-grid" aria-label="Network summary">
           <article class="chain-card l1-card">
             <div class="card-heading">

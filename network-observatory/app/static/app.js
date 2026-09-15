@@ -679,9 +679,23 @@ function renderCorrelationResult(payload) {
     <details class="correlation-raw"><summary>Full correlation response</summary><pre>${h(JSON.stringify(payload.result, null, 2))}</pre></details>`;
 }
 
+function renderCrossChain(queue) {
+  const status = queue?.status || "unknown";
+  const labels = { idle: "Idle", ready: "Ready", settling: "Settling", waiting: "Waiting for source", stalled: "Stalled", unknown: "Unknown" };
+  setStatus(byId("queue-status"), status === "stalled" ? "bad" : ["waiting", "unknown"].includes(status) ? "loading" : "", labels[status] || "Unknown");
+  setHtml("queue-counts", [["Queued", queue?.queued], ["In flight", queue?.inFlight], ["Ready", queue?.ready], ["Blocked", queue?.blocked], ["Unevaluated", queue?.unknown]]
+    .map(([label, value]) => `<div><p>${h(label)}</p><strong>${number(value)}</strong></div>`).join(""));
+  const reasonLabels = { nonce: "Missing predecessor", fee: "Fee cap", balance: "Source balance", escrow: "Rollup escrow" };
+  const reasons = Object.entries(queue?.blockedReasons || {}).map(([reason, count]) => `${reasonLabels[reason] || reason}: ${number(count)}`).join(" · ");
+  setText("queue-message", (queue?.message || "Queue telemetry unavailable; chain heads alone do not confirm cross-chain progress.") + (reasons ? ` · ${reasons}` : ""));
+  const completed = queue?.lastCanonicalCompletion?.observedAtMs;
+  setText("queue-progress", `Oldest pending: ${duration(queue?.oldestPendingAgeMs ?? null)} · Last cross-chain completion observed: ${completed ? new Date(completed).toLocaleString() : "Unknown"}`);
+}
+
 function render(snapshot) {
   state.snapshot = snapshot;
   renderSettlementPolicy(snapshot);
+  renderCrossChain(snapshot.crossChain);
   const l1 = snapshot.chains?.l1;
   const l2 = snapshot.chains?.l2;
   renderChain("L1", l1);
@@ -728,9 +742,12 @@ function render(snapshot) {
   byId("error-panel").classList.toggle("hidden", errors.length === 0);
   byId("errors").innerHTML = errors.map((error) => `<li><b>${h(error.component)}:</b> ${h(error.message)}</li>`).join("");
   const brokenCommitment = ["missing", "non-canonical"].includes(snapshot.rollup?.status);
-  setStatus(byId("network-status"), snapshot.stale || errors.length ? "loading" : snapshot.healthy && !brokenCommitment ? "" : "bad",
+  setStatus(byId("network-status"), snapshot.stale || errors.length || ["waiting", "unknown"].includes(snapshot.crossChain?.status || "unknown") ? "loading" : snapshot.healthy && !brokenCommitment ? "" : "bad",
     snapshot.stale ? "Stale" : brokenCommitment || !l1?.healthy || !l2?.healthy ? "Degraded"
       : delayedChains.length ? `${delayedChains.map(([name]) => name.toUpperCase()).join(" + ")} head delayed`
+      : snapshot.crossChain?.status === "stalled" ? "Cross-chain stalled"
+      : snapshot.crossChain?.status === "waiting" ? "Cross-chain waiting"
+      : !snapshot.crossChain || snapshot.crossChain.status === "unknown" ? "Cross-chain unknown"
       : !snapshot.healthy ? "Degraded" : errors.length ? "Partial data" : "Healthy");
   setText("last-update", `Snapshot updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}`);
 }

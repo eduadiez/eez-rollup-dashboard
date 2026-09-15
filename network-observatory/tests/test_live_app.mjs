@@ -43,6 +43,7 @@ function fixture({ unavailable = false, blocked = false } = {}) {
 
 function snapshot(height, hash = "aa") {
   return { generatedAt: "2026-09-14T12:00:00Z", healthy: true, errors: [], configuration: { refreshSeconds: 4 },
+    crossChain: { status: "idle", queued: 0, inFlight: 0, ready: 0, blocked: 0, unknown: 0 },
     chains: { l1: { healthy: true, latest: { number: 23053000 } },
       l2: { healthy: true, latest: { number: height, hash: "0x" + hash.repeat(32) } } } };
 }
@@ -77,6 +78,16 @@ f.sockets[0].push(recovered);
 assert.match(f.elements.get("network-status").innerHTML, /Healthy/);
 assert.doesNotMatch(f.elements.get("l1-freshness").textContent, /Head delayed/);
 assert.doesNotMatch(f.elements.get("errors").innerHTML, /snapshot is updating/);
+
+f.sockets[0].push({ ...recovered, crossChain: undefined });
+assert.match(f.elements.get("network-status").innerHTML, /Cross-chain unknown/);
+f.sockets[0].push({ ...recovered, healthy: false, crossChain: { status: "stalled", queued: 1, ready: 1 } });
+assert.match(f.elements.get("network-status").innerHTML, /Cross-chain stalled/);
+assert.match(f.elements.get("live-status").innerHTML, /Live updates/);
+f.sockets[0].push({ ...recovered, healthy: false, crossChain: { status: "waiting", queued: 2, blocked: 2 } });
+assert.match(f.elements.get("network-status").innerHTML, /Cross-chain waiting/);
+f.sockets[0].push(recovered);
+assert.match(f.elements.get("network-status").innerHTML, /Healthy/);
 
 const pending = f.refresh();
 assert.equal(f.requests.length, 1);

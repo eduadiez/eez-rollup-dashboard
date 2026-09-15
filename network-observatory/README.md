@@ -30,6 +30,8 @@ network. It monitors:
 - a top-of-page Composer RPC bar that distinguishes the L1→L2 and L2→L1
   transaction fronts, reports their source chain IDs, and provides copyable
   public URLs;
+- cross-chain queue counts, source blocking reasons, request age and canonical
+  completion progress, separate from chain-head freshness;
 - configured settlement rules, progress from the canonical L1 commitment to the
   general L2-block threshold, and the last canonical post;
 - a separate bounded settlement-history window that keeps infrequent posts
@@ -191,6 +193,35 @@ reports block age, warning threshold, and `current`, `delayed`, or `unavailable`
 status. The warning clears when a fresh block arrives. This threshold monitors
 block production and does not change settlement frequency. A fresh snapshot
 with delayed heads is distinct from a cached snapshot marked `stale`.
+
+### Cross-chain queue health
+
+The monitor reads `eez_getCrossChainQueueStatus` from the configured L2 RPC.
+No additional endpoint or configuration is required. The queue panel reports
+queued, in-flight, ready, blocked and unevaluated requests, with nonce, fee,
+balance or escrow blocking reasons and the last observed canonical completion.
+
+Processing is `idle` when no requests are pending, `waiting` when source
+conditions prevent execution, `ready` when eligible requests await service,
+and `settling` while requests are in flight. `stalled` means executable work
+has exceeded `EEZ_HEAD_DELAY_WARNING_SECONDS` without canonical progress.
+Service age excludes source waiting and prior inactivity, so funding an old
+request gives it a fresh processing window. This warning does not change
+admission, transaction fees or settlement scheduling.
+
+Missing, incomplete or stale readiness is `unknown`. These conditions remain
+visible even when both chains produce fresh blocks; expected source waiting
+has a distinct warning from a processing stall. Nodes without the queue RPC
+still provide chain data, but cannot produce an unqualified healthy status.
+Observations are bounded and may be lost on restart. They contain no signed
+transaction envelopes and do not authorize execution.
+
+For one known request, the L2 node also exposes
+`eez_getCrossChainTransaction` with its transaction hash as the sole parameter.
+This returns its current owner, direction, nonce and source blocking condition
+while the node retains that identity. Both node methods use the configured
+HTTP and WebSocket transports; the monitor forwards aggregate status through
+its existing snapshot and live feed.
 
 ### Live updates
 

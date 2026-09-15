@@ -55,6 +55,16 @@ assert.match(
 const assertions = String.raw`
 // Search debounce assertions below concern search timers. Transport startup
 // timers have their own coverage in test_live_app.mjs.
+renderCrossChain({ status: "waiting", queued: 1000, inFlight: 0, ready: 0, blocked: 1000, unknown: 0,
+  message: "Waiting for predecessor", oldestPendingAgeMs: 60000 });
+assert.match(element("queue-status").innerHTML, /Waiting for source/);
+assert.match(element("queue-counts").innerHTML, /1,000/);
+assert.match(element("queue-message").textContent, /Waiting for predecessor/);
+renderCrossChain({ status: "stalled", queued: 1, ready: 1 });
+assert.match(element("queue-status").innerHTML, /Stalled/);
+renderCrossChain(undefined);
+assert.match(element("queue-status").innerHTML, /Unknown/);
+assert.match(element("queue-progress").textContent, /Unknown/);
 scheduledTimeouts.clear();
 state.snapshot = { configuration: { explorers: {
   l1: "https://eez.asuscomm.com:4444",
