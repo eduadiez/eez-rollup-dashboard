@@ -48,8 +48,8 @@ server {
         return 404;
     }
 
-    location = /monitor { return 302 "/#/monitor"; }
-    location = /monitor/ { return 302 "/#/monitor"; }
+    location = /monitor { return 308 "/monitor/"; }
+    location = /monitor/ { try_files /index.html =404; }
 
     location /monitor/api/ {
         resolver 127.0.0.11 valid=10s ipv6=off;

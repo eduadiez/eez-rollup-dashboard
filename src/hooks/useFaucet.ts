@@ -112,7 +112,7 @@ export function useFaucet(log: Logger, walletAddress: string | null) {
       try {
         let key = config.demoPrivateKey;
         if (!key) {
-          const runtimeResponse = await fetch("/config.json");
+          const runtimeResponse = await fetch(`${import.meta.env.BASE_URL}config.json`);
           if (runtimeResponse.ok) {
             const payload = (await runtimeResponse.json()) as {
               demoPrivateKey?: string;

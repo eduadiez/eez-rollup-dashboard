@@ -64,7 +64,7 @@ export function useConfigLoader() {
       // Current EEZ/Kurtosis runtime configuration. The mapping below is the
       // compatibility layer between the POC UI names and the current network.
       try {
-        const response = await fetch("/config.json");
+        const response = await fetch(`${import.meta.env.BASE_URL}config.json`);
         if (response.ok) {
           const payload = (await response.json()) as RuntimeConfig & { browser?: RuntimeConfig };
           const runtime: RuntimeConfig = payload.browser ?? payload;

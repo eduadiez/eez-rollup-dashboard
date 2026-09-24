@@ -77,6 +77,7 @@ export default defineConfig(() => {
   );
 
   return {
+    base: process.env.EEZ_UI_BASE_PATH || "/",
     plugins: [react(), serveSharedPlugin(), runtimeConfigPlugin(runtime)],
     server: {
       port: 8080,
