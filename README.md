@@ -61,7 +61,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-The UI is served at <http://127.0.0.1:8080> by default. Browser RPC requests use
+The UI is served at <http://127.0.0.1:8080/dashboard/> by default. Browser RPC requests use
 same-origin `/rpc/*` and `/composer/*` routes; nginx proxies those requests to the
 configured upstreams, avoiding browser CORS and mixed-content problems.
 
@@ -96,18 +96,18 @@ To intentionally expose the UI directly on other interfaces, set
 
 ### Single-domain path gateway
 
-For a gateway that publishes the UI at `/dashboard/` and the monitor at
-`/monitor/`, build a separate image with `EEZ_UI_BASE_PATH=/dashboard/` and a
-distinct `EEZ_UI_IMAGE` tag. The default `/` build remains for existing
-hostname deployments. The gateway strips `/dashboard` before proxying to the
+The default image uses `EEZ_UI_BASE_PATH=/dashboard/`. For a gateway that
+publishes the UI at `/dashboard/` and the monitor at `/monitor/`, use a
+distinct `EEZ_UI_IMAGE` tag for a reviewed build. Set
+`EEZ_UI_BASE_PATH=/` explicitly when rebuilding for an existing root-path
+hostname deployment. The gateway strips `/dashboard` before proxying to the
 UI and preserves `/monitor`. Its `/monitor/api/*` requests reach the Python
 collector through this UI's Nginx proxy. The UI's runtime configuration is
 fetched through `/dashboard/config.json`; network RPC and Composer routes stay
 at `/rpc/*` and `/composer/*` on the same public hostname.
 
 ```bash
-docker build --build-arg EEZ_UI_BASE_PATH=/dashboard/ \
-  -t eez-rollup-ui:dashboard-paths .
+docker build -t eez-rollup-ui:dashboard-paths .
 ```
 
 Set `EEZ_UI_IMAGE=eez-rollup-ui:dashboard-paths` in the private `.env` when
@@ -163,7 +163,7 @@ npm ci
 npm run dev
 ```
 
-Open <http://127.0.0.1:8080>. The generated `.runtime/config.json` is ignored by
+Open <http://127.0.0.1:8080/dashboard/>. The generated `.runtime/config.json` is ignored by
 Git.
 
 ## Checks

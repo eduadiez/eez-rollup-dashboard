@@ -7,7 +7,7 @@ services:
       context: .
       args:
         EEZ_UI_PROTOCOL_COMMIT: "${EEZ_UI_PROTOCOL_COMMIT:-development}"
-        EEZ_UI_BASE_PATH: "${EEZ_UI_BASE_PATH:-/}"
+        EEZ_UI_BASE_PATH: "${EEZ_UI_BASE_PATH:-/dashboard/}"
     ports:
       - "${EEZ_UI_BIND:-127.0.0.1}:${EEZ_UI_PORT:-8080}:8080"
     extra_hosts:
