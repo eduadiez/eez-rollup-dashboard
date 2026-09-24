@@ -22,12 +22,15 @@ function runtimeConfigPlugin(runtime: RuntimeFile): Plugin {
   return {
     name: "eez-runtime-config",
     configureServer(server) {
-      server.middlewares.use("/config.json", (_req, res) => {
-        const latest = loadRuntimeFile();
-        res.statusCode = 200;
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify(latest.browser ?? runtime.browser ?? {}, null, 2));
-      });
+      const base = process.env.EEZ_UI_BASE_PATH || "/dashboard/";
+      for (const configPath of new Set(["/config.json", `${base}config.json`])) {
+        server.middlewares.use(configPath, (_req, res) => {
+          const latest = loadRuntimeFile();
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(latest.browser ?? runtime.browser ?? {}, null, 2));
+        });
+      }
     },
   };
 }
@@ -63,7 +66,7 @@ export default defineConfig(() => {
   const proxy = runtime.proxy ?? {};
   const proxies = Object.fromEntries(
     Object.entries({
-      "/monitor": {
+      "/monitor/api": {
         target: process.env.EEZ_MONITOR_UPSTREAM || "http://127.0.0.1:18080",
         changeOrigin: false,
         ws: true,
@@ -77,6 +80,7 @@ export default defineConfig(() => {
   );
 
   return {
+    base: process.env.EEZ_UI_BASE_PATH || "/dashboard/",
     plugins: [react(), serveSharedPlugin(), runtimeConfigPlugin(runtime)],
     server: {
       port: 8080,

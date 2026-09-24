@@ -136,7 +136,7 @@ Start the dashboard and collector together from the repository root:
 docker compose up -d --build
 ```
 
-Open `http://127.0.0.1:8080/#/monitor`. The collector has no published port;
+Open `http://127.0.0.1:8080/monitor/`. The collector has no published port;
 nginx forwards `/monitor/` requests and WebSocket upgrades to the internal service.
 
 For a direct run without Docker, use Python 3.10 or newer and install the pinned
@@ -151,7 +151,7 @@ EEZ_DASHBOARD_PORT=18080 \
 python3 src/monitor/server.py
 ```
 
-Replace the example URLs with your endpoints, then start Vite and open `http://127.0.0.1:8080/#/monitor`.
+Replace the example URLs with your endpoints, then start Vite and open `http://127.0.0.1:8080/monitor/`.
 The direct Python process reads environment variables; `.env` is loaded by
 Compose only. Set `EEZ_DASHBOARD_PORT` to change the Python listening port.
 
@@ -243,13 +243,13 @@ proxy_set_header Connection $eez_connection_upgrade;
 proxy_read_timeout 60s;
 ```
 
-The public deployment uses `wss://eez.asuscomm.com/ws/l1` and
-`wss://eez.asuscomm.com/ws/l2` for node subscriptions, and
-`wss://eez.asuscomm.com/monitor/api/live` for browser updates. TLS terminates at
-the existing gateway; the node WebSocket ports remain bound to loopback. No
+With the path gateway, use `wss://example.com/ws/l1` and
+`wss://example.com/ws/l2` for node subscriptions, and
+`wss://example.com/monitor/api/live` for browser updates. TLS terminates at
+the gateway; the node WebSocket ports remain bound to loopback. No
 composer submission endpoint is used by the live feed.
 
-The monitor is part of the dashboard at `https://eez.asuscomm.com/#/monitor`.
+The monitor is part of the dashboard at `https://example.com/monitor/`.
 The dashboard serves its assets, and monitor API requests use `/monitor/api/`
 through the existing gateway. The service has no Docker socket or runtime access
 to the composer; preserve its read-only container settings when updating an

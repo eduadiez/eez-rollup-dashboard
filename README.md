@@ -20,7 +20,8 @@ The application preserves the original sync-rollups POC screens:
 - Execution visualizer
 
 The top navigation is **Dashboard → Monitor → Visualizer**. The read-only
-[network monitor](src/monitor/README.md) lives at `#/monitor` and shares
+[network monitor](src/monitor/README.md) lives at `/monitor/` (legacy `#/monitor`
+links still open it) and shares
 the dashboard layout, header, footer, and theme. The monitor page mounts inside
 the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
@@ -60,7 +61,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-The UI is served at <http://127.0.0.1:8080> by default. Browser RPC requests use
+The UI is served at <http://127.0.0.1:8080/dashboard/> by default. Browser RPC requests use
 same-origin `/rpc/*` and `/composer/*` routes; nginx proxies those requests to the
 configured upstreams, avoiding browser CORS and mixed-content problems.
 
@@ -92,6 +93,30 @@ If migrating from the earlier optional shared-network setup, remove
 COMPOSE_FILE and EEZ_UI_PUBLIC_NETWORK from your .env and shell environment.
 To intentionally expose the UI directly on other interfaces, set
 `EEZ_UI_BIND=0.0.0.0`; the default localhost binding is suitable for the gateway.
+
+### Single-domain path gateway
+
+The default image uses `EEZ_UI_BASE_PATH=/dashboard/`. For a gateway that
+publishes the UI at `/dashboard/` and the monitor at `/monitor/`, use a
+distinct `EEZ_UI_IMAGE` tag for a reviewed build. Set
+`EEZ_UI_BASE_PATH=/` explicitly when rebuilding for an existing root-path
+hostname deployment. The gateway strips `/dashboard` before proxying to the
+UI and preserves `/monitor`. Its `/monitor/api/*` requests reach the Python
+collector through this UI's Nginx proxy. The UI's runtime configuration is
+fetched through `/dashboard/config.json`; network RPC and Composer routes stay
+at `/rpc/*` and `/composer/*` on the same public hostname.
+
+```bash
+docker build -t eez-rollup-ui:dashboard-paths .
+```
+
+Set `EEZ_UI_IMAGE=eez-rollup-ui:dashboard-paths` in the private `.env` when
+selecting this image for Compose. Keep the existing image tag for rollback.
+
+Set the desired explorer and Composer URLs in the private environment before
+cutover. Validate the built image at loopback, including the `/monitor/` page,
+dashboard assets, runtime config, and monitor WebSocket. Changing the build
+argument requires a new image; recreating a running UI is a separate operation.
 
 ## Build and run the image directly
 
@@ -138,7 +163,7 @@ npm ci
 npm run dev
 ```
 
-Open <http://127.0.0.1:8080>. The generated `.runtime/config.json` is ignored by
+Open <http://127.0.0.1:8080/dashboard/>. The generated `.runtime/config.json` is ignored by
 Git.
 
 ## Checks

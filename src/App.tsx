@@ -48,6 +48,7 @@ function getInitialView(): string {
   const hash = raw.split("?")[0];
   if (hash === "visualizer") return "visualizer";
   if (hash === "monitor") return "monitor";
+  if (window.location.pathname === "/monitor" || window.location.pathname === "/monitor/") return "monitor";
   return "dashboard";
 }
 
@@ -124,7 +125,9 @@ export function App() {
     setPendingDebugHash(null);
     setInitialBlock(null);
     setInitialVisualizerMode(undefined);
-    window.location.hash = v === "dashboard" ? "" : `#/${v}`;
+    const pathname = v === "monitor" ? "/monitor/" : import.meta.env.BASE_URL;
+    const hash = v === "dashboard" || v === "monitor" ? "" : `#/${v}`;
+    window.history.pushState(null, "", `${pathname}${hash}`);
     if (v === "dashboard") setDashboardTab("dashboard");
   }, []);
 
@@ -137,8 +140,7 @@ export function App() {
     setInitialBlock(blockNumber);
     setInitialVisualizerMode("explorer");
     setView("visualizer");
-    // Include block= in hash so the hashchange listener preserves it
-    window.location.hash = `#/visualizer?block=${blockNumber}`;
+    window.history.pushState(null, "", `${import.meta.env.BASE_URL}#/visualizer?block=${blockNumber}`);
   }, []);
 
   // Listen for browser back/forward
@@ -157,7 +159,11 @@ export function App() {
       setView(getInitialView());
     };
     window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    window.addEventListener("popstate", onHashChange);
+    return () => {
+      window.removeEventListener("hashchange", onHashChange);
+      window.removeEventListener("popstate", onHashChange);
+    };
   }, []);
 
   // Track counter demo cross-chain transactions in history
