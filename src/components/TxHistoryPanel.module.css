@@ -7,7 +7,7 @@
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.15s both;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card:hover {
@@ -161,7 +161,7 @@
 .badge.pending {
   background: var(--accent-dim);
   color: var(--accent-light);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.15);
 }
 
 .badge.confirmed {
@@ -223,7 +223,7 @@
   font-weight: 500;
   color: var(--accent-light);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.15);
   padding: 2px 7px;
   border-radius: 4px;
   cursor: pointer;
@@ -233,7 +233,7 @@
 
 .explorerBtn:hover {
   color: var(--text-bright);
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(154, 163, 179, 0.15);
   border-color: var(--accent-light);
 }
 

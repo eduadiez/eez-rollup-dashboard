@@ -10,7 +10,6 @@ from __future__ import annotations
 import itertools
 import json
 import logging
-import mimetypes
 import os
 import re
 import threading
@@ -21,7 +20,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlparse
@@ -32,12 +30,12 @@ from live import SnapshotFeed, serve_websocket
 
 
 LOG = logging.getLogger("eez-dashboard")
-STATIC_DIR = Path(__file__).resolve().parent / "static"
 ROLLUPS_SELECTOR = "ef678d27"  # rollups(uint64)
 SELECTOR_RE = re.compile(r"^(?:0x[0-9a-fA-F]{1,64}|[0-9]{1,20})$")
 HASH_RE = re.compile(r"^0x[0-9a-fA-F]{64}$")
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
-BATCH_POSTED_TOPIC = "0xd6f8d71ce42a799b91f399271f4b0e91f85eb87fac7bb2cedd4b3a52fad36182"
+# feature/events: BatchPosted(bytes32 sharedPublicInput, uint64[] rollupIds).
+BATCH_POSTED_TOPIC = "0x70159c08b708a43c8e97ba2da7378cf59ee0b44dab6d764121b8079183ea477f"
 BLOB_BYTES = 131072
 
 
@@ -167,6 +165,8 @@ class Settings:
     l2_ws_url: str | None = None
     live_update_seconds: int = 1
     head_delay_warning_seconds: int = 30
+    l2_recent_blocks: int = 100
+    l1_block_time_ms: int | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -190,7 +190,9 @@ class Settings:
             beacon_url=env_http_url("EEZ_BEACON_URL", allow_query=True),
             registry_address=registry.lower() if registry else None,
             rollup_id=env_int("EEZ_ROLLUP_ID", 1, 0, 2**64 - 1),
-            recent_blocks=env_int("EEZ_RECENT_BLOCKS", 12, 4, 32),
+            recent_blocks=env_int("EEZ_L1_RECENT_BLOCKS", 20, 4, 128),
+            l2_recent_blocks=env_int("EEZ_L2_RECENT_BLOCKS", 100, 4, 128),
+            l1_block_time_ms=env_int("EEZ_L1_BLOCK_TIME_MS", 0, 1000, 60000) if os.getenv("EEZ_L1_BLOCK_TIME_MS") else None,
             refresh_seconds=refresh_seconds,
             request_timeout_seconds=env_int(
                 "EEZ_REQUEST_TIMEOUT_SECONDS", 4, 1, 30
@@ -388,6 +390,7 @@ class Collector:
             if settings.blobscan_api_url
             else None
         )
+        self._recent_chain_blocks: dict[str, dict[int, dict[str, Any]]] = {"l1": {}, "l2": {}}
         self._beacon_meta: tuple[int, int] | None = None
         self._beacon_meta_lock = threading.Lock()
         self._beacon_cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
@@ -450,6 +453,8 @@ class Collector:
                 "rollupId": self.settings.rollup_id,
                 "registryAddress": self.settings.registry_address,
                 "recentBlockWindow": self.settings.recent_blocks,
+                "recentBlockWindows": {"l1": self.settings.recent_blocks, "l2": self.settings.l2_recent_blocks},
+                "syncSlotSeconds": self.settings.l1_block_time_ms / 1000 if self.settings.l1_block_time_ms else None,
                 "refreshSeconds": self.settings.refresh_seconds,
                 "liveUpdateSeconds": self.settings.live_update_seconds,
                 "headDelayWarningSeconds": self.settings.head_delay_warning_seconds,
@@ -472,6 +477,14 @@ class Collector:
             "settlementProgress": progress,
             "metrics": metrics,
         }
+
+    def live_block(self, name: str, block_hash: str) -> dict[str, Any]:
+        client = self.l1 if name == "l1" else self.l2
+        block = client.rpc("eth_getBlockByHash", [block_hash, name == "l1"])
+        if (not isinstance(block, dict) or block.get("hash") != block_hash
+                or not isinstance(block.get("transactions"), list)):
+            raise RemoteCallError("live block details are not available yet")
+        return summarize_block(block)
 
     def correlation(self, direction: str, selector: str) -> Any:
         normalized = validate_selector(selector)
@@ -704,22 +717,40 @@ class Collector:
         if latest_number is None:
             raise RemoteCallError(f"{name}: latest block has no number")
 
-        first = max(0, latest_number - self.settings.recent_blocks + 1)
+        window = self.settings.recent_blocks if name == "l1" else self.settings.l2_recent_blocks
+        first = max(0, latest_number - window + 1)
+        by_number = {number: block for number, block in self._recent_chain_blocks[name].items()
+                     if first <= number < latest_number}
         raw_blocks: list[dict[str, Any]] = []
         with ThreadPoolExecutor(max_workers=8, thread_name_prefix=f"{name}-blocks") as executor:
             futures = {
                 executor.submit(
                     client.rpc, "eth_getBlockByNumber", [hex(number), full_transactions]
                 ): number
-                for number in range(first, latest_number + 1)
+                for number in range(first, latest_number + 1) if number not in by_number
             }
-            by_number: dict[int, dict[str, Any]] = {}
             for future in as_completed(futures):
                 number = futures[future]
                 block = future.result()
                 if isinstance(block, dict):
                     by_number[number] = block
             raw_blocks = [by_number[number] for number in sorted(by_number, reverse=True)]
+
+        # Parallel number-based reads can straddle a reorg. Never publish a
+        # window assembled from different branches as reconciled chain data.
+        if (len(raw_blocks) != latest_number - first + 1
+                or raw_blocks[0].get("hash") != latest.get("hash")
+                or any(quantity(block.get("number")) != latest_number - index
+                       for index, block in enumerate(raw_blocks))
+                or any(child.get("parentHash") != parent.get("hash")
+                       for child, parent in zip(raw_blocks, raw_blocks[1:]))):
+            self._recent_chain_blocks[name] = {}
+            raise RemoteCallError(f"{name}: chain changed while collecting block history")
+        checked = client.rpc("eth_getBlockByNumber", [hex(latest_number), False])
+        if not isinstance(checked, dict) or checked.get("hash") != latest.get("hash"):
+            self._recent_chain_blocks[name] = {}
+            raise RemoteCallError(f"{name}: head reorganized during collection")
+        self._recent_chain_blocks[name] = by_number
 
         def head(key: str) -> dict[str, Any] | None:
             block = results.get(key)
@@ -1260,7 +1291,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             finally:
                 self.blob_decode_slots.release()
             return
-        self._static(parsed.path)
+        self.send_error(HTTPStatus.NOT_FOUND)
 
     def do_HEAD(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
         parsed = urlparse(self.path)
@@ -1272,34 +1303,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 write_body=False,
             )
             return
-        self._static(parsed.path, write_body=False)
-
-    def _static(self, path: str, write_body: bool = True) -> None:
-        files = {
-            "/": "index.html",
-            "/index.html": "index.html",
-            "/styles.css": "styles.css",
-            "/app.js": "app.js",
-            "/brand/eez.css": "brand/eez.css",
-            "/brand/eez-logo.svg": "brand/eez-logo.svg",
-            "/brand/eez-icon.svg": "brand/eez-icon.svg",
-            "/brand/geist-latin.woff2": "brand/geist-latin.woff2",
-            "/brand/geist-mono-latin.woff2": "brand/geist-mono-latin.woff2",
-        }
-        filename = files.get(path)
-        if filename is None:
-            self.send_error(HTTPStatus.NOT_FOUND)
-            return
-        data = (STATIC_DIR / filename).read_bytes()
-        content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
-        self.send_response(HTTPStatus.OK)
-        self._security_headers()
-        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "public, max-age=60")
-        self.end_headers()
-        if write_body:
-            self.wfile.write(data)
+        self.send_error(HTTPStatus.NOT_FOUND)
 
     def _json(
         self, status: HTTPStatus, value: Any, cache: str, write_body: bool = True

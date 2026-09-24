@@ -65,7 +65,7 @@
 .pillL2 {
   background: var(--accent-dim);
   color: var(--accent-light);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
 }
 
 /* ── Block number ── */

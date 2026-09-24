@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 
-SERVER_PATH = Path(__file__).resolve().parents[1] / "app" / "server.py"
+SERVER_PATH = Path(__file__).resolve().parents[1] / "server.py"
 sys.path.insert(0, str(SERVER_PATH.parent))
 SPEC = importlib.util.spec_from_file_location("eez_dashboard_server", SERVER_PATH)
 server = importlib.util.module_from_spec(SPEC)
@@ -475,7 +475,8 @@ class ExternalEndpointTests(unittest.TestCase):
                     return {"error": {"message": "unsupported block tag", "code": -32602}}
                 result = {
                     "number": "0x3" if tag == "latest" else tag,
-                    "hash": "0x" + "11" * 32,
+                    "hash": "0x" + f"{(3 if tag == 'latest' else int(tag, 16)) + 1:064x}",
+                    "parentHash": "0x" + f"{3 if tag == 'latest' else int(tag, 16):064x}",
                     "timestamp": "0x64",
                     "transactions": [],
                 }
@@ -508,6 +509,43 @@ class ExternalEndpointTests(unittest.TestCase):
         for endpoint in EXTERNAL_RPC_ENV.values():
             self.assertNotIn(endpoint, json.dumps(snapshot))
 
+    def test_chain_collection_rejects_mixed_branches_and_replaced_head(self):
+        with mock.patch.dict(os.environ, EXTERNAL_RPC_ENV, clear=True):
+            collector = server.Collector(server.Settings.from_env())
+
+        for scenario in ("mixed", "replaced", "missing", "valid"):
+            with self.subTest(scenario=scenario):
+                numeric_head_reads = 0
+
+                def rpc(method, params):
+                    nonlocal numeric_head_reads
+                    if method != "eth_getBlockByNumber":
+                        return {"eth_chainId": "0x1", "eth_syncing": False,
+                                "net_peerCount": "0x1", "eth_gasPrice": "0x1"}[method]
+                    tag = params[0]
+                    height = 3 if tag in ("latest", "safe", "finalized") else int(tag, 16)
+                    block = {"number": hex(height), "timestamp": "0x64", "transactions": [],
+                             "hash": "0x" + f"{height + 1:064x}",
+                             "parentHash": "0x" + f"{height:064x}"}
+                    if tag == "0x3":
+                        numeric_head_reads += 1
+                        if scenario == "replaced" and numeric_head_reads == 2:
+                            block["hash"] = "0x" + "ff" * 32
+                    if tag == "0x2" and scenario == "mixed":
+                        block["hash"] = "0x" + "ee" * 32
+                    if tag == "0x2" and scenario == "missing":
+                        return None
+                    return block
+
+                with mock.patch.object(collector.l2, "rpc", side_effect=rpc):
+                    if scenario == "valid":
+                        chain, _ = collector._chain(collector.l2, "l2", False)
+                        self.assertEqual(chain["latest"]["number"], 3)
+                        self.assertEqual(len(chain["blocks"]), 4)
+                    else:
+                        with self.assertRaises(server.RemoteCallError):
+                            collector._chain(collector.l2, "l2", False)
+
     def test_fresh_snapshots_report_delayed_heads_and_recover_when_blocks_arrive(self):
         with mock.patch.dict(os.environ, EXTERNAL_RPC_ENV, clear=True):
             collector = server.Collector(server.Settings.from_env())
@@ -517,8 +555,11 @@ class ExternalEndpointTests(unittest.TestCase):
         def respond(request):
             payload = json.loads(request.data)
             if payload["method"] == "eth_getBlockByNumber":
-                return {"result": {"number": "0x3", "timestamp": hex(timestamp),
-                                   "hash": "0x" + "11" * 32, "transactions": []}}
+                tag = payload["params"][0]
+                height = 3 if tag in ("latest", "safe", "finalized") else int(tag, 16)
+                return {"result": {"number": hex(height), "timestamp": hex(timestamp),
+                                   "hash": "0x" + f"{height + 1:064x}",
+                                   "parentHash": "0x" + f"{height:064x}", "transactions": []}}
             return {"result": {"eth_chainId": "0x1", "eth_syncing": False,
                                "net_peerCount": "0x1", "eth_gasPrice": "0x1"}[payload["method"]]}
 

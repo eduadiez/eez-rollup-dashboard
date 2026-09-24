@@ -1,4 +1,4 @@
-"""Shared, bounded snapshot delivery and optional node head subscriptions."""
+"""Immediate node-head delivery with independent reconciliation of network details."""
 
 from __future__ import annotations
 
@@ -6,18 +6,20 @@ import json
 import logging
 import threading
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 LOG = logging.getLogger("eez-dashboard.live")
 
 
 class HeadWatcher:
-    """Treat notifications as invalidations; canonical data still comes from RPC."""
+    """Publish heads immediately; reconcile canonical history independently."""
 
     def __init__(self, name, client, ws_url, feed, interval, timeout):
         self.name, self.client, self.ws_url, self.feed = name, client, ws_url, feed
         self.interval, self.timeout = interval, timeout
         self.last_hash = None
+        self.last_number = None
         self.thread = threading.Thread(target=self.run, daemon=True, name=f"{name}-heads")
 
     def observe(self, head: Any) -> None:
@@ -30,10 +32,19 @@ class HeadWatcher:
         if not block_hash.startswith("0x"):
             raise ValueError("head must have a hex block hash")
         if block_hash != self.last_hash:
-            self.last_hash = block_hash
-            # Hash comparison also catches replacements at the same height and
-            # rollbacks. Never append a notification directly to the UI history.
-            self.feed.wake.set()
+            try:
+                number = int(head.get("number", ""), 16)
+            except (ValueError, TypeError):
+                number = None
+            reconcile = (self.name == "l1" or self.last_hash is None or number is None
+                         or self.last_number is None or number <= self.last_number
+                         or head.get("parentHash") != self.last_hash)
+            self.last_hash, self.last_number = block_hash, number
+            # This path never acquires the collector/cache lock or waits for
+            # receipts, Beacon sidecars, finality, or settlement history.
+            self.feed.publish_head(self.name, head)
+            if reconcile:
+                self.feed.wake.set()
 
     def poll(self) -> None:
         try:
@@ -93,7 +104,7 @@ class HeadWatcher:
 
 
 class SnapshotFeed:
-    """One collection loop for every viewer; slow viewers retain no event queue."""
+    """One details worker plus a latest-head slot per chain; no event backlog."""
 
     MAX_CLIENTS = 16
 
@@ -104,6 +115,12 @@ class SnapshotFeed:
         self.clients, self.version = 0, 0
         self.frame: str | None = None
         self.updated_at = 0.0
+        self.state_version = 0
+        self.collection_started_sequence = 0
+        self.heads: dict[str, dict[str, Any]] = {}
+        self.blocks: dict[str, list[dict[str, Any]]] = {}
+        self.block_workers = [threading.Thread(target=self.hydrate_blocks, args=(name,),
+            daemon=True, name=f"{name}-block-details") for name in ("l1", "l2")]
         self.sources = {"l1": "connecting", "l2": "connecting"}
         self.watchers = [
             HeadWatcher(name, getattr(cache.collector, name), getattr(settings, f"{name}_ws_url"),
@@ -114,6 +131,8 @@ class SnapshotFeed:
 
     def start(self) -> None:
         self.worker.start()
+        for worker in self.block_workers:
+            worker.start()
         for watcher in self.watchers:
             watcher.thread.start()
 
@@ -123,7 +142,7 @@ class SnapshotFeed:
         self.wake.set()
         with self.condition:
             self.condition.notify_all()
-        for thread in [self.worker, *(w.thread for w in self.watchers)]:
+        for thread in [self.worker, *self.block_workers, *(w.thread for w in self.watchers)]:
             if thread.is_alive():
                 thread.join(timeout=1)
 
@@ -143,7 +162,7 @@ class SnapshotFeed:
             # Reconnect sends the latest full snapshot, not a replay of old
             # notifications. An idle feed must first refresh its stale snapshot.
             recent = self.frame is not None and time.monotonic() - self.updated_at <= self.settings.refresh_seconds
-            return self.version - 1 if recent else self.version
+            return -1 if recent else self.version
 
     def detach(self) -> None:
         with self.condition:
@@ -154,11 +173,96 @@ class SnapshotFeed:
     def wait(self, version: int, timeout: float = 1) -> tuple[int, str | None]:
         with self.condition:
             self.condition.wait_for(lambda: self.version != version or self.stopped.is_set(), timeout=timeout)
-            return self.version, self.frame if self.version != version else None
+            if self.version == version:
+                return self.version, None
+            if self.frame is not None and self.state_version > version:
+                value = json.loads(self.frame)
+                value["collectionStartedSequence"] = self.collection_started_sequence
+            else:
+                value = {"type": "heads"}
+            # Include both latest heads so a slow reader never loses one chain
+            # when the other chain updates. The size is bounded to two headers.
+            value.update(sequence=self.version, heads=dict(self.heads), blocks=dict(self.blocks))
+            return self.version, json.dumps(value, separators=(",", ":"))
 
-    def publish(self, snapshot: dict[str, Any], event: str = "snapshot") -> None:
+    def hydrate_blocks(self, name: str) -> None:
+        """Fill a bounded block window without waiting for settlement collection.
+
+        Hash-addressed parent traversal cannot mix branches. Only the latest
+        target is retained, so fast producers never build an unbounded queue.
+        """
+        completed = None
+        cached: dict[str, dict[str, Any]] = {}
+        setting = "recent_blocks" if name == "l1" else "l2_recent_blocks"
+        limit = max(1, min(128, getattr(self.settings, setting, getattr(self.settings, "recent_blocks", 12))))
+        while not self.stopped.is_set():
+            with self.condition:
+                self.condition.wait_for(lambda: self.stopped.is_set() or (
+                    self.active.is_set() and self.heads.get(name, {}).get("block", {}).get("hash") != completed
+                    and name in self.heads), timeout=1)
+                if self.stopped.is_set():
+                    return
+                target = self.heads.get(name, {}).get("block")
+                if not self.active.is_set() or not target or target["hash"] == completed:
+                    continue
+            rows = []
+            wanted = target["hash"]
+            try:
+                for _ in range(limit):
+                    if self.stopped.is_set() or not self.active.is_set():
+                        break
+                    block = cached.get(wanted) or self.cache.collector.live_block(name, wanted)
+                    if (not isinstance(block, dict) or block.get("hash") != wanted
+                            or block.get("number") != target["number"] - len(rows)):
+                        raise ValueError("block does not match requested ancestry")
+                    rows.append(block)
+                    if block["number"] == 0:
+                        break
+                    wanted = block["parentHash"]
+                if not rows:
+                    continue
+                cached = {row["hash"]: row for row in rows}
+                with self.condition:
+                    self.blocks[name] = rows
+                    self.version += 1
+                    self.condition.notify_all()
+                completed = target["hash"]
+            except Exception:
+                # Retry a transient missing block without dropping the last
+                # hydrated window or blocking immediate header delivery.
+                self.stopped.wait(1)
+
+    def publish_head(self, name: str, head: dict[str, Any]) -> None:
+        def quantity(key):
+            raw = head.get(key)
+            if not isinstance(raw, str) or not raw.startswith("0x"):
+                raise ValueError("invalid head quantity")
+            value = int(raw, 16)
+            if value < 0 or value > 2**53 - 1:
+                raise ValueError("head quantity exceeds browser precision")
+            return value
+        try:
+            block = {"number": quantity("number"), "numberHex": head["number"],
+                     "hash": head["hash"], "parentHash": head.get("parentHash"),
+                     "timestamp": quantity("timestamp"),
+                     "gasUsed": quantity("gasUsed"), "gasLimit": quantity("gasLimit"),
+                     # newHeads has no transaction bodies or blob counts.
+                     "transactionCount": None, "blobTransactionCount": None}
+        except (ValueError, TypeError, KeyError):
+            return  # A partial/malformed header only requests reconciliation.
         with self.condition:
+            if name not in self.sources or self.stopped.is_set():
+                return
             self.version += 1
+            self.heads[name] = {"block": block, "sequence": self.version,
+                                "receivedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+            self.condition.notify_all()
+
+    def publish(self, snapshot: dict[str, Any], event: str = "snapshot", *, started_sequence: int | None = None) -> None:
+        with self.condition:
+            self.collection_started_sequence = self.version if started_sequence is None else started_sequence
+            self.version += 1
+            self.state_version = self.version
             value = {**snapshot, "liveUpdates": {"sources": dict(self.sources)}}
             self.frame = json.dumps({"type": event, "sequence": self.version, "snapshot": value},
                                     separators=(",", ":"))
@@ -178,11 +282,13 @@ class SnapshotFeed:
             if not self.active.is_set():
                 continue
             last_started = time.monotonic()
+            with self.condition:
+                started_sequence = self.version
             try:
-                self.publish(self.cache.get(force=True))
+                self.publish(self.cache.get(force=True), started_sequence=started_sequence)
             except Exception:
                 LOG.exception("live snapshot collection failed")
-                self.publish({"error": "Snapshot temporarily unavailable"}, "unavailable")
+                self.publish({"error": "Network details temporarily unavailable"}, "unavailable", started_sequence=started_sequence)
             # Periodic reconciliation also catches safe/finalized updates and
             # delayed receipts/indexing that don't emit another newHeads event.
             next_refresh = time.monotonic() + self.settings.refresh_seconds
@@ -239,7 +345,7 @@ def serve_websocket(handler, feed: SnapshotFeed) -> None:
             except TimeoutError:
                 pass
             else:
-                connection.close(1008, "This feed only publishes snapshots")
+                connection.close(1008, "This feed only publishes network updates")
                 break
             cursor, frame = feed.wait(cursor)
             if frame is not None:

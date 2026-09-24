@@ -9,12 +9,12 @@
 }
 .rowAdded {
   border-color: var(--cyan);
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.15);
+  box-shadow: none;
   animation: entryAdd 0.4s ease-out;
 }
 .rowConsuming {
   border-color: var(--red);
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.12);
+  box-shadow: none;
   opacity: 0.35;
   animation: entryConsume 0.4s ease-out;
 }

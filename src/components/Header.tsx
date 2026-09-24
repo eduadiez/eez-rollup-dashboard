@@ -5,8 +5,8 @@ import { L1_CHAIN, L2_CHAIN, config } from "../config";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
 import nhStyles from "./NodeHealth.module.css";
-import eezLogo from "../../network-observatory/app/static/brand/eez-logo.svg";
-import eezLogoLight from "../../network-observatory/app/static/brand/eez-logo-light.svg";
+import eezLogo from "../styles/brand/eez-logo.svg";
+import eezLogoLight from "../styles/brand/eez-logo-light.svg";
 
 interface ChainData {
   blockNumber: number | null;
@@ -19,7 +19,9 @@ interface ChainData {
 
 interface Props {
   wallet: WalletState;
-  onConnect: () => void;
+  walletName: string | null;
+  walletOptions: { id: string; name: string }[];
+  onConnect: (providerId?: string) => void;
   onDisconnect: () => void;
   onNavigate?: (view: string) => void;
   currentView?: string;
@@ -35,6 +37,7 @@ interface Props {
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard" },
+  { id: "monitor", label: "Monitor" },
   { id: "visualizer", label: "Visualizer" },
 ];
 
@@ -97,6 +100,8 @@ function ChainMini({ label, chain }: { label: "L1" | "L2"; chain?: ChainData }) 
 
 export function Header({
   wallet,
+  walletName,
+  walletOptions,
   onConnect,
   onDisconnect,
   onNavigate,
@@ -277,7 +282,7 @@ export function Header({
                   onClick={() => setDropdownOpen((v) => !v)}
                 >
                   <span className={styles.walletPillDot} />
-                  {shortAddr}
+                  {walletName ? `${walletName} · ${shortAddr}` : shortAddr}
                   <svg className={`${styles.walletPillChevron} ${dropdownOpen ? styles.walletPillChevronOpen : ""}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
@@ -303,6 +308,19 @@ export function Header({
                       </div>
                     )}
 
+                    {walletOptions.length > 0 && (
+                      <div className={styles.ddSection}>
+                        {walletOptions.map((option) => (
+                          <button key={option.id} className={styles.ddRow} onClick={() => {
+                            onConnect(option.id);
+                            setDropdownOpen(false);
+                          }}>
+                            {option.name === walletName ? `Reconnect ${option.name}` : `Switch to ${option.name}`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className={styles.ddSection}>
                       <button
                         className={`${styles.ddRow} ${styles.ddRowDanger}`}
@@ -320,14 +338,26 @@ export function Header({
                 )}
               </>
             ) : (
-              <button className="btn btn-solid btn-sm" onClick={onConnect}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-                Connect Wallet
-              </button>
+              <>
+                <button className="btn btn-solid btn-sm" onClick={() => {
+                  if (walletOptions.length > 0) setDropdownOpen((open) => !open);
+                  else onConnect();
+                }}>
+                  Connect Wallet
+                </button>
+                {dropdownOpen && walletOptions.length > 0 && (
+                  <div className={styles.dropdown}>
+                    {walletOptions.map((option) => (
+                      <button key={option.id} className={styles.ddRow} onClick={() => {
+                        onConnect(option.id);
+                        setDropdownOpen(false);
+                      }}>
+                        {option.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -392,6 +422,7 @@ export function Header({
                 {wallet.isConnected && wallet.address ? (
                   <div className={styles.mobileWallet}>
                     <div className={styles.mobileWalletRow}>
+                      {walletName && <span>{walletName}</span>}
                       <ExplorerLink
                         value={wallet.address}
                         chain="l2"
@@ -402,16 +433,31 @@ export function Header({
                         Disconnect
                       </button>
                     </div>
+                    {walletOptions.map((option) => (
+                      <button key={option.id} className="btn btn-sm btn-ghost" onClick={() => {
+                        onConnect(option.id);
+                        setMenuOpen(false);
+                      }}>
+                        {option.name === walletName ? `Reconnect ${option.name}` : `Switch to ${option.name}`}
+                      </button>
+                    ))}
                   </div>
                 ) : (
-                  <button className="btn btn-solid btn-sm" onClick={() => { onConnect(); setMenuOpen(false); }} style={{ width: "100%" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                    Connect Wallet
-                  </button>
+                  walletOptions.length > 0 ? walletOptions.map((option) => (
+                    <button key={option.id} className="btn btn-solid btn-sm" onClick={() => {
+                      onConnect(option.id);
+                      setMenuOpen(false);
+                    }} style={{ width: "100%" }}>
+                      Connect {option.name}
+                    </button>
+                  )) : (
+                    <button className="btn btn-solid btn-sm" onClick={() => {
+                      onConnect();
+                      setMenuOpen(false);
+                    }} style={{ width: "100%" }}>
+                      Connect Wallet
+                    </button>
+                  )
                 )}
               </div>
 

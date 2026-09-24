@@ -197,11 +197,138 @@ def _block_summary(encoded: bytes, index: int) -> dict[str, Any]:
     }
 
 
+def _fixed_list(value: Any, field: str, size: int) -> list[Any]:
+    result = []
+    for item in _iter_list(value, field):
+        if len(result) == size:
+            raise BlobDecodeError(f"{field} must contain {size} fields")
+        result.append(item)
+    if len(result) != size:
+        raise BlobDecodeError(f"{field} must contain {size} fields")
+    return result
+
+
+def _legacy_bytes(value: Any, field: str) -> bytes:
+    # Vec<u8> retained fields use integer lists, unlike new Bytes fields.
+    return bytes(_integer(item, field, 255) for item in _iter_list(value, field))
+
+
+def _environment(value: Any) -> dict[str, Any]:
+    fields = _fixed_list(value, "environment", 6)
+    step = _integer(fields[0], "timestampStepSeconds", 2**64 - 1)
+    gas = _integer(fields[3], "gasLimit", 2**64 - 1)
+    if not step or not gas:
+        raise BlobDecodeError("environment timestamp step and gas limit must be positive")
+    extra = _as_bytes(fields[4], "extraData")
+    if len(extra) > 32:
+        raise BlobDecodeError("environment extraData exceeds 32 bytes")
+    return {
+        "timestampStepSeconds": step,
+        "feeRecipient": _hex_field(fields, 1, "feeRecipient", 20),
+        "prevRandao": _hex_field(fields, 2, "prevRandao", 32),
+        "gasLimit": gas,
+        "extraData": "0x" + extra.hex(),
+        "parentBeaconBlockRoot": _hex_field(fields, 5, "parentBeaconBlockRoot", 32),
+    }
+
+
+def _transaction_sizes(value: Any) -> list[int]:
+    sizes = []
+    for item in _iter_list(value, "transactions"):
+        if len(sizes) == 65535:
+            raise BlobDecodeError("transactions exceeds 65535")
+        raw = _as_bytes(item, "transaction")
+        if not raw:
+            raise BlobDecodeError("transaction bytes must not be empty")
+        # Display opaque signed bytes. Signature, transaction schema, and execution
+        # validation belong to the protocol codec, not this structural viewer.
+        sizes.append(len(raw))
+    return sizes
+
+
+def _decode_derivable(body: list[Any], payload_size: int) -> dict[str, Any]:
+    if len(body) != 7:
+        raise BlobDecodeError("tag-3 payload must contain seven fields")
+    profile = _integer(body[0], "profileId", 255)
+    if profile != 1:
+        raise BlobDecodeError(f"unsupported tag-3 profile {profile}")
+    count = _integer(body[1], "ordinaryBlockCount", 65535)
+    initial = _environment(body[2])
+    active = initial
+    terminal = _block_summary(_legacy_bytes(body[4], "terminalBlock"), count)
+    first = terminal["number"] - count
+    if first <= 0:
+        raise BlobDecodeError("terminal block number must exceed ordinary block count")
+    blocks = []
+    records = []
+    position = 0
+    transaction_count = terminal["transactionCount"]
+    if transaction_count > 65535:
+        raise BlobDecodeError("terminal transaction count exceeds 65535")
+    full_count = 0
+    for item in _iter_list(body[3], "ordinaryRecords"):
+        gap_raw, kind_raw, data = _fixed_list(item, "record", 3)
+        gap = _integer(gap_raw, "emptyGap", 2**64 - 1)
+        position += gap
+        if position >= count:
+            raise BlobDecodeError("record position exceeds ordinary block count")
+        kind = _integer(kind_raw, "recordKind", 255)
+        record = {"position": position, "number": first + position,
+                  "emptyGap": gap, "kind": kind}
+        if kind == 1:
+            block = _block_summary(_as_bytes(data, "fullBlock"), position)
+            if block["number"] != first + position:
+                raise BlobDecodeError("full block number disagrees with record position")
+            if block["transactionCount"] > 65535:
+                raise BlobDecodeError("full block transaction count exceeds 65535")
+            blocks.append(block)
+            record["transactionCount"] = block["transactionCount"]
+            full_count += 1
+        elif kind in (0, 2):
+            if kind == 2:
+                environment, data = _fixed_list(data, "environmentChange", 2)
+                updated = _environment(environment)
+                if updated == active:
+                    raise BlobDecodeError("environment change must change the active environment")
+                active = updated
+                record["environment"] = active
+            sizes = _transaction_sizes(data)
+            if kind == 0 and not sizes:
+                raise BlobDecodeError("transaction record must contain transactions")
+            record["transactionBytes"] = sizes
+            record["transactionCount"] = len(sizes)
+        else:
+            raise BlobDecodeError(f"unsupported record kind {kind}")
+        transaction_count += record["transactionCount"]
+        records.append(record)
+        position += 1
+    blocks.append(terminal)
+    entries = [_legacy_bytes(item, "l2Entry") for item in _iter_list(body[5], "l2Entries")]
+    groups = _integer_list(body[6], "outboundGroupSizes", 65535)
+    return {
+        "tag": 3, "format": "derivable-ordinary", "profileId": profile,
+        "bytes": payload_size, "blockCount": count + 1,
+        "ordinaryBlockCount": count, "firstBlockNumber": first,
+        "terminalBlockNumber": terminal["number"],
+        "derivedBlockCount": count - full_count,
+        "implicitEmptyBlockCount": count - len(records),
+        "initialEnvironment": initial, "records": records,
+        # Counts remain sparse; absent execution-derived headers must not be
+        # fabricated or presented as independently reconstructed block state.
+        "blockTxCounts": None, "transactionCount": transaction_count,
+        "transactionBytes": [size for record in records for size in record.get("transactionBytes", [])],
+        "l2EntryCount": len(entries), "l2EntryBytes": [len(entry) for entry in entries],
+        "outboundGroupSizes": groups, "blocks": blocks,
+    }
+
+
 def decode_operations(payload: bytes) -> dict[str, Any]:
     if not payload:
         raise BlobDecodeError("ChainOperation payload is empty")
     tag = payload[0]
     body = _as_list(_decode_rlp_exact(payload[1:]), "payload")
+    if tag == 3:
+        return _decode_derivable(body, len(payload))
     if tag == 0:
         if len(body) != 3:
             raise BlobDecodeError("tag-0 payload must contain three fields")

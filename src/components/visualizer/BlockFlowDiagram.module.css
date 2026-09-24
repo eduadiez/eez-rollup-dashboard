@@ -12,9 +12,7 @@
   padding: var(--sp-5) var(--sp-6);
   overflow-x: auto;
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.24),
-    0 4px 16px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    none;
   animation: diagramFadeIn 0.4s ease-out both;
 }
 
@@ -40,16 +38,15 @@
    ══════════════════════════════════ */
 
 .l1Lane {
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(154, 163, 179, 0.12);
   background:
-    linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(99, 102, 241, 0.01) 100%);
+    var(--bg-raised);
   box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.15);
+    none;
 }
 
 .l1Lane:hover {
-  border-color: rgba(99, 102, 241, 0.2);
+  border-color: rgba(154, 163, 179, 0.2);
 }
 
 .l1LaneLabel {
@@ -59,7 +56,7 @@
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 800;
-  color: rgba(99, 102, 241, 0.3);
+  color: rgba(154, 163, 179, 0.3);
   letter-spacing: 0.12em;
   pointer-events: none;
   text-transform: uppercase;
@@ -111,7 +108,7 @@
   height: 2px;
   width: 28px;
   flex-shrink: 0;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.45), rgba(99, 102, 241, 0.15));
+  background: var(--bg-raised);
   align-self: flex-start;
   margin-top: 18px;
   border-radius: 1px;
@@ -137,28 +134,26 @@
     border-color 0.2s var(--ease),
     box-shadow 0.2s var(--ease),
     transform 0.15s var(--ease);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
 }
 
 .l1Chip:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 .l1ChipActive {
   color: var(--accent-light);
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.03));
-  border-color: rgba(99, 102, 241, 0.28);
+  background: var(--bg-raised);
+  border-color: rgba(154, 163, 179, 0.28);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12),
-    0 0 12px rgba(99, 102, 241, 0.06);
+    none;
 }
 
 .l1ChipActive:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(154, 163, 179, 0.4);
   box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.2),
-    0 0 16px rgba(99, 102, 241, 0.1);
+    none;
 }
 
 .l1ChipLabel {
@@ -193,14 +188,14 @@
 .l1CcSepLine {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.2), transparent);
+  background: var(--bg-raised);
 }
 
 .l1CcSepLabel {
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 600;
-  color: rgba(99, 102, 241, 0.4);
+  color: rgba(154, 163, 179, 0.4);
   white-space: nowrap;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -227,14 +222,14 @@
 .deriveLine {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.3), transparent);
+  background: var(--bg-raised);
 }
 
 .deriveLabel {
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 600;
-  color: rgba(52, 211, 153, 0.5);
+  color: rgba(154, 163, 179, 0.5);
   white-space: nowrap;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -243,16 +238,15 @@
 /* L2 lane container */
 
 .l2Lane {
-  border: 1px solid rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(154, 163, 179, 0.12);
   background:
-    linear-gradient(135deg, rgba(52, 211, 153, 0.04) 0%, rgba(52, 211, 153, 0.01) 100%);
+    var(--bg-raised);
   box-shadow:
-    0 0 0 1px rgba(52, 211, 153, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.15);
+    none;
 }
 
 .l2Lane:hover {
-  border-color: rgba(52, 211, 153, 0.2);
+  border-color: rgba(154, 163, 179, 0.2);
 }
 
 .l2LaneLabel {
@@ -262,7 +256,7 @@
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 800;
-  color: rgba(52, 211, 153, 0.3);
+  color: rgba(154, 163, 179, 0.3);
   letter-spacing: 0.12em;
   pointer-events: none;
   text-transform: uppercase;
@@ -327,7 +321,7 @@
   height: 2px;
   width: 28px;
   flex-shrink: 0;
-  background: linear-gradient(90deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.45), rgba(52, 211, 153, 0.15));
+  background: var(--bg-raised);
   align-self: flex-start;
   margin-top: 16px;
   border-radius: 1px;
@@ -342,8 +336,8 @@
   font-size: 9px;
   font-weight: 600;
   color: var(--green);
-  background: linear-gradient(145deg, rgba(52, 211, 153, 0.08), rgba(52, 211, 153, 0.03));
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  background: var(--bg-raised);
+  border: 1px solid rgba(154, 163, 179, 0.25);
   border-radius: 8px;
   padding: 7px 16px;
   white-space: nowrap;
@@ -353,28 +347,26 @@
     box-shadow 0.2s var(--ease),
     transform 0.15s var(--ease);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12),
-    0 0 10px rgba(52, 211, 153, 0.04);
+    none;
 }
 
 .l2Chip:hover {
   transform: translateY(-1px);
-  border-color: rgba(52, 211, 153, 0.4);
+  border-color: rgba(154, 163, 179, 0.4);
   box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.2),
-    0 0 14px rgba(52, 211, 153, 0.08);
+    none;
 }
 
 .l2ChipUser {
   color: var(--text);
   background: var(--bg-card);
   border-color: var(--border-bright);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
 }
 
 .l2ChipUser:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 .l2ChipLabel {
@@ -384,18 +376,17 @@
 /* ── Trace group — wraps a full tx call tree ── */
 
 .traceGroup {
-  border: 1px solid rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(154, 163, 179, 0.12);
   border-radius: 10px;
-  background: linear-gradient(145deg, rgba(52, 211, 153, 0.03), rgba(52, 211, 153, 0.005));
+  background: var(--bg-raised);
   padding: 10px 12px;
   box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(52, 211, 153, 0.03);
+    none;
   transition: border-color 0.2s var(--ease);
 }
 
 .traceGroup:hover {
-  border-color: rgba(52, 211, 153, 0.22);
+  border-color: rgba(154, 163, 179, 0.22);
 }
 
 /* ── Cascade trace blocks ── */
@@ -410,7 +401,7 @@
 .traceConnector {
   width: 2px;
   height: 8px;
-  background: linear-gradient(180deg, rgba(52, 211, 153, 0.5), rgba(52, 211, 153, 0.2));
+  background: var(--bg-raised);
   flex-shrink: 0;
   margin-left: 16px;
   border-radius: 1px;
@@ -428,28 +419,26 @@
     border-color 0.2s var(--ease),
     box-shadow 0.2s var(--ease),
     transform 0.15s var(--ease);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .traceBlock:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: none;
   transform: translateY(-0.5px);
 }
 
 .traceBlockRoot {
-  border-color: rgba(52, 211, 153, 0.3);
-  background: linear-gradient(145deg, rgba(52, 211, 153, 0.05), rgba(52, 211, 153, 0.015));
+  border-color: rgba(154, 163, 179, 0.3);
+  background: var(--bg-raised);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 0 8px rgba(52, 211, 153, 0.04);
+    none;
 }
 
 .traceBlockRoot:hover {
-  border-color: rgba(52, 211, 153, 0.45);
+  border-color: rgba(154, 163, 179, 0.45);
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.18),
-    0 0 12px rgba(52, 211, 153, 0.08);
+    none;
 }
 
 .traceBlockHeader {
@@ -474,8 +463,8 @@
 
 .traceCallTypeRoot {
   color: var(--green);
-  border-color: rgba(52, 211, 153, 0.25);
-  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(154, 163, 179, 0.25);
+  background: rgba(154, 163, 179, 0.08);
 }
 
 .traceBlockFn {
@@ -503,7 +492,7 @@
 
 .traceAddrArrow {
   font-size: 8px;
-  color: rgba(52, 211, 153, 0.5);
+  color: rgba(154, 163, 179, 0.5);
   margin: 0 1px;
 }
 

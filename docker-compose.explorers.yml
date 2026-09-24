@@ -1,0 +1,10 @@
+services:
+  monitor:
+    networks:
+      - default
+      - blob-archive
+
+networks:
+  blob-archive:
+    external: true
+    name: eez-explorers_default

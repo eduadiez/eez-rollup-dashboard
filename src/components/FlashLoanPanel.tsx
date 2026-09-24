@@ -5,7 +5,7 @@ import { DeployState } from "../hooks/useFlashLoanDeploy";
 import { TxLink } from "./TxLink";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./FlashLoanPanel.module.css";
-import eezIcon from "../../network-observatory/app/static/brand/eez-icon.svg";
+import eezIcon from "../styles/brand/eez-icon.svg";
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { config, ESTIMATION_SENDER } from "../config";
 import { rpcCall } from "../rpc";
-import { estimateGas, estimateCrossChainGas, gasToHex } from "../lib/gasEstimation";
+import { estimateGas, estimateCrossChainGas, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 type SendTx = (params: Record<string, string>) => Promise<string>;
@@ -668,9 +668,12 @@ export function useBridge(
     try {
       let txHash: string;
 
-      // Use gas override if set, otherwise use pre-computed estimate from effect
-      const resolvedGas = gasOverrideHex || "0x1e8480";
-      const gasParam: Record<string, string> = resolvedGas ? { gas: resolvedGas } : {};
+      // Send the displayed 1.3x estimate unless the user entered a custom limit.
+      const resolvedGas = gasOverrideHex ?? (stateRef.current.gas.status === "estimated"
+        ? stateRef.current.gas.gasHex : null);
+      if (!resolvedGas) throw new Error("Wait for the gas limit to be ready before bridging");
+      const sourceRpc = direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
+      const gasParam = { gas: resolvedGas, ...await getEip1559Fees(sourceRpc) };
 
       // destinationAddress: custom if set, otherwise sender's wallet
       const from = walletRef.current || ESTIMATION_SENDER;

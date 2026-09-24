@@ -7,7 +7,7 @@
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.2s both;
   transition: border-color 0.2s;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card:hover {

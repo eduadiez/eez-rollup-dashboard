@@ -1,7 +1,7 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 32px 64px;
+  padding: 0 32px 100px;
 }
 
 .intro {
@@ -19,10 +19,10 @@
 }
 
 .tab {
-  padding: 9px 18px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: 100px;
-  background: var(--bg);
+  background: #0d0d0d;
   color: var(--text-dim);
   font: 500 12px/1.5 var(--mono);
   cursor: pointer;
@@ -32,7 +32,7 @@
 .tab:hover { color: var(--text-bright); border-color: var(--border-hover); }
 .tabActive { color: var(--eez-pill-ink); background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); }
 .tabActive:hover { color: var(--eez-pill-ink); }
-.content { display: flex; flex-direction: column; gap: 20px; }
+.content { display: flex; flex-direction: column; gap: 16px; }
 .footer {
   display: flex;
   justify-content: space-between;
@@ -40,9 +40,11 @@
   max-width: 1136px;
   margin: 0 auto;
   padding: 24px 0 32px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #1a1a1a;
   color: var(--text-dim);
-  font: 400 11px/1.6 var(--mono);
+  font: 400 12px/1.6 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .04em;
 }
 .footer a { color: inherit; text-decoration: none; }
 .footer a:hover { color: var(--text-bright); }
@@ -52,7 +54,7 @@
   .footer { margin: 0 32px; }
 }
 @media (max-width: 640px) {
-  .page { padding: 0 18px 40px; }
+  .page { padding: 0 18px 100px; }
   .tabs { gap: 6px; }
   .tab { padding: 8px 12px; font-size: 11px; }
   .footer { margin: 0 18px; flex-wrap: wrap; }

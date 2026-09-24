@@ -1,15 +1,25 @@
-const byId = (id) => document.getElementById(id);
+export function mountMonitor(root) {
+const listeners = [];
+function listen(element, type, handler) {
+  element.addEventListener?.(type, handler);
+  listeners.push([element, type, handler]);
+}
+const byId = (id) => root.querySelector(`[id="${id}"]`);
 const state = {
   loading: false,
   timer: null,
   socket: null,
   reconnectTimer: null,
   liveTimer: null,
+  ageTimer: null,
   reconnectDelay: 1000,
   pollMilliseconds: 5000,
   revision: 0,
   stopped: false,
   snapshot: null,
+  heads: {},
+  headHistory: {},
+  pendingChains: {},
   blobQuery: "",
   settlementLookup: null,
   settlementSearchLoading: false,
@@ -24,7 +34,7 @@ function h(value) {
 }
 
 function apiUrl(path) {
-  return new URL(path, new URL(".", window.location.href));
+  return new URL(`/monitor/${path}`, window.location.origin);
 }
 
 function compactHash(value, front = 8, back = 6) {
@@ -183,7 +193,7 @@ function renderComposerRpc(endpoints = {}, chains = {}) {
       <span class="composer-direction">${h(route.direction)}</span>
       <code title="${h(route.url)}">${h(route.url)}</code>
       <span class="composer-chain">${h(route.source)} chain ${h(route.chainId ?? "—")}</span>
-      <button type="button" data-copy-rpc="${h(route.url)}" aria-label="Copy ${h(route.direction)} Composer RPC URL">Copy</button>
+      <button class="btn btn-sm btn-outline" type="button" data-copy-rpc="${h(route.url)}" aria-label="Copy ${h(route.direction)} Composer RPC URL">Copy</button>
     </div>`).join("")}</div>`;
 }
 
@@ -202,11 +212,43 @@ function renderChain(name, chain) {
     : "—");
   setHtml(`${prefix}-safe`, blockLink(base, chain?.safe?.number, number(chain?.safe?.number), "explorer-value"));
   setHtml(`${prefix}-finalized`, blockLink(base, chain?.finalized?.number, number(chain?.finalized?.number), "explorer-value"));
-  const freshness = chain?.freshness;
-  setText(`${prefix}-freshness`, freshness?.ageSeconds !== undefined && freshness.ageSeconds !== null
-    ? `Latest block ${duration(freshness.ageSeconds * 1000)} ago${freshness.status === "delayed" ? " · Head delayed" : ""}`
-    : "Block age unavailable");
+  renderHeadAge(prefix, chain);
   if (prefix === "l1") setText("l1-peers", number(chain?.peerCount));
+}
+
+function renderHeadAge(name, chain) {
+  const timestamp = chain?.latest?.timestamp;
+  const seconds = Number.isSafeInteger(timestamp)
+    ? Math.max(0, Math.floor(Date.now() / 1000) - timestamp) : chain?.freshness?.ageSeconds;
+  const warning = chain?.freshness?.warningSeconds || state.snapshot?.configuration?.headDelayWarningSeconds || 30;
+  setText(`${name}-freshness`, seconds != null
+    ? `Latest block ${duration(seconds * 1000)} ago${seconds > warning ? " · Head delayed" : ""}`
+    : "Block age unavailable");
+}
+
+function startAgeClock() {
+  clearTimeout(state.ageTimer);
+  if (state.stopped) return;
+  for (const name of ["l1", "l2"]) renderHeadAge(name, state.snapshot?.chains?.[name]);
+  // Update only age text, preserving row elements, focus and scroll position.
+  for (const cell of root.querySelectorAll?.("[data-block-timestamp]") || []) {
+    cell.textContent = age(Number(cell.dataset.blockTimestamp));
+  }
+  state.ageTimer = setTimeout(startAgeClock, 1000);
+}
+
+function blockWindow(snapshot, name) {
+  return snapshot.configuration?.recentBlockWindows?.[name]
+    || snapshot.configuration?.recentBlockWindow || (name === "l2" ? 100 : 20);
+}
+
+function isSyncBlock(block) {
+  const interval = state.snapshot?.configuration?.syncSlotSeconds;
+  const anchor = state.snapshot?.chains?.l1?.latest?.timestamp;
+  if (!Number.isInteger(interval) || interval <= 0 || !Number.isSafeInteger(anchor)
+      || !Number.isSafeInteger(block.timestamp) || !(block.number > 0)) return false;
+  if ((block.timestamp - anchor) % interval !== 0) return false;
+  return true;
 }
 
 function blockRows(blocks, chain) {
@@ -217,13 +259,13 @@ function blockRows(blocks, chain) {
     if (chain === "l1") {
       return `<tr>
         <td>${blockLink(base, block.number, `#${number(block.number)}`, "primary mono explorer-value")}${blockHashLink(base, block.hash, "secondary mono hash explorer-value")}</td>
-        <td>${age(block.timestamp)}</td><td>${number(block.transactionCount)}</td>
+        <td data-block-timestamp="${h(block.timestamp)}">${age(block.timestamp)}</td><td>${block.transactionCount == null ? '<span class="block-pending" title="Fetching transaction count">Pending</span>' : number(block.transactionCount)}</td>
         <td>${block.blobTransactionCount ? `<span class="badge good">${block.blobTransactionCount} tx</span>` : "—"}</td>
         <td>${percent(block.gasUsed, block.gasLimit)}</td></tr>`;
     }
-    return `<tr>
-      <td>${explorerLink(base, `block/${block.number}`, `#${number(block.number)}`, "primary mono explorer-value")}</td><td>${age(block.timestamp)}</td>
-      <td>${number(block.transactionCount)}</td><td>${percent(block.gasUsed, block.gasLimit)}</td>
+    return `<tr${isSyncBlock(block) ? ' class="sync-block-row" aria-label="Sync block" title="Sync slot on the configured L1-anchored schedule; may be empty or unsettled"' : ""}>
+      <td>${explorerLink(base, `block/${block.number}`, `#${number(block.number)}`, "primary mono explorer-value")}</td><td data-block-timestamp="${h(block.timestamp)}">${age(block.timestamp)}</td>
+      <td>${block.transactionCount == null ? '<span class="block-pending" title="Fetching transaction count">Pending</span>' : number(block.transactionCount)}</td><td>${percent(block.gasUsed, block.gasLimit)}</td>
       <td>${blockHashLink(base, block.hash)}</td></tr>`;
   }).join("");
 }
@@ -315,7 +357,7 @@ function blobRows(settlements, query = "", historical = false) {
       <td>${beaconText}</td><td>${rangeText(item.l2Ranges)}</td>
       <td class="post-cost"><span class="primary" title="${h(item.totalCostWei === null || item.totalCostWei === undefined ? "Receipt cost unavailable" : `${item.totalCostWei} wei`)}">${h(formatEth(item.totalCostWei))}</span><span class="secondary">Execution ${h(formatEth(item.executionCostWei))}</span><span class="secondary">Blobs ${h(formatEth(item.blobCostWei))}</span></td>
       <td><span class="badge ${resultClass}">${h(item.status || "unknown")}</span>${item.errors?.length ? `<span class="secondary" title="${h(item.errors.join("\n"))}">${item.errors.length} warning(s)</span>` : ""}</td>
-      <td>${item.isProtocolSettlement ? `<button class="small-action decode-trigger" type="button" data-transaction="${h(item.transactionHash)}">Decode</button>` : "—"}</td>
+      <td>${item.isProtocolSettlement ? `<button class="btn btn-sm btn-outline small-action decode-trigger" type="button" data-transaction="${h(item.transactionHash)}">Decode</button>` : "—"}</td>
     </tr>`;
   }).join("");
 }
@@ -351,7 +393,7 @@ function decodedBlocks(blocks) {
     <tbody>${blocks.map((block) => `<tr>
       <td>${blockLink(state.snapshot?.configuration?.explorers?.l2, block.number, `#${number(block.number)}`, "primary mono explorer-value")}</td>
       <td>${blockHashLink(state.snapshot?.configuration?.explorers?.l2, block.parentHash)}</td>
-      <td>${number(block.transactionCount)}</td><td>${number(block.gasUsed)} / ${number(block.gasLimit)}</td>
+      <td>${block.transactionCount == null ? '<span class="block-pending" title="Fetching transaction count">Pending</span>' : number(block.transactionCount)}</td><td>${number(block.gasUsed)} / ${number(block.gasLimit)}</td>
       <td>${new Date(block.timestamp * 1000).toLocaleString()}</td>
       <td><span class="mono hash" title="${h(block.stateRoot)}">${h(compactHash(block.stateRoot))}</span></td>
       <td>${number(block.rlpBytes)} B</td>
@@ -363,6 +405,7 @@ function decodedByteLayout(payload, operation) {
     0: "RLP([blockTxCounts, transactions, l2Entries])",
     1: "RLP([blockTxCounts, transactions, l2Entries, outboundGroupSizes])",
     2: "RLP([blocks, l2Entries, outboundGroupSizes])",
+    3: "RLP([profileId, ordinaryBlockCount, environment, records, terminalBlock, l2Entries, outboundGroupSizes])",
   };
   const tag = Number.isInteger(operation.tag) ? operation.tag : 0;
   return `<details class="decode-explanation">
@@ -380,7 +423,7 @@ function decodedByteLayout(payload, operation) {
       </div>
       <p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${number(operation.blockCount)} blocks, ${number(operation.transactionCount)} transactions, and ${number(operation.l2EntryCount)} reconstructed L2 entries.</p>
       <p><code>ChainOperation.operations</code> ends after that RLP body. Cross-chain information is not hidden inside this RLP: each originating transaction is encoded afterward as its own <code>InitiateCrossChainTransaction … FinishCrossChainTransaction</code> message bracket before the final close marker.</p>
-      <p class="muted">This UI checks canonical RLP lengths, bounds, the expected rollup ID, message order, RLP shape, and contiguous block numbers. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
+      <p class="muted">This UI checks canonical RLP lengths, bounds, the expected rollup ID, message order, RLP shape, and block positions. Tag-3 transaction bytes are displayed without validating their signatures or transaction schemas. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
     </div>
   </details>`;
 }
@@ -537,6 +580,7 @@ function renderDecoded(payload) {
       <div><dt>Semantic txs / calls</dt><dd>${number(payload.semanticTransactions?.length || 0)} / ${number((payload.semanticTransactions || []).reduce((total, transaction) => total + (transaction.callCount || 0), 0))}</dd></div>
       <div><dt>Stream use</dt><dd>${number(payload.usedStreamBytes)} / ${number(payload.logicalCapacityBytes)} bytes</dd></div>
     </dl>
+    ${operation.tag === 3 ? `<p>Profile ${number(operation.profileId)} covers L2 #${number(operation.firstBlockNumber)}–#${number(operation.terminalBlockNumber)}: ${number(operation.derivedBlockCount)} derived ordinary blocks, including ${number(operation.implicitEmptyBlockCount)} implicit empty blocks. The table shows only full blocks carried in the payload. Derived state roots and block hashes require execution replay.</p>` : ""}
     ${decodedBlocks(operation.blocks)}
     ${decodedSemantics(payload)}
     ${decodedByteLayout(payload, operation)}
@@ -679,7 +723,51 @@ function renderCorrelationResult(payload) {
     <details class="correlation-raw"><summary>Full correlation response</summary><pre>${h(JSON.stringify(payload.result, null, 2))}</pre></details>`;
 }
 
+function hydrateBlockRows(snapshot) {
+  const result = { ...snapshot, chains: { ...snapshot.chains } };
+  for (const name of ["l1", "l2"]) {
+    const chain = result.chains[name];
+    if (!chain?.latest?.hash) continue;
+    const known = new Map();
+    for (const block of [...(state.headHistory[name] || []), ...(chain.blocks || []), chain.latest]) {
+      const fields = Object.fromEntries(Object.entries(block).filter(([, value]) => value != null));
+      known.set(block.hash, { ...block, ...known.get(block.hash), ...fields });
+    }
+    const rows = [];
+    let block = known.get(chain.latest.hash);
+    const limit = blockWindow(result, name);
+    while (block && rows.length < limit) {
+      rows.push(block);
+      const parent = known.get(block.parentHash);
+      block = parent?.number === block.number - 1 ? parent : null;
+    }
+    // Never join an unverified gap to an older branch as if it were contiguous.
+    // New hash-addressed details fill the gap independently of settlements.
+    result.chains[name] = { ...chain, latest: rows[0], blocks: rows };
+  }
+  return result;
+}
+
+function rememberBlockDetails(chains) {
+  if (!chains) return;
+  for (const [name, blocks] of Object.entries(chains)) {
+    if (!["l1", "l2"].includes(name) || !Array.isArray(blocks) || blocks.length > 128) {
+      throw new Error("Invalid block details");
+    }
+    const known = new Map((state.headHistory[name] || []).map(block => [block.hash, block]));
+    for (const block of blocks) {
+      if (!/^0x[0-9a-fA-F]{64}$/.test(block.hash) || !Number.isSafeInteger(block.number)
+          || !Number.isSafeInteger(block.transactionCount) || block.transactionCount < 0) {
+        throw new Error("Invalid block details");
+      }
+      known.set(block.hash, { ...known.get(block.hash), ...block });
+    }
+    state.headHistory[name] = [...known.values()].sort((a, b) => b.number - a.number).slice(0, 128);
+  }
+}
+
 function render(snapshot) {
+  snapshot = hydrateBlockRows(snapshot);
   state.snapshot = snapshot;
   renderSettlementPolicy(snapshot);
   const l1 = snapshot.chains?.l1;
@@ -710,9 +798,11 @@ function render(snapshot) {
     ? `${blockLink(l2Explorer, snapshot.rollup.safeBlock.number, `#${number(snapshot.rollup.safeBlock.number)}`, "explorer-value")} · ${blockHashLink(l2Explorer, snapshot.rollup.safeBlock.hash)}`
     : "—");
   setText("escrow", formatEth(snapshot.rollup?.escrowWei));
-  setText("duration", `collected in ${number(snapshot.collectionDurationMs)} ms`);
+  setText("duration", snapshot.collectionDurationMs == null ? "" : `Details checked in ${number(snapshot.collectionDurationMs)} ms`);
 
-  if (snapshot.rollup?.status === "safe") setStatus(byId("commit-status"), "", "Canonical + safe");
+  const reconciling = Object.keys(snapshot.reconciliation || {}).length > 0;
+  if (reconciling) setStatus(byId("commit-status"), "loading", "Verifying chain history");
+  else if (snapshot.rollup?.status === "safe") setStatus(byId("commit-status"), "", "Canonical + safe");
   else if (snapshot.rollup?.status === "pending-safe") setStatus(byId("commit-status"), "loading", "Canonical · pending safe");
   else if (["missing", "non-canonical"].includes(snapshot.rollup?.status)) setStatus(byId("commit-status"), "bad", snapshot.rollup.status);
   else setStatus(byId("commit-status"), "loading", snapshot.rollup?.status || "Unknown");
@@ -724,21 +814,24 @@ function render(snapshot) {
   const delayedChains = Object.entries(snapshot.chains || {}).filter(([, chain]) => chain.freshness?.status === "delayed");
   const warnings = delayedChains.map(([name, chain]) => ({ component: name.toUpperCase(),
     message: `Latest block was ${duration(chain.freshness.ageSeconds * 1000)} old when checked (warning after ${duration(chain.freshness.warningSeconds * 1000)}). ${snapshot.stale ? "Cached snapshot; current chain progress is unconfirmed." : "The snapshot is updating, but this chain head is delayed."}` }));
-  const errors = [...(snapshot.errors || []), ...warnings];
+  const reconciliationWarnings = Object.entries(snapshot.reconciliation || {}).map(([name, kind]) => ({
+    component: name.toUpperCase(), message: kind === "reorg"
+      ? "Chain reorganization detected. Settlement and finality are being verified against the new branch."
+      : "Checking continuity after missed blocks. Retained history and finality are last verified values." }));
+  const errors = [...(snapshot.errors || []), ...warnings, ...reconciliationWarnings];
   byId("error-panel").classList.toggle("hidden", errors.length === 0);
   byId("errors").innerHTML = errors.map((error) => `<li><b>${h(error.component)}:</b> ${h(error.message)}</li>`).join("");
   const brokenCommitment = ["missing", "non-canonical"].includes(snapshot.rollup?.status);
   setStatus(byId("network-status"), snapshot.stale || errors.length ? "loading" : snapshot.healthy && !brokenCommitment ? "" : "bad",
-    snapshot.stale ? "Stale" : brokenCommitment || !l1?.healthy || !l2?.healthy ? "Degraded"
+    snapshot.stale ? "Stale" : reconciling ? "Verifying chain history" : brokenCommitment || !l1?.healthy || !l2?.healthy ? "Degraded"
       : delayedChains.length ? `${delayedChains.map(([name]) => name.toUpperCase()).join(" + ")} head delayed`
       : !snapshot.healthy ? "Degraded" : errors.length ? "Partial data" : "Healthy");
-  setText("last-update", `Snapshot updated ${new Date(snapshot.generatedAt).toLocaleTimeString()}`);
+  setText("last-update", `Last updated ${new Date(snapshot.headUpdatedAt || snapshot.generatedAt).toLocaleTimeString()}`);
 }
 
 async function refresh() {
   if (state.loading) return;
   state.loading = true;
-  byId("refresh").disabled = true;
   const revision = state.revision;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
@@ -756,11 +849,130 @@ async function refresh() {
   } finally {
     clearTimeout(timeout);
     state.loading = false;
-    byId("refresh").disabled = false;
   }
 }
 
-function applySnapshot(snapshot) {
+function rememberHeads(heads = {}) {
+  const changed = {};
+  for (const [name, update] of Object.entries(heads)) {
+    const block = update?.block;
+    if (!["l1", "l2"].includes(name) || !block || !Number.isSafeInteger(block.number) || block.number < 0
+        || !/^0x[0-9a-fA-F]{64}$/.test(block.hash) || !Number.isSafeInteger(block.timestamp)
+        || !Number.isSafeInteger(update.sequence) || !Number.isFinite(Date.parse(update.receivedAt))) {
+      throw new Error("Invalid head update");
+    }
+    if (!state.heads[name] || update.sequence > state.heads[name].sequence) {
+      const previous = state.snapshot?.chains?.[name]?.latest;
+      if (previous?.hash && previous.hash !== block.hash) {
+        const continuous = block.number === previous.number + 1 && block.parentHash === previous.hash;
+        if (!continuous) {
+          const reorg = block.number <= previous.number || block.number === previous.number + 1;
+          const pending = state.pendingChains[name];
+          state.pendingChains[name] = { sequence: update.sequence,
+            kind: reorg || pending?.kind === "reorg" ? "reorg" : "gap" };
+        }
+      }
+      const history = state.headHistory[name] || [];
+      state.headHistory[name] = [block, ...history.filter(item => item.hash !== block.hash)].slice(0, 128);
+      state.heads[name] = update;
+      changed[name] = update;
+    }
+  }
+  return changed;
+}
+
+function mergeHeads(snapshot, startedSequence = -1, heads = state.heads) {
+  const result = { ...snapshot, chains: { ...snapshot.chains }, metrics: { ...snapshot.metrics } };
+  for (const [name, update] of Object.entries(heads)) {
+    const chain = result.chains[name] || { name: name.toUpperCase() };
+    const head = update.block;
+    // A successful collection started after this event is authoritative, even
+    // for a same-height replacement or a lower canonical head.
+    const reconciled = !snapshot.stale && chain.healthy && chain.latest?.hash
+      && update.sequence <= startedSequence;
+    if (reconciled) continue;
+    const pending = state.pendingChains[name];
+    const known = new Map([...(state.headHistory[name] || []), ...(chain.blocks || [])]
+      .map(block => [block.hash, block]));
+    const path = [];
+    let cursor = known.get(head.hash) || head;
+    while (cursor && cursor.hash !== chain.latest?.hash && path.length < 128) {
+      path.push(cursor);
+      const parent = known.get(cursor.parentHash);
+      cursor = parent?.number === cursor.number - 1 ? parent : null;
+    }
+    const connected = cursor?.hash === chain.latest?.hash;
+    const changed = chain.latest?.hash !== head.hash;
+    const warningSeconds = result.configuration?.headDelayWarningSeconds || 30;
+    const ageSeconds = Math.max(0, Math.floor(Date.now() / 1000 - head.timestamp));
+    result.chains[name] = { ...chain, latest: changed ? (known.get(head.hash) || head) : chain.latest,
+      blocks: changed ? [...path, ...(connected ? chain.blocks || [] : [])]
+        .slice(0, blockWindow(result, name)) : chain.blocks,
+      freshness: { ageSeconds, warningSeconds, status: ageSeconds > warningSeconds ? "delayed" : "current" } };
+    result.headUpdatedAt = update.receivedAt;
+    if (pending || (changed && chain.latest?.hash && !connected)) {
+      const kind = pending?.kind || "gap";
+      result.reconciliation = { ...result.reconciliation, [name]: kind };
+      if (kind === "gap") {
+        // Missing notifications aren't proof of a reorg. Keep last checked
+        // history visible, explicitly marked as awaiting verification.
+        const rows = [...path, ...(chain.blocks || [])];
+        result.chains[name].blocks = rows.filter((block, index) =>
+          rows.findIndex(item => item.number === block.number) === index)
+          .slice(0, blockWindow(result, name));
+      } else {
+        result.chains[name].safe = null;
+        result.chains[name].finalized = null;
+        // L1 reorgs also invalidate L2 safety derived from L1 settlement.
+        if (name === "l1" && result.chains.l2) {
+          result.chains.l2 = { ...result.chains.l2, safe: null, finalized: null };
+        }
+        result.rollup = { ...result.rollup, status: "unavailable", safeBlock: null };
+        result.settlementHistory = { ...result.settlementHistory, available: false, intervalsSeconds: [] };
+        result.blobSettlements = [];
+        result.metrics.protocolSettlementsInWindow = null;
+        result.metrics.blobsInWindow = null;
+      }
+    }
+  }
+  const l2 = result.chains.l2;
+  result.metrics.l2UnsafeLag = l2?.latest?.number != null && l2.safe?.number != null
+    ? Math.max(0, l2.latest.number - l2.safe.number) : null;
+  result.metrics.l2FinalityLag = l2?.latest?.number != null && l2.finalized?.number != null
+    ? Math.max(0, l2.latest.number - l2.finalized.number) : null;
+  const policy = result.configuration?.settlementPolicy;
+  const anchor = result.rollup?.committedBlock?.number;
+  if (policy?.enabled && ["safe", "pending-safe"].includes(result.rollup?.status) && l2?.latest?.number >= anchor) {
+    const unsettled = l2.latest.number - anchor;
+    const remaining = Math.max(0, policy.maxUnsettledL2Blocks - unsettled);
+    result.settlementProgress = { available: true, anchorL2Block: anchor, anchorL2Hash: result.rollup.commitment,
+      unsettledL2Blocks: unsettled, remainingL2Blocks: remaining, generalThresholdReached: remaining === 0,
+      estimatedGeneralRemainingMs: policy.l2BlockTimeMs == null ? null : remaining * policy.l2BlockTimeMs };
+  }
+  if (Object.keys(result.reconciliation || {}).length) {
+    result.settlementProgress = { available: false };
+    result.metrics.l2UnsafeLag = null;
+    result.metrics.l2FinalityLag = null;
+  }
+  return result;
+}
+
+function applyHeads(heads) {
+  if (!heads || typeof heads !== "object" || Array.isArray(heads)) throw new Error("Invalid head updates");
+  const changed = rememberHeads(heads);
+  if (!Object.keys(changed).length) return;
+  state.revision += 1; // In-flight HTTP details must not overwrite a live head.
+  render(mergeHeads(state.snapshot || { generatedAt: new Date().toISOString(), chains: {} }, -1, changed));
+}
+
+function applySnapshot(snapshot, heads = {}, startedSequence = Number.MAX_SAFE_INTEGER) {
+  rememberHeads(heads);
+  if (!snapshot.stale) {
+    for (const [name, pending] of Object.entries(state.pendingChains)) {
+      if (pending.sequence <= startedSequence && snapshot.chains?.[name]?.healthy
+          && snapshot.chains[name].latest?.hash) delete state.pendingChains[name];
+    }
+  }
   state.revision += 1;
   const seconds = snapshot.configuration?.refreshSeconds;
   if (Number.isFinite(seconds) && seconds >= 2 && seconds <= 60) {
@@ -772,13 +984,45 @@ function applySnapshot(snapshot) {
       startPolling();
     } else state.pollMilliseconds = interval;
   }
-  // Full canonical snapshots support reorgs and several posts in one L1 block.
-  render(snapshot);
+  // Keep successfully hydrated rows across slower detail responses. Only merge
+  // by hash: data from an orphaned block must never hydrate its replacement.
+  for (const name of ["l1", "l2"]) {
+    const rows = [...(state.snapshot?.chains?.[name]?.blocks || []),
+      ...(snapshot.chains?.[name]?.blocks || [])];
+    const known = new Map((state.headHistory[name] || []).map(block => [block.hash, block]));
+    for (const block of rows) {
+      if (!block.hash) continue;
+      const fields = Object.fromEntries(Object.entries(block).filter(([, value]) => value != null));
+      known.set(block.hash, { ...block, ...known.get(block.hash), ...fields });
+    }
+    state.headHistory[name] = [...known.values()].sort((a, b) => b.number - a.number).slice(0, 128);
+  }
+  // A failed component is not an empty chain/history. Retain last checked data
+  // while exposing the failure; actual reorg invalidation still runs below.
+  const previous = state.snapshot;
+  if (previous) {
+    snapshot = { ...snapshot, chains: { ...snapshot.chains }, reconciliation: {} };
+    const failed = new Set((snapshot.errors || []).map(error => error.component));
+    for (const name of ["l1", "l2"]) {
+      if (failed.has(name) && !snapshot.chains[name]?.latest && previous.chains?.[name]?.latest) {
+        snapshot.chains[name] = { ...previous.chains[name], ...snapshot.chains[name] };
+        snapshot.reconciliation[name] = "gap";
+      }
+    }
+    if (failed.has("rollup") && previous.rollup) {
+      snapshot.rollup = { ...previous.rollup, status: "unavailable" };
+    }
+    if (failed.has("settlement-history") && previous.settlementHistory?.available) {
+      snapshot.settlementHistory = previous.settlementHistory;
+      snapshot.blobSettlements = previous.blobSettlements;
+      snapshot.reconciliation.l1 = "gap";
+    }
+  }
+  render(mergeHeads(snapshot, startedSequence));
 }
 
 function startPolling() {
   if (state.stopped || state.timer !== null) return;
-  setStatus(byId("live-status"), "loading", "Polling · reconnecting");
   state.timer = setInterval(refresh, state.pollMilliseconds);
 }
 
@@ -817,13 +1061,23 @@ function connectLive() {
     return;
   }
   state.socket = socket;
-  setStatus(byId("live-status"), "loading", "Connecting live feed");
+  state.heads = {}; // Sequence numbers belong to this server connection.
+  state.headHistory = {};
+  state.pendingChains = {};
   armLiveTimeout(socket);
   socket.onmessage = (event) => {
     if (state.socket !== socket || state.stopped) return;
     try {
       const message = JSON.parse(event.data);
+      rememberBlockDetails(message.blocks);
+      if (message.type === "heads") {
+        applyHeads(message.heads);
+        if (message.blocks && state.snapshot) render(state.snapshot);
+        armLiveTimeout(socket);
+        return;
+      }
       if (message.type === "unavailable") {
+        if (message.heads) applyHeads(message.heads);
         startPolling();
         refresh();
         return;
@@ -835,8 +1089,7 @@ function connectLive() {
       if (state.timer !== null) clearInterval(state.timer);
       state.timer = null;
       state.reconnectDelay = 1000;
-      applySnapshot(snapshot);
-      setStatus(byId("live-status"), snapshot.stale ? "loading" : "", snapshot.stale ? "Live · stale data" : "Live updates");
+      applySnapshot(snapshot, message.heads, message.collectionStartedSequence);
       armLiveTimeout(socket);
     } catch (_) {
       socket.close(1002, "Invalid snapshot");
@@ -851,8 +1104,7 @@ function connectLive() {
   };
 }
 
-byId("refresh").addEventListener("click", refresh);
-byId("blob-search").addEventListener("input", (event) => {
+listen(byId("blob-search"), "input", (event) => {
   state.blobQuery = event.target.value;
   state.settlementLookup = null;
   if (!scheduleSettlementSearch(state.blobQuery)) {
@@ -862,12 +1114,12 @@ byId("blob-search").addEventListener("input", (event) => {
   }
   renderBlobSettlements();
 });
-byId("blob-search-form").addEventListener("submit", (event) => {
+listen(byId("blob-search-form"), "submit", (event) => {
   event.preventDefault();
   cancelSettlementSearch();
   searchSettlements(byId("blob-search").value);
 });
-byId("blob-search-clear").addEventListener("click", () => {
+listen(byId("blob-search-clear"), "click", () => {
   cancelSettlementSearch();
   byId("blob-search").value = "";
   state.blobQuery = "";
@@ -875,7 +1127,7 @@ byId("blob-search-clear").addEventListener("click", () => {
   byId("blob-search-status").textContent = "Type to filter the recent window; exact block numbers and full hashes search history automatically.";
   renderBlobSettlements();
 });
-byId("composer-rpc").addEventListener("click", async (event) => {
+listen(byId("composer-rpc"), "click", async (event) => {
   const button = event.target.closest("[data-copy-rpc]");
   if (!button) return;
   const original = button.textContent;
@@ -887,7 +1139,7 @@ byId("composer-rpc").addEventListener("click", async (event) => {
   }
   setTimeout(() => { button.textContent = original; }, 1600);
 });
-byId("blob-rows").addEventListener("click", (event) => {
+listen(byId("blob-rows"), "click", (event) => {
   const button = event.target.closest(".decode-trigger");
   if (!button) return;
   const transactionHash = button.dataset.transaction;
@@ -895,11 +1147,11 @@ byId("blob-rows").addEventListener("click", (event) => {
   decodeTransaction(transactionHash);
   byId("decoder-form").scrollIntoView({ behavior: "smooth", block: "center" });
 });
-byId("decoder-form").addEventListener("submit", (event) => {
+listen(byId("decoder-form"), "submit", (event) => {
   event.preventDefault();
   decodeTransaction(byId("decoder-transaction").value.trim());
 });
-byId("correlation-form").addEventListener("submit", async (event) => {
+listen(byId("correlation-form"), "submit", async (event) => {
   event.preventDefault();
   const result = byId("correlation-result");
   const direction = byId("correlation-direction").value;
@@ -920,17 +1172,37 @@ byId("correlation-form").addEventListener("submit", async (event) => {
   }
 });
 
-window.addEventListener?.("pagehide", () => {
+function stop() {
   state.stopped = true;
+  clearTimeout(state.ageTimer);
+  state.ageTimer = null;
+  state.settlementSearchRequest += 1;
   clearTimeout(state.liveTimer);
   clearTimeout(state.reconnectTimer);
+  clearTimeout(state.settlementSearchTimer);
   if (state.timer !== null) clearInterval(state.timer);
   state.timer = null;
-  state.socket?.close();
+  const socket = state.socket;
   state.socket = null;
+  socket?.close();
+}
+listen(window, "keydown", (event) => {
+  if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented
+      || event.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+  event.preventDefault();
+  byId("blob-search")?.focus();
 });
-window.addEventListener?.("pageshow", () => {
+listen(window, "pagehide", stop);
+listen(window, "pageshow", () => {
   state.stopped = false;
+  startAgeClock();
   connectLive();
 });
+startAgeClock();
 connectLive();
+return () => {
+  stop();
+  for (const [element, type, handler] of listeners) element.removeEventListener?.(type, handler);
+};
+
+}

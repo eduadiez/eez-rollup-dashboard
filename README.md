@@ -16,19 +16,40 @@ The application preserves the original sync-rollups POC screens:
 - Nested flash loan
 - Aggregator
 - Faucet
+- Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
 
-The repository also contains the independently deployed, read-only
-[EEZ Monitor Dashboard](network-observatory/README.md). It monitors L1/L2 heads,
-recent blocks, EIP-4844 blobs and Beacon sidecars, registry commitments, and
-bidirectional settlement correlations without holding signing keys.
-The monitor runs on its own host or Docker network using external RPC, Beacon,
-and Blobscan URLs; it does not require access to the rollup deployment.
+The top navigation is **Dashboard → Monitor → Visualizer**. The read-only
+[network monitor](src/monitor/README.md) lives at `#/monitor` and shares
+the dashboard layout, header, footer, and theme. The monitor page mounts inside
+the React application, with no embedded page. Its API-only Python collector runs
+as an internal Compose service, reached through `/monitor/` on the same origin,
+including live WebSockets.
+One root `.env` and Compose project configure both services; the monitor reuses
+`EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
+settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head
+updates; without them, the collector uses HTTP head polling. Settlement and
+finality details reconcile separately without delaying live heads. Optional
+Beacon, Blobscan, and settlement-policy settings are in `.env.example`.
 
 Feature availability depends on the contracts deployed by the target network.
 The current defensive-checks devnet supports the counter, bridge, faucet, and
 forward flash-loan flows. Its reverse-flash and aggregator contracts are not yet
 deployed, so those screens are present but not operational.
+
+## Deployment architecture
+
+The application uses two containers in one Compose project:
+
+- `ui` serves the single React application and proxies requests through nginx.
+- `monitor` runs the Python telemetry collector and API on the internal network.
+  It has no published port or separate frontend.
+
+Keep these services separate for production. Their dependencies, health checks,
+logs, and restart lifecycles remain independent. A collector restart temporarily
+interrupts monitoring while the dashboard and visualizer remain available.
+Both services use the root `.env` and deploy with one `docker compose up -d --build`
+command. The existing gateway provides the public HTTPS endpoint.
 
 ## Docker Compose
 
@@ -51,6 +72,27 @@ Never put a production or valuable private key in `.env`. The optional demo key
 is delivered to every browser through `config.json` and is intended only for a
 disposable private devnet.
 
+## Independent deployment behind a gateway
+
+The default Compose file publishes the UI on `127.0.0.1:8080`, keeping it
+reachable only through the Docker host. Configure `EEZ_UI_BIND` and
+`EEZ_UI_PORT` in `.env` if needed. No shared Docker network or override file
+is required. Start the UI from this repository with:
+
+```bash
+docker compose up -d --build
+```
+
+On Linux, a gateway using host networking can proxy to `127.0.0.1:8080` while
+the UI retains its own Compose network. The gateway's upstream must match
+EEZ_UI_PORT. Each project starts and stops independently. With the UI stopped,
+the gateway stays up but UI requests receive an upstream error.
+
+If migrating from the earlier optional shared-network setup, remove
+COMPOSE_FILE and EEZ_UI_PUBLIC_NETWORK from your .env and shell environment.
+To intentionally expose the UI directly on other interfaces, set
+`EEZ_UI_BIND=0.0.0.0`; the default localhost binding is suitable for the gateway.
+
 ## Build and run the image directly
 
 ```bash
@@ -63,6 +105,9 @@ docker run --rm -p 8080:8080 \
   -e EEZ_UI_L2_FRONT_UPSTREAM=http://host.docker.internal:19548 \
   eez-rollup-ui:local
 ```
+
+The UI image alone provides Dashboard and Visualizer. For Monitor, use the
+root Compose project, which also starts the collector service.
 
 All contract addresses can be supplied as environment variables listed in
 `.env.example`. The container also supports the Kurtosis artifact mounts
@@ -102,8 +147,37 @@ Git.
 npm ci
 npm run build
 docker compose config --quiet
+# With the combined app running (Node 22+):
+node src/monitor/tests/test_proxy.mjs
 docker build -t eez-rollup-ui:local .
 ```
 
-The EEZ Monitor Dashboard has its own Docker Compose project and validation
-commands documented in `network-observatory/README.md`.
+Monitor regression checks and optional telemetry settings are documented in
+`src/monitor/README.md`.
+
+For local Vite development, run the Python monitor on port `18080` as described
+there. Vite proxies `/monitor/` to that port; `EEZ_MONITOR_UPSTREAM` overrides the
+development target. The monitor collector needs its Python dependencies installed.
+
+When migrating an existing standalone monitor, copy optional settings from
+`src/monitor/.env` into the root `.env`, use the root UI RPC/explorer
+variable names, and stop the old monitor Compose project before starting the
+combined project. The old monitor port is no longer published. Gateways only
+need to forward the UI port, with WebSocket upgrades enabled.
+
+### Local explorer archive for the blob decoder
+
+When the `eez-explorers` stack is running, set
+`COMPOSE_FILE=docker-compose.yml:docker-compose.explorers.yml` and
+`EEZ_BLOBSCAN_API_URL=http://blobscan-api:3001` in `.env`, then run
+`docker compose up -d --build ui monitor`. The optional overlay joins only the
+monitor to the existing explorer network; Blobscan API access stays internal.
+Standalone deployments can continue using the main Compose file and another
+configured archive URL.
+
+The decoder supports historical tags 0–2 and tag 3/profile 1 from the derivable
+operations network. Tag 3 shows sparse records and retained full blocks; it does
+not reconstruct omitted headers. This is structural inspection, not transaction
+signature/schema validation, KZG authentication, block hash validation, or execution
+replay. No database migration is needed. Deploy the monitor and UI together; an
+older monitor rejects tag 3 and an older UI lacks its sparse-block explanation.

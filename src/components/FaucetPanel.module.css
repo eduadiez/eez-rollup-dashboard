@@ -21,14 +21,15 @@
   border-left-color: var(--accent-light);
 }
 
-/* Busy pulsing state */
+/* Keep busy status visible without fading the controls. */
 .busy {
-  animation: fadeSlideUp 0.3s ease-out both, pulseGlow 2s ease-in-out infinite;
+  border-left-color: var(--yellow);
+  animation: fadeSlideUp 0.3s ease-out both;
 }
 
 /* Success flash — green tint that fades */
 .success {
-  background: linear-gradient(90deg, var(--green-dim) 0%, var(--bg-card) 40%);
+  background: var(--bg-raised);
   border-left-color: var(--green);
 }
 
@@ -115,7 +116,7 @@
 .chainActive {
   color: var(--text-bright);
   background: var(--bg-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
 }
 
 .chainBtn:disabled {
@@ -148,7 +149,7 @@
 
 .requestBtn:hover:not(:disabled) {
   background: var(--accent-light);
-  box-shadow: 0 0 12px var(--accent-shadow), 0 2px 6px var(--accent-shadow);
+  box-shadow: none;
 }
 
 .requestBtn:active:not(:disabled) {

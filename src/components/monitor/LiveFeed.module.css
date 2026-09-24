@@ -32,13 +32,13 @@
   height: 7px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   animation: livePulse 1.5s ease-in-out infinite;
 }
 
 @keyframes livePulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(52, 211, 153, 0.5); }
-  50% { opacity: 0.6; box-shadow: 0 0 12px rgba(52, 211, 153, 0.3); }
+  0%, 100% { opacity: 1; box-shadow: none; }
+  50% { opacity: 0.6; box-shadow: none; }
 }
 
 .liveLabel {
@@ -117,7 +117,7 @@
 .filterBtnActive .filterCount {
   color: var(--accent-light);
   background: var(--accent-dim);
-  border-color: rgba(99, 102, 241, 0.18);
+  border-color: rgba(154, 163, 179, 0.18);
 }
 
 /* ── Empty state ── */
@@ -221,7 +221,7 @@
   font-weight: 600;
   color: var(--accent-light);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
   padding: 2px 7px;
   border-radius: 3px;
   letter-spacing: 0.02em;
@@ -386,7 +386,7 @@
 .skelLine {
   height: 10px;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--bg-inset) 25%, var(--border) 50%, var(--bg-inset) 75%);
+  background: var(--bg-raised);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }

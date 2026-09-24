@@ -19,6 +19,11 @@
   --sans: 'Geist', system-ui, -apple-system, sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --eez-green: #3be57e;
+  --eez-label: #9ba6d6;
+  --eez-lede: #c9cfda;
+  --eez-hook: #8f8f8f;
+  --eez-pinned: #a8f3ce;
+  --eez-logo-grad: linear-gradient(180deg, #8ce8ab, #3f2acd);
   --eez-canvas: #0a0a0a;
   --eez-screen: #161616;
   --eez-chrome: #1f1f1f;
@@ -35,43 +40,30 @@
   color-scheme: dark;
 }
 
-[data-theme='light'] {
-  --eez-green: #147d40;
-  --eez-canvas: #f7f7f5;
-  --eez-screen: #fff;
-  --eez-chrome: #f0f0ed;
-  --eez-edge: #d6d6d1;
-  --eez-muted: #62676f;
-  --eez-grid: rgba(0, 0, 0, .045);
-  --eez-heading: #161616;
-  --eez-heading-light: #505050;
-  --eez-pill-bg: #161616;
-  --eez-pill-ink: #fff;
-  color-scheme: light;
-}
 
 .eez-eyebrow {
   margin: 0 0 16px;
   color: var(--eez-muted);
-  font: 400 12px/1.5 var(--mono);
+  font: 400 12.5px/1.5 var(--mono);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
 
-.eez-intro { padding: 44px 0 32px; }
+.eez-intro { padding: 48px 0 32px; }
 .eez-page-heading {
   margin: 0;
   color: var(--eez-heading-light);
-  font: 300 clamp(30px, 4vw, 48px)/1.12 var(--sans);
-  letter-spacing: -.035em;
+  font: 300 48px/1.08 var(--sans);
+  letter-spacing: -.01em;
   text-wrap: balance;
 }
 .eez-page-heading strong { color: var(--eez-heading); font-weight: 800; }
 .eez-description {
   margin: 16px 0 0;
   max-width: 640px;
-  color: var(--eez-muted);
-  font: 400 14px/1.7 var(--sans);
+  color: var(--eez-lede);
+  font: 400 18px/1.55 var(--sans);
+  text-wrap: pretty;
 }
 
 .eez-pill {
@@ -79,12 +71,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 5px 5px 5px 18px;
+  padding: 5px 5px 5px 20px;
   border: 1px solid var(--eez-edge);
   border-radius: 100px;
   background: var(--eez-pill-bg);
   color: var(--eez-pill-ink);
-  font: 500 12px/1.5 var(--mono);
+  font: 500 11.5px/1.5 var(--mono);
+  letter-spacing: .02em;
+  text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
@@ -102,22 +96,11 @@
   font-size: 16px;
   transition: transform .2s ease;
 }
-.eez-pill:hover .eez-arrow { transform: rotate(-35deg); }
+.eez-pill:hover .eez-arrow { transform: translateX(3px); }
 .eez-pill:hover { background: var(--eez-grad-btn); color: var(--eez-ink-on-grad); }
 
-.eez-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 16px;
-  right: 16px;
-  height: 2px;
-  background: var(--eez-grad);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s ease;
-}
-.eez-card:hover::before, .eez-card:focus-within::before { opacity: 1; }
+/* Use the card's own rounded border for hover and keyboard focus. */
+.eez-card:is(:hover, :focus-within) { border-color: var(--border-hover); }
 
 .eez-skip-link {
   position: fixed;
@@ -132,11 +115,11 @@
   transform: translateY(-160%);
 }
 .eez-skip-link:focus { transform: translateY(0); }
-:focus-visible { outline: 2px solid var(--eez-green); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--eez-green); outline-offset: 2px; }
 
 @media (max-width: 640px) {
   .eez-intro { padding: 32px 0 24px; }
-  .eez-description { font-size: 13px; }
+  .eez-page-heading { font-size: 32px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -147,3 +130,21 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Application panels share card surfaces; only whole-card links lift. */
+.eez-card.eez-card {
+  position: relative;
+  border: 1px solid var(--eez-edge);
+  border-radius: 16px;
+  background: var(--eez-screen);
+  box-shadow: none;
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.eez-card.eez-card::before {
+  content: ""; position: absolute; pointer-events: none;
+  top: 0; left: 16px; right: 16px; height: 2px;
+  background: var(--eez-logo-grad); opacity: 0; transition: opacity .2s ease;
+}
+.eez-card.eez-card:is(:hover, :focus-within) { border-color: #333; background: #0d0d0d; }
+.eez-card.eez-card:is(:hover, :focus-within)::before { opacity: 1; }
+a.eez-card:hover { transform: translateY(-4px); box-shadow: 0 20px 44px -20px rgba(0,0,0,.75); }

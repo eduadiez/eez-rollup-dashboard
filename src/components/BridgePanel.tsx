@@ -284,6 +284,7 @@ export function BridgePanel({
   const canBridge =
     !busy &&
     sourceBridgeReady &&
+    gas.status === "estimated" &&
     amount &&
     rawAmount > 0n &&
     !insufficientBalance &&

@@ -8,9 +8,8 @@
   padding: 0 var(--sp-7);
   height: 72px;
   background: var(--header-bg);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid var(--border);
+
+  border-bottom: 1px solid #1a1a1a;
   position: sticky;
   top: 0;
   z-index: 200;
@@ -184,23 +183,23 @@
 /* L1 active: indigo */
 .chainBtnL1Active {
   color: var(--chain-l1);
-  background: rgba(129, 140, 248, 0.10);
+  background: rgba(154, 163, 179, 0.10);
 }
 
 .chainBtnL1Active .chainBtnDot {
-  background: #818cf8;
-  box-shadow: 0 0 6px rgba(129, 140, 248, 0.6);
+  background: var(--eez-label);
+  box-shadow: none;
 }
 
 /* L2 active: emerald */
 .chainBtnL2Active {
   color: var(--chain-l2);
-  background: rgba(52, 211, 153, 0.10);
+  background: rgba(154, 163, 179, 0.10);
 }
 
 .chainBtnL2Active .chainBtnDot {
-  background: #34d399;
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+  background: var(--eez-label);
+  box-shadow: none;
 }
 
 /* ── Wallet area (pill + dropdown wrapper) ── */
@@ -240,7 +239,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   flex-shrink: 0;
 }
 
@@ -265,8 +264,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.20);
+    none;
   animation: fadeSlideUp 0.15s ease-out both;
   z-index: 300;
   overflow: hidden;
@@ -325,8 +323,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #818cf8;
-  box-shadow: 0 0 4px rgba(129, 140, 248, 0.4);
+  background: var(--eez-label);
+  box-shadow: none;
   flex-shrink: 0;
 }
 
@@ -334,8 +332,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 4px rgba(52, 211, 153, 0.4);
+  background: var(--eez-label);
+  box-shadow: none;
   flex-shrink: 0;
 }
 
@@ -478,8 +476,7 @@
   gap: var(--sp-4);
   animation: slideDown var(--duration-slow) var(--ease) both;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.20);
+    none;
 }
 
 .mobileSection {
@@ -550,37 +547,37 @@
 }
 
 .mobileChainBtnL1:hover {
-  border-color: rgba(129, 140, 248, 0.35);
+  border-color: rgba(154, 163, 179, 0.35);
   color: var(--chain-l1);
 }
 
 .mobileChainBtnL2:hover {
-  border-color: rgba(52, 211, 153, 0.35);
+  border-color: rgba(154, 163, 179, 0.35);
   color: var(--chain-l2);
 }
 
 /* Active L1 */
 .mobileChainBtnL1.mobileChainActive {
-  border-color: rgba(129, 140, 248, 0.4);
-  background: rgba(129, 140, 248, 0.08);
+  border-color: rgba(154, 163, 179, 0.4);
+  background: rgba(154, 163, 179, 0.08);
   color: var(--chain-l1);
 }
 
 .mobileChainBtnL1.mobileChainActive .chainBtnDot {
-  background: #818cf8;
-  box-shadow: 0 0 6px rgba(129, 140, 248, 0.5);
+  background: var(--eez-label);
+  box-shadow: none;
 }
 
 /* Active L2 */
 .mobileChainBtnL2.mobileChainActive {
-  border-color: rgba(52, 211, 153, 0.4);
-  background: rgba(52, 211, 153, 0.08);
+  border-color: rgba(154, 163, 179, 0.4);
+  background: rgba(154, 163, 179, 0.08);
   color: var(--chain-l2);
 }
 
 .mobileChainBtnL2.mobileChainActive .chainBtnDot {
-  background: #34d399;
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  background: var(--eez-label);
+  box-shadow: none;
 }
 
 /* Mobile wallet section */

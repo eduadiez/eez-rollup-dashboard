@@ -7,17 +7,18 @@
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 32px 48px;
+  padding: 48px 32px 100px;
   animation: fadeIn 0.25s ease-out;
 }
 
 .topBar {
   display: flex;
-  align-items: center;
-  gap: var(--sp-4, 16px);
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 24px;
   margin-bottom: var(--sp-5, 20px);
   padding-bottom: var(--sp-4, 16px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
 }
 
 
@@ -50,7 +51,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
-  background: var(--bg);
+  background: #0d0d0d;
   border: 1px solid var(--border);
   padding: var(--sp-2, 8px) var(--sp-4, 16px);
   border-radius: 100px;
@@ -80,7 +81,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   animation: livePulse 1.5s ease-in-out infinite;
 }
 
@@ -188,7 +189,7 @@
 
 .ctrlBtnPlay:hover:not(:disabled) {
   background: var(--accent-glow-strong);
-  box-shadow: 0 0 12px var(--accent-shadow);
+  box-shadow: none;
 }
 
 .ctrlBtnPlayActive {
@@ -234,7 +235,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  background: var(--bg-raised);
   border-radius: 2px;
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -261,7 +262,7 @@
 .progressDotActive {
   border-color: var(--cyan);
   background: var(--cyan);
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+  box-shadow: none;
 }
 
 /* ── STEP BANNER ── */
@@ -277,13 +278,13 @@
 }
 
 .stepBannerL1 {
-  background: rgba(99, 102, 241, 0.04);
-  border-color: rgba(99, 102, 241, 0.15);
+  background: rgba(154, 163, 179, 0.04);
+  border-color: rgba(154, 163, 179, 0.15);
 }
 
 .stepBannerL2 {
-  background: rgba(52, 211, 153, 0.04);
-  border-color: rgba(52, 211, 153, 0.15);
+  background: rgba(154, 163, 179, 0.04);
+  border-color: rgba(154, 163, 179, 0.15);
 }
 
 .stepBannerLeft {
@@ -311,7 +312,7 @@
 .chainTagL1 {
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(154, 163, 179, 0.25);
 }
 
 .chainTagL2 {
@@ -356,14 +357,14 @@
 }
 
 .laneL1 {
-  fill: rgba(99, 102, 241, 0.03);
-  stroke: rgba(99, 102, 241, 0.08);
+  fill: rgba(154, 163, 179, 0.03);
+  stroke: rgba(154, 163, 179, 0.08);
   stroke-width: 1;
 }
 
 .laneL2 {
-  fill: rgba(52, 211, 153, 0.03);
-  stroke: rgba(52, 211, 153, 0.08);
+  fill: rgba(154, 163, 179, 0.03);
+  stroke: rgba(154, 163, 179, 0.08);
   stroke-width: 1;
 }
 
@@ -371,13 +372,13 @@
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 800;
-  fill: rgba(99, 102, 241, 0.25);
+  fill: rgba(154, 163, 179, 0.25);
   letter-spacing: 0.08em;
 }
 
 .laneLabelL2 {
   composes: laneLabel;
-  fill: rgba(52, 211, 153, 0.25);
+  fill: rgba(154, 163, 179, 0.25);
 }
 
 .archNode {
@@ -391,7 +392,7 @@
   fill: var(--bg-card-hover);
   stroke: var(--cyan);
   stroke-width: 1.5;
-  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.15));
+  filter: drop-shadow(0 0 6px rgba(154, 163, 179, 0.15));
 }
 
 .archPulse {
@@ -429,7 +430,7 @@
 
 .archArrowActive {
   stroke: var(--cyan);
-  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.3));
+  filter: drop-shadow(0 0 3px rgba(154, 163, 179, 0.3));
 }
 
 /* ── TX DETAILS TOGGLE ── */
@@ -512,8 +513,8 @@
   overflow: hidden;
 }
 
-.tblL1 { border-color: rgba(99, 102, 241, 0.15); }
-.tblL2 { border-color: rgba(52, 211, 153, 0.15); }
+.tblL1 { border-color: rgba(154, 163, 179, 0.15); }
+.tblL2 { border-color: rgba(154, 163, 179, 0.15); }
 
 .tblHdr {
   display: flex;
@@ -581,8 +582,8 @@
 
 .teAdded {
   border-left-color: var(--cyan);
-  border-color: rgba(34, 211, 238, 0.2);
-  background: rgba(34, 211, 238, 0.02);
+  border-color: rgba(154, 163, 179, 0.2);
+  background: rgba(154, 163, 179, 0.02);
   animation: entryAdd 0.4s ease-out;
 }
 
@@ -635,7 +636,7 @@
 .teTypeCall {
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(154, 163, 179, 0.2);
 }
 
 .teTypeResult {
@@ -788,7 +789,7 @@
 .siChainL1 {
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.15);
 }
 
 .siChainL2 {
@@ -904,13 +905,13 @@
 
 .card:hover {
   border-color: var(--border-bright);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
 }
 
 .cardTitle {
   font-family: var(--sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-bright);
   margin-bottom: 3px;
 }
@@ -963,7 +964,7 @@
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  box-shadow: none;
 }
 
 .input::placeholder { color: var(--text-dim); }
@@ -985,7 +986,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+  box-shadow: none;
   animation: livePulse 1.5s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -1155,7 +1156,7 @@
 
 .entryRow:last-child { border-bottom: none; }
 .entryActive { background: var(--accent-glow); }
-.entryDone { background: rgba(52, 211, 153, 0.02); }
+.entryDone { background: rgba(154, 163, 179, 0.02); }
 .colIdx { color: var(--text-dim); }
 
 .typeBadge {
@@ -1170,7 +1171,7 @@
   color: var(--text-dim);
 }
 
-.typeCall { border-color: rgba(99, 102, 241, 0.25); color: var(--accent-light); background: var(--accent-glow); }
+.typeCall { border-color: rgba(154, 163, 179, 0.25); color: var(--accent-light); background: var(--accent-glow); }
 .typeResult { border-color: var(--green-border); color: var(--green); background: var(--green-dim); }
 
 .destLink {
@@ -1284,8 +1285,8 @@
 /* ── ANIMATIONS (only keep ones NOT defined in global.css) ── */
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
-  50% { box-shadow: 0 0 0 5px rgba(99, 102, 241, 0); }
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: none; }
 }
 
 /* ── RESPONSIVE ── */

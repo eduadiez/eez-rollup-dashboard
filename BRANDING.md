@@ -1,27 +1,26 @@
 # EEZ interface branding
 
-Both the rollup dashboard and the standalone monitor use the brand primitives
-in `network-observatory/app/static/brand/eez.css`. The React app imports this
-stylesheet and the SVGs directly; Vite bundles them into its production assets.
-The monitor serves the same files from its explicit static-file allowlist.
+[DESIGN.md](DESIGN.md) is the design specification for the dashboard, monitor,
+and visualizer. Shared primitives live in `src/styles/brand/eez.css`; global
+controls and semantic status tokens live in `src/styles/global.css`.
 
-The visual reference is [EEZ demos](https://github.com/0xarmagan/eez-demos),
-specifically its [homepage](https://github.com/0xarmagan/eez-demos/blob/main/index.html)
-and [walkthrough controls](https://github.com/0xarmagan/eez-demos/blob/main/dapp-developers/q2-send-a-cross-chain-call.html).
-The wordmark and favicon are the original SVG artwork from that reference.
-The light-theme wordmark changes only the lettering to charcoal.
+The application uses the specification's dark canvas, 42px grid, flat neutral
+surfaces, Geist typography, bracketed mono eyebrows, mixed-weight page headings,
+and pill controls. Green indicates interaction and execution status. Chain
+identity is conveyed by labels, not differently colored card surfaces. Gradients
+are limited to primary-action hover states, accent rails, and progress indicators.
 
-- Canvas `#0A0A0A`, panels `#161616`, controls `#1F1F1F`, borders `#2E2E2E`.
-- A 42px background grid, Geist headings and body text, Geist Mono labels and data.
-- Mixed-weight page headings, bracketed eyebrows, 16px cards, and pill controls.
-- Green → blue → violet accents (`#8AE5AC`, `#6283BD`, `#4439CB`).
-- Distinct colors remain available for execution routes, warnings, and failures.
+Application adaptations:
 
-Geist and Geist Mono are served locally as Latin variable WOFF2 fonts. They
-come from Google Fonts and are distributed under the adjacent SIL Open Font
-License files. No external font request is required by either application.
-System fallbacks cover glyphs outside the Latin subset.
-
-The dashboard starts in dark mode and preserves an explicitly saved theme.
-The light palette shares the same typography, geometry, and brand artwork.
-Both interfaces respect reduced motion and provide visible keyboard focus.
+- Forms and telemetry panels retain their interaction model; they are not wrapped
+  in whole-card anchors. They receive the same flat card surface and hover rail.
+  Only whole-card links lift on hover.
+- Live data and decoded payload panes are runtime output, not source-code excerpts.
+  They do not display invented pinned-commit citations.
+- Geist and Geist Mono use the existing locally served Google Fonts WOFF2 files,
+  covered by the adjacent SIL Open Font License files.
+- The design is dark-only. The old theme switch is no longer exposed.
+- The live monitor retains its one-second age clock, scrollable 20/100 block
+  windows, and subtle sync-row tint. Search supports the `/` keyboard shortcut.
+- Reduced motion disables animations and transitions globally. Keyboard focus
+  uses the shared green outline. Mobile layouts retain normal document scrolling.

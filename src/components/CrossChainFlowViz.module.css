@@ -12,12 +12,12 @@
   border: 1px solid var(--border);
   overflow: hidden;
   position: relative;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   transition: box-shadow var(--duration-slow) var(--ease);
 }
 
 .container:hover {
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
 }
 
 /* ── SVG ── */
@@ -78,12 +78,7 @@
 
 .poolShimmer {
   animation: shimmer 2s linear infinite;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.03) 50%,
-    transparent 100%
-  );
+  background: var(--bg-raised);
   background-size: 200% 100%;
 }
 

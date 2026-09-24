@@ -10,13 +10,13 @@ import { useCrossChain } from "./hooks/useCrossChain";
 import { useBridge } from "./hooks/useBridge";
 import { useExecutionVisualizer } from "./hooks/useExecutionVisualizer";
 import { useTxHistory } from "./hooks/useTxHistory";
-import { useTheme } from "./hooks/useTheme";
 import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
 import { useFlashLoan } from "./hooks/useFlashLoan";
 import { useFlashLoanReverse } from "./hooks/useFlashLoanReverse";
 import { useFlashLoanDeploy } from "./hooks/useFlashLoanDeploy";
 import { useFaucet } from "./hooks/useFaucet";
+import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
 // NodeHealth merged into Header
 import { CounterPanel } from "./components/CounterPanel";
@@ -47,7 +47,7 @@ function getInitialView(): string {
   const raw = window.location.hash.replace("#/", "").replace("#", "");
   const hash = raw.split("?")[0];
   if (hash === "visualizer") return "visualizer";
-  if (hash === "monitor") return "visualizer"; // redirect to unified visualizer
+  if (hash === "monitor") return "monitor";
   return "dashboard";
 }
 
@@ -76,7 +76,7 @@ const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
 
 export function App() {
   const configLoaded = useConfigLoader();
-  const { theme, toggle: toggleTheme } = useTheme();
+
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
   const { l1, l2 } = useDashboard();
@@ -113,32 +113,24 @@ export function App() {
     window.location.hash = tab === "dashboard" ? "" : `#/${tab}`;
   }, []);
   const [pendingDebugHash, setPendingDebugHash] = useState<string | null>(null);
-  const [initialVisualizerMode, setInitialVisualizerMode] = useState<"explorer" | "live" | "debug" | undefined>(() => {
-    const raw = window.location.hash.replace("#/", "").replace("#", "").split("?")[0];
-    return raw === "monitor" ? "live" : undefined;
-  });
+  const [initialVisualizerMode, setInitialVisualizerMode] = useState<"explorer" | "live" | "debug" | undefined>();
   const [initialBlock, setInitialBlock] = useState<number | null>(() => {
     const b = getHashParam("block");
     return b ? parseInt(b, 10) : null;
   });
 
   const navigate = useCallback((v: string) => {
-    if (v === "monitor") {
-      setView("visualizer");
-      setInitialVisualizerMode("live");
-      window.location.hash = "#/visualizer";
-    } else {
-      setView(v);
-      setInitialVisualizerMode(undefined);
-      window.location.hash = v === "dashboard" ? "" : `#/${v}`;
-      // Reset to default dashboard tab when navigating to dashboard view
-      if (v === "dashboard") setDashboardTab("dashboard");
-    }
+    setView(v);
+    setPendingDebugHash(null);
+    setInitialBlock(null);
+    setInitialVisualizerMode(undefined);
+    window.location.hash = v === "dashboard" ? "" : `#/${v}`;
+    if (v === "dashboard") setDashboardTab("dashboard");
   }, []);
 
   const handleDebugTx = useCallback((txHash: string) => {
-    setPendingDebugHash(txHash);
     navigate("visualizer");
+    setPendingDebugHash(txHash);
   }, [navigate]);
 
   const handleViewBlock = useCallback((blockNumber: number) => {
@@ -153,9 +145,7 @@ export function App() {
   useEffect(() => {
     const onHashChange = () => {
       const raw = window.location.hash.replace("#/", "").replace("#", "").split("?")[0];
-      if (raw === "monitor") {
-        setInitialVisualizerMode("live");
-      }
+      setInitialVisualizerMode(undefined);
       const b = getHashParam("block");
       setInitialBlock(b ? parseInt(b, 10) : null);
       // Check for target deep link
@@ -163,7 +153,7 @@ export function App() {
       if (target) setGenericTargetAddr(target);
       // Deep link to dashboard sub-tabs (e.g. #/flash-loan, #/bridge)
       const tab = raw ? HASH_TO_TAB[raw] : undefined;
-      if (tab) setDashboardTab(tab);
+      setDashboardTab(tab ?? "dashboard");
       setView(getInitialView());
     };
     window.addEventListener("hashchange", onHashChange);
@@ -336,12 +326,13 @@ export function App() {
       <a className="eez-skip-link" href="#main" onClick={(event) => { event.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
       <Header
         wallet={wallet}
+        walletName={wallet.walletName}
+        walletOptions={wallet.walletOptions}
         onConnect={wallet.connect}
         onDisconnect={wallet.disconnect}
         onNavigate={navigate}
         currentView={view}
-        theme={theme}
-        onToggleTheme={toggleTheme}
+        theme="dark"
         currentChainId={wallet.chainId}
         onSwitchL1={wallet.switchToL1}
         onSwitchL2={wallet.switchToL2}
@@ -363,7 +354,9 @@ export function App() {
         }}
       />
 
-      {view === "visualizer" ? (
+      {view === "monitor" ? (
+        <NetworkMonitorView />
+      ) : view === "visualizer" ? (
         <VisualizerView
           liveState={execVis.state}
           liveTargetAddress={crossChain.state.targetAddress}
@@ -382,7 +375,7 @@ export function App() {
               <p className="eez-description">Explore synchronous execution. Deploy, connect, and interact across L1 and L2.</p>
             </div>
             <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
-              EEZ quickstarts <span className="eez-arrow" aria-hidden="true">↗</span>
+              EEZ quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
             </a>
           </section>
 

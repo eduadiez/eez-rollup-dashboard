@@ -7,12 +7,12 @@
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out both;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
 }
 
 /* Chain-colored top accent line */

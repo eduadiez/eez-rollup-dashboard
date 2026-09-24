@@ -72,7 +72,9 @@ export function VisualizerView({ liveState, liveTargetAddress, liveCalldata, onB
           </svg>
           Dashboard
         </button>
-        <h1 className={styles.pageTitle}>Execution Visualizer</h1>
+        <div><p className="eez-eyebrow">[ EXECUTION VISUALIZER ]</p>
+          <h1 className="eez-page-heading"><strong>Follow every call.</strong> Across chains.</h1>
+          <p className="eez-description">Inspect blocks, trace transactions, and explore cross-chain execution.</p></div>
       </div>
 
       {/* Mode tabs */}

@@ -44,7 +44,7 @@
   background: var(--accent-dim);
   padding: 1px 6px;
   border-radius: var(--radius-xs);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(154, 163, 179, 0.2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-left: auto;
@@ -163,7 +163,7 @@
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .input::placeholder {
@@ -177,7 +177,7 @@
 
 .inputError:focus {
   border-color: var(--red);
-  box-shadow: 0 0 0 2px var(--red-dim);
+  box-shadow: none;
 }
 
 .inputCustom {

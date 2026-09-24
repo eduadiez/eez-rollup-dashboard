@@ -45,11 +45,11 @@
 }
 .dotConnected {
   background: var(--green);
-  box-shadow: 0 0 4px var(--green);
+  box-shadow: none;
 }
 .dotDisconnected {
   background: var(--text-dim);
-  box-shadow: 0 0 4px var(--text-dim);
+  box-shadow: none;
 }
 .connectBtn {
   padding: 4px 12px;

@@ -44,10 +44,10 @@ const PATHS = {
 /* ── Colours ── */
 
 const COL = {
-  gold: "#fbbf24",
-  blue: "#3b82f6",
-  cyan: "#22d3ee",
-  green: "#34d399",
+  gold: "#9ba6d6",
+  blue: "#9ba6d6",
+  cyan: "#9ba6d6",
+  green: "#3be57e",
   white: "#ffffff",
 } as const;
 
@@ -131,24 +131,24 @@ function SvgDefs() {
 
       {/* L1 lane background gradient */}
       <linearGradient id="l1LaneGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="rgba(99,102,241,0.05)" />
-        <stop offset="100%" stopColor="rgba(99,102,241,0.01)" />
+        <stop offset="0%" stopColor="rgba(154,163,179,0.05)" />
+        <stop offset="100%" stopColor="rgba(154,163,179,0.01)" />
       </linearGradient>
 
       {/* L2 lane background gradient */}
       <linearGradient id="l2LaneGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="rgba(52,211,153,0.01)" />
-        <stop offset="100%" stopColor="rgba(52,211,153,0.05)" />
+        <stop offset="0%" stopColor="rgba(154,163,179,0.01)" />
+        <stop offset="100%" stopColor="rgba(154,163,179,0.05)" />
       </linearGradient>
 
       {/* Pool liquid gradients */}
       <linearGradient id="liquidA" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#818cf8" stopOpacity={0.9} />
-        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.7} />
+        <stop offset="0%" stopColor="#9aa3b3" stopOpacity={0.9} />
+        <stop offset="100%" stopColor="#9aa3b3" stopOpacity={0.7} />
       </linearGradient>
       <linearGradient id="liquidB" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#34d399" stopOpacity={0.8} />
-        <stop offset="100%" stopColor="#10b981" stopOpacity={0.6} />
+        <stop offset="0%" stopColor="#9aa3b3" stopOpacity={0.8} />
+        <stop offset="100%" stopColor="#9aa3b3" stopOpacity={0.6} />
       </linearGradient>
 
       {/* Wave clip paths for pools */}
@@ -161,7 +161,7 @@ function SvgDefs() {
 
       {/* Scanline pattern for bridge zone */}
       <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
-        <line x1="0" y1="2" x2="4" y2="2" stroke="rgba(34,211,238,0.06)" strokeWidth="0.5" />
+        <line x1="0" y1="2" x2="4" y2="2" stroke="rgba(154,163,179,0.06)" strokeWidth="0.5" />
       </pattern>
     </defs>
   );
@@ -545,8 +545,8 @@ function LiquidPool({ x, y, reserveA, reserveB, chain, active, fillRatio = 0.7 }
   const liquidTop = poolY + padding + (innerH - liquidH);
 
   const borderColor = chain === "l1"
-    ? (active ? "rgba(99,102,241,0.6)" : "rgba(99,102,241,0.25)")
-    : (active ? "rgba(52,211,153,0.6)" : "rgba(52,211,153,0.25)");
+    ? (active ? "rgba(154,163,179,0.6)" : "rgba(154,163,179,0.25)")
+    : (active ? "rgba(154,163,179,0.6)" : "rgba(154,163,179,0.25)");
 
   const tokenALabel = chain === "l1" ? "WETH" : "wWETH";
   const tokenBLabel = chain === "l1" ? "USDC" : "wUSDC";
@@ -603,7 +603,7 @@ function LiquidPool({ x, y, reserveA, reserveB, chain, active, fillRatio = 0.7 }
         y1={poolY + padding}
         x2={dividerX}
         y2={poolY + poolH - padding}
-        stroke={chain === "l1" ? "rgba(129,140,248,0.7)" : "rgba(52,211,153,0.7)"}
+        stroke={chain === "l1" ? "rgba(129,140,248,0.7)" : "rgba(154,163,179,0.7)"}
         strokeWidth={1}
         opacity={0.8}
       />
@@ -760,7 +760,7 @@ function LiquidPool({ x, y, reserveA, reserveB, chain, active, fillRatio = 0.7 }
           height={innerH}
           rx={4}
           fill="none"
-          stroke={chain === "l1" ? "rgba(99,102,241,0.4)" : "rgba(52,211,153,0.4)"}
+          stroke={chain === "l1" ? "rgba(154,163,179,0.4)" : "rgba(154,163,179,0.4)"}
           strokeWidth={0.6}
         >
           <animate
@@ -796,8 +796,8 @@ interface FlowNodeProps {
 
 function FlowNode({ x, y, label, sublabel, chain, active }: FlowNodeProps) {
   const stroke = chain === "l1"
-    ? "rgba(99,102,241,0.5)"
-    : "rgba(52,211,153,0.5)";
+    ? "rgba(154,163,179,0.5)"
+    : "rgba(154,163,179,0.5)";
   const activeStroke = chain === "l1"
     ? "var(--accent)"
     : "var(--green)";
@@ -988,7 +988,7 @@ export function CrossChainFlowViz({
         <text
           x={22}
           y={24}
-          fill="rgba(99,102,241,0.4)"
+          fill="rgba(154,163,179,0.4)"
           fontSize={10}
           fontFamily="var(--mono)"
           fontWeight={700}
@@ -999,7 +999,7 @@ export function CrossChainFlowViz({
         <text
           x={22}
           y={242}
-          fill="rgba(52,211,153,0.4)"
+          fill="rgba(154,163,179,0.4)"
           fontSize={10}
           fontFamily="var(--mono)"
           fontWeight={700}
@@ -1281,7 +1281,7 @@ export function CrossChainFlowViz({
               width={60}
               height={20}
               rx={4}
-              fill="rgba(52,211,153,0.15)"
+              fill="rgba(154,163,179,0.15)"
               stroke={COL.green}
               strokeWidth={0.8}
             />
@@ -1309,7 +1309,7 @@ export function CrossChainFlowViz({
               width={130}
               height={32}
               rx={6}
-              fill="rgba(52,211,153,0.08)"
+              fill="rgba(154,163,179,0.08)"
               stroke={COL.green}
               strokeWidth={1.2}
               strokeDasharray="200"
@@ -1418,7 +1418,7 @@ export function CrossChainFlowViz({
               x={430}
               y={66}
               textAnchor="middle"
-              fill="rgba(99,102,241,0.7)"
+              fill="rgba(154,163,179,0.7)"
               fontSize={9}
               fontFamily="var(--mono)"
               fontWeight={700}
@@ -1430,7 +1430,7 @@ export function CrossChainFlowViz({
               x={300}
               y={138}
               textAnchor="middle"
-              fill="rgba(52,211,153,0.7)"
+              fill="rgba(154,163,179,0.7)"
               fontSize={9}
               fontFamily="var(--mono)"
               fontWeight={700}

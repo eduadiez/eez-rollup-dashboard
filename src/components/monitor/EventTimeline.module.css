@@ -48,7 +48,7 @@
   padding: 2px 8px;
   border-radius: 4px;
   border: 1px solid var(--green);
-  background: rgba(52, 211, 153, 0.1);
+  background: rgba(154, 163, 179, 0.1);
   color: var(--green);
   cursor: pointer;
   font-family: var(--mono);
@@ -58,7 +58,7 @@
   font-size: 0.55rem;
   padding: 2px 8px;
   border-radius: 4px;
-  background: rgba(52, 211, 153, 0.1);
+  background: rgba(154, 163, 179, 0.1);
   color: var(--green);
   font-weight: 700;
 }

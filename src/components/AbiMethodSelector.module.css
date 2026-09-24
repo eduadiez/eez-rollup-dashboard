@@ -38,7 +38,7 @@
   color: var(--text-bright);
   background: var(--bg-card);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 
 .select {
@@ -56,7 +56,7 @@
 
 .select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .params {
@@ -92,7 +92,7 @@
 
 .paramInput:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .valueRow {

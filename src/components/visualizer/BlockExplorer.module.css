@@ -18,7 +18,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 /* ── Navigation group: ◄ [input] ► ── */
@@ -31,14 +31,14 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
   transition: border-color var(--duration) var(--ease),
               box-shadow var(--duration) var(--ease);
 }
 
 .navGroup:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  box-shadow: none;
 }
 
 .navArrow {
@@ -135,8 +135,8 @@
 .chainBtnActive {
   color: var(--accent-light);
   background: var(--bg-card);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.25);
+  box-shadow: none;
 }
 
 .chainBtnActive:hover {
@@ -148,7 +148,7 @@
   color: var(--green);
   background: var(--bg-card);
   border: 1px solid var(--green-border);
-  box-shadow: 0 1px 4px rgba(52, 211, 153, 0.15);
+  box-shadow: none;
 }
 
 .chainBtnActiveL2:hover {
@@ -205,15 +205,15 @@
 
 .actionBtnPrimary {
   color: var(--accent-light);
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.03));
-  border-color: rgba(99, 102, 241, 0.28);
+  background: var(--bg-raised);
+  border-color: rgba(154, 163, 179, 0.28);
 }
 
 .actionBtnPrimary:hover:not(:disabled) {
   color: #fff;
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  box-shadow: none;
 }
 
 .actionBtnPrimary:active:not(:disabled) {
@@ -224,7 +224,7 @@
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(99, 102, 241, 0.2);
+  border: 2px solid rgba(154, 163, 179, 0.2);
   border-top-color: var(--accent-light);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -244,7 +244,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   text-align: center;
 }
 
@@ -277,7 +277,7 @@
 .blockHeaderDividerLine {
   width: 1px;
   align-self: stretch;
-  background: linear-gradient(180deg, transparent, var(--border-bright), transparent);
+  background: var(--bg-raised);
 }
 
 .blockHeaderDividerText {
@@ -303,7 +303,7 @@
 .l1BadgeInline {
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
 }
 
 .l2BadgeInline {
@@ -383,12 +383,12 @@
               box-shadow var(--duration-slow) var(--ease),
               transform var(--duration-slow) var(--ease);
   animation: fadeSlideUp 0.3s ease-out both;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .txCard:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -408,7 +408,7 @@
   color: var(--accent-light);
   padding: 4px 10px;
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
   border-radius: var(--radius-xs);
   letter-spacing: 0.02em;
   line-height: 1;
@@ -719,7 +719,7 @@
   border-radius: var(--radius-xs);
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
   line-height: 1;
 }
 
@@ -1029,7 +1029,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .laneBadge {
@@ -1045,7 +1045,7 @@
 .l1Badge {
   color: var(--accent-light);
   background: var(--accent-glow);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(154, 163, 179, 0.18);
 }
 
 .l2LaneBadge {
@@ -1073,13 +1073,7 @@
   width: 1px;
   height: 100%;
   min-height: 120px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    var(--border-bright) 15%,
-    var(--border-bright) 85%,
-    transparent 100%
-  );
+  background: var(--bg-raised);
   opacity: 0.5;
 }
 
@@ -1098,7 +1092,7 @@
 
 .l1StatHighlight {
   color: var(--accent-light) !important;
-  border-color: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(154, 163, 179, 0.18) !important;
   background: var(--accent-dim) !important;
 }
 
@@ -1124,12 +1118,12 @@
               box-shadow var(--duration-slow) var(--ease),
               transform var(--duration-slow) var(--ease);
   animation: fadeSlideUp 0.3s ease-out both;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .l2Card:hover {
   border-color: var(--green-border);
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -1595,13 +1589,7 @@
     width: 80px;
     height: 1px;
     min-height: 0;
-    background: linear-gradient(
-      to right,
-      transparent 0%,
-      var(--border-bright) 20%,
-      var(--border-bright) 80%,
-      transparent 100%
-    );
+    background: var(--bg-raised);
   }
 
   .connectorLabel {

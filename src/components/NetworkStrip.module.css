@@ -39,5 +39,5 @@
 
 .chip.active .dot {
   background: var(--accent-light);
-  box-shadow: 0 0 6px var(--accent);
+  box-shadow: none;
 }

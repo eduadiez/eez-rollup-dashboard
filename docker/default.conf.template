@@ -4,6 +4,9 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Use the upstream hostname for TLS virtual hosts.
+    proxy_ssl_server_name on;
+
     location = /healthz {
         access_log off;
         add_header Content-Type text/plain;
@@ -18,31 +21,47 @@ server {
     location = /rpc/l1 {
         proxy_pass ${EEZ_UI_L1_RPC_UPSTREAM};
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
     }
 
     location = /rpc/l2 {
         proxy_pass ${EEZ_UI_L2_RPC_UPSTREAM};
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
     }
 
     location = /composer/l1 {
         proxy_pass ${EEZ_UI_L1_FRONT_UPSTREAM};
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
     }
 
     location = /composer/l2 {
         proxy_pass ${EEZ_UI_L2_FRONT_UPSTREAM};
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
     }
 
     # Runtime configuration is generated as /config.json. Do not let missing
     # legacy /shared files fall through to the SPA and masquerade as env data.
     location ^~ /shared/ {
         return 404;
+    }
+
+    location = /monitor { return 302 "/#/monitor"; }
+    location = /monitor/ { return 302 "/#/monitor"; }
+
+    location /monitor/api/ {
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $monitor_upstream monitor:8080;
+        rewrite ^/monitor/(.*)$ /$1 break;
+        proxy_pass http://$monitor_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
     }
 
     location / {

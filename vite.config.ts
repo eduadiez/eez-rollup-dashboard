@@ -63,6 +63,12 @@ export default defineConfig(() => {
   const proxy = runtime.proxy ?? {};
   const proxies = Object.fromEntries(
     Object.entries({
+      "/monitor": {
+        target: process.env.EEZ_MONITOR_UPSTREAM || "http://127.0.0.1:18080",
+        changeOrigin: false,
+        ws: true,
+        rewrite: (url: string) => url.replace(/^\/monitor(?=\/|$)/, "") || "/",
+      },
       "/rpc/l1": rpcProxy(proxy.l1Rpc),
       "/rpc/l2": rpcProxy(proxy.l2Rpc),
       "/composer/l1": rpcProxy(proxy.l1Front),

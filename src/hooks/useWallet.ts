@@ -10,6 +10,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
+import { useWalletProviders } from "./useWalletProviders";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 
@@ -27,8 +28,17 @@ export function useWallet(log: Logger, configLoaded = false) {
   const stateRef = useRef(state);
   stateRef.current = state;
   const localAccountRef = useRef<LocalAccount | null>(null);
+  const selectedProviderRef = useRef<EthereumProvider | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<EthereumProvider | null>(null);
+  const [discoveryReady, setDiscoveryReady] = useState(false);
+  const walletOptions = useWalletProviders();
 
-  const hasProvider = typeof window.ethereum !== "undefined";
+  const hasProvider = walletOptions.length > 0;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDiscoveryReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   /**
    * The disposable local signer remains a fallback for browsers without an
@@ -63,6 +73,9 @@ export function useWallet(log: Logger, configLoaded = false) {
         ...(txParams.data ? { data: txParams.data as Hex } : {}),
         ...(txParams.value ? { value: BigInt(txParams.value) } : {}),
         ...(gas ? { gas: BigInt(gas) } : {}),
+        ...(txParams.type === "0x2" ? { type: "eip1559" as const } : {}),
+        ...(txParams.maxFeePerGas ? { maxFeePerGas: BigInt(txParams.maxFeePerGas) } : {}),
+        ...(txParams.maxPriorityFeePerGas ? { maxPriorityFeePerGas: BigInt(txParams.maxPriorityFeePerGas) } : {}),
       };
       return client.sendTransaction(request);
     },
@@ -99,7 +112,7 @@ export function useWallet(log: Logger, configLoaded = false) {
     setState((s) => ({ ...s, l1Balance: l1Bal, l2Balance: l2Bal }));
   }, []);
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (providerId?: string) => {
     if (!hasProvider) {
       if (config.demoPrivateKey) {
         try {
@@ -123,18 +136,28 @@ export function useWallet(log: Logger, configLoaded = false) {
       log("No wallet detected — install Rabby or MetaMask to connect", "err");
       return;
     }
+    const choice = providerId
+      ? walletOptions.find((item) => item.id === providerId)
+      : walletOptions.length === 1 ? walletOptions[0] : undefined;
+    if (!choice) {
+      log("Choose a wallet to connect", "err");
+      return;
+    }
     try {
-      localAccountRef.current = null;
-      const accounts = (await window.ethereum!.request({
+      const accounts = (await choice.provider.request({
         method: "eth_requestAccounts",
       })) as string[];
       const addr = accounts[0];
       if (!addr) return;
 
-      const chainId = (await window.ethereum!.request({
+      const chainId = (await choice.provider.request({
         method: "eth_chainId",
       })) as string;
 
+      // Keep the current signer usable if the new wallet rejects either request.
+      localAccountRef.current = null;
+      selectedProviderRef.current = choice.provider;
+      setSelectedProvider(choice.provider);
       setState({
         address: addr,
         chainId,
@@ -143,18 +166,21 @@ export function useWallet(log: Logger, configLoaded = false) {
         isConnected: true,
       });
       localStorage.setItem("walletConnected", "true");
+      localStorage.setItem("walletProvider", choice.storageKey);
       log(
-        `Wallet connected: ${addr.slice(0, 8)}...${addr.slice(-6)}`,
+        `${choice.name} connected: ${addr.slice(0, 8)}...${addr.slice(-6)}`,
         "info",
       );
       refreshBalance(addr);
     } catch (e) {
       log(`Wallet connect failed: ${(e as Error).message}`, "err");
     }
-  }, [hasProvider, log, refreshBalance]);
+  }, [hasProvider, walletOptions, log, refreshBalance]);
 
   const disconnect = useCallback(() => {
     localAccountRef.current = null;
+    selectedProviderRef.current = null;
+    setSelectedProvider(null);
     setState({
       address: null,
       chainId: null,
@@ -163,6 +189,7 @@ export function useWallet(log: Logger, configLoaded = false) {
       isConnected: false,
     });
     localStorage.removeItem("walletConnected");
+    localStorage.removeItem("walletProvider");
     log("Wallet disconnected", "info");
   }, [log]);
 
@@ -176,10 +203,12 @@ export function useWallet(log: Logger, configLoaded = false) {
         setState((current) => ({ ...current, chainId }));
         return;
       }
+      const provider = selectedProviderRef.current;
+      if (!provider) throw new Error("Connect wallet first");
       try {
         // Try adding the chain first (works with Rabby, MetaMask, and others).
         // If the chain already exists, most wallets silently ignore this.
-        await window.ethereum!.request({
+        await provider.request({
           method: "wallet_addEthereumChain",
           params: [chainDef],
         });
@@ -187,7 +216,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         // Some wallets reject addEthereumChain for already-known chains — ignore
       }
       try {
-        await window.ethereum!.request({
+        await provider.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId }],
         });
@@ -217,16 +246,18 @@ export function useWallet(log: Logger, configLoaded = false) {
         setState((current) => ({ ...current, chainId: chainDef.chainId }));
         return;
       }
+      const provider = selectedProviderRef.current;
+      if (!provider) throw new Error("Connect wallet first");
       if (stateRef.current.chainId === chainDef.chainId) return;
       try {
-        await window.ethereum!.request({
+        await provider.request({
           method: "wallet_addEthereumChain",
           params: [chainDef],
         });
       } catch {
         // Chain may already exist — ignore
       }
-      await window.ethereum!.request({
+      await provider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: chainDef.chainId }],
       });
@@ -265,7 +296,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         return sendLocalTx(config.l2Rpc, L2_CHAIN, txParams);
       }
       await ensureChain(L2_CHAIN);
-      return (await window.ethereum!.request({
+      return (await selectedProviderRef.current!.request({
         method: "eth_sendTransaction",
         params: [prepareWalletParams(txParams, stateRef.current.address!)],
       })) as string;
@@ -288,7 +319,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         return sendLocalTx(config.l1Rpc, L1_CHAIN, txParams);
       }
       await ensureChain(L1_CHAIN);
-      return (await window.ethereum!.request({
+      return (await selectedProviderRef.current!.request({
         method: "eth_sendTransaction",
         params: [prepareWalletParams(txParams, stateRef.current.address!)],
       })) as string;
@@ -318,7 +349,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         return sendLocalTx(config.l1ProxyRpc, L1_CHAIN, txParams);
       }
       await ensureChain(L1_CHAIN);
-      return (await window.ethereum!.request({
+      return (await selectedProviderRef.current!.request({
         method: "eth_sendTransaction",
         params: [prepareWalletParams(txParams, stateRef.current.address!)],
       })) as string;
@@ -342,7 +373,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         return sendLocalTx(config.l2ProxyRpc, L2_CHAIN, txParams);
       }
       await ensureChain(L2_CHAIN);
-      return (await window.ethereum!.request({
+      return (await selectedProviderRef.current!.request({
         method: "eth_sendTransaction",
         params: [prepareWalletParams(txParams, stateRef.current.address!)],
       })) as string;
@@ -355,6 +386,7 @@ export function useWallet(log: Logger, configLoaded = false) {
   useEffect(() => {
     if (
       !configLoaded ||
+      !discoveryReady ||
       hasProvider ||
       !config.demoPrivateKey ||
       localAccountRef.current
@@ -379,26 +411,34 @@ export function useWallet(log: Logger, configLoaded = false) {
     } catch (e) {
       log(`Invalid local demo signer: ${(e as Error).message}`, "err");
     }
-  }, [configLoaded, hasProvider, log, refreshBalance]);
+  }, [configLoaded, discoveryReady, hasProvider, log, refreshBalance]);
 
   // Auto-reconnect on mount
   useEffect(() => {
     if (
-      hasProvider &&
-      localStorage.getItem("walletConnected") === "true"
-    ) {
+      !discoveryReady || !hasProvider || stateRef.current.isConnected ||
+      localStorage.getItem("walletConnected") !== "true"
+    ) return;
+    const savedKey = localStorage.getItem("walletProvider");
+    const candidates = savedKey
+      ? walletOptions.filter((item) => item.storageKey === savedKey)
+      : walletOptions;
+    if (candidates.length === 1) {
+      const choice = candidates[0]!;
       (async () => {
         try {
-          const accounts = (await window.ethereum!.request({
+          const accounts = (await choice.provider.request({
             method: "eth_accounts",
           })) as string[];
           const addr = accounts[0];
           if (!addr) return;
 
-          const chainId = (await window.ethereum!.request({
+          const chainId = (await choice.provider.request({
             method: "eth_chainId",
           })) as string;
 
+          selectedProviderRef.current = choice.provider;
+          setSelectedProvider(choice.provider);
           setState({
             address: addr,
             chainId,
@@ -412,12 +452,12 @@ export function useWallet(log: Logger, configLoaded = false) {
         }
       })();
     }
-  }, [hasProvider, refreshBalance]);
+  }, [discoveryReady, hasProvider, walletOptions, refreshBalance]);
 
   // Listen for account/chain changes
   useEffect(() => {
-    if (!hasProvider) return;
-    const eth = window.ethereum!;
+    if (!selectedProvider) return;
+    const eth = selectedProvider;
 
     const onAccountsChanged = ((...args: unknown[]) => {
       const accounts = args[0] as string[];
@@ -440,7 +480,7 @@ export function useWallet(log: Logger, configLoaded = false) {
       eth.removeListener("accountsChanged", onAccountsChanged);
       eth.removeListener("chainChanged", onChainChanged);
     };
-  }, [hasProvider, disconnect, refreshBalance]);
+  }, [selectedProvider, disconnect, refreshBalance]);
 
   // Periodic balance refresh
   useEffect(() => {
@@ -452,6 +492,9 @@ export function useWallet(log: Logger, configLoaded = false) {
   return {
     ...state,
     hasProvider: hasProvider || Boolean(localAccountRef.current),
+    walletName: walletOptions.find((option) => option.provider === selectedProvider)?.name
+      ?? (localAccountRef.current ? "Local signer" : null),
+    walletOptions: walletOptions.map(({ id, name }) => ({ id, name })),
     connect,
     disconnect,
     switchToL1,

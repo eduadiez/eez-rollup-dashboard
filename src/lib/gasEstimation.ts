@@ -17,7 +17,8 @@
  * 3. eth_call on L1 to detect genuine reverts vs expected cross-chain reverts
  * 4. Compute gas dynamically from calldata size + L1 contract overhead
  *
- * All successful estimates get a 1.3x safety multiplier applied.
+ * Estimates get a 1.3x buffer, including calldata-only cross-chain guesses.
+ * Those guesses cannot see the posted execution table.
  */
 
 import { rpcCall } from "../rpc";
@@ -28,11 +29,11 @@ const GAS_BUFFER_DENOMINATOR = 100n;
 
 /**
  * Base gas overhead for the L1 cross-chain proxy + Rollups.executeCrossChainCall
- * machinery (excluding calldata costs). Covers: proxy DELEGATECALL forwarding,
- * ABI decoding, execution table lookup, state delta application, storage writes,
- * and event emission.
+ * machinery (excluding calldata costs). This is a fallback allowance for proxy
+ * forwarding, execution-table work, storage writes, and events; ordinary RPC
+ * estimation cannot see the posted cross-chain execution context.
  */
-const CROSS_CHAIN_CONTRACT_OVERHEAD = 160_000n;
+const CROSS_CHAIN_CONTRACT_OVERHEAD = 263_000n;
 
 /** Base transaction gas (intrinsic cost per EVM spec) */
 const TX_BASE_GAS = 21_000n;
@@ -354,6 +355,31 @@ export async function estimateCrossChainGas(params: {
     gasLimit: applyBuffer(totalEst),
     rawEstimate: totalEst,
     method: "calldata-computed",
+  };
+}
+
+/** Quote explicit type-2 fee fields from the source chain for bridge submissions. */
+export async function getEip1559Fees(rpcUrl: string): Promise<Record<string, string>> {
+  const block = (await rpcCall(rpcUrl, "eth_getBlockByNumber", ["latest", false])) as {
+    baseFeePerGas?: string;
+  } | null;
+  if (!block?.baseFeePerGas) throw new Error("Source chain did not provide an EIP-1559 base fee");
+  const baseFee = BigInt(block.baseFeePerGas);
+  const gasPrice = BigInt((await rpcCall(rpcUrl, "eth_gasPrice", [])) as string);
+  let priorityFee = 0n;
+  try {
+    priorityFee = BigInt((await rpcCall(rpcUrl, "eth_maxPriorityFeePerGas", [])) as string);
+  } catch {
+    // Some EIP-1559 RPCs omit the priority fee method; gasPrice still gives a quote.
+  }
+  if (gasPrice > baseFee && gasPrice - baseFee > priorityFee) {
+    priorityFee = gasPrice - baseFee;
+  }
+  const maxFee = 2n * baseFee + priorityFee;
+  return {
+    type: "0x2",
+    maxFeePerGas: gasToHex(maxFee > gasPrice ? maxFee : gasPrice),
+    maxPriorityFeePerGas: gasToHex(priorityFee),
   };
 }
 

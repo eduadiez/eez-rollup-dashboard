@@ -26,10 +26,10 @@ function element(id) {
 }
 
 globalThis.document = {
-  getElementById: element,
+  querySelector: selector => element(selector.slice(5, -2)), getElementById: element,
   createElement: () => element(`created-${elements.size}`),
 };
-globalThis.window = { location: { href: "https://eez.asuscomm.com/monitor/" } };
+globalThis.window = { location: { href: "https://eez.asuscomm.com/#/monitor", origin: "https://eez.asuscomm.com" } };
 globalThis.fetch = () => new Promise(() => {});
 globalThis.WebSocket = undefined;
 globalThis.setInterval = () => 0;
@@ -42,8 +42,9 @@ globalThis.setTimeout = (callback, delay) => {
 };
 globalThis.clearTimeout = (id) => scheduledTimeouts.delete(id);
 
-const app = readFileSync(new URL("../app/static/app.js", import.meta.url), "utf8");
-const styles = readFileSync(new URL("../app/static/styles.css", import.meta.url), "utf8");
+const source = readFileSync(new URL("../client.js", import.meta.url), "utf8");
+const app = source.replace("export function mountMonitor(root) {", "const root = document;").replace(/return \(\) => \{[\s\S]*$/, "");
+const styles = readFileSync(new URL("../monitor.css", import.meta.url), "utf8");
 assert.match(
   styles,
   /\.decoder-summary \.semantic-message-details dl \{[^}]*grid-template-columns: minmax\(0, 1fr\)/,
@@ -130,6 +131,19 @@ assert.match(decoded, /Important parameters/);
 assert.match(decoded, /Expand info/);
 assert.doesNotMatch(decoded, /<i>2<\/i>Call/);
 assert.match(decoded, /Cross-chain information is not hidden inside this RLP/);
+
+renderDecoded({ chainOperation: { chainId: 1, operations: {
+  tag: 3, profileId: 1, format: "derivable-ordinary", firstBlockNumber: 1,
+  terminalBlockNumber: 155, derivedBlockCount: 154, implicitEmptyBlockCount: 154,
+  blockCount: 155, transactionCount: 0, blocks: [{number: 155, parentHash, stateRoot,
+    transactionCount: 0, gasUsed: 0, gasLimit: 30000000, timestamp: 1700000000, rlpBytes: 613}],
+} } });
+assert.match(element("decoder-result").innerHTML, /154 derived ordinary blocks/);
+assert.match(element("decoder-result").innerHTML, /154 implicit empty blocks/);
+assert.match(element("decoder-result").innerHTML, /Derived state roots and block hashes require execution replay/);
+assert.match(element("decoder-result").innerHTML, /ordinaryBlockCount, environment, records/);
+assert.match(element("decoder-result").innerHTML, /block\/155/);
+assert.doesNotMatch(element("decoder-result").innerHTML, /block\/154/);
 
 const noSemantics = decodedSemantics({
   messages: ["ChainOperation", "CloseBlobStream"],

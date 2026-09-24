@@ -1,18 +1,19 @@
 .card {
+  composes: eez-card from global;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 28px 26px 26px;
   position: relative;
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.1s both;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
 }
 
 .cardHeader {
@@ -24,8 +25,8 @@
 
 .cardTitle {
   font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 17.5px;
+  font-weight: 600;
   color: var(--text-bright);
   letter-spacing: -0.01em;
 }
@@ -70,7 +71,7 @@
   flex-shrink: 0;
   background: var(--accent-dim);
   color: var(--accent-light);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.15);
 }
 
 .flowText {
@@ -110,7 +111,7 @@
   margin-bottom: 16px;
   border-radius: var(--radius-sm);
   background: var(--accent-dim);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(154, 163, 179, 0.15);
   font-size: 11px;
   color: var(--text);
   font-weight: 500;
@@ -275,7 +276,7 @@
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .input::placeholder { color: var(--text-dim); }
@@ -301,7 +302,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   animation: pulseGlow 2s ease-in-out infinite;
 }
 

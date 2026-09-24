@@ -20,7 +20,7 @@
 .sep {
   width: 1px;
   height: 16px;
-  background: linear-gradient(180deg, transparent, var(--border), transparent);
+  background: var(--bg-raised);
   flex-shrink: 0;
 }
 
@@ -47,18 +47,18 @@
 
 .dot.ok {
   background: var(--green);
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+  box-shadow: none;
 }
 
 .dot.err {
   background: var(--red);
-  box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+  box-shadow: none;
   animation: pulseGlow 1.5s ease-in-out infinite;
 }
 
 .dot.warn {
   background: var(--yellow);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  box-shadow: none;
   animation: pulseGlow 2s ease-in-out infinite;
 }
 
@@ -83,27 +83,27 @@
 }
 
 .pillL1 {
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.15), rgba(129, 140, 248, 0.08));
+  background: var(--bg-raised);
   color: var(--chain-l1);
-  border: 1px solid rgba(129, 140, 248, 0.25);
+  border: 1px solid rgba(154, 163, 179, 0.25);
 }
 
 .pillL1:hover {
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(129, 140, 248, 0.15));
+  background: var(--bg-raised);
   border-color: var(--chain-l1);
-  box-shadow: 0 0 10px rgba(129, 140, 248, 0.15);
+  box-shadow: none;
 }
 
 .pillL2 {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.08));
+  background: var(--bg-raised);
   color: var(--chain-l2);
-  border: 1px solid rgba(52, 211, 153, 0.25);
+  border: 1px solid rgba(154, 163, 179, 0.25);
 }
 
 .pillL2:hover {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(52, 211, 153, 0.15));
+  background: var(--bg-raised);
   border-color: var(--chain-l2);
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.15);
+  box-shadow: none;
 }
 
 /* Block number — primary data, clickable link */
@@ -184,13 +184,13 @@
 }
 
 .synced {
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(52, 211, 153, 0.06));
+  background: var(--bg-raised);
   color: var(--green);
-  border: 1px solid rgba(52, 211, 153, 0.2);
+  border: 1px solid rgba(154, 163, 179, 0.2);
 }
 
 .syncing {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.06));
+  background: var(--bg-raised);
   color: var(--yellow);
   border: 1px solid rgba(251, 191, 36, 0.2);
   animation: pulseGlow 2s ease-in-out infinite;
@@ -230,12 +230,12 @@
 
 .syncDotOk {
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+  box-shadow: none;
 }
 
 .syncDotWarn {
   background: var(--yellow);
-  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+  box-shadow: none;
   animation: pulseGlow 2s ease-in-out infinite;
 }
 

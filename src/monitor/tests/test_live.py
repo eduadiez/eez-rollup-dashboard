@@ -8,9 +8,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import server
 from live import HeadWatcher, SnapshotFeed
 from websockets.exceptions import ConnectionClosed, InvalidStatus
@@ -23,6 +24,12 @@ ENV = {"EEZ_L1_RPC_URL": "http://l1.invalid", "EEZ_L2_RPC_URL": "http://l2.inval
 def snapshot(height=12, block_hash="aa"):
     return {"generatedAt": "2026-09-14T12:00:00Z", "healthy": True,
             "chains": {"l2": {"latest": {"number": height, "hash": "0x" + block_hash * 32}}}}
+
+
+def head(height=13, block_hash="bb", parent="aa"):
+    return {"number": hex(height), "hash": "0x" + block_hash * 32,
+            "parentHash": "0x" + parent * 32, "timestamp": hex(int(time.time())),
+            "gasUsed": "0x5208", "gasLimit": "0x1c9c380"}
 
 
 def feed_fixture():
@@ -52,6 +59,61 @@ def http_fixture():
 
 
 class LiveTests(unittest.TestCase):
+    def test_recent_blocks_hydrate_without_waiting_for_collection(self):
+        feed, collector = feed_fixture()
+        feed.settings.recent_blocks = 3
+        entered, release = threading.Event(), threading.Event()
+        def slow_collection():
+            entered.set()
+            release.wait(3)
+            return snapshot()
+        collector.collect.side_effect = slow_collection
+        blocks = {
+            "0x" + byte * 32: {"number": number, "hash": "0x" + byte * 32,
+                "parentHash": "0x" + parent * 32, "transactionCount": number + 1}
+            for number, byte, parent in [(0, "aa", "00"), (1, "bb", "aa"),
+                                         (2, "cc", "bb"), (3, "dd", "cc")]
+        }
+        collector.live_block.side_effect = lambda name, block_hash: blocks[block_hash]
+        worker = threading.Thread(target=feed.hydrate_blocks, args=("l2",), daemon=True)
+        feed.worker.start()
+        worker.start()
+        cursor = feed.attach()
+        try:
+            self.assertTrue(entered.wait(1))
+            feed.publish_head("l2", head(2, "cc", "bb"))
+            deadline = time.monotonic() + 2
+            while time.monotonic() < deadline and not feed.blocks.get("l2"):
+                cursor, _ = feed.wait(cursor, timeout=0.1)
+            self.assertEqual([row["number"] for row in feed.blocks["l2"]], [2, 1, 0])
+            self.assertIsNone(feed.frame, "block hydration must bypass blocked settlement collection")
+            _, frame = feed.wait(-1, timeout=0)
+            self.assertEqual(json.loads(frame)["blocks"]["l2"][0]["transactionCount"], 3)
+            calls = collector.live_block.call_count
+            feed.publish_head("l2", head(3, "dd", "cc"))
+            deadline = time.monotonic() + 2
+            while time.monotonic() < deadline and feed.blocks["l2"][0]["number"] != 3:
+                cursor, _ = feed.wait(cursor, timeout=0.1)
+            self.assertEqual([row["number"] for row in feed.blocks["l2"]], [3, 2, 1])
+            self.assertEqual(collector.live_block.call_count - calls, 1,
+                             "contiguous blocks should reuse hydrated ancestors")
+        finally:
+            release.set()
+            feed.stop()
+            worker.join(timeout=1)
+
+    def test_collector_is_api_only(self):
+        with http_fixture() as (_, _, origin):
+            for method in ("GET", "HEAD"):
+                with self.subTest(method=method):
+                    with urlopen(Request(origin + "/api/health", method=method), timeout=2) as response:
+                        self.assertEqual(response.status, 200)
+                    for path in ("/", "/index.html", "/app.js", "/styles.css"):
+                        with self.assertRaises(HTTPError) as failure:
+                            urlopen(Request(origin + path, method=method), timeout=2)
+                        self.assertEqual(failure.exception.code, 404)
+                        failure.exception.close()
+
     def test_config_defaults_and_non_default_values(self):
         with mock.patch.dict(os.environ, ENV, clear=True):
             settings = server.Settings.from_env()
@@ -130,6 +192,67 @@ class LiveTests(unittest.TestCase):
         finally:
             feed.detach()
             feed.stop()
+
+    def test_heads_do_not_wait_for_slow_collection(self):
+        feed, collector = feed_fixture()
+        entered, release = threading.Event(), threading.Event()
+        def slow_collect():
+            entered.set()
+            release.wait(3)
+            return snapshot(12)
+        collector.collect.side_effect = slow_collect
+        cursor = feed.attach()
+        feed.worker.start()
+        try:
+            self.assertTrue(entered.wait(1))
+            watcher = HeadWatcher("l2", mock.Mock(), None, feed, 1, 1)
+            watcher.observe(head(13))
+            version, raw = feed.wait(cursor, timeout=.5)
+            event = json.loads(raw)
+            self.assertEqual(event["type"], "heads")
+            self.assertEqual(event["heads"]["l2"]["block"]["number"], 13)
+            self.assertIsNone(event["heads"]["l2"]["block"]["transactionCount"])
+            self.assertFalse(release.is_set(), "head must arrive before collection finishes")
+            release.set()
+            _, raw = feed.wait(version, timeout=1)
+            details = json.loads(raw)
+            self.assertEqual(details["type"], "snapshot")
+            self.assertLess(details["collectionStartedSequence"], event["heads"]["l2"]["sequence"])
+            self.assertEqual(details["heads"]["l2"]["block"]["number"], 13)
+        finally:
+            release.set()
+            feed.detach()
+            feed.stop()
+
+    def test_slow_viewers_keep_latest_details_and_both_heads(self):
+        feed, _ = feed_fixture()
+        feed.publish(snapshot())
+        for number in range(13, 100):
+            feed.publish_head("l1", head(number, "aa"))
+            feed.publish_head("l2", head(number + 10, "bb"))
+        _, raw = feed.wait(-1)
+        message = json.loads(raw)
+        self.assertEqual(message["type"], "snapshot")
+        self.assertEqual(message["heads"]["l1"]["block"]["number"], 99)
+        self.assertEqual(message["heads"]["l2"]["block"]["number"], 109)
+        self.assertEqual(len(feed.heads), 2)
+        with http_fixture() as (live, _, origin):
+            with connect(origin.replace("http:", "ws:") + "/api/live", origin=origin, close_timeout=1) as viewer:
+                live.publish_head("l2", head())
+                event = json.loads(viewer.recv(timeout=1))
+                self.assertEqual(event["type"], "heads")
+                self.assertEqual(event["heads"]["l2"]["block"]["number"], 13)
+
+    def test_normal_l2_heads_do_not_trigger_full_collection(self):
+        feed, collector = feed_fixture()
+        watcher = HeadWatcher("l2", collector.l2, None, feed, 1, 1)
+        watcher.observe(head(12, "aa", "00"))
+        feed.wake.clear()
+        watcher.observe(head(13, "bb", "aa"))
+        self.assertFalse(feed.wake.is_set())
+        self.assertEqual(feed.heads["l2"]["block"]["number"], 13)
+        watcher.observe(head(13, "cc", "aa"))
+        self.assertTrue(feed.wake.is_set(), "same-height replacement must reconcile history")
 
     def test_websocket_upgrade_two_clients_reorg_reconnect_and_readonly_contract(self):
         with http_fixture() as (feed, collector, origin):

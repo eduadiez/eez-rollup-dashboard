@@ -133,12 +133,17 @@ export function GasLimitEditor({
 
           {estimatedGasWithBuffer !== null && !estimating && (
             <div className={styles.estimateRow}>
-              <span className={styles.estimateLabel}>With 1.3x buffer</span>
+              <span className={styles.estimateLabel}>Requested gas limit (1.3x estimate)</span>
               <span className={styles.estimateValue}>
                 {estimatedGasWithBuffer.toLocaleString()}
               </span>
             </div>
           )}
+
+          <div className={styles.validationWarning}>
+            Rabby may raise this limit and signs custom networks as legacy transactions.
+            Check the final gas limit and fee type in your wallet before signing.
+          </div>
 
           {/* Custom gas input */}
           <div className={styles.inputSection}>

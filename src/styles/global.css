@@ -1,4 +1,4 @@
-@import '../../network-observatory/app/static/brand/eez.css';
+@import './brand/eez.css';
 
 :root {
   --sp-1: 4px;
@@ -12,9 +12,9 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-xs: 6px;
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --duration: 0.15s;
-  --duration-slow: 0.25s;
+  --ease: ease;
+  --duration: 0.2s;
+  --duration-slow: 0.2s;
 }
 
 /* Neutral EEZ surfaces; color carries actions and execution status. */
@@ -23,17 +23,17 @@
   --bg: var(--eez-canvas);
   --bg-raised: var(--eez-chrome);
   --bg-card: var(--eez-screen);
-  --bg-card-hover: #1b1b1b;
-  --bg-inset: #0e0e0e;
+  --bg-card-hover: #0d0d0d;
+  --bg-inset: #090909;
   --header-bg: rgba(10, 10, 10, .94);
   --border: var(--eez-edge);
   --border-bright: #3a3a3a;
   --border-hover: #555;
-  --text: #d4d4d4;
+  --text: #dcdcdc;
   --text-dim: var(--eez-muted);
-  --text-bright: #f2f2f2;
-  --accent: #8ae5ac;
-  --accent-light: #a0efbc;
+  --text-bright: #ffffff;
+  --accent: var(--eez-green);
+  --accent-light: var(--eez-green);
   --accent-dim: rgba(138, 229, 172, .08);
   --accent-glow: rgba(138, 229, 172, .12);
   --accent-glow-strong: rgba(138, 229, 172, .2);
@@ -48,53 +48,20 @@
   --yellow: #fbbf24;
   --yellow-dim: rgba(251, 191, 36, .09);
   --yellow-border: rgba(251, 191, 36, .22);
-  --chain-l1: #a5a0ec;
-  --chain-l2: var(--green);
-  --cyan: #96b9e8;
+  --chain-l1: var(--eez-muted);
+  --chain-l2: var(--eez-muted);
+  --cyan: var(--eez-label);
   --cyan-dim: rgba(150, 185, 232, .09);
   --cyan-border: rgba(150, 185, 232, .22);
   --shadow-card: none;
-  --shadow-card-hover: 0 12px 28px -20px rgba(0, 0, 0, .7);
-  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .18);
+  --shadow-card-hover: none;
+  --shadow-inset: none;
   --overlay-subtle: rgba(255, 255, 255, .02);
   --overlay-light: rgba(255, 255, 255, .04);
   --on-color: #0a0a0a;
   --spinner-track: rgba(128, 128, 128, .25);
 }
 
-[data-theme="light"] {
-  --bg-card-hover: #fafaf8;
-  --bg-inset: #f0f0ed;
-  --header-bg: rgba(247, 247, 245, .94);
-  --border-bright: #bcbcb6;
-  --border-hover: #96968f;
-  --text: #404040;
-  --text-bright: #161616;
-  --accent: #166534;
-  --accent-light: #147d40;
-  --accent-dim: rgba(22, 101, 52, .07);
-  --accent-glow: rgba(22, 101, 52, .1);
-  --accent-glow-strong: rgba(22, 101, 52, .16);
-  --accent-shadow: rgba(22, 101, 52, .12);
-  --accent-shadow-hover: rgba(22, 101, 52, .2);
-  --green-dim: rgba(20, 125, 64, .07);
-  --green-border: rgba(20, 125, 64, .25);
-  --red: #b91c1c;
-  --red-dim: rgba(185, 28, 28, .07);
-  --red-border: rgba(185, 28, 28, .22);
-  --yellow: #95600b;
-  --yellow-dim: rgba(149, 96, 11, .07);
-  --yellow-border: rgba(149, 96, 11, .22);
-  --chain-l1: #5545a2;
-  --cyan: #355d91;
-  --cyan-dim: rgba(53, 93, 145, .07);
-  --cyan-border: rgba(53, 93, 145, .22);
-  --shadow-card-hover: 0 12px 28px -20px rgba(0, 0, 0, .2);
-  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .05);
-  --overlay-subtle: rgba(0, 0, 0, .02);
-  --overlay-light: rgba(0, 0, 0, .04);
-  --on-color: #fff;
-}
 
 *, *::before, *::after {
   margin: 0;
@@ -103,6 +70,7 @@
 }
 
 html {
+  background: #000;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -229,8 +197,11 @@ body {
   justify-content: center;
   gap: 6px;
   font-family: var(--mono);
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-weight: 500;
+  line-height: 1.2;
+  appearance: none;
+  text-decoration: none;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: pointer;
   border: 1px solid transparent;
@@ -247,10 +218,15 @@ body {
 
 .btn:disabled,
 .btn[aria-disabled="true"] {
-  opacity: 0.3;
+  opacity: 0.55;
   cursor: not-allowed;
-  pointer-events: none;
+  box-shadow: none;
+  filter: none;
 }
+
+/* ARIA-disabled links must not activate on pointer input. */
+.btn[aria-disabled="true"] { pointer-events: none; }
+.btn > svg { display: block; flex-shrink: 0; }
 
 /* ── Sizes ── */
 .btn-sm  { height: 28px; padding: 0 10px; font-size: 10px; }
@@ -258,7 +234,7 @@ body {
 .btn-lg  { height: 40px; padding: 0 22px; font-size: 12px; }
 
 /* Default to md when no size is specified */
-.btn:not(.btn-sm):not(.btn-lg) {
+.btn:where(:not(.btn-sm):not(.btn-lg)) {
   height: 34px;
   padding: 0 16px;
   font-size: 11px;
@@ -266,15 +242,15 @@ body {
 
 /* ── Solid — filled background, high emphasis ── */
 .btn-solid {
-  background: var(--eez-grad-btn);
-  border-color: transparent;
-  color: var(--eez-ink-on-grad);
+  background: var(--eez-pill-bg);
+  border-color: var(--eez-pill-bg);
+  color: var(--eez-pill-ink);
 }
 
 .btn-solid:hover:not(:disabled) {
-  background: linear-gradient(90deg, #9debbb, #7593cd);
+  background: var(--eez-grad-btn);
   border-color: transparent;
-  box-shadow: 0 3px 12px var(--accent-shadow);
+  box-shadow: none;
 }
 
 .btn-solid:active:not(:disabled) {
@@ -338,22 +314,8 @@ body {
 /* ── Color modifiers ── */
 
 /* Green */
-.btn-green.btn-solid {
-  background: var(--green);
-  border-color: var(--green);
-  color: var(--on-color);
-}
-.btn-green.btn-solid:hover:not(:disabled) {
-  background: var(--green);
-  border-color: var(--green);
-  filter: brightness(1.1);
-  box-shadow: 0 0 16px rgba(52, 211, 153, 0.25);
-}
-.btn-green.btn-solid:active:not(:disabled) {
-  background: var(--green);
-  border-color: var(--green);
-  box-shadow: inset 0 1px 4px rgba(0,0,0,0.2);
-}
+.btn-green.btn-solid { background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); color: var(--eez-pill-ink); }
+.btn-green.btn-solid:hover:not(:disabled) { background: var(--eez-grad-btn); border-color: transparent; }
 
 .btn-green.btn-tint {
   background: var(--green-dim);
@@ -454,4 +416,17 @@ body {
   width: 10px;
   height: 10px;
   border-width: 1.5px;
+}
+
+/* Shared form chrome and focus, including CSS-module controls. */
+input, select, textarea { font-family: var(--mono); color: var(--text-bright); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+  background-color: #090909; border: 1px solid var(--eez-edge); border-radius: 12px;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  border-color: var(--eez-green); outline: 2px solid var(--eez-green); outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(63,185,80,.15);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

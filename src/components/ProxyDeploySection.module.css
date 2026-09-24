@@ -10,12 +10,12 @@
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.1s both;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card-hover);
+  box-shadow: none;
 }
 
 /* ── Header ── */
@@ -35,8 +35,8 @@
 
 .cardTitle {
   font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 17.5px;
+  font-weight: 600;
   color: var(--text-bright);
   letter-spacing: -0.01em;
 }
@@ -74,7 +74,7 @@
 .deployToggle:hover {
   background: var(--accent-glow);
   border-color: var(--accent);
-  box-shadow: 0 0 8px var(--accent-shadow);
+  box-shadow: none;
 }
 
 /* ── Proxy table ── */
@@ -162,7 +162,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   animation: pulseGlow 2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -204,7 +204,7 @@
 
 .callBtn:hover {
   background: var(--accent-light);
-  box-shadow: 0 0 8px var(--accent-shadow);
+  box-shadow: none;
 }
 
 .callBtn:active {
@@ -302,7 +302,7 @@
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-dim);
+  box-shadow: none;
 }
 
 .input::placeholder {
@@ -331,7 +331,7 @@
 
 .deployBtn:hover:not(:disabled) {
   background: var(--accent-light);
-  box-shadow: 0 0 12px var(--accent-shadow);
+  box-shadow: none;
 }
 
 .deployBtn:active:not(:disabled) {
@@ -364,7 +364,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  box-shadow: none;
   animation: pulseGlow 2s ease-in-out infinite;
 }
 
@@ -543,7 +543,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
   margin-top: 4px;
   max-height: 200px;
   overflow-y: auto;
