@@ -405,7 +405,9 @@ export function CrossChainCallBuilder({
             estimatedGasWithBuffer={gasState.status === "estimated" ? parseInt(gasState.gasHex, 16) : null}
             estimating={gasState.status === "estimating"}
             estimationMethod={
-              gasState.status === "estimated" && gasState.method !== "direct"
+              gasState.status === "estimated" &&
+              gasState.method !== "direct" &&
+              gasState.method !== "unpriced"
                 ? gasState.method === "calldata-computed"
                   ? "L1 calldata analysis"
                   : gasState.method === "legacy-params"

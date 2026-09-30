@@ -482,7 +482,7 @@ export function useBridge(
 
         if (!cancelled) {
           const methodLabel =
-            result.method === "direct" ? null
+            result.method === "direct" || result.method === "unpriced" ? null
             : result.method === "calldata-computed" ? "L1 calldata analysis"
             : result.method === "legacy-params" ? "legacy"
             : "simulation";
