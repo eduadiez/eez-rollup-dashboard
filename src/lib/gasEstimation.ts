@@ -9,7 +9,13 @@
  * Strategy order for standard transactions:
  * 1. eth_estimateGas with EIP-1559 pricing
  * 2. eth_estimateGas with legacy gas pricing
- * 3. eth_call simulation fallback
+ * 3. eth_estimateGas without fee fields
+ * 4. eth_call simulation fallback
+ *
+ * Priced estimates cap gas at the sender's balance ("gas required exceeds
+ * allowance"). The estimation sender may be unfunded on a network without
+ * public development allocations, so step 3 retries without fees: nodes then
+ * skip the balance cap and still return the real gas requirement.
  *
  * Strategy order for cross-chain proxy calls:
  * 1. eth_estimateGas on L1 (may work if execution table is populated)
@@ -48,7 +54,12 @@ export interface GasEstimateResult {
   /** Raw estimate before multiplier */
   rawEstimate: bigint;
   /** Which strategy produced this estimate */
-  method: "direct" | "legacy-params" | "calldata-computed" | "eth-call-simulation";
+  method:
+    | "direct"
+    | "legacy-params"
+    | "unpriced"
+    | "calldata-computed"
+    | "eth-call-simulation";
 }
 
 export type GasEstimateErrorType = "revert" | "rpc-error";
@@ -254,7 +265,21 @@ export async function estimateGas(params: {
     }
   }
 
-  // Strategy 3: eth_call simulation
+  // Strategy 3: eth_estimateGas without fee fields. Priced attempts fail with
+  // "gas required exceeds allowance" when the estimation sender is unfunded;
+  // without a price the node skips that balance cap. A value transfer still
+  // needs a funded sender, so this can fail and fall through.
+  try {
+    const est = await tryEstimateGas(rpcUrl, baseParams);
+    return { gasLimit: applyBuffer(est), rawEstimate: est, method: "unpriced" };
+  } catch (e) {
+    const { isRevert, reason } = classifyError(e);
+    if (isRevert) {
+      throw new GasEstimateError("revert", reason, reason);
+    }
+  }
+
+  // Strategy 4: eth_call simulation
   try {
     const est = await tryEthCallSimulation(rpcUrl, baseParams);
     return {
