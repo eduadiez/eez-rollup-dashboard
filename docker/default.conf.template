@@ -1,5 +1,5 @@
 server {
-    listen 8080;
+    listen ${EEZ_UI_LISTEN};
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -60,7 +60,7 @@ server {
 
     location /monitor/api/ {
         resolver 127.0.0.11 valid=10s ipv6=off;
-        set $monitor_upstream monitor:8080;
+        set $monitor_upstream ${EEZ_UI_MONITOR_UPSTREAM};
         rewrite ^/monitor/(.*)$ /$1 break;
         proxy_pass http://$monitor_upstream;
         proxy_http_version 1.1;
