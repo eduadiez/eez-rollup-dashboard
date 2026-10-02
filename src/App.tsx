@@ -8,13 +8,9 @@ import { useHealth } from "./hooks/useHealth";
 import { useCounter } from "./hooks/useCounter";
 import { useCrossChain } from "./hooks/useCrossChain";
 import { useBridge } from "./hooks/useBridge";
-import { useExecutionVisualizer } from "./hooks/useExecutionVisualizer";
 import { useTxHistory } from "./hooks/useTxHistory";
 import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
-import { useFlashLoan } from "./hooks/useFlashLoan";
-import { useFlashLoanReverse } from "./hooks/useFlashLoanReverse";
-import { useFlashLoanDeploy } from "./hooks/useFlashLoanDeploy";
 import { useFaucet } from "./hooks/useFaucet";
 import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
@@ -24,29 +20,24 @@ import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
 import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
 import { BridgePanel } from "./components/BridgePanel";
-import { FlashLoanPanel } from "./components/FlashLoanPanel";
-import { AggregatorPanel } from "./components/AggregatorPanel";
-import { useAggregator } from "./hooks/useAggregator";
 import { FaucetPanel } from "./components/FaucetPanel";
-import { VisualizerView } from "./components/VisualizerView";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
 import styles from "./App.module.css";
 
-
-type DashboardTab = "dashboard" | "counter-demo" | "bridge" | "flash-loan" | "aggregator";
+// The visualizer, flash-loan and aggregator views are not wired into the app.
+// Their components and hooks remain in the tree so they can be re-enabled by
+// restoring the navigation entries, tabs and hook calls removed here.
+type DashboardTab = "dashboard" | "counter-demo" | "bridge";
 
 /** Dashboard sub-tabs that can be deep-linked via hash */
 const HASH_TO_TAB: Record<string, DashboardTab> = {
-  "flash-loan": "flash-loan",
   "counter-demo": "counter-demo",
   "bridge": "bridge",
-  "aggregator": "aggregator",
 };
 
 function getInitialView(): string {
   const raw = window.location.hash.replace("#/", "").replace("#", "");
   const hash = raw.split("?")[0];
-  if (hash === "visualizer") return "visualizer";
   if (hash === "monitor") return "monitor";
   if (window.location.pathname === "/monitor" || window.location.pathname === "/monitor/") return "monitor";
   return "dashboard";
@@ -58,7 +49,7 @@ function getInitialTab(): DashboardTab {
   return HASH_TO_TAB[hash] ?? "dashboard";
 }
 
-/** Parse ?key=value from the hash fragment (e.g. #/visualizer?block=123) */
+/** Parse ?key=value from the hash fragment (e.g. #/?target=0x...) */
 function getHashParam(key: string): string | null {
   const hash = window.location.hash;
   const qIdx = hash.indexOf("?");
@@ -71,8 +62,6 @@ const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "counter-demo", label: "Counter Demo" },
   { id: "bridge", label: "Bridge" },
-  { id: "flash-loan", label: "Flash Loan" },
-  { id: "aggregator", label: "Aggregator" },
 ];
 
 export function App() {
@@ -86,16 +75,8 @@ export function App() {
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
-  const flashDeploy = useFlashLoanDeploy(log, wallet.sendTx, wallet.sendL1Tx, wallet.address);
-  const flashLoan = useFlashLoan(log, wallet.sendL1ProxyTx, wallet.address ?? undefined, {
-    executorL1: flashDeploy.state.executorL1 || undefined,
-    executorL2: flashDeploy.state.executorL2 || undefined,
-  });
-  const flashLoanReverse = useFlashLoanReverse(log, wallet.sendL2ProxyTx);
   const faucet = useFaucet(log, wallet.address);
-  const aggregator = useAggregator(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address);
 
-  const execVis = useExecutionVisualizer();
   const txHistory = useTxHistory();
 
   // Dashboard tab hooks
@@ -113,47 +94,22 @@ export function App() {
     setDashboardTab(tab);
     window.location.hash = tab === "dashboard" ? "" : `#/${tab}`;
   }, []);
-  const [pendingDebugHash, setPendingDebugHash] = useState<string | null>(null);
-  const [initialVisualizerMode, setInitialVisualizerMode] = useState<"explorer" | "live" | "debug" | undefined>();
-  const [initialBlock, setInitialBlock] = useState<number | null>(() => {
-    const b = getHashParam("block");
-    return b ? parseInt(b, 10) : null;
-  });
 
   const navigate = useCallback((v: string) => {
     setView(v);
-    setPendingDebugHash(null);
-    setInitialBlock(null);
-    setInitialVisualizerMode(undefined);
     const pathname = v === "monitor" ? "/monitor/" : import.meta.env.BASE_URL;
-    const hash = v === "dashboard" || v === "monitor" ? "" : `#/${v}`;
-    window.history.pushState(null, "", `${pathname}${hash}`);
+    window.history.pushState(null, "", pathname);
     if (v === "dashboard") setDashboardTab("dashboard");
-  }, []);
-
-  const handleDebugTx = useCallback((txHash: string) => {
-    navigate("visualizer");
-    setPendingDebugHash(txHash);
-  }, [navigate]);
-
-  const handleViewBlock = useCallback((blockNumber: number) => {
-    setInitialBlock(blockNumber);
-    setInitialVisualizerMode("explorer");
-    setView("visualizer");
-    window.history.pushState(null, "", `${import.meta.env.BASE_URL}#/visualizer?block=${blockNumber}`);
   }, []);
 
   // Listen for browser back/forward
   useEffect(() => {
     const onHashChange = () => {
       const raw = window.location.hash.replace("#/", "").replace("#", "").split("?")[0];
-      setInitialVisualizerMode(undefined);
-      const b = getHashParam("block");
-      setInitialBlock(b ? parseInt(b, 10) : null);
       // Check for target deep link
       const target = getHashParam("target");
       if (target) setGenericTargetAddr(target);
-      // Deep link to dashboard sub-tabs (e.g. #/flash-loan, #/bridge)
+      // Deep link to dashboard sub-tabs (e.g. #/counter-demo, #/bridge)
       const tab = raw ? HASH_TO_TAB[raw] : undefined;
       setDashboardTab(tab ?? "dashboard");
       setView(getInitialView());
@@ -295,18 +251,6 @@ export function App() {
     prevFaucetPhase.current = phase;
   }, [faucet.state.phase, faucet.state.txHash]);
 
-  // Sync execution visualizer with counter demo cross-chain phase
-  useEffect(() => {
-    const { phase, txHash, targetAddress, calldata, proxyAddress } = crossChain.state;
-    execVis.syncWithPhase(
-      phase,
-      txHash,
-      targetAddress,
-      calldata,
-      proxyAddress,
-    );
-  }, [crossChain.state.phase, crossChain.state.txHash]);
-
   // Track auto-detected proxy from ProxyDeploySection (on-chain but not in localStorage)
   const [autoDetectedProxy, setAutoDetectedProxy] = useState<string | null>(null);
 
@@ -362,16 +306,6 @@ export function App() {
 
       {view === "monitor" ? (
         <NetworkMonitorView />
-      ) : view === "visualizer" ? (
-        <VisualizerView
-          liveState={execVis.state}
-          liveTargetAddress={crossChain.state.targetAddress}
-          liveCalldata={crossChain.state.calldata}
-          onBack={() => { setPendingDebugHash(null); setInitialVisualizerMode(undefined); setInitialBlock(null); navigate("dashboard"); }}
-          initialDebugHash={pendingDebugHash}
-          initialMode={initialVisualizerMode}
-          initialBlock={initialBlock}
-        />
       ) : (
         <main id="main" tabIndex={-1} className={styles.page}>
           <section className={`eez-intro ${styles.intro}`} aria-labelledby="page-heading">
@@ -473,35 +407,6 @@ export function App() {
               </>
             )}
 
-            {dashboardTab === "flash-loan" && (
-              <FlashLoanPanel
-                state={flashLoan.state}
-                reverseState={flashLoanReverse.state}
-                deployState={flashDeploy.state}
-                onDeploy={flashDeploy.deploy}
-                onExecute={flashLoan.execute}
-                onExecuteReverse={flashLoanReverse.execute}
-                onReset={flashLoan.reset}
-                onResetReverse={flashLoanReverse.reset}
-                walletConnected={wallet.isConnected}
-                walletAddress={wallet.address}
-              />
-            )}
-
-            {dashboardTab === "aggregator" && (
-              <AggregatorPanel
-                state={aggregator.state}
-                onExecute={() => aggregator.execute(aggregator.state.totalAmount, aggregator.state.splitPercent)}
-                onWrapEth={aggregator.wrapEth}
-                onUnwrapWeth={aggregator.unwrapWeth}
-                onReset={aggregator.reset}
-                onSetSplit={aggregator.setSplit}
-                onSetAmount={aggregator.setAmount}
-                walletConnected={wallet.isConnected}
-                walletAddress={wallet.address}
-              />
-            )}
-
             {dashboardTab === "bridge" && (
               <BridgePanel
                 state={bridgeHook.state}
@@ -523,8 +428,6 @@ export function App() {
             <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
-              onDebug={handleDebugTx}
-              onViewBlock={handleViewBlock}
             />
 
 
