@@ -1,0 +1,15 @@
+# Connect to a node whose RPCs listen on the Docker host's loopback interface.
+services:
+  ui:
+    network_mode: host
+    ports: !reset []
+    environment:
+      EEZ_UI_LISTEN: "127.0.0.1:8080"
+      EEZ_UI_MONITOR_UPSTREAM: "127.0.0.1:18080"
+  monitor:
+    network_mode: host
+    environment:
+      EEZ_DASHBOARD_HOST: "127.0.0.1"
+      EEZ_DASHBOARD_PORT: "18080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18080/api/health', timeout=2).read()"]

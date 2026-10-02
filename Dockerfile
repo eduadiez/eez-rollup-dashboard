@@ -13,6 +13,7 @@ RUN npm run build
 FROM nginx:1.27-alpine
 ARG EEZ_UI_PROTOCOL_COMMIT=development
 ENV EEZ_UI_PROTOCOL_COMMIT=$EEZ_UI_PROTOCOL_COMMIT
+ENV EEZ_UI_LISTEN=8080 EEZ_UI_MONITOR_UPSTREAM=monitor:8080
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY config.template.json /opt/eez/config.template.json
 COPY docker/default.conf.template /etc/nginx/templates/default.conf.template

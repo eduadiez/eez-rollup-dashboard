@@ -94,6 +94,16 @@ COMPOSE_FILE and EEZ_UI_PUBLIC_NETWORK from your .env and shell environment.
 To intentionally expose the UI directly on other interfaces, set
 `EEZ_UI_BIND=0.0.0.0`; the default localhost binding is suitable for the gateway.
 
+### Host-loopback RPCs
+
+When the target node binds its RPC and Composer ports to the Docker host's
+`127.0.0.1` (as in a host-network Chiado node), set
+`COMPOSE_FILE=docker-compose.yml:docker-compose.host-rpc.yml` in this repository's
+`.env` and use `http://127.0.0.1:<port>` for the four upstream URLs. Run the usual
+`docker compose up -d --build`. This overlay places the UI and monitor in the
+host network: the UI listens at `127.0.0.1:8080`, and the monitor listens at
+`127.0.0.1:18080`. Both services can then reach the node's loopback RPCs.
+
 ### Single-domain path gateway
 
 The default image uses `EEZ_UI_BASE_PATH=/dashboard/`. For a gateway that
