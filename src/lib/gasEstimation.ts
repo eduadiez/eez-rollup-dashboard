@@ -23,11 +23,14 @@
  * 3. eth_call on L1 to detect genuine reverts vs expected cross-chain reverts
  * 4. Compute gas dynamically from calldata size + L1 contract overhead
  *
- * Estimates get a 1.3x buffer, including calldata-only cross-chain guesses.
+ * The shared estimators get a 1.3x buffer, including calldata-only cross-chain guesses.
  * Those guesses cannot see the posted execution table.
+ * Bridges use the separate estimateBridgeGas Composer path without a buffer
+ * or fallback; failures must be surfaced before submission.
  */
 
-import { rpcCall } from "../rpc";
+import { decodeErrorResult, parseAbi } from "viem";
+import { rpcCall, RpcError } from "../rpc";
 
 /** Safety multiplier: 1.3x (130/100) */
 const GAS_BUFFER_NUMERATOR = 130n;
@@ -49,7 +52,7 @@ const CALLDATA_GAS_ZERO_BYTE = 4n;
 const CALLDATA_GAS_NONZERO_BYTE = 16n;
 
 export interface GasEstimateResult {
-  /** Gas limit with safety multiplier applied — use this for the tx */
+  /** Limit to submit: raw for bridges, buffered for the shared estimators. */
   gasLimit: bigint;
   /** Raw estimate before multiplier */
   rawEstimate: bigint;
@@ -62,7 +65,7 @@ export interface GasEstimateResult {
     | "eth-call-simulation";
 }
 
-export type GasEstimateErrorType = "revert" | "rpc-error";
+export type GasEstimateErrorType = "revert" | "rpc-error" | "unsupported";
 
 export class GasEstimateError extends Error {
   type: GasEstimateErrorType;
@@ -137,6 +140,38 @@ async function tryEstimateGas(
 ): Promise<bigint> {
   const result = (await rpcCall(rpcUrl, "eth_estimateGas", [params])) as string;
   return BigInt(result);
+}
+
+/** Bridge estimates require Composer execution context. No buffer or fallback. */
+const bridgeEstimateErrors = parseAbi(['error ExecutionNotInCurrentBlock()', 'error ProxyCallFailed(bytes reason)']);
+function missingBridgeExecutionContext(data: unknown, depth = 0): boolean {
+  if (typeof data !== "string" || depth > 4) return false;
+  try {
+    const decoded = decodeErrorResult({ abi: bridgeEstimateErrors, data: data as `0x${string}` });
+    return decoded.errorName === "ExecutionNotInCurrentBlock" || decoded.errorName === "ProxyCallFailed" && missingBridgeExecutionContext(decoded.args[0], depth + 1);
+  } catch { return false; }
+}
+
+export async function estimateBridgeGas(params: {
+  rpcUrl: string; from: string; to: string; data: string; value: string;
+}): Promise<GasEstimateResult> {
+  const { rpcUrl, from, to, data, value } = params;
+  let result: unknown;
+  try { result = await rpcCall(rpcUrl, "eth_estimateGas", [{ from, to, data, value }]); }
+  catch (error) {
+    if (error instanceof RpcError && (error.code === -32601 || missingBridgeExecutionContext(error.data))) {
+      throw new GasEstimateError("unsupported", "This Composer cannot estimate cross-chain gas yet. Enter a manual gas limit to continue.");
+    }
+    throw error;
+  }
+  if (typeof result !== "string" || !/^0x[0-9a-f]+$/i.test(result)) {
+    throw new GasEstimateError("rpc-error", "Composer returned an invalid bridge gas estimate");
+  }
+  const gas = BigInt(result);
+  if (gas <= 0n || gas > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new GasEstimateError("rpc-error", "Composer returned an invalid bridge gas estimate");
+  }
+  return { rawEstimate: gas, gasLimit: gas, method: "direct" };
 }
 
 /**

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { config, ESTIMATION_SENDER } from "../config";
 import { rpcCall } from "../rpc";
-import { estimateGas, estimateCrossChainGas, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
+import { estimateGas, estimateBridgeGas, GasEstimateError, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 type SendTx = (params: Record<string, string>) => Promise<string>;
@@ -25,9 +25,9 @@ export interface TokenMeta {
 }
 
 export interface BridgeGasState {
-  status: "idle" | "estimating" | "estimated" | "error";
+  status: "idle" | "estimating" | "estimated" | "error" | "unsupported";
   estimate: number | null;
-  estimateWithBuffer: number | null;
+  gasLimit: number | null;
   gasHex: string | null;
   method: string | null;
   errorMessage: string | null;
@@ -47,11 +47,14 @@ export interface BridgeState {
   sourceBalance: string | null;
   sourceBalanceRaw: bigint | null;
   allowance: bigint | null;
+  tokenNeedsApproval: boolean | null;
+  tokenReadError: string | null;
   l1BridgeReady: boolean | null;
   l2BridgeReady: boolean | null;
   l1BridgeError: string | null;
   l2BridgeError: string | null;
   gas: BridgeGasState;
+  gasOverrideHex: string | null;
 }
 
 const RECENT_TOKENS_KEY = "bridgeRecentTokens";
@@ -64,6 +67,8 @@ const BRIDGE_ABI = {
   bridgeTokens: "0xd2c2fa0f",
   // manager() view returns (address)
   manager: "0x481c6a75",
+  // wrappedTokenInfo(address) returns (address originalToken, uint64 originalRollupId)
+  wrappedTokenInfo: "0x3e38ac74",
 };
 
 // ERC20 ABI selectors
@@ -140,6 +145,21 @@ function parseAmount(amount: string, decimals: number): bigint | null {
   }
 }
 
+/** Build the same sender, calldata and value for estimation and submission. */
+function bridgeTransaction(state: BridgeState, from: string): { from: string; to: string; data: string; value: string } {
+  const { direction, asset, amount, tokenAddress, tokenMeta, destinationAddress } = state;
+  const rollupId = encodeUint256(direction === "l2-to-l1" ? 0n : BigInt(config.rollupId));
+  const destination = destinationAddress && /^0x[0-9a-fA-F]{40}$/.test(destinationAddress) ? destinationAddress : from;
+  const rawAmount = parseAmount(amount, asset === "eth" ? 18 : tokenMeta?.decimals ?? 18)!;
+  return {
+    from,
+    to: direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge,
+    data: asset === "eth" ? BRIDGE_ABI.bridgeEther + rollupId + pad32(destination) :
+      BRIDGE_ABI.bridgeTokens + pad32(tokenAddress) + encodeUint256(rawAmount) + rollupId + pad32(destination),
+    value: asset === "eth" ? "0x" + rawAmount.toString(16) : "0x0",
+  };
+}
+
 interface TxReceipt {
   status?: string;
   gasUsed?: string;
@@ -194,7 +214,7 @@ export function useBridge(
   configLoaded: boolean,
 ) {
   const defaultGas: BridgeGasState = {
-    status: "idle", estimate: null, estimateWithBuffer: null,
+    status: "idle", estimate: null, gasLimit: null,
     gasHex: null, method: null, errorMessage: null,
   };
 
@@ -211,18 +231,21 @@ export function useBridge(
     sourceBalance: null,
     sourceBalanceRaw: null,
     allowance: null,
+    tokenNeedsApproval: null,
+    tokenReadError: null,
     l1BridgeReady: null,
     l2BridgeReady: null,
     l1BridgeError: null,
     l2BridgeError: null,
     gas: defaultGas,
+    gasOverrideHex: null,
   });
 
   const [recentTokens, setRecentTokens] = useState<TokenMeta[]>(loadRecentTokens);
-  const [gasOverrideHex, setGasOverrideHex] = useState<string | null>(null);
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const estimatedRequest = useRef<string | null>(null);
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
 
@@ -287,14 +310,15 @@ export function useBridge(
   // Fetch balance and allowance
   useEffect(() => {
     if (!walletAddress) {
-      setState((s) => ({ ...s, sourceBalance: null, sourceBalanceRaw: null, allowance: null }));
+      setState((s) => ({ ...s, sourceBalance: null, sourceBalanceRaw: null, allowance: null, tokenNeedsApproval: null, tokenReadError: null }));
       return;
     }
 
     let cancelled = false;
+    const { direction, asset, tokenAddress } = state;
+    setState(s => ({ ...s, sourceBalance: null, sourceBalanceRaw: null, allowance: null, tokenNeedsApproval: null, tokenReadError: null }));
 
     async function fetchBalances() {
-      const { direction, asset, tokenAddress } = stateRef.current;
       const sourceRpc = direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
       const bridgeAddr = direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge;
 
@@ -310,6 +334,8 @@ export function useBridge(
               sourceBalance: formatBalance(raw, 18),
               sourceBalanceRaw: raw,
               allowance: null,
+              tokenNeedsApproval: null,
+              tokenReadError: null,
             }));
           }
         } else if (tokenAddress && /^0x[0-9a-fA-F]{40}$/.test(tokenAddress)) {
@@ -325,16 +351,21 @@ export function useBridge(
           ])) as string;
           const raw = decodeUint256(balResult);
 
-          // Fetch allowance
+          // The bridge burns its own wrapped tokens directly; only native
+          // tokens go through transferFrom and need an ERC20 allowance.
+          const tokenInfo = await rpcCall(sourceRpc, "eth_call", [
+            { to: bridgeAddr, data: BRIDGE_ABI.wrappedTokenInfo + pad32(tokenAddress) }, "latest",
+          ]);
+          if (typeof tokenInfo !== "string" || !/^0x0{24}[0-9a-fA-F]{40}[0-9a-fA-F]{64}$/.test(tokenInfo)) {
+            throw new Error("Invalid bridge token information response");
+          }
+          const tokenNeedsApproval = decodeUint256(tokenInfo) === 0n;
           let allowance = 0n;
-          if (bridgeAddr) {
-            const allowResult = (await rpcCall(sourceRpc, "eth_call", [
-              {
-                to: tokenAddress,
-                data: ERC20_ABI.allowance + pad32(walletAddress!) + pad32(bridgeAddr),
-              },
-              "latest",
-            ])) as string;
+          if (tokenNeedsApproval) {
+            const allowResult = await rpcCall(sourceRpc, "eth_call", [
+              { to: tokenAddress, data: ERC20_ABI.allowance + pad32(walletAddress!) + pad32(bridgeAddr) }, "latest",
+            ]);
+            if (typeof allowResult !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(allowResult)) throw new Error("Invalid token allowance response");
             allowance = decodeUint256(allowResult);
           }
 
@@ -344,18 +375,21 @@ export function useBridge(
               sourceBalance: formatBalance(raw, decimals),
               sourceBalanceRaw: raw,
               allowance,
+              tokenNeedsApproval,
+              tokenReadError: null,
             }));
           }
         }
-      } catch {
-        // Silently fail — balance display just stays null
+      } catch (error) {
+        if (!cancelled && asset === "erc20") setState(s => ({ ...s, allowance: null, tokenNeedsApproval: null,
+          tokenReadError: (error as Error).message || "Unable to check token balance and approval" }));
       }
     }
 
     fetchBalances();
     const interval = setInterval(fetchBalances, 5000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [walletAddress, state.direction, state.asset, state.tokenAddress, state.tokenMeta?.decimals]);
+  }, [walletAddress, state.direction, state.asset, state.tokenAddress, state.tokenMeta?.decimals, configLoaded, config.l1Bridge, config.l2Bridge, config.l1Rpc, config.l2Rpc]);
 
   // Fetch token metadata on address change (debounced)
   useEffect(() => {
@@ -413,7 +447,8 @@ export function useBridge(
     const { direction, asset, amount, tokenAddress, tokenMeta } = state;
     const bridgeAddr = direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge;
 
-    if (!bridgeAddr || !amount) {
+    estimatedRequest.current = null;
+    if (!configLoaded || !walletAddress || !bridgeAddr || !amount) {
       setState((s) => ({ ...s, gas: defaultGas }));
       return;
     }
@@ -437,74 +472,35 @@ export function useBridge(
     }));
 
     const timer = setTimeout(async () => {
-      const from = walletRef.current || ESTIMATION_SENDER;
-      // Destination rollupId: L1→L2 uses config.rollupId (our L2), L2→L1 uses 0 (L1)
-      const rollupId = direction === "l2-to-l1"
-        ? "0".padStart(64, "0")
-        : parseInt(config.rollupId).toString(16).padStart(64, "0");
-
-      let data: string;
-      let value: string | undefined;
-
-      // destinationAddress: custom if set, otherwise sender's wallet
-      const customDest = stateRef.current.destinationAddress;
-      const dest = customDest && /^0x[0-9a-fA-F]{40}$/.test(customDest)
-        ? customDest
-        : from;
-      const destinationAddr = pad32(dest);
-
-      if (asset === "eth") {
-        data = BRIDGE_ABI.bridgeEther + rollupId + destinationAddr;
-        value = "0x" + rawAmount.toString(16);
-      } else {
-        data = BRIDGE_ABI.bridgeTokens + pad32(tokenAddress) + encodeUint256(rawAmount) + rollupId + destinationAddr;
-      }
-
+      let requestKey: string | null = null;
       try {
-        let result;
-        if (direction === "l1-to-l2") {
-          result = await estimateCrossChainGas({
-            l1Rpc: config.l1Rpc,
-            proxyAddress: bridgeAddr,
-            calldata: data,
-            from,
-            value,
-          });
-        } else {
-          result = await estimateGas({
-            rpcUrl: config.l2ProxyRpc,
-            to: bridgeAddr,
-            data,
-            from,
-            value,
-          });
-        }
-
+        const transaction = bridgeTransaction(state, walletAddress);
+        const rpcUrl = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
+        requestKey = rpcUrl + JSON.stringify(transaction);
+        const result = await estimateBridgeGas({ rpcUrl, ...transaction });
         if (!cancelled) {
-          const methodLabel =
-            result.method === "direct" || result.method === "unpriced" ? null
-            : result.method === "calldata-computed" ? "L1 calldata analysis"
-            : result.method === "legacy-params" ? "legacy"
-            : "simulation";
+          estimatedRequest.current = requestKey;
           setState((s) => ({
             ...s,
             gas: {
               status: "estimated",
               estimate: Number(result.rawEstimate),
-              estimateWithBuffer: Number(result.gasLimit),
-              gasHex: gasToHex(result.gasLimit),
-              method: methodLabel,
+              gasLimit: Number(result.rawEstimate),
+              gasHex: gasToHex(result.rawEstimate),
+              method: "Composer",
               errorMessage: null,
             },
           }));
         }
       } catch (e) {
         if (!cancelled) {
+          const unsupported = e instanceof GasEstimateError && e.type === "unsupported";
+          estimatedRequest.current = unsupported ? requestKey : null;
           setState((s) => ({
             ...s,
             gas: {
               ...defaultGas,
-              status: "error",
+              status: unsupported ? "unsupported" : "error",
               errorMessage: (e as Error).message || "Gas estimation failed",
             },
           }));
@@ -513,10 +509,10 @@ export function useBridge(
     }, 400);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [state.direction, state.asset, state.amount, state.tokenAddress, state.tokenMeta?.decimals, state.destinationAddress, walletAddress]);
+  }, [state.direction, state.asset, state.amount, state.tokenAddress, state.tokenMeta?.decimals, state.destinationAddress, state.allowance, walletAddress, configLoaded, config.l1Bridge, config.l2Bridge, config.rollupId, config.l1ProxyRpc, config.l2ProxyRpc]);
 
   const setGasOverride = useCallback((hex: string | null) => {
-    setGasOverrideHex(hex);
+    setState(s => ({ ...s, gasOverrideHex: hex }));
   }, []);
 
   const setDirection = useCallback((dir: BridgeDirection) => {
@@ -526,6 +522,8 @@ export function useBridge(
       sourceBalance: null,
       sourceBalanceRaw: null,
       allowance: null,
+      tokenNeedsApproval: null,
+      tokenReadError: null,
       phase: "idle",
       txHash: null,
       error: null,
@@ -542,6 +540,8 @@ export function useBridge(
       sourceBalance: null,
       sourceBalanceRaw: null,
       allowance: null,
+      tokenNeedsApproval: null,
+      tokenReadError: null,
       phase: "idle",
       txHash: null,
       error: null,
@@ -564,6 +564,8 @@ export function useBridge(
       tokenAddress: addr,
       tokenMeta: null,
       allowance: null,
+      tokenNeedsApproval: null,
+      tokenReadError: null,
     }));
   }, []);
 
@@ -582,7 +584,7 @@ export function useBridge(
   const approve = useCallback(async () => {
     const { direction, tokenAddress } = stateRef.current;
     const bridgeAddr = direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge;
-    if (!bridgeAddr || !tokenAddress) return;
+    if (!bridgeAddr || !tokenAddress || stateRef.current.tokenNeedsApproval !== true) return;
 
     setState((s) => ({ ...s, phase: "approving", error: null, txHash: null }));
     log(`Approving token spending for bridge...`, "info");
@@ -646,7 +648,7 @@ export function useBridge(
 
   /** Main bridge action */
   const bridge = useCallback(async () => {
-    const { direction, asset, amount, tokenAddress, tokenMeta, destinationAddress } = stateRef.current;
+    const { direction, asset, amount, tokenMeta } = stateRef.current;
     const bridgeAddr = direction === "l1-to-l2" ? config.l1Bridge : config.l2Bridge;
     const ready = direction === "l1-to-l2" ? stateRef.current.l1BridgeReady : stateRef.current.l2BridgeReady;
     if (!bridgeAddr || !amount || ready !== true) return;
@@ -658,59 +660,37 @@ export function useBridge(
       return;
     }
 
+    if (asset === "erc20" && (stateRef.current.tokenNeedsApproval === null || stateRef.current.sourceBalanceRaw === null ||
+        stateRef.current.sourceBalanceRaw < rawAmount || stateRef.current.tokenNeedsApproval &&
+        (stateRef.current.allowance === null || stateRef.current.allowance < rawAmount))) {
+      setState(s => ({ ...s, phase: "failed", error: s.tokenReadError || "Check your token balance and required approval before bridging" }));
+      return;
+    }
+    const from = walletRef.current;
+    if (!from) return;
+    const transaction = bridgeTransaction(stateRef.current, from);
+    const composerRpc = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
+    const gasOverrideHex = stateRef.current.gasOverrideHex;
+    const gasReady = stateRef.current.gas.status === "estimated" && !!stateRef.current.gas.gasHex ||
+      stateRef.current.gas.status === "unsupported" && !!gasOverrideHex;
+    if (!gasReady || estimatedRequest.current !== composerRpc + JSON.stringify(transaction)) {
+      setState((s) => ({ ...s, phase: "failed", error: s.gas.errorMessage || "Wait for a valid Composer gas estimate before bridging" }));
+      return;
+    }
     setState((s) => ({ ...s, phase: "sending", error: null, txHash: null }));
-
-    // Destination rollupId: L1→L2 uses config.rollupId (our L2), L2→L1 uses 0 (L1)
-    const rollupId = direction === "l2-to-l1"
-      ? "0".padStart(64, "0")
-      : parseInt(config.rollupId).toString(16).padStart(64, "0");
-
     try {
-      let txHash: string;
-
-      // Send the displayed 1.3x estimate unless the user entered a custom limit.
-      const resolvedGas = gasOverrideHex ?? (stateRef.current.gas.status === "estimated"
-        ? stateRef.current.gas.gasHex : null);
-      if (!resolvedGas) throw new Error("Wait for the gas limit to be ready before bridging");
+      // An explicit override can also unblock a Composer with known missing estimation support.
+      const resolvedGas = gasOverrideHex ?? stateRef.current.gas.gasHex!;
       const sourceRpc = direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
-      const gasParam = { gas: resolvedGas, ...await getEip1559Fees(sourceRpc) };
-
-      // destinationAddress: custom if set, otherwise sender's wallet
-      const from = walletRef.current || ESTIMATION_SENDER;
-      const dest = destinationAddress && /^0x[0-9a-fA-F]{40}$/.test(destinationAddress)
-        ? destinationAddress
-        : from;
-      const destinationAddr = pad32(dest);
-
-      if (asset === "eth") {
-        // bridgeEther(uint64 _rollupId, address destinationAddress) payable
-        const data = BRIDGE_ABI.bridgeEther + rollupId + destinationAddr;
-        const value = "0x" + rawAmount.toString(16);
-
-        if (direction === "l1-to-l2") {
-          log(`Bridging ${amount} ETH L1 → L2...`, "info");
-          txHash = await sendL1ProxyTx({ to: bridgeAddr, data, value, ...gasParam });
-        } else {
-          log(`Bridging ${amount} ETH L2 → L1...`, "info");
-          txHash = await sendL2ProxyTx({ to: bridgeAddr, data, value, ...gasParam });
-        }
-      } else {
-        // bridgeTokens(address token, uint256 amount, uint64 _rollupId, address destinationAddress)
-        const data =
-          BRIDGE_ABI.bridgeTokens +
-          pad32(tokenAddress) +
-          encodeUint256(rawAmount) +
-          rollupId +
-          destinationAddr;
-
-        if (direction === "l1-to-l2") {
-          log(`Bridging ${amount} ${tokenMeta?.symbol || "tokens"} L1 → L2...`, "info");
-          txHash = await sendL1ProxyTx({ to: bridgeAddr, data, ...gasParam });
-        } else {
-          log(`Bridging ${amount} ${tokenMeta?.symbol || "tokens"} L2 → L1...`, "info");
-          txHash = await sendL2ProxyTx({ to: bridgeAddr, data, ...gasParam });
-        }
+      const gasParam = { gas: resolvedGas, gasLimit: resolvedGas, ...await getEip1559Fees(sourceRpc) };
+      if (walletRef.current !== from || estimatedRequest.current !== composerRpc + JSON.stringify(transaction)) {
+        throw new Error("Bridge transaction changed; wait for a new Composer gas estimate");
       }
+      const symbol = asset === "eth" ? "ETH" : tokenMeta?.symbol || "tokens";
+      log(`Bridging ${amount} ${symbol} ${direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}...`, "info");
+      const txHash = direction === "l1-to-l2"
+        ? await sendL1ProxyTx({ ...transaction, ...gasParam })
+        : await sendL2ProxyTx({ ...transaction, ...gasParam });
 
       setState((s) => ({ ...s, phase: "tx-pending", txHash }));
       log(`Bridge tx: ${txHash.slice(0, 18)}...`);
@@ -800,7 +780,7 @@ export function useBridge(
       setState((s) => ({ ...s, phase: "failed", error: msg }));
       log(`Bridge failed: ${msg}`, "err");
     }
-  }, [log, sendTx, sendL1Tx, sendL1ProxyTx, gasOverrideHex]);
+  }, [log, sendL1ProxyTx, sendL2ProxyTx]);
 
   return {
     state,
