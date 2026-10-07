@@ -8,7 +8,7 @@ const LOW_GAS_THRESHOLD = 0.7; // warn if custom < 70% of estimate
 interface Props {
   /** Estimated gas limit (raw estimate, before buffer) — null if not yet estimated */
   estimatedGas: number | null;
-  /** Estimated gas limit with buffer applied (the value that would be sent) */
+  /** Requested limit; bridge estimates are raw, other callers may apply a buffer. */
   estimatedGasWithBuffer: number | null;
   /** Whether estimation is in progress */
   estimating: boolean;
@@ -133,7 +133,7 @@ export function GasLimitEditor({
 
           {estimatedGasWithBuffer !== null && !estimating && (
             <div className={styles.estimateRow}>
-              <span className={styles.estimateLabel}>Requested gas limit (1.3x estimate)</span>
+              <span className={styles.estimateLabel}>{estimatedGasWithBuffer === estimatedGas ? "Requested gas limit" : "Requested gas limit (1.3x estimate)"}</span>
               <span className={styles.estimateValue}>
                 {estimatedGasWithBuffer.toLocaleString()}
               </span>

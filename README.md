@@ -181,6 +181,7 @@ Git.
 ```bash
 npm ci
 npm run build
+npm run test:visualizer
 docker compose config --quiet
 # With the combined app running (Node 22+):
 node src/monitor/tests/test_proxy.mjs
@@ -189,6 +190,147 @@ docker build -t eez-rollup-ui:local .
 
 Monitor regression checks and optional telemetry settings are documented in
 `src/monitor/README.md`.
+
+## Bridge gas and approvals
+
+Bridge gas is estimated against the source chain's Composer (`/composer/l1`
+or `/composer/l2`) using the connected wallet, bridge address, calldata, and
+value. The dashboard submits the raw estimate without a buffer or automatic
+fallback; an explicit manual gas override takes precedence. Ordinary estimation
+errors block submission. Older Composers that report a missing estimation method
+or `ExecutionNotInCurrentBlock()` require an explicit manual limit before
+submission is enabled. Wrapped bridge tokens burn directly without approval;
+native ERC20 tokens still require allowance for the source bridge.
+
+Wallets may apply their own gas policy. Rabby's saved Chiado RPC must use
+`https://eez.asuscomm.com/composer/l1` for cross-chain estimation.
+
+Bridge regression checks include:
+
+```bash
+node tests/bridge-gas-estimation.test.mjs
+node tests/gas-estimation-unfunded.test.mjs
+# Against a running UI, with Playwright installed:
+node tests/bridge-gas-fees.cjs
+node tests/bridge-readiness.cjs
+```
+
+## Execution visualizer
+
+Open **Visualizer** or `/dashboard/#/visualizer`. Debug TX accepts any L1 or L2
+transaction hash and auto-detects its chain. Transaction History's Debug action
+opens the same view. Failed transactions and contract creations are supported.
+
+The debugger uses mined receipts, EEZ events, posting/loading calldata, and an
+optional `debug_traceTransaction` call tracer. Expand execution/static entries
+to inspect calls, reentrant frames, expected rolling hashes, return or revert
+data, rollup commitments, and ether changes. The timeline aligns linked L1/L2 events on shared rows, with one global
+step selector and Previous/Next controls. Each chain retains receipt log order.
+Exact call hashes take precedence over replay candidates; ambiguous matches
+and nested completions that cross that order remain links across steps. Paired
+rows represent related call evidence, not clock-time simultaneity. Expected
+entries do not imply successful execution. Traces include nested failures even when reverted receipt logs are
+absent. Raw calldata, logs, and receipt JSON remain accessible without tracing.
+
+Cross-chain block links come from `eez_getSettlementByL2Block` and
+`eez_getSettledL2RangesByL1Block` on the L2 RPC. For an L1 batch, the L2 lane
+loads only the terminal sync block by its indexed hash. Settlement links retain
+the complete L2 range. Chain lanes show only calls to known EEZ managers,
+decoded EEZ calls, and transactions emitting EEZ events, including calls through
+other contracts. Reverted calls to known managers remain visible without logs.
+Transaction counts and gas totals cover the displayed EEZ transactions.
+Transactions sharing call
+hashes appear as candidates; a repeated hash is not a unique execution occurrence.
+For work that has not settled, supply the optional counterpart transaction hash.
+Missing index or trace methods show a message while preserving available data.
+
+Block Explorer reads either chain by number or hash, including ordinary and
+protocol transactions. Live is the default view and retains the latest 50 posted
+batches from the connected rollup, newest first. The configured registry or
+a matching canonical L2 settlement identifies that deployment; unrelated L1
+registries are excluded. Rows show linked L1 blocks, L2 ranges, settlement
+status, transaction hashes, and the total indexed L2 block count. Selecting
+a post loads its L1 receipt and terminal L2 sync block; new blocks preserve the
+selected transaction and trace. It polls every
+five seconds after each completed refresh, and can be paused. Export JSON saves
+the loaded context and traces. Deep links support `tx`, `chain`, `mode`, `block`,
+and `counterpart` parameters inside the hash fragment. **Copy inspection link**
+also includes the Live `batch`, `selected` transaction and `selectedChain`,
+protocol `event` index, inspector `tab`, and focused `call` hash. Live links
+restore the selected batch without switching to Debug TX.
+
+The inspector opens **Flow** by default: entry groups containing aligned L1/L2
+call requests and reverse return arrows. Nested calls sit inside their parent's
+request/return span. Contract and selector labels identify each call; consumed
+and completed events stay in Timeline. Entries are associated by rolling hashes
+and execution evidence rather than queue indices, which can repeat.
+
+Flow automatically loads relevant transaction traces, with two concurrent
+requests and the shared trace cache. Dispatch postorder associates nested
+CallResult events; source traces show the bytes returned to the original caller.
+Recorded local call ordinals distinguish committed results from earlier rolled-back
+attempts. Dispatch matches recompute the protocol call hash, including destination,
+rollup IDs and call gas; unresolved repeated hashes stay unlinked. Request and
+return arrows share the initiating chain’s color. Vertical execution arrows
+connect destination to result through nested calls and resumes. Adjacent calls
+by the same contract in the same transaction also connect after the caller
+resumes. Waiting callers have no execution bracket; translucent row highlights
+sit behind the diagram so they cannot hide connectors. A source-only cached result is
+a local loop, never an arrow from an unobserved destination. Leading immediate
+L2 entries also show their state commitment on L1, including pure transactions
+with no cross-chain calls. Applied updates require a unique rolling-hash
+completion and matching root-update receipt logs; skipped, unconfirmed, and
+mismatched updates retain their status. Other empty entry groups are collapsed.
+The schematic does not imply cross-chain wall-clock timing. Missing returns
+are explicitly unavailable. Select a row for inline transaction links,
+trace/event details, return evidence, or previous/new roots. Clicking any row
+while details are open dismisses them. L1 details remain on the left.
+One global step control navigates requests, returns, and immediate state updates.
+
+**Timeline** retains the complete recorded events and transaction boundaries.
+**Calls**, **Entries**, and **Raw** provide traces, plan comparisons, and source
+data. Share links restore the chosen view and original receipt event index.
+Replay candidates can connect differing trigger hashes through an associated
+execution plan, source address, calldata, value, and a recorded call result or
+unique rolling-hash completion. They do not prove destination or global timing.
+Entries compares expected outcomes, rolling hashes,
+and return/revert bytes with uniquely associated recorded evidence. Missing
+logs or return bytes remain **Missing evidence**, rather than a mismatch.
+Static execution requires more evidence than persistent receipt logs provide.
+Direct incoming entrypoint traces can establish returned or reverted bytes;
+a successful posting transaction alone does not prove every planned entry ran.
+
+Calls caches traces while switching transactions and batches. Protocol ABIs
+are local; verified contract names/functions/arguments/results are fetched from
+the configured explorers with bounded concurrency and a short cache. Unknown
+contracts keep raw calldata/results. **Jump to failure** skips reverts handled
+by successful enclosing calls and directly verified expected root reverts.
+
+Batch search covers transaction hashes, block numbers (including the settled
+L2 range), registry addresses, and inspected contracts/call hashes. Settlement
+and execution filters distinguish indexed/finalized/pending/noncanonical
+batches, observed cross-chain calls, reverted transactions, and skipped entries.
+Live automatically loads entry details for the latest 50 batches in the
+background, using two concurrent inspections and retaining the selected batch
+and timeline step. **Pause** stops new inspections and **Resume** continues.
+Unavailable inspections retry after 30 seconds; **Retry unavailable batches**
+retries immediately. Coverage is explicit; pending or unavailable batches do
+not imply successful execution. Only the terminal L2 sync block is loaded for
+an L1 batch, so these checks describe the
+loaded evidence, not every transaction throughout its L2 settlement range.
+The batch list collapses and resizes, and the chain lanes remain visible beside
+the inspector on desktop.
+
+The debugger has a separate ABI snapshot for EEZ/EEZL2, including deployed
+pre-cursor L2 static tables and current cursor tables. It discovers unconfigured
+registry emitters from successful batch calldata/events (including forwarding
+contracts), and L2 managers from their execution events. Explicit runtime or URL
+contract addresses take precedence. To regenerate the snapshot from compiled
+protocol artifacts:
+
+```bash
+python3 scripts/generate-visualizer-abi.py ../eez-core-protocol
+```
 
 For local Vite development, run the Python monitor on port `18080` as described
 there. Vite proxies `/monitor/` to that port; `EEZ_MONITOR_UPSTREAM` overrides the

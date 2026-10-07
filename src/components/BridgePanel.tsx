@@ -253,7 +253,7 @@ export function BridgePanel({
   const {
     phase, direction, asset, amount, tokenAddress, tokenMeta,
     txHash, error, sourceBalance, sourceBalanceRaw, allowance,
-    l1BridgeReady, l2BridgeReady, gas, destinationAddress,
+    l1BridgeReady, l2BridgeReady, gas, destinationAddress, tokenNeedsApproval, tokenReadError,
   } = state;
 
   const busy = !["idle", "confirmed", "failed"].includes(phase);
@@ -273,7 +273,7 @@ export function BridgePanel({
       rawAmount = BigInt(whole) * 10n ** BigInt(decimals) + BigInt(frac);
     } catch { /* ignore */ }
   }
-  const needsApproval = asset === "erc20" && allowance !== null && rawAmount > 0n && allowance < rawAmount;
+  const needsApproval = asset === "erc20" && tokenNeedsApproval === true && allowance !== null && rawAmount > 0n && allowance < rawAmount;
 
   // Insufficient balance check
   let insufficientBalance = false;
@@ -284,12 +284,20 @@ export function BridgePanel({
   const canBridge =
     !busy &&
     sourceBridgeReady &&
-    gas.status === "estimated" &&
+    (gas.status === "estimated" || gas.status === "unsupported" && !!state.gasOverrideHex) &&
     amount &&
     rawAmount > 0n &&
     !insufficientBalance &&
     !needsApproval &&
-    (asset === "eth" || /^0x[0-9a-fA-F]{40}$/.test(tokenAddress));
+    (asset === "eth" || tokenNeedsApproval !== null && sourceBalanceRaw !== null && /^0x[0-9a-fA-F]{40}$/.test(tokenAddress));
+
+  const disabledReason = !walletAddress ? "Connect your wallet to bridge." :
+    !canBridge && !busy && sourceBridgeReady && rawAmount > 0n ?
+      asset === "erc20" && tokenReadError ? `Unable to check the token: ${tokenReadError}. Retrying…` :
+      asset === "erc20" && (tokenNeedsApproval === null || sourceBalanceRaw === null) ? "Checking token balance and approval…" :
+      insufficientBalance ? `Insufficient ${asset === "eth" ? "ETH" : tokenMeta?.symbol || "token"} balance on ${direction === "l1-to-l2" ? "L1" : "L2"}.` :
+      needsApproval ? `Approve ${tokenMeta?.symbol || "the token"} before bridging.` :
+      gas.status === "idle" || gas.status === "estimating" ? "Waiting for a Composer gas estimate…" : null : null;
 
   const dirLabel = direction === "l1-to-l2" ? "L1 \u2192 L2" : "L2 \u2192 L1";
   const actionLabel = asset === "eth" ? "Bridge ETH" : `Bridge ${tokenMeta?.symbol || "Tokens"}`;
@@ -418,10 +426,14 @@ export function BridgePanel({
       )}
 
       {/* Gas settings */}
+      {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
+      {gas.status === "error" && gas.errorMessage && (
+        <div className={styles.errorBar} role="alert">Gas estimation failed: {gas.errorMessage}</div>
+      )}
       {amount && rawAmount > 0n && sourceBridgeReady && (
         <GasLimitEditor
           estimatedGas={gas.estimate}
-          estimatedGasWithBuffer={gas.estimateWithBuffer}
+          estimatedGasWithBuffer={gas.gasLimit}
           estimating={gas.status === "estimating"}
           estimationMethod={gas.method}
           onGasOverride={onGasOverride}
@@ -442,6 +454,8 @@ export function BridgePanel({
           </button>
         </>
       )}
+
+      {disabledReason && <div className={styles.validationHint} role="status">{disabledReason}</div>}
 
       {/* Bridge button */}
       <button

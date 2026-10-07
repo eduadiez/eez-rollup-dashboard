@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { config } from "./config";
 import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
@@ -24,9 +24,9 @@ import { FaucetPanel } from "./components/FaucetPanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
 import styles from "./App.module.css";
 
-// The visualizer, flash-loan and aggregator views are not wired into the app.
-// Their components and hooks remain in the tree so they can be re-enabled by
-// restoring the navigation entries, tabs and hook calls removed here.
+const VisualizerView = lazy(() => import("./components/VisualizerView").then(module => ({ default: module.VisualizerView })));
+
+// Flash-loan and aggregator views are retained but are not enabled on this network.
 type DashboardTab = "dashboard" | "counter-demo" | "bridge";
 
 /** Dashboard sub-tabs that can be deep-linked via hash */
@@ -39,6 +39,7 @@ function getInitialView(): string {
   const raw = window.location.hash.replace("#/", "").replace("#", "");
   const hash = raw.split("?")[0];
   if (hash === "monitor") return "monitor";
+  if (hash === "visualizer") return "visualizer";
   if (window.location.pathname === "/monitor" || window.location.pathname === "/monitor/") return "monitor";
   return "dashboard";
 }
@@ -87,6 +88,8 @@ export function App() {
   const recentAddrs = useRecentAddresses();
 
   const [view, setView] = useState(getInitialView);
+  const [visualizerRoute, setVisualizerRoute] = useState(() => window.location.hash);
+  const visualizerParams = new URLSearchParams(visualizerRoute.split("?")[1] ?? "");
   const [dashboardTab, setDashboardTab] = useState<DashboardTab>(getInitialTab);
 
   /** Switch dashboard sub-tab and update hash for deep linking */
@@ -98,7 +101,8 @@ export function App() {
   const navigate = useCallback((v: string) => {
     setView(v);
     const pathname = v === "monitor" ? "/monitor/" : import.meta.env.BASE_URL;
-    window.history.pushState(null, "", pathname);
+    window.history.pushState(null, "", v === "visualizer" ? `${pathname}#/visualizer` : pathname);
+    if (v === "visualizer") setVisualizerRoute(window.location.hash);
     if (v === "dashboard") setDashboardTab("dashboard");
   }, []);
 
@@ -113,6 +117,7 @@ export function App() {
       const tab = raw ? HASH_TO_TAB[raw] : undefined;
       setDashboardTab(tab ?? "dashboard");
       setView(getInitialView());
+      setVisualizerRoute(window.location.hash);
     };
     window.addEventListener("hashchange", onHashChange);
     window.addEventListener("popstate", onHashChange);
@@ -306,6 +311,24 @@ export function App() {
 
       {view === "monitor" ? (
         <NetworkMonitorView />
+      ) : view === "visualizer" ? (
+        <Suspense fallback={<main id="main" tabIndex={-1} className={styles.page}>Loading visualizer…</main>}>
+          <VisualizerView
+            key={visualizerRoute}
+            onBack={() => navigate("dashboard")}
+            initialDebugHash={visualizerParams.get("tx") ?? visualizerParams.get("debug")}
+            initialMode={visualizerParams.get("mode")}
+            initialChain={visualizerParams.get("chain")}
+            initialBlock={visualizerParams.get("block")}
+            initialCounterpart={visualizerParams.get("counterpart")}
+            initialBatch={visualizerParams.get("batch")}
+            initialSelected={visualizerParams.get("selected")}
+            initialSelectedChain={visualizerParams.get("selectedChain")}
+            initialEvent={visualizerParams.get("event")}
+            initialTab={visualizerParams.get("tab")}
+            initialCall={visualizerParams.get("call")}
+          />
+        </Suspense>
       ) : (
         <main id="main" tabIndex={-1} className={styles.page}>
           <section className={`eez-intro ${styles.intro}`} aria-labelledby="page-heading">
@@ -428,6 +451,8 @@ export function App() {
             <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
+              onDebug={(hash) => { window.location.hash = `#/visualizer?tx=${hash}`; }}
+              onViewBlock={(block) => { window.location.hash = `#/visualizer?mode=explorer&chain=l1&block=${block}`; }}
             />
 
 

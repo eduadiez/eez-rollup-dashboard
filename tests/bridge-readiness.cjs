@@ -34,6 +34,12 @@ async function fixture(browser, options = {}) {
   let configRequested = false;
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
+    window.ethereum = { isRabby: true, on() {}, removeListener() {}, async request({ method }) {
+      if (method === 'eth_requestAccounts' || method === 'eth_accounts') return ['0x' + '77'.repeat(20)];
+      if (method === 'eth_chainId') return '0x27d8';
+      if (method === 'wallet_addEthereumChain' || method === 'wallet_switchEthereumChain') return null;
+      throw new Error('Unexpected wallet operation: ' + method);
+    } };
     window.bridgeMissingMessages = [];
     new MutationObserver(() => {
       const text = document.body?.textContent || '';
@@ -45,7 +51,7 @@ async function fixture(browser, options = {}) {
   await page.route('**/*', async route => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
-    if (pathname === '/config.json') {
+    if (pathname.endsWith('/config.json')) {
       configRequested = true;
       if (options.configGate) await options.configGate.promise;
       return route.fulfill({ json: {
@@ -93,8 +99,13 @@ async function fixture(browser, options = {}) {
     if (method === 'eth_call') return reply(zero);
     return reply('0x5208');
   });
-  await page.goto(origin + '/#/bridge');
-  return { page, modes, calls, configRequested: () => configRequested,
+  await page.goto(origin.replace(/\/$/, '') + '/#/bridge');
+  const connect = async () => {
+    await page.getByRole('button', { name: 'Connect Wallet' }).first().click();
+    await page.getByRole('button', { name: 'Rabby', exact: true }).first().click();
+  };
+  if (!options.configGate) await connect();
+  return { page, modes, calls, connect, configRequested: () => configRequested,
     button: page.getByRole('button', { name: 'Bridge ETH', exact: true }),
     async clean() {
       assert.deepEqual(writes, [], 'the test must never submit or sign a transaction');
@@ -111,6 +122,7 @@ async function fixture(browser, options = {}) {
     await until(f.configRequested, 'configuration request was not made');
     assert.equal(f.calls.length, 0, 'readiness must wait for configuration');
     configGate.release();
+    await f.connect();
     await f.page.getByText('Checking bridge on L1…', { exact: true }).waitFor();
     await f.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.001');
     assert.equal(await f.button.isDisabled(), true, 'unknown readiness must disable bridging');
@@ -121,9 +133,9 @@ async function fixture(browser, options = {}) {
     assert.equal(f.calls.length, inFlight, 'slow readiness checks must not overlap');
     readGate.release();
     await until(() => f.button.isEnabled(), 'ready bridge waited for the 10-second retry');
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), origin + '/composer/l1');
+    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l1', origin).href);
     await f.page.getByTitle('Swap direction').click();
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), origin + '/composer/l2');
+    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l2', origin).href);
     assert.deepEqual(await f.page.evaluate(() => window.bridgeMissingMessages), [],
       'a false missing-deployment warning appeared during startup');
     results.push('Delayed config/readiness: no false warning; disabled until ready; immediate check; no overlapping reads; both RPC directions');

@@ -38,6 +38,7 @@ interface Props {
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "monitor", label: "Monitor" },
+  { id: "visualizer", label: "Visualizer" },
 ];
 
 function formatAge(ts: number, now: number): string {
