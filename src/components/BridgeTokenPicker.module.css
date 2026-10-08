@@ -1,4 +1,4 @@
-.section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.section { display: flex; flex-direction: column; gap: 10px; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .label { color: var(--text-dim); font: 400 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .browse { background: transparent; border: 1px solid var(--border); border-radius: 100px; padding: 6px 12px; font: 500 11.5px/1.5 var(--mono); text-transform: uppercase; color: var(--text); cursor: pointer; }

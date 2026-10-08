@@ -29,7 +29,9 @@ including live WebSockets.
 Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
 Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
-gas controls show the estimate and an editable gas limit. Proxy selection
+gas settings are collapsed by default and contain the estimate and editable gas
+limit. Pending transactions and their confirmations appear in a dismissible
+popup; closing pending status does not stop receipt polling. Proxy selection
 and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
@@ -50,8 +52,8 @@ xDAI for the native asset on both chains.
 
 Set `EEZ_UI_NETWORK_NAME` in `.env` to the rollup's display name (for example,
 `EEZ-X Devnet`). Runtime `networkName` supplies the bridge's L2 labels and the
-network name used when adding L2 to a wallet. Bridge previews show the exact
-transfer amount; gas is paid separately. Saved wallet networks may retain their
+network name used when adding L2 to a wallet. The bridge shows the amount sent;
+gas is paid separately. Saved wallet networks may retain their
 previous name and RPC; cross-chain transactions use `/composer/l1` or
 `/composer/l2` for their source network.
 

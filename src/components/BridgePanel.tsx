@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { formatUnits } from "viem";
 import type { BridgeState, BridgeDirection, BridgeAsset, TokenMeta } from "../hooks/useBridge";
 import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
-import { TxLink } from "./TxLink";
+import { BridgeTransactionDialog } from "./BridgeTransactionDialog";
 import styles from "./BridgePanel.module.css";
 import { BridgeTokenPicker } from "./BridgeTokenPicker";
 import { NetworkIcon } from "./NetworkIcon";
@@ -39,15 +38,17 @@ function NetworkBadge({ chain, role }: { chain: "l1" | "l2"; role: "Source" | "D
 function DirectionSelector({
   direction,
   onSwap,
+  disabled,
 }: {
   direction: BridgeDirection;
   onSwap: () => void;
+  disabled: boolean;
 }) {
   const isL1Source = direction === "l1-to-l2";
   return (
     <div className={styles.directionBar}>
       <NetworkBadge chain={isL1Source ? "l1" : "l2"} role="Source" />
-      <button className={styles.swapBtn} onClick={onSwap} title="Swap direction">
+      <button className={styles.swapBtn} disabled={disabled} onClick={onSwap} title="Swap direction">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M7 16l-4-4 4-4" /><path d="M17 8l4 4-4 4" />
           <path d="M3 12h18" />
@@ -62,7 +63,9 @@ function AssetToggle({
   asset,
   onChange,
   nativeSymbol,
+  disabled,
 }: {
+  disabled: boolean;
   nativeSymbol: string;
   asset: BridgeAsset;
   onChange: (a: BridgeAsset) => void;
@@ -72,6 +75,7 @@ function AssetToggle({
       <button
         className={`${styles.assetBtn} ${asset === "eth" ? styles.assetActive : ""}`}
         aria-pressed={asset === "eth"}
+        disabled={disabled}
         onClick={() => onChange("eth")}
       >
         {nativeSymbol}
@@ -79,6 +83,7 @@ function AssetToggle({
       <button
         className={`${styles.assetBtn} ${asset === "erc20" ? styles.assetActive : ""}`}
         aria-pressed={asset === "erc20"}
+        disabled={disabled}
         onClick={() => onChange("erc20")}
       >
         ERC20
@@ -94,10 +99,12 @@ function AmountSection({
   tokenMeta,
   sourceBalanceRaw,
   nativeSymbol,
+  disabled,
   onAmountChange,
   onAssetChange,
   onMax,
 }: {
+  disabled: boolean;
   nativeSymbol: string;
   amount: string;
   sourceBalance: string | null;
@@ -127,7 +134,7 @@ function AmountSection({
     <div className={styles.amountSection}>
       <div className={styles.amountHeader}>
         <label htmlFor="bridge-amount" className={styles.sectionTitle}>You send</label>
-        <AssetToggle asset={asset} nativeSymbol={nativeSymbol} onChange={onAssetChange} />
+        <AssetToggle disabled={disabled} asset={asset} nativeSymbol={nativeSymbol} onChange={onAssetChange} />
       </div>
       <div className={styles.amountRow}>
         <input
@@ -138,65 +145,18 @@ function AmountSection({
           className={styles.input}
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
-          placeholder={`0.0 ${symbol}`}
+          placeholder="0.0"
+          disabled={disabled}
         />
         <span className={styles.amountSymbol}>{symbol}</span>
       </div>
       <div className={styles.balanceRow}>
         <span>{sourceBalance !== null ? <>Balance: <span className={styles.balanceValue}>{sourceBalance} {symbol}</span></> : "Balance unavailable"}</span>
-        <button className={styles.maxBtn} onClick={onMax} disabled={!sourceBalance}>MAX</button>
+        <button className={styles.maxBtn} onClick={onMax} disabled={disabled || !sourceBalance}>MAX</button>
       </div>
       {insufficientBalance && (
         <div className={styles.validationHint}>Insufficient balance</div>
       )}
-    </div>
-  );
-}
-
-function ReceivePreview({
-  rawAmount,
-  decimals,
-  asset,
-  tokenMeta,
-  direction,
-}: {
-  rawAmount: bigint;
-  decimals: number;
-  asset: BridgeAsset;
-  tokenMeta: TokenMeta | null;
-  direction: BridgeDirection;
-}) {
-  if (rawAmount <= 0n) return null;
-  const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L2_CHAIN : L1_CHAIN).nativeCurrency.symbol : (tokenMeta?.symbol || "tokens");
-  const destChain = direction === "l1-to-l2" ? config.rollupName : config.l1NetworkName;
-
-  return (
-    <div className={styles.receivePreview}>
-      <div>
-        <div className={styles.sectionTitle}>You receive</div>
-        <div className={styles.receiveChain}>on {destChain}</div>
-      </div>
-      <div className={styles.receiveAmount}>{formatUnits(rawAmount, decimals)} {symbol}</div>
-    </div>
-  );
-}
-
-function PhaseIndicator({ phase }: { phase: string }) {
-  if (phase === "idle" || phase === "confirmed") return null;
-
-  const messages: Record<string, string> = {
-    approving: "Sending approval transaction...",
-    "approve-pending": "Waiting for approval confirmation...",
-    sending: "Sending bridge transaction...",
-    "tx-pending": "Waiting for confirmation...",
-  };
-
-  if (phase === "failed") return null; // error bar handles this
-
-  return (
-    <div className={styles.phaseBar}>
-      <span className={styles.spinner} />
-      <span>{messages[phase] || "Processing..."}</span>
     </div>
   );
 }
@@ -219,7 +179,7 @@ export function BridgePanel({
   const [editingRecipient, setEditingRecipient] = useState(false);
   const {
     phase, direction, asset, amount, tokenAddress, tokenMeta,
-    txHash, error, sourceBalance, sourceBalanceRaw, allowance,
+    sourceBalance, sourceBalanceRaw, allowance,
     l1BridgeReady, l2BridgeReady, gas, destinationAddress, tokenNeedsApproval, tokenReadError,
   } = state;
 
@@ -296,6 +256,7 @@ export function BridgePanel({
       {/* Direction selector */}
       <DirectionSelector
         direction={direction}
+        disabled={busy}
         onSwap={() =>
           onSetDirection(direction === "l1-to-l2" ? "l2-to-l1" : "l1-to-l2")
         }
@@ -316,6 +277,7 @@ export function BridgePanel({
 
       {/* Amount */}
       <AmountSection
+        disabled={busy}
         nativeSymbol={nativeSymbol}
         amount={amount}
         sourceBalance={sourceBalance}
@@ -325,15 +287,6 @@ export function BridgePanel({
         onAmountChange={onSetAmount}
         onAssetChange={onSetAsset}
         onMax={onSetMax}
-      />
-
-      {/* Receive preview */}
-      <ReceivePreview
-        rawAmount={rawAmount}
-        decimals={decimals}
-        asset={asset}
-        tokenMeta={tokenMeta}
-        direction={direction}
       />
 
       <div className={styles.recipientSection}>
@@ -361,50 +314,22 @@ export function BridgePanel({
         </div>}
       </div>
 
-      {/* Phase indicator */}
-      <PhaseIndicator phase={phase} />
-
-      {/* Confirmed */}
-      {phase === "confirmed" && txHash && (
-        <div className={`${styles.phaseBar} ${styles.phaseOk}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-          <span>Bridge transaction confirmed</span>
-        </div>
-      )}
-
-      {/* Error bar */}
-      {phase === "failed" && error && (
-        <div className={styles.errorBar}>
-          {error}
-          <button className="btn btn-sm btn-ghost" onClick={onDismiss}>Dismiss</button>
-        </div>
-      )}
-
-      {/* TX hash */}
-      {txHash && (
-        <div className={styles.txHashRow}>
-          <span className={styles.txLabel}>TX</span>
-          <TxLink
-            hash={txHash}
-            chain={direction === "l1-to-l2" ? "l1" : "l2"}
-            className={styles.txValue}
-          />
-        </div>
-      )}
-
       {/* Gas settings are already collapsed; keep estimation errors visible. */}
       {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
       {gas.status === "error" && gas.errorMessage && (
         <div className={styles.errorBar} role="alert">Gas estimation failed: {gas.errorMessage}</div>
       )}
       {amount && rawAmount > 0n && sourceBridgeReady && (
-        <GasLimitEditor
-          estimatedGas={gas.estimate}
-          estimatedGasWithBuffer={gas.gasLimit}
-          estimating={gas.status === "estimating"}
-          onGasOverride={onGasOverride}
-          disabled={busy}
-        />
+        <details className={styles.gasSettings}>
+          <summary>Gas settings</summary>
+          <GasLimitEditor
+            estimatedGas={gas.estimate}
+            estimatedGasWithBuffer={gas.gasLimit}
+            estimating={gas.status === "estimating"}
+            onGasOverride={onGasOverride}
+            disabled={busy}
+          />
+        </details>
       )}
 
       {/* Approval button (ERC20 step 1) */}
@@ -414,7 +339,6 @@ export function BridgePanel({
           <button
             className="btn btn-solid btn-accent btn-block"
             onClick={onApprove}
-            style={{ marginBottom: 8 }}
           >
             Approve {tokenMeta?.symbol || "Token"}
           </button>
@@ -436,7 +360,7 @@ export function BridgePanel({
         )}
       </button>
 
-
+      <BridgeTransactionDialog state={state} onDismiss={onDismiss} />
     </div>
   );
 }

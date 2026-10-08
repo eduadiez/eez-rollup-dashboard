@@ -95,7 +95,7 @@ async function browse(f, filter) {
   assert.equal(await f.panel.getByRole('button',{name:/^Select /}).count(),1);
   await f.panel.getByRole('button',{name:'Select DAI '+dai,exact:true}).click();
   assert.equal(await f.panel.getByLabel('Token address',{exact:true}).inputValue(),dai);
-  await f.panel.getByPlaceholder('0.0 DAI',{exact:true}).waitFor();
+  await f.panel.getByLabel('Bridge amount',{exact:true}).locator('..').getByText('DAI',{exact:true}).waitFor();
   await browse(f,'Your tokens'); await f.panel.getByLabel('Search tokens').fill('');
   assert.equal(await f.panel.getByRole('button',{name:/^Select /}).count(),1);
   for (const width of [320,390,1440]) {
@@ -131,7 +131,7 @@ async function browse(f, filter) {
   f = await fixture(browser,{custom:true,badList:true}); await browse(f,'Known');
   await f.panel.getByText('The configured list is unavailable.',{exact:false}).waitFor();
   await f.panel.getByLabel('Token address',{exact:true}).fill(l1Token);
-  await f.panel.getByPlaceholder('0.0 CHI',{exact:true}).waitFor();
+  await f.panel.getByLabel('Bridge amount',{exact:true}).locator('..').getByText('CHI',{exact:true}).waitFor();
   await f.close();
 
   f = await fixture(browser,{indexL1:true,delayL1:true});

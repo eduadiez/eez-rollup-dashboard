@@ -125,7 +125,7 @@ async function fixture(browser, options = {}) {
     configGate.release();
     await f.connect();
     await f.page.getByText('Checking bridge on L1…', { exact: true }).waitFor();
-    await f.page.getByPlaceholder('0.0 xDAI', { exact: true }).fill('0.001');
+    await f.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
     assert.equal(await f.button.isDisabled(), true, 'unknown readiness must disable bridging');
     await until(() => f.calls.length >= 2, 'both configured bridges must be checked immediately');
     assert.equal(await f.page.getByText(missing, { exact: false }).count(), 0);
@@ -148,7 +148,7 @@ async function fixture(browser, options = {}) {
       const isMissing = mode === 'no-code' || mode === 'zero-manager';
       const message = isMissing ? missing : 'Unable to check the bridge on L1. Retrying…';
       await f.page.getByText(message, { exact: false }).waitFor();
-      await f.page.getByPlaceholder('0.0 xDAI', { exact: true }).fill('0.001');
+      await f.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
       assert.equal(await f.button.isDisabled(), true);
       if (!isMissing) assert.deepEqual(await f.page.evaluate(() => window.bridgeMissingMessages), []);
       f.modes.l1 = 'ready';
@@ -165,7 +165,7 @@ async function fixture(browser, options = {}) {
     const reverse = await fixture(browser, { modes: { l2: 'no-code' } });
     await reverse.page.getByTitle('Swap direction').click();
     await reverse.page.getByText(missing + ' on L2.', { exact: true }).waitFor();
-    await reverse.page.getByPlaceholder('0.0 xDAI', { exact: true }).fill('0.001');
+    await reverse.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
     assert.equal(await reverse.button.isDisabled(), true);
     await reverse.page.getByTitle('Swap direction').click();
     await until(() => reverse.button.isEnabled(), 'L2 missing deployment incorrectly blocked ready L1');
