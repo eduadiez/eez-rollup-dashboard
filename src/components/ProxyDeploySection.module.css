@@ -651,8 +651,9 @@
 .removeBtn:disabled { opacity: .55; cursor: default; }
 .savedLabel, .contractName { color: var(--text-dim); font: 12px/1.5 var(--sans); }
 .savedLabel { padding: 8px 12px; }
-.importSection > summary { color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); padding: 4px 0; }
-.importSection > summary:hover { color: var(--text-bright); }
-.importSection[open] > summary { margin-bottom: 8px; }
-.importSection .sectionTitle { display: block; margin-bottom: 8px; }
+.inputModeToggle { align-self: flex-start; max-width: 100%; color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); text-align: left; padding: 4px 0; background: transparent; border: 0; text-decoration: underline; text-underline-offset: 3px; }
+.inputModeToggle:hover { color: var(--text-bright); }
+.inputModeToggle:disabled { opacity: .55; cursor: default; }
+.fieldHint { color: var(--text-dim); font: 13px/1.5 var(--sans); overflow-wrap: anywhere; }
+.detectedDestination { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font: 12px/1.5 var(--mono); }
 .saveError { color: var(--red); font: 13px/1.5 var(--sans); overflow-wrap: anywhere; }

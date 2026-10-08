@@ -245,11 +245,11 @@ export function App() {
     setAutoDetectedProxy(address ? { address, target, direction } : null);
   }, []);
 
-  // Effective proxy: saved (localStorage) takes priority, then auto-detected (on-chain)
+  // A newly verified on-chain proxy takes priority over an older browser mapping.
   const savedProxy = genericTargetAddr
     ? crossChainGeneric.getProxy(genericTargetAddr, genericDirection)
     : null;
-  const genericProxy = savedProxy || (autoDetectedProxy?.target === genericTargetAddr && autoDetectedProxy.direction === genericDirection ? autoDetectedProxy.address : null);
+  const genericProxy = (autoDetectedProxy?.target === genericTargetAddr && autoDetectedProxy.direction === genericDirection ? autoDetectedProxy.address : null) || savedProxy;
 
   const selectGenericProxy = async (target: string, direction: CrossChainDirection) => {
     if (proxySelectionPending.current || !["idle", "confirmed", "failed"].includes(crossChainGeneric.state.phase)) return;
@@ -384,6 +384,7 @@ export function App() {
                     savedL2Proxies={crossChainGeneric.savedL2Proxies}
                     onCreateProxy={crossChainGeneric.createProxy}
                     onSaveProxy={crossChainGeneric.registerProxy}
+                    onLookupProxy={crossChainGeneric.lookupProxy}
                     onRemoveProxy={(target, direction) => {
                       crossChainGeneric.removeProxy(target, direction);
                       if (direction === genericDirection && target.toLowerCase() === genericTargetAddr.toLowerCase()) {

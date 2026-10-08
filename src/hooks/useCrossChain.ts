@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { decodeAbiParameters } from "viem";
 import { config, ESTIMATION_SENDER } from "../config";
 import { rpcCall } from "../rpc";
 import { estimateGas, estimateComposerGas, gasToHex } from "../lib/gasEstimation";
@@ -121,6 +122,24 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
     saveProxy(target, proxy, direction);
   }, [verifyProxy, saveProxy]);
 
+  const lookupProxy = useCallback(async (proxy: string, direction: CrossChainDirection) => {
+    const route = crossChainRoute(direction);
+    const sourceName = route.source === "l1" ? config.l1NetworkName : config.rollupName;
+    const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
+    if (!validAddress(proxy)) throw new Error("Enter a valid proxy address");
+    if (!route.manager) throw new Error(`Proxy manager is not configured on ${sourceName}`);
+    // Query the manager's public authorizedProxies(address) getter, never the proxy's fallback.
+    const result = await rpcCall(route.rpc, "eth_call", [{ to: route.manager,
+      data: "0x360d95b6" + proxy.slice(2).toLowerCase().padStart(64, "0") }, "latest"]);
+    if (typeof result !== "string" || !/^0x[0-9a-f]{192}$/i.test(result)) throw new Error("Proxy registry lookup returned an invalid response");
+    const [registered, target, rollupId] = decodeAbiParameters([{ type: "bool" }, { type: "address" }, { type: "uint64" }], result as `0x${string}`);
+    if (!registered) throw new Error(`This address is not a registered cross-chain proxy on ${sourceName}`);
+    if (rollupId !== BigInt(route.remoteRollupId)) throw new Error(`This proxy points to a different network. Choose a proxy whose destination is ${destinationName}.`);
+    if (BigInt(target) === 0n) throw new Error("This proxy has no valid destination address");
+    await verifyProxy(target, proxy, direction);
+    return target;
+  }, [verifyProxy]);
+
   const removeProxy = useCallback((target: string, direction: CrossChainDirection) => {
     const next = loadProxies(direction);
     delete next[target.toLowerCase()];
@@ -219,5 +238,5 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
   }, [sendL1ProxyTx, sendL2ProxyTx, sender, verifyProxy, waitForReceipt, finish, log]);
 
   const reset = useCallback(() => setState(IDLE), []);
-  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, verifyProxy, registerProxy, removeProxy, getProxy, reset };
+  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, verifyProxy, registerProxy, lookupProxy, removeProxy, getProxy, reset };
 }

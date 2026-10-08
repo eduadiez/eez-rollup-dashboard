@@ -45,9 +45,14 @@ source manager's computed proxy address and `eth_getCode` when selected and
 before sending. Confirmed mismatches or missing code clear stale mappings;
 RPC errors retain saved data but prevent unverified selection or submission.
 Contract names and ABIs come from the destination explorer.
-Detected proxies can be saved explicitly, or imported by entering their source
-address alongside the destination. Saving verifies the registry mapping and
-deployed code without sending a transaction. Removing a saved row only clears
+Detected proxies can be saved explicitly. To import an existing proxy, select
+its source network and paste the proxy address; the source manager's
+`authorizedProxies` registry supplies its destination automatically. The lookup
+checks the destination network, computed proxy address, and deployed code before
+preparing a call. Invalid addresses or failed lookups prevent call preparation;
+older lookup responses cannot replace a newer input. Saving remains explicit
+and verifies the mapping and deployed code without sending a transaction.
+Removing a saved row only clears
 its browser entry; removing the selected proxy also clears the call form.
 The saved-proxy table pairs the origin-network logo with its proxy address,
 then an arrow separates the destination-network logo and destination address.

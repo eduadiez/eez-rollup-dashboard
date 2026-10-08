@@ -10,6 +10,7 @@ async function fixture(browser,options={}){
  const context=await browser.newContext(), page=await context.newPage();
  const requests=[],errors=[],receipt={value:null},estimation={error:null,delay:false,pending:[]};
  const verification={codeError:options.codeError??false,missing:false,mismatch:false},deployed=new Set(),deploying=new Set();
+ const proxyLookup={rollupId:null,malformed:false,delay:false,pending:[]};
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.addInitScript(({account,hash,forward,reverse})=>{
   if(!localStorage.getItem('crossChainFixture')){
@@ -48,6 +49,13 @@ async function fixture(browser,options={}){
    assert.equal(params[0].to,l1?registry:manager);assert.equal(BigInt('0x'+params[0].data.slice(-64)),l1?1n:0n);
    const destination='0x'+params[0].data.slice(34,74);result='0x'+(verification.mismatch?addr('ee'):proxyFor(destination,l1)).slice(2).padStart(64,'0');
   }
+  if(method==='eth_call'&&params[0].data.startsWith('0x360d95b6')){
+   assert.equal(params[0].to,l1?registry:manager,'proxy metadata must come from the source manager');
+   const proxy='0x'+params[0].data.slice(-40);
+   const destination=Object.entries(l1?forward:reverse).find(([,value])=>value.toLowerCase()===proxy.toLowerCase())?.[0];
+   result=proxyLookup.malformed?'0x1234':'0x'+[destination?'1':'0',(destination||addr('00')).slice(2),(proxyLookup.rollupId??(l1?1n:0n)).toString(16)].map(value=>value.padStart(64,'0')).join('');
+   if(proxyLookup.delay)await new Promise(resolve=>proxyLookup.pending.push(resolve));
+  }
   if(method==='eth_getCode'){
    if(verification.codeError)return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32000,message:'Read RPC temporarily unavailable'}}});
    result=!verification.missing&&([...Object.values(forward),...Object.values(reverse)].includes(params[0])||deployed.has(params[0]))?'0x6000':'0x';
@@ -81,7 +89,7 @@ async function fixture(browser,options={}){
   await dialog.getByRole('heading',{name:'Waiting for confirmation',exact:true}).waitFor();
   await dialog.getByRole('status').getByText(`Your ${creation?'proxy creation':'cross-chain call'} is pending on ${network}.`,{exact:true}).waitFor();
  };
- return {page,context,panel,select,send,requests,errors,receipt,estimation,verification,dialog,waitPending};
+ return {page,context,panel,select,send,requests,errors,receipt,estimation,verification,proxyLookup,dialog,waitPending};
 }
 async function until(condition, message) {
  const deadline=Date.now()+5000;
@@ -254,16 +262,16 @@ async function until(condition, message) {
    await f.panel.getByRole('button',{name:`Selected proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).waitFor();
    assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
    await f.panel.getByText('Use an existing proxy address',{exact:true}).click();
-   const importInput=f.panel.getByLabel('Proxy address',{exact:false});await importInput.fill(addr('ee'));await save.click();
-   await f.panel.getByRole('alert').filter({hasText:'Saved proxy does not match the registry address'}).waitFor();
+   const importInput=f.panel.getByLabel('Proxy address',{exact:false});await importInput.fill(addr('ee'));
+   await f.panel.getByRole('alert').filter({hasText:'not a registered cross-chain proxy'}).waitFor();assert(await save.isDisabled());
    assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
-   f.verification.missing=true;await importInput.fill(back?reverse[target]:forward[target]);await save.click();
+   f.verification.missing=true;await importInput.fill(back?reverse[target]:forward[target]);
    await f.panel.getByRole('alert').filter({hasText:`Proxy is not deployed on ${back?'L2':'L1'}`}).waitFor();f.verification.missing=false;
-   f.verification.codeError=true;await save.click();
+   f.verification.codeError=true;await f.panel.getByRole('button',{name:'Retry lookup',exact:true}).click();
    await f.panel.getByRole('alert').filter({hasText:'Read RPC temporarily unavailable'}).waitFor();
    assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
    f.verification.codeError=false;
-   await save.click();await f.panel.getByText('Saved',{exact:true}).waitFor();
+   await f.panel.getByRole('button',{name:'Retry lookup',exact:true}).click();await f.panel.getByText('Saved',{exact:true}).waitFor();
    await f.panel.getByRole('button',{name:`Remove saved proxy for ${eoa} on ${back?'L2':'L1'}`,exact:true}).click();
    assert.equal(await f.panel.getByRole('button',{name:`Selected proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).getAttribute('aria-pressed'),'true','removing another row preserves selection');
    assert.equal(await f.send.count(),1);
@@ -293,6 +301,49 @@ async function until(condition, message) {
    await f.panel.getByRole('button',{name:'Hide address',exact:true}).click();assert.equal(await input.isVisible(),false);
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
-  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,transactionPopups:true,pendingDismissKeepsPolling:true,resultReopens:true,spinnerAnimates:true,proxySaveAndRemove:true,invalidImportsRejected:true,sourceAndDestinationAddresses:true,gasCollapsedByDefault:true,recentAddressesNotClipped:true,responsiveWidths:8,transactionsBroadcast:0}));
+  for(const back of [false,true]){
+   const f=await fixture(browser);await f.select(eoa,back);await f.send.click({trial:true});
+   await f.panel.getByRole('button',{name:`Remove saved proxy for ${eoa} on ${back?'L2':'L1'}`,exact:true}).click();
+   await f.panel.getByRole('button',{name:'Add address',exact:true}).click();
+   assert.equal(await f.panel.getByLabel('Destination address',{exact:false}).inputValue(),'');
+   await f.panel.getByRole('button',{name:'Use an existing proxy address',exact:true}).click();
+   assert.equal(await f.panel.getByLabel('Destination address',{exact:false}).count(),0,'proxy-only import does not require a destination field');
+   const proxy=back?reverse[eoa]:forward[eoa],input=f.panel.getByLabel(`Proxy address on ${back?'EEZ-X Devnet':'Chiado'}`,{exact:true});
+   await input.fill(proxy);
+   await f.panel.getByRole('group',{name:'Detected destination',exact:true}).locator(`a[href="https://${back?'l1':'l2'}.invalid/address/${eoa}"]`).waitFor();
+   await f.send.click({trial:true});
+   assert((await f.panel.getByRole('group',{name:'Source proxy',exact:true}).getByRole('link').getAttribute('href')).endsWith('/address/'+proxy));
+   const calls=f.requests.filter(r=>r.method==='eth_call'&&r.params[0].data.startsWith('0x360d95b6'));
+   assert(calls.length);assert(calls.every(r=>r.path===(back?'/rpc/l2':'/rpc/l1')&&r.params[0].to===(back?manager:registry)));
+   await f.panel.getByRole('button',{name:'Save proxy',exact:true}).click();await f.panel.getByText('Saved',{exact:true}).waitFor();
+   assert.equal(await f.page.evaluate(({key,eoa})=>JSON.parse(localStorage.getItem(key))[eoa],{key:back?'crossChainProxiesL2':'crossChainProxies',eoa}),proxy);
+   await f.page.setViewportSize({width:320,height:1080});assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+   await f.panel.locator('[class*="deployInner"]').screenshot({path:'/tmp/eez-proxy-only-import.png'});
+   await f.panel.getByRole('button',{name:`Remove saved proxy for ${eoa} on ${back?'L2':'L1'}`,exact:true}).click();
+   assert.equal(await input.inputValue(),'');assert.equal(await f.send.count(),0);
+   assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  for(const issue of ['wrong-network','malformed','registry-mismatch']){
+   const f=await fixture(browser);await f.panel.getByRole('button',{name:'Add address',exact:true}).click();
+   await f.panel.getByRole('button',{name:'Use an existing proxy address',exact:true}).click();
+   if(issue==='wrong-network')f.proxyLookup.rollupId=2n;if(issue==='malformed')f.proxyLookup.malformed=true;if(issue==='registry-mismatch')f.verification.mismatch=true;
+   await f.panel.getByLabel('Proxy address on Chiado',{exact:true}).fill(forward[eoa]);
+   await f.panel.getByRole('alert').filter({hasText:issue==='wrong-network'?'different network':issue==='malformed'?'invalid response':'does not match the registry'}).waitFor();
+   assert(await f.panel.getByRole('button',{name:'Save proxy',exact:true}).isDisabled());assert.equal(await f.send.count(),0);
+   assert.deepEqual(await f.page.evaluate(()=>JSON.parse(localStorage.getItem('crossChainProxies'))),forward);
+   assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  {
+   const f=await fixture(browser);await f.panel.getByRole('button',{name:'Add address',exact:true}).click();
+   await f.panel.getByRole('button',{name:'Use an existing proxy address',exact:true}).click();f.proxyLookup.delay=true;
+   const input=f.panel.getByLabel('Proxy address on Chiado',{exact:true});await input.fill(forward[target]);
+   await until(()=>f.proxyLookup.pending.length===1,'first proxy lookup missing');await input.fill(forward[eoa]);
+   await until(()=>f.proxyLookup.pending.length===2,'second proxy lookup missing');f.proxyLookup.delay=false;
+   f.proxyLookup.pending[1]();await f.panel.getByRole('group',{name:'Detected destination',exact:true}).getByRole('link').waitFor();f.proxyLookup.pending[0]();
+   await f.page.waitForTimeout(100);
+   assert((await f.panel.getByRole('group',{name:'Detected destination',exact:true}).getByRole('link').getAttribute('href')).endsWith('/address/'+eoa),'old lookup cannot overwrite the new destination');
+   assert.equal(await input.inputValue(),forward[eoa]);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,transactionPopups:true,pendingDismissKeepsPolling:true,resultReopens:true,spinnerAnimates:true,proxySaveAndRemove:true,invalidImportsRejected:true,proxyOnlyImport:true,sourceRegistryMetadata:true,wrongNetworkImportsRejected:true,staleLookupsIgnored:true,sourceAndDestinationAddresses:true,gasCollapsedByDefault:true,recentAddressesNotClipped:true,responsiveWidths:8,transactionsBroadcast:0}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
