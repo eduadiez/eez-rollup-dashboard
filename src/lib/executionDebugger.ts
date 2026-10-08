@@ -312,6 +312,18 @@ export type LiveBatchHistory = {
 };
 export const LIVE_BATCH_LIMIT = 50;
 
+export async function inspectPostedBatch(batch: LiveBatch, rpc: Rpc = debugRequest): Promise<DebugContext> {
+  // Some L1 nodes retain block bodies and receipts after pruning their hash
+  // lookup index. A posting log supplies the exact block and transaction hash.
+  const block = await fetchDebugBlock("l1", batch.blockHash, rpc);
+  if (!same(block.hash, batch.blockHash) || BigInt(block.number) !== BigInt(batch.blockNumber)) {
+    throw new Error("Batch block changed; retrying inspection");
+  }
+  const selected = block.transactions.find(tx => same(tx.tx.hash, batch.transactionHash));
+  if (!selected) throw new Error("Posted transaction is missing from its block; retrying inspection");
+  return withCounterpart(block, selected, rpc, true);
+}
+
 // Read compact posting logs, rather than hydrating thousands of L2 blocks on
 // every poll. Selecting a post loads its exact receipts and settlement range.
 export async function fetchLiveBatchHistory(previous: LiveBatchHistory | null = null, rpc: Rpc = debugRequest): Promise<LiveBatchHistory> {

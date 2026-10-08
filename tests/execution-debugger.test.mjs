@@ -10,7 +10,7 @@ globalThis.window = { location: { search: '', origin: 'http://test.invalid' } };
 const { setConfig } = await import('../src/config.ts');
 const { eezL1Abi, eezL2Abi } = await import('../src/abi/eez.ts');
 const { decodeDebugLog, decodeDebugPayload, decodeRevert, inspectDebugTransaction, inspectDebugBlock,
-  relatedTransactions, transactionHashes, fetchDebugTrace, loadMoreDebugBlocks, managerAddress, fetchLiveBatchHistory } = await import('../src/lib/executionDebugger.ts');
+  relatedTransactions, transactionHashes, fetchDebugTrace, loadMoreDebugBlocks, managerAddress, fetchLiveBatchHistory, inspectPostedBatch } = await import('../src/lib/executionDebugger.ts');
 
 const hash = byte => '0x' + byte.repeat(32);
 const address = byte => '0x' + byte.repeat(20);
@@ -399,6 +399,31 @@ test('batch settlement status refreshes from indexed to finalized without discar
 
 const { buildExecutionPairs, compareExecution, eventCallHash, executionPlans, firstFailurePath, flattenTrace, inspectionHash, summarizeBatch, txKey } = await import('../src/lib/executionAnalysis.ts');
 const { decodeTraceCall, getExecutionAbi } = await import('../src/lib/executionAbi.ts');
+test('precompile ABI lookup never contacts an explorer on either chain', async () => {
+  const originalFetch = globalThis.fetch;
+  setConfig({ l1Explorer: 'https://abi-test.invalid', l2ExplorerApi: 'https://abi-test.invalid/l2' });
+  globalThis.fetch = async () => { throw new Error('precompiles must not request a contract ABI'); };
+  try {
+    for (const chain of ['l1', 'l2']) for (const value of [1, 2, 9, 10, 17, 256]) {
+      assert.equal(await getExecutionAbi(chain, '0x' + value.toString(16).padStart(40, '0')), null);
+    }
+  } finally { globalThis.fetch = originalFetch; setConfig({ l1Explorer: '', l2ExplorerApi: '' }); }
+});
+
+test('posted batch inspection uses log block evidence when the transaction hash index is missing', async () => {
+  const state = node();
+  const rpc = (url, method, params) => {
+    assert.notEqual(method, 'eth_getTransactionByHash');
+    return state.rpc(url, method, params);
+  };
+  const batch = { transactionHash: l1TxHash, blockHash: l1Hash, blockNumber: '0x64' };
+  const context = await inspectPostedBatch(batch, rpc);
+  assert.equal(context.selected.tx.hash, l1TxHash);
+  assert.equal(context.selected.chain, 'l1');
+  assert.equal(context.sourceBlock.hash, l1Hash);
+  await assert.rejects(inspectPostedBatch({ ...batch, transactionHash: hash('ff') }, rpc), /missing from its block/);
+  await assert.rejects(inspectPostedBatch({ ...batch, blockNumber: '0x65' }, rpc), /Batch block changed/);
+});
 const analysisEvent = (name, args) => ({ name, args, protocol: true, raw: l1Consumed });
 const analysisTx = (chain, entries, events = [], opts = {}) => ({ chain, tx: { ...(chain === 'l1' ? l1Tx : l2Tx), ...opts.tx }, receipt: { status: '0x1', logs: [], gasUsed: '0x1', ...opts.receipt }, payload: entries === null ? null : { method: opts.method ?? 'postAndVerifyBatch', entries, staticEntries: [], args: {}, immediateEntryCount: 0 }, events, warnings: [] });
 const analysisContext = (...txs) => ({ sourceChain: txs[0].chain, selected: txs[0], sourceBlock: { transactions: txs }, blocks: [{ transactions: txs }], settlements: [], warnings: [] });

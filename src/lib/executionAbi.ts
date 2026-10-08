@@ -20,6 +20,12 @@ async function readJson(url: string): Promise<unknown> {
 }
 export function getExecutionAbi(chain: DebugChain, address: string): Promise<ContractAbi | null> {
   if (isDebugManager(chain, address)) return Promise.resolve({ abi: debugAbi(chain), name: chain === "l1" ? "EEZ registry" : "EEZL2" });
+  // Ethereum precompiles have native implementations, not verified Solidity
+  // contracts. Asking Blockscout for their ABI produces predictable 404s.
+  if (/^0x[\da-f]{40}$/i.test(address)) {
+    const number = BigInt(address);
+    if ((number >= 1n && number <= 17n) || number === 256n) return Promise.resolve(null);
+  }
   const base = (chain === "l2" ? config.l2ExplorerApi || config.l2Explorer : config.l1Explorer).replace(/\/$/, "");
   if (!base || !/^0x[\da-f]{40}$/i.test(address)) return Promise.resolve(null);
   const key = `${chain}:${base}:${address.toLowerCase()}`;

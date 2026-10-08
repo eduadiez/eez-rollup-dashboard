@@ -401,6 +401,7 @@ function decodedBlocks(blocks) {
 }
 
 function decodedByteLayout(payload, operation) {
+  const direct = operation.format === "direct-v0";
   const bodyShapes = {
     0: "RLP([blockTxCounts, transactions, l2Entries])",
     1: "RLP([blockTxCounts, transactions, l2Entries, outboundGroupSizes])",
@@ -421,9 +422,9 @@ function decodedByteLayout(payload, operation) {
         <span><b>01</b><small>CloseBlobStream</small></span>
         <span><b>${number(payload.paddingBytes)} B</b><small>zero padding</small></span>
       </div>
-      <p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${number(operation.blockCount)} blocks, ${number(operation.transactionCount)} transactions, and ${number(operation.l2EntryCount)} reconstructed L2 entries.</p>
-      <p><code>ChainOperation.operations</code> ends after that RLP body. Cross-chain information is not hidden inside this RLP: each originating transaction is encoded afterward as its own <code>InitiateCrossChainTransaction … FinishCrossChainTransaction</code> message bracket before the final close marker.</p>
-      <p class="muted">This UI checks canonical RLP lengths, bounds, the expected rollup ID, message order, RLP shape, and block positions. Tag-3 transaction bytes are displayed without validating their signatures or transaction schemas. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
+      ${direct ? `<p>The operation starts with version <code>0x00</code>, followed by the block count, transaction-count tokens, beneficiary runs, extra-data runs, transaction lengths, and exact signed transaction bytes. This batch covers ${number(operation.blockCount)} blocks and ${number(operation.transactionCount)} pure L2 transactions. Entries and cross-chain execution are reconstructed from the native semantic stream.</p>` : `<p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${number(operation.blockCount)} blocks, ${number(operation.transactionCount)} transactions, and ${number(operation.l2EntryCount)} reconstructed L2 entries.</p>`}
+      <p><code>ChainOperation.operations</code> ends after ${direct ? "those columns" : "that RLP body"}. Each originating cross-chain transaction is encoded afterward as its own <code>InitiateCrossChainTransaction … FinishCrossChainTransaction</code> message bracket before the final close marker.</p>
+      <p class="muted">This UI checks bounded parsing, ${direct ? "canonical count tokens and metadata coverage" : "canonical RLP lengths and shape"}, the expected rollup ID, and message order. Signed transaction bytes are displayed without validating their signatures or transaction schemas. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
     </div>
   </details>`;
 }
@@ -576,11 +577,12 @@ function renderDecoded(payload) {
       <div><dt>Rollup</dt><dd>${number(payload.chainOperation?.chainId)}${payload.registryAddress ? ` · ${explorerLink(l1Explorer, `address/${payload.registryAddress}`, compactHash(payload.registryAddress), "mono explorer-value", payload.registryAddress)}` : ""}</dd></div>
       <div><dt>Payload</dt><dd>tag ${number(operation.tag)} · ${h(operation.format)}</dd></div>
       <div><dt>Blocks / txs</dt><dd>${number(operation.blockCount)} / ${number(operation.transactionCount)}</dd></div>
-      <div><dt>L2 entries</dt><dd>${number(operation.l2EntryCount)}</dd></div>
+      <div><dt>L2 entries</dt><dd>${operation.format === "direct-v0" ? "Reconstructed during execution" : number(operation.l2EntryCount)}</dd></div>
       <div><dt>Semantic txs / calls</dt><dd>${number(payload.semanticTransactions?.length || 0)} / ${number((payload.semanticTransactions || []).reduce((total, transaction) => total + (transaction.callCount || 0), 0))}</dd></div>
       <div><dt>Stream use</dt><dd>${number(payload.usedStreamBytes)} / ${number(payload.logicalCapacityBytes)} bytes</dd></div>
     </dl>
     ${operation.tag === 3 ? `<p>Profile ${number(operation.profileId)} covers L2 #${number(operation.firstBlockNumber)}–#${number(operation.terminalBlockNumber)}: ${number(operation.derivedBlockCount)} derived ordinary blocks, including ${number(operation.implicitEmptyBlockCount)} implicit empty blocks. The table shows only full blocks carried in the payload. Derived state roots and block hashes require execution replay.</p>` : ""}
+    ${operation.format === "direct-v0" ? `<p>Direct V0 carries ${number(operation.implicitEmptyBlockCount)} empty ordinary prefixes in sparse count runs. Block headers, state roots, and cross-chain entries require execution replay.</p><div class="table-scroll compact-table"><table><thead><tr><th>Position</th><th>Blocks</th><th>Pure L2 transactions per block</th></tr></thead><tbody>${(operation.countRuns || []).map(run => `<tr><td>${number(run.position)}</td><td>${number(run.blocks)}</td><td>${number(run.transactionsPerBlock)}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${decodedBlocks(operation.blocks)}
     ${decodedSemantics(payload)}
     ${decodedByteLayout(payload, operation)}

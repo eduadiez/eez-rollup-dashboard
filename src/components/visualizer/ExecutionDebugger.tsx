@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchLiveBatchHistory, fetchDebugTrace, inspectDebugBlock, inspectDebugTransaction,
+  fetchLiveBatchHistory, fetchDebugTrace, inspectDebugBlock, inspectDebugTransaction, inspectPostedBatch,
   jsonDebug, loadMoreDebugBlocks, quantity, relatedTransactions, settlementRange, transactionHashes,
   type CallTrace, type DebugChain, type DebugContext, type DebugTransaction, type LiveBatch, type LiveBatchHistory,
 } from "../../lib/executionDebugger";
@@ -44,6 +44,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   const [liveLoading, setLiveLoading] = useState(false);
   const historyRef = useRef<LiveBatchHistory | null>(null);
   const liveSelection = useRef<string | null>(initialBatch ?? null);
+  const initialLiveBatch = useRef(initialBatch && initialMode !== "debug" && initialMode !== "explorer" ? initialBatch : null);
   const [updated, setUpdated] = useState<Date | null>(null);
   const [traces, setTraces] = useState<Record<string, CallTrace>>({});
   const traceRequests = useRef(new Map<string, Promise<CallTrace>>());
@@ -84,7 +85,8 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
     if (cached) return cached;
     let pending = batchRequests.current.get(key);
     if (!pending) {
-      pending = inspectDebugTransaction(hash, "l1", undefined, true);
+      const batch = historyRef.current?.batches.find(item => item.transactionHash.toLowerCase() === key);
+      pending = batch ? inspectPostedBatch(batch) : inspectDebugTransaction(hash, "l1", undefined, true);
       batchRequests.current.set(key, pending);
     }
     try { return await pending; }
@@ -192,7 +194,9 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
       const side = initialChain === "l1" || initialChain === "l2" ? initialChain : "auto";
       setChain(side); void load("debug", side, initialDebugHash, initialCounterpart ?? "");
     } else if (initialBatch) {
-      void load("debug", "l1", initialBatch, "", true);
+      // Live links wait for posting logs so a pruned transaction-hash index
+      // does not prevent inspection of a retained block and receipt.
+      if (!initialLiveBatch.current) void load("debug", "l1", initialBatch, "", true);
     } else if (initialBlock) {
       const side = initialChain === "l2" ? "l2" : "l1";
       setMode("explorer"); setQuery(initialBlock); setChain(side); void load("explorer", side, initialBlock);
@@ -224,7 +228,10 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
           const range = cached.settlements[0] ? settlementRange(cached.settlements[0]) : undefined;
           if (!batch || batch.canonicalL2 === false || cached.sourceBlock?.hash !== batch.blockHash || range?.last !== batch.l2Range?.last || range?.first !== batch.l2Range?.first) contextCache.current.delete(hash);
         } setUpdated(new Date()); setLiveError(null);
-        if (!liveSelection.current && result.batches.length) {
+        if (initialLiveBatch.current) {
+          const hash = initialLiveBatch.current; initialLiveBatch.current = null;
+          void load("debug", "l1", hash, "", true);
+        } else if (!liveSelection.current && result.batches.length) {
           liveSelection.current = result.batches[0]!.transactionHash;
           void load("debug", "l1", liveSelection.current, "", true);
         }
@@ -247,6 +254,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   };
   const switchMode = (next: Mode) => {
     if (next === mode) return;
+    initialLiveBatch.current = null;
     liveSelection.current = null; request.current++; entryLoader.current.enabled = false; setSource({ chain: "auto", value: "", counterpart: "" }); setFocused(null); setStep(0); setMode(next); setError(null); setLoading(false); setContext(null); setSelected(null); setQuery(""); setCounterpart("");
     if (next === "explorer" && chain === "auto") setChain("l1");
     window.history.replaceState(null, "", `#/visualizer?mode=${next}`);

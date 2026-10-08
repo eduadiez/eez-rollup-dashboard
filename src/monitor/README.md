@@ -293,6 +293,16 @@ targeting the configured registry, requires its Blobscan blob set to match L1,
 and enforces the current rollup ID and codec bounds. Arbitrary JSON-RPC methods
 are intentionally not exposed.
 
+Current RollupX ChainOperation bytes use the direct V0 columnar codec from
+`eez-payload-codec/src/v0.rs`: block count, canonical count tokens, maximal
+beneficiary/extra-data runs, transaction lengths, and signed transaction bytes.
+The structural decoder retains sparse runs even for a u32-max empty span;
+it never allocates by the declared block count. It checks column coverage,
+canonical varints, bounded transaction envelopes, and exact payload consumption.
+Signature/transaction-schema validation and reconstruction of headers, state
+roots, and L2 entries remain protocol responsibilities. Historical tagged RLP
+captures remain readable; direct V0 is attempted first for version-0 operations.
+
 ## Security and evidence boundary
 
 The service runs as an unprivileged user with a read-only filesystem, all Linux
