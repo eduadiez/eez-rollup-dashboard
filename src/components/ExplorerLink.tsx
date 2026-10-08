@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { config } from "../config";
-import { lookupAddress } from "../lib/addressBook";
+import { lookupAddressForChain } from "../lib/addressBook";
 import elStyles from "./ExplorerLink.module.css";
 
 interface Props {
@@ -22,7 +22,7 @@ export function ExplorerLink({ value, type = "address", chain = "l2", short = tr
   const explorer = chain === "l1" ? config.l1Explorer : config.l2Explorer;
 
   // Resolve display text: explicit label > address book > truncated/full hex
-  const knownName = !label && type === "address" ? lookupAddress(value) : undefined;
+  const knownName = !label && type === "address" ? lookupAddressForChain(value, chain) : undefined;
   const display = label
     ? label
     : knownName

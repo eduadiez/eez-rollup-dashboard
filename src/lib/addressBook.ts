@@ -8,17 +8,17 @@ const book = new Map<string, { label: string; chain?: "l1" | "l2" }>();
 /** Register a known address. */
 export function registerAddress(address: string, label: string, chain?: "l1" | "l2") {
   if (!address) return;
-  book.set(address.toLowerCase(), { label, chain });
+  book.set(`${chain || "any"}:${address.toLowerCase()}`, { label, chain });
 }
 
 /** Look up a label for an address. Returns undefined if unknown. */
 export function lookupAddress(address: string): string | undefined {
-  return book.get(address.toLowerCase())?.label;
+  return lookupAddressForChain(address) || book.get(`l1:${address.toLowerCase()}`)?.label || book.get(`l2:${address.toLowerCase()}`)?.label;
 }
 
 /** Look up with chain context. */
-export function lookupAddressForChain(address: string, _chain?: "l1" | "l2"): string | undefined {
-  return book.get(address.toLowerCase())?.label;
+export function lookupAddressForChain(address: string, chain?: "l1" | "l2"): string | undefined {
+  return (chain ? book.get(`${chain}:${address.toLowerCase()}`)?.label : undefined) || book.get(`any:${address.toLowerCase()}`)?.label;
 }
 
 // ─── Hardcoded well-known dev accounts ───

@@ -5,7 +5,8 @@ import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
 import { useDashboard } from "./hooks/useDashboard";
 import { useCounter } from "./hooks/useCounter";
-import { useCrossChain } from "./hooks/useCrossChain";
+import { useCrossChain, crossChainRoute, type CrossChainDirection } from "./hooks/useCrossChain";
+import { lookupAddressForChain } from "./lib/addressBook";
 import { useBridge } from "./hooks/useBridge";
 import { useTxHistory } from "./hooks/useTxHistory";
 import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
@@ -68,8 +69,9 @@ export function App() {
   const wallet = useWallet(log, configLoaded);
   const { l2 } = useDashboard();
   const counter = useCounter(log, wallet.sendTx);
-  const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
-  const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
+  const crossChainOptions = { sendL2Tx: wallet.sendTx, sendL2ProxyTx: wallet.sendL2ProxyTx, senderAddress: wallet.address, ready: configLoaded };
+  const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
+  const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
 
   const txHistory = useTxHistory();
@@ -80,14 +82,20 @@ export function App() {
     const direction = chain === "l1" ? "l1-to-l2" : "l2-to-l1";
     if (switched && ["idle", "confirmed", "failed"].includes(latestBridgeState.current.phase)
         && direction !== latestBridgeState.current.direction) bridgeHook.setDirection(direction);
+    return switched;
   };
 
   // Dashboard tab hooks
   const [genericTargetAddr, setGenericTargetAddr] = useState<string>(() => {
     return getHashParam("target") || "";
   });
-  const blockscoutAbi = useBlockscoutAbi(genericTargetAddr);
-  const recentAddrs = useRecentAddresses();
+  const [genericDirection, setGenericDirection] = useState<CrossChainDirection>("l1-to-l2");
+  const [selectingProxy, setSelectingProxy] = useState(false);
+  const proxySelectionPending = useRef(false);
+  const [proxySelectionError, setProxySelectionError] = useState<string | null>(null);
+  const destinationChain = crossChainRoute(genericDirection).destination;
+  const blockscoutAbi = useBlockscoutAbi(genericTargetAddr, destinationChain);
+  const recentAddrs = useRecentAddresses(destinationChain);
 
   const [view, setView] = useState(getInitialView);
   const [visualizerRoute, setVisualizerRoute] = useState(() => window.location.hash);
@@ -168,7 +176,7 @@ export function App() {
   const prevCCGenPhase = useRef(crossChainGeneric.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress } = crossChainGeneric.state;
+    const { phase, txHash, targetAddress, direction } = crossChainGeneric.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -178,11 +186,11 @@ export function App() {
       const label =
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
-          : `Call → ${targetAddress.slice(0, 10)}...`;
-      ccGenTxRef.current = txHistory.addTx(type, label, null, phase === "sending" ? "l1-to-l2" : undefined);
+          : `Call → ${lookupAddressForChain(targetAddress, crossChainRoute(direction).destination) || targetAddress.slice(0, 10) + "…"}`;
+      ccGenTxRef.current = txHistory.addTx(type, label, null, direction);
     }
 
-    if (txHash && ccGenTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
+    if (txHash && ccGenTxRef.current && (phase === "proxy-pending" || phase === "l1-pending" || phase === "l2-pending")) {
       txHistory.updateTx(ccGenTxRef.current, { hash: txHash });
     }
 
@@ -231,21 +239,38 @@ export function App() {
   }, [bridgeHook.state.phase, bridgeHook.state.txHash]);
 
   // Track auto-detected proxy from ProxyDeploySection (on-chain but not in localStorage)
-  const [autoDetectedProxy, setAutoDetectedProxy] = useState<string | null>(null);
+  const [autoDetectedProxy, setAutoDetectedProxy] = useState<{ address: string; target: string; direction: CrossChainDirection } | null>(null);
+  const handleProxyDetected = useCallback((address: string | null, target: string, direction: CrossChainDirection) => {
+    setAutoDetectedProxy(address ? { address, target, direction } : null);
+  }, []);
 
   // Effective proxy: saved (localStorage) takes priority, then auto-detected (on-chain)
   const savedProxy = genericTargetAddr
-    ? crossChainGeneric.getProxy(genericTargetAddr)
+    ? crossChainGeneric.getProxy(genericTargetAddr, genericDirection)
     : null;
-  const genericProxy = savedProxy || autoDetectedProxy;
+  const genericProxy = savedProxy || (autoDetectedProxy?.target === genericTargetAddr && autoDetectedProxy.direction === genericDirection ? autoDetectedProxy.address : null);
+
+  const selectGenericProxy = async (target: string, direction: CrossChainDirection) => {
+    if (proxySelectionPending.current || !["idle", "confirmed", "failed"].includes(crossChainGeneric.state.phase)) return;
+    proxySelectionPending.current = true;
+    setSelectingProxy(true); setProxySelectionError(null);
+    try {
+      if (wallet.address && !await switchBridgeNetwork(crossChainRoute(direction).source)) {
+        setProxySelectionError("Wallet network switch was cancelled. Your selected proxy has not changed.");
+        return;
+      }
+      crossChainGeneric.reset();
+      setGenericDirection(direction); setGenericTargetAddr(target);
+    } finally { proxySelectionPending.current = false; setSelectingProxy(false); }
+  };
 
   // Wrapper for generic sendCrossChainCall that also saves to recent addresses
   const handleGenericSendCall = useCallback(
     (proxy: string, calldata: string, target?: string, _value?: string, gas?: string) => {
       if (target) recentAddrs.addAddress(target);
-      crossChainGeneric.sendCrossChainCall(proxy, calldata, target, _value, gas);
+      crossChainGeneric.sendCrossChainCall(proxy, calldata, target, _value, gas, genericDirection);
     },
-    [crossChainGeneric, recentAddrs],
+    [crossChainGeneric, recentAddrs, genericDirection],
   );
 
   if (!configLoaded) return null;
@@ -337,25 +362,34 @@ export function App() {
                 <section className={styles.proxyColumn} aria-label="Cross-chain contracts">
                   <div className={styles.workflowHeader}>
                     <h2>Cross-Chain Calls</h2>
-                    <p>Select an L1 proxy to interact with its L2 contract.</p>
+                    <p>Call a contract or address on either network through its proxy.</p>
                   </div>
                   <ProxyDeploySection
                     embedded
+                    direction={genericDirection}
+                    selecting={selectingProxy}
+                    onDirectionChange={direction => { void selectGenericProxy("", direction); }}
+                    onSelectProxy={(target, direction) => { void selectGenericProxy(target, direction); }}
                     state={crossChainGeneric.state}
                     targetAddress={genericTargetAddr}
                     onTargetChange={setGenericTargetAddr}
                     contractName={blockscoutAbi.contractName}
                     recentAddresses={recentAddrs.addresses}
                     savedProxies={crossChainGeneric.savedProxies}
+                    savedL2Proxies={crossChainGeneric.savedL2Proxies}
                     onCreateProxy={crossChainGeneric.createProxy}
                     getProxy={crossChainGeneric.getProxy}
                     onReset={crossChainGeneric.reset}
                     computeProxyAddress={crossChainGeneric.computeProxyAddress}
-                    onProxyDetected={setAutoDetectedProxy}
+                    onProxyDetected={handleProxyDetected}
                   />
+                  {proxySelectionError && <p role="alert">{proxySelectionError}</p>}
 
                   <CrossChainCallBuilder
                     embedded
+                    key={`${genericDirection}:${genericTargetAddr}:${genericProxy}`}
+                    direction={genericDirection}
+                    selecting={selectingProxy}
                     targetAddress={genericTargetAddr}
                     proxyAddress={genericProxy}
                     abi={blockscoutAbi.abi}
@@ -365,7 +399,7 @@ export function App() {
                     crossChainState={crossChainGeneric.state}
                     onSendCall={handleGenericSendCall}
                     onReset={crossChainGeneric.reset}
-                    l2Rpc={config.l2Rpc}
+                    destinationRpc={destinationChain === "l1" ? config.l1Rpc : config.l2Rpc}
                     senderAddress={wallet.address}
                   />
                 </section>

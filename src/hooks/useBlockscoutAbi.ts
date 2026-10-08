@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { config } from "../config";
+import { registerAddress } from "../lib/addressBook";
 
 export interface AbiFunction {
   name: string;
@@ -7,104 +8,46 @@ export interface AbiFunction {
   outputs?: { name: string; type: string }[];
   stateMutability: string;
 }
+interface AbiResult { abi: AbiFunction[] | null; contractName: string | null; loading: boolean; error: string | null; }
+const empty: AbiResult = { abi: null, contractName: null, loading: false, error: null };
+const cache = new Map<string, AbiResult>();
 
-interface AbiResult {
-  abi: AbiFunction[] | null;
-  contractName: string | null;
-  loading: boolean;
-  error: string | null;
-}
-
-interface CacheEntry {
-  abi: AbiFunction[];
-  name: string | null;
-}
-
-export function useBlockscoutAbi(address: string): AbiResult {
-  const [state, setState] = useState<AbiResult>({
-    abi: null,
-    contractName: null,
-    loading: false,
-    error: null,
-  });
-  const cache = useRef<Map<string, CacheEntry>>(new Map());
-
+export function useBlockscoutAbi(address: string, chain: "l1" | "l2" = "l2"): AbiResult {
+  const base = chain === "l1" ? config.l1ExplorerApi : config.l2ExplorerApi;
+  const addr = address.trim().toLowerCase();
+  const key = `${base}:${chain}:${addr}`;
+  const [result, setResult] = useState<{ key: string; value: AbiResult }>({ key: "", value: empty });
   useEffect(() => {
-    const addr = address.trim().toLowerCase();
-    if (!addr || !/^0x[0-9a-f]{40}$/i.test(addr)) {
-      setState({ abi: null, contractName: null, loading: false, error: null });
-      return;
-    }
-
-    // Check cache
-    const cached = cache.current.get(addr);
-    if (cached) {
-      setState({ abi: cached.abi, contractName: cached.name, loading: false, error: null });
-      return;
-    }
-
-    setState({ abi: null, contractName: null, loading: true, error: null });
-
+    if (!base || !/^0x[0-9a-f]{40}$/.test(addr)) { setResult({ key, value: empty }); return; }
+    const cached = cache.get(key);
+    if (cached) { setResult({ key, value: cached }); return; }
+    const controller = new AbortController();
+    setResult({ key, value: { ...empty, loading: true } });
     const timer = setTimeout(async () => {
       try {
-        const base = config.l2ExplorerApi;
-
-        // Fetch ABI
-        const abiRes = await fetch(
-          `${base}/api?module=contract&action=getabi&address=${addr}`
-        );
-        if (!abiRes.ok) throw new Error(`Blockscout returned ${abiRes.status}`);
-        const abiJson = await abiRes.json();
-
-        if (abiJson.status !== "1" || !abiJson.result) {
-          // Not verified or error
-          setState({ abi: null, contractName: null, loading: false, error: null });
-          return;
-        }
-
-        const rawAbi = typeof abiJson.result === "string"
-          ? JSON.parse(abiJson.result)
-          : abiJson.result;
-
-        const functions: AbiFunction[] = rawAbi
-          .filter((item: { type?: string }) => item.type === "function")
-          .map((item: AbiFunction) => ({
-            name: item.name,
-            inputs: item.inputs || [],
-            outputs: item.outputs || [],
-            stateMutability: item.stateMutability || "nonpayable",
-          }));
-
-        // Fetch contract name
-        let contractName: string | null = null;
-        try {
-          const srcRes = await fetch(
-            `${base}/api?module=contract&action=getsourcecode&address=${addr}`
-          );
-          if (srcRes.ok) {
-            const srcJson = await srcRes.json();
-            if (srcJson.status === "1" && srcJson.result?.[0]?.ContractName) {
-              contractName = srcJson.result[0].ContractName;
-            }
-          }
-        } catch {
-          /* contract name is optional */
-        }
-
-        cache.current.set(addr, { abi: functions, name: contractName });
-        setState({ abi: functions, contractName, loading: false, error: null });
-      } catch (e) {
-        setState({
-          abi: null,
-          contractName: null,
-          loading: false,
-          error: (e as Error).message || "Failed to fetch ABI",
-        });
+        const request = async (action: string) => {
+          const response = await fetch(`${base.replace(/\/$/, "")}/api?module=contract&action=${action}&address=${addr}`, { signal: controller.signal });
+          if (!response.ok) throw new Error(`Explorer returned ${response.status}`);
+          return response.json();
+        };
+        const [abiResult, nameResult] = await Promise.allSettled([request("getabi"), request("getsourcecode")]);
+        if (controller.signal.aborted) return;
+        if (abiResult.status === "rejected") throw abiResult.reason;
+        const abiJson = abiResult.value;
+        const rawAbi = abiJson.status === "1" && abiJson.result ? (typeof abiJson.result === "string" ? JSON.parse(abiJson.result) : abiJson.result) : [];
+        const functions: AbiFunction[] = Array.isArray(rawAbi) ? rawAbi.filter(item => item.type === "function").map(item => ({
+          name: item.name, inputs: item.inputs || [], outputs: item.outputs || [], stateMutability: item.stateMutability || "nonpayable",
+        })) : [];
+        const contractName = nameResult.status === "fulfilled" && nameResult.value.status === "1" ? nameResult.value.result?.[0]?.ContractName || null : null;
+        if (contractName) registerAddress(addr, contractName, chain);
+        const value = { abi: functions.length ? functions : null, contractName, loading: false, error: null };
+        cache.set(key, value); setResult({ key, value });
+      } catch (error) {
+        if (!controller.signal.aborted) setResult({ key, value: { ...empty, error: error instanceof Error ? error.message : "Unable to fetch ABI" } });
       }
-    }, 500); // debounce
-
-    return () => clearTimeout(timer);
-  }, [address]);
-
-  return state;
+    }, 300);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [addr, base, chain, key]);
+  // Never expose ABI from the previously selected address or chain, even for the first render.
+  return result.key === key ? result.value : empty;
 }

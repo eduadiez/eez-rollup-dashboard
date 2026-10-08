@@ -174,6 +174,9 @@ export async function estimateBridgeGas(params: {
   return { rawEstimate: gas, gasLimit: gas, method: "direct" };
 }
 
+/** Proxy calls use the same raw Composer estimate and explicit manual-limit policy. */
+export const estimateComposerGas = estimateBridgeGas;
+
 /**
  * Try eth_call to simulate a transaction. If it succeeds, we know the tx
  * won't revert, but we don't get an exact gas figure — use a generous default.

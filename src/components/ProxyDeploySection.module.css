@@ -630,3 +630,14 @@
   .embedded .addrLink { display: block; overflow: hidden; text-overflow: ellipsis; }
   .embedded .selectedRow { box-shadow: inset 3px 0 var(--accent); }
 }
+
+.route, .directionButton { display: flex; align-items: center; gap: 6px; }
+.route img, .directionButton img { width: 18px; height: 22px; object-fit: contain; }
+.directionSelector { display: flex; gap: 8px; margin-bottom: 16px; }
+.directionButton { border: 1px solid var(--border); border-radius: 100px; padding: 8px 14px; background: transparent; color: var(--text-dim); cursor: pointer; }
+.directionActive { border-color: var(--accent); background: var(--accent-dim); color: var(--text-bright); }
+.directionButton:disabled, .callBtn:disabled, .deployToggle:disabled { opacity: .55; cursor: default; }
+@media (max-width: 640px) {
+  .embedded .td:first-child::before { content: 'Destination'; }
+  .embedded .td:nth-child(2)::before { content: 'Proxy'; }
+}

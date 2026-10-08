@@ -1,531 +1,194 @@
 import { useCallback, useEffect, useState } from "react";
 import { config, ESTIMATION_SENDER } from "../config";
 import { rpcCall } from "../rpc";
-import { estimateGas, estimateCrossChainGas, gasToHex } from "../lib/gasEstimation";
+import { estimateGas, estimateComposerGas, gasToHex } from "../lib/gasEstimation";
 
-type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
-type SendL1Tx = (params: Record<string, string>) => Promise<string>;
-type SendL1ProxyTx = (params: Record<string, string>) => Promise<string>;
-
-export type CrossChainPhase =
-  | "idle"
-  | "creating-proxy"
-  | "proxy-pending"
-  | "sending"
-  | "l1-pending"
-  | "confirmed"
-  | "failed";
-
+export type CrossChainDirection = "l1-to-l2" | "l2-to-l1";
+export type CrossChainPhase = "idle" | "creating-proxy" | "proxy-pending" | "sending" | "l1-pending" | "l2-pending" | "confirmed" | "failed";
 export interface CrossChainState {
   phase: CrossChainPhase;
+  direction: CrossChainDirection;
   proxyAddress: string;
   targetAddress: string;
   calldata: string;
   txHash: string | null;
   error: string | null;
 }
+type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
+type Sender = (params: Record<string, string>) => Promise<string>;
+const IDLE: CrossChainState = { phase: "idle", direction: "l1-to-l2", proxyAddress: "", targetAddress: "", calldata: "", txHash: null, error: null };
+const storageKey = (direction: CrossChainDirection) => direction === "l1-to-l2" ? "crossChainProxies" : "crossChainProxiesL2";
+const validAddress = (address: string) => /^0x[0-9a-fA-F]{40}$/.test(address);
 
-const IDLE: CrossChainState = {
-  phase: "idle",
-  proxyAddress: "",
-  targetAddress: "",
-  calldata: "",
-  txHash: null,
-  error: null,
-};
-
-/** ABI selectors for Rollups contract */
-const ROLLUPS_ABI = {
-  // Current EEZBase uses uint64 rollup IDs.
-  createProxy: "0xa7587c62",
-  computeProxy: "0xeb20c0aa",
-};
-
-/** Encode address + uint256 as ABI params */
-function encodeAddressUint(addr: string, num: string): string {
-  const a = addr.toLowerCase().replace("0x", "").padStart(64, "0");
-  const n = parseInt(num).toString(16).padStart(64, "0");
-  return a + n;
+export function crossChainRoute(direction: CrossChainDirection) {
+  const forward = direction === "l1-to-l2";
+  return {
+    source: forward ? "l1" as const : "l2" as const,
+    destination: forward ? "l2" as const : "l1" as const,
+    rpc: forward ? config.l1Rpc : config.l2Rpc,
+    composerRpc: forward ? config.l1ProxyRpc : config.l2ProxyRpc,
+    manager: forward ? config.rollupsAddress : config.ccmL2Address,
+    remoteRollupId: forward ? config.rollupId : "0",
+  };
 }
-
-interface TxReceipt {
-  status?: string;
-  gasUsed?: string;
-  logs?: unknown[];
-  revertReason?: string;
-}
-
-/** Try to get a revert reason by replaying the tx via eth_call */
-async function fetchRevertReason(rpcUrl: string, txHash: string): Promise<string> {
+function loadProxies(direction: CrossChainDirection): Record<string, string> {
   try {
-    // Get the original tx params
-    const tx = (await rpcCall(rpcUrl, "eth_getTransactionByHash", [txHash])) as {
-      from?: string;
-      to?: string;
-      data?: string;
-      input?: string;
-      value?: string;
-      blockNumber?: string;
-    } | null;
-    if (!tx?.to) return "";
-
-    // Replay via eth_call at the block it was mined in
-    const result = (await rpcCall(rpcUrl, "eth_call", [
-      { from: tx.from, to: tx.to, data: tx.input || tx.data, value: tx.value },
-      tx.blockNumber || "latest",
-    ])) as string;
-    return result || "";
-  } catch (e) {
-    // The error message from eth_call often contains the revert reason
-    const msg = (e as Error).message || "";
-    // Try to extract revert string from common formats
-    const match = msg.match(/revert(?:ed)?:?\s*(.*)/i) || msg.match(/reason:\s*(.*)/i);
-    if (match?.[1]) return match[1].trim();
-    // Return raw error if short enough
-    if (msg.length < 200) return msg;
-    return "Reverted (reason unknown)";
-  }
+    const parsed = JSON.parse(localStorage.getItem(storageKey(direction)) || "{}");
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") return {};
+    return Object.fromEntries(Object.entries(parsed).filter(([target, proxy]) => validAddress(target) && typeof proxy === "string" && validAddress(proxy))
+      .map(([target, proxy]) => [target.toLowerCase(), proxy as string]));
+  } catch { return {}; }
+}
+function encodeTarget(address: string, rollupId: string) {
+  return address.slice(2).toLowerCase().padStart(64, "0") + BigInt(rollupId).toString(16).padStart(64, "0");
 }
 
-export function useCrossChain(log: Logger, sendL1Tx: SendL1Tx, sendL1ProxyTx: SendL1ProxyTx) {
+export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Sender, options?: {
+  sendL2Tx: Sender; sendL2ProxyTx: Sender; senderAddress: string | null; ready?: boolean;
+}) {
   const [state, setState] = useState<CrossChainState>(IDLE);
-  const [savedProxies, setSavedProxies] = useState<
-    Record<string, string>
-  >(() => {
-    try {
-      return JSON.parse(localStorage.getItem("crossChainProxies") || "{}") as Record<string, string>;
-    } catch {
-      return {};
-    }
-  });
+  const [savedProxies, setSavedProxies] = useState(() => loadProxies("l1-to-l2"));
+  const [savedL2Proxies, setSavedL2Proxies] = useState(() => loadProxies("l2-to-l1"));
+  const sendL2Tx = options?.sendL2Tx;
+  const sendL2ProxyTx = options?.sendL2ProxyTx;
+  const sender = options?.senderAddress || ESTIMATION_SENDER;
+  const ready = options?.ready ?? true;
 
-  // On mount, prune cached proxies that no longer have code on L1
-  // (e.g. after chain wipe / fresh deploy)
+  // Preserve the existing chain-reset cleanup, scoped to each source network.
+  // A failed RPC check must never erase a user's saved mapping.
   useEffect(() => {
-    (async () => {
-      const entries = Object.entries(savedProxies);
-      if (entries.length === 0) return;
-      const valid: Record<string, string> = {};
-      for (const [target, proxy] of entries) {
+    if (!ready) return;
+    let cancelled = false;
+    for (const direction of ["l1-to-l2", "l2-to-l1"] as const) void (async () => {
+      const missing: [string, string][] = [];
+      for (const [target, proxy] of Object.entries(loadProxies(direction))) {
         try {
-          const code = (await rpcCall(config.l1Rpc, "eth_getCode", [
-            proxy,
-            "latest",
-          ])) as string;
-          if (code && code !== "0x" && code !== "0x0") {
-            valid[target] = proxy;
-          }
-        } catch {
-          /* skip */
-        }
+          const code = await rpcCall(crossChainRoute(direction).rpc, "eth_getCode", [proxy, "latest"]);
+          if (code === "0x" || code === "0x0") missing.push([target, proxy]);
+        } catch { /* Keep the mapping until an on-chain absence is confirmed. */ }
+        if (cancelled) return;
       }
-      if (Object.keys(valid).length !== entries.length) {
-        setSavedProxies(valid);
-        localStorage.setItem("crossChainProxies", JSON.stringify(valid));
-      }
+      if (!missing.length) return;
+      const next = loadProxies(direction);
+      for (const [target, proxy] of missing) if (next[target] === proxy) delete next[target];
+      localStorage.setItem(storageKey(direction), JSON.stringify(next));
+      (direction === "l1-to-l2" ? setSavedProxies : setSavedL2Proxies)(next);
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { cancelled = true; };
+  }, [ready]);
 
-  /** Compute the deterministic proxy address for a given L2 target */
-  const computeProxyAddress = useCallback(
-    async (targetAddr: string): Promise<string | null> => {
-      if (!config.rollupsAddress || !config.rollupId) return null;
+  const saveProxy = useCallback((target: string, proxy: string, direction: CrossChainDirection) => {
+    if (!validAddress(proxy)) return;
+    // Read storage fresh so the demo and generic hook instances do not overwrite each other's proxies.
+    const next = { ...loadProxies(direction), [target.toLowerCase()]: proxy };
+    localStorage.setItem(storageKey(direction), JSON.stringify(next));
+    (direction === "l1-to-l2" ? setSavedProxies : setSavedL2Proxies)(next);
+  }, []);
 
+  const getProxy = useCallback((target: string, direction: CrossChainDirection = "l1-to-l2") => {
+    const cached = direction === "l1-to-l2" ? savedProxies : savedL2Proxies;
+    return loadProxies(direction)[target.toLowerCase()] || cached[target.toLowerCase()] || null;
+  }, [savedProxies, savedL2Proxies]);
+
+  const computeProxyAddress = useCallback(async (target: string, direction: CrossChainDirection = "l1-to-l2"): Promise<string | null> => {
+    const route = crossChainRoute(direction);
+    if (!validAddress(target) || !route.manager || !route.remoteRollupId) return null;
+    const result = await rpcCall(route.rpc, "eth_call", [{ to: route.manager,
+      data: "0xeb20c0aa" + encodeTarget(target, route.remoteRollupId) }, "latest"]);
+    if (typeof result !== "string" || !/^0x[0-9a-f]{64}$/i.test(result)) return null;
+    const address = "0x" + result.slice(-40);
+    return BigInt(address) === 0n ? null : address;
+  }, []);
+
+  const finish = useCallback((transaction: CrossChainState) => {
+    setState(transaction);
+    if (transaction.phase === "confirmed") setTimeout(() => setState(current => current === transaction ? IDLE : current), 5000);
+  }, []);
+
+  const waitForReceipt = useCallback(async (transaction: CrossChainState) => {
+    const route = crossChainRoute(transaction.direction);
+    // Composer returns a hash before the batch is posted. Allow both source chains time to mine it.
+    for (let i = 0; i < 60; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       try {
-        // computeCrossChainProxyAddress(address originalAddress, uint64 originalRollupId)
-        const result = (await rpcCall(config.l1Rpc, "eth_call", [
-          {
-            to: config.rollupsAddress,
-            data:
-              ROLLUPS_ABI.computeProxy +
-              encodeAddressUint(targetAddr, config.rollupId),
-          },
-          "latest",
-        ])) as string;
-
-        if (result && result.length >= 66) {
-          return "0x" + result.slice(26, 66);
-        }
-      } catch {
-        /* Rollups contract might not support this */
-      }
-      return null;
-    },
-    [],
-  );
-
-  /** Check if a proxy already exists (has code) */
-  const proxyExists = useCallback(
-    async (proxyAddr: string): Promise<boolean> => {
-      try {
-        const code = (await rpcCall(config.l1Rpc, "eth_getCode", [
-          proxyAddr,
-          "latest",
-        ])) as string;
-        return code !== "0x" && code !== "0x0";
-      } catch {
-        return false;
-      }
-    },
-    [],
-  );
-
-  /** Create a CrossChainProxy on L1 for a given L2 target address */
-  const createProxy = useCallback(
-    async (targetAddr: string) => {
-      if (!config.rollupsAddress || !config.rollupId) {
-        log("Rollups contract not configured", "err");
-        return;
-      }
-
-      setState({
-        phase: "creating-proxy",
-        proxyAddress: "",
-        targetAddress: targetAddr,
-        calldata: "",
-        txHash: null,
-        error: null,
-      });
-      log(`Creating CrossChainProxy for ${targetAddr.slice(0, 10)}...`, "info");
-
-      try {
-        // First compute the expected proxy address
-        const expectedAddr = await computeProxyAddress(targetAddr);
-
-        // Check if it already exists
-        if (expectedAddr && (await proxyExists(expectedAddr))) {
-          const proxy = expectedAddr;
-          setState({
-            phase: "confirmed",
-            proxyAddress: proxy,
-            targetAddress: targetAddr,
-            calldata: "",
-            txHash: null,
-            error: null,
-          });
-
-          // Save mapping
-          const updated = { ...savedProxies, [targetAddr.toLowerCase()]: proxy };
-          setSavedProxies(updated);
-          localStorage.setItem("crossChainProxies", JSON.stringify(updated));
-
-          log(`Proxy already exists at ${proxy}`);
-          setTimeout(
-            () => setState((s) => (s.phase === "confirmed" ? IDLE : s)),
-            5000,
-          );
+        const receipt = await rpcCall(route.rpc, "eth_getTransactionReceipt", [transaction.txHash]) as { status?: string } | null;
+        if (receipt) {
+          if (receipt.status !== "0x1") {
+            let reason = "";
+            try {
+              const tx = await rpcCall(route.rpc, "eth_getTransactionByHash", [transaction.txHash]) as { from?: string; to?: string; input?: string; value?: string; blockNumber?: string } | null;
+              if (tx?.to) await rpcCall(route.rpc, "eth_call", [{ from: tx.from, to: tx.to, data: tx.input, value: tx.value }, tx.blockNumber || "latest"]);
+            } catch (error) { reason = error instanceof Error ? error.message : String(error); }
+            throw new Error(`Transaction reverted on ${route.source.toUpperCase()}${reason ? `: ${reason}` : ""}`);
+          }
           return;
         }
-
-        // Create via EEZ.createCrossChainProxy(address, uint64)
-        const createData = ROLLUPS_ABI.createProxy +
-          encodeAddressUint(targetAddr, config.rollupId);
-
-        let gasHex: string | undefined;
-        try {
-          const est = await estimateGas({
-            rpcUrl: config.l1Rpc,
-            to: config.rollupsAddress,
-            data: createData,
-            from: ESTIMATION_SENDER,
-          });
-          gasHex = gasToHex(est.gasLimit);
-        } catch {
-          // Estimation failed — let the node use its default gas limit
-        }
-
-        const txHash = await sendL1Tx({
-          to: config.rollupsAddress,
-          data: createData,
-          ...(gasHex ? { gas: gasHex } : {}),
-        });
-
-        setState((s) => ({
-          ...s,
-          phase: "proxy-pending",
-          txHash,
-        }));
-        log(`Create proxy tx: ${txHash.slice(0, 18)}...`);
-
-        // Wait for receipt
-        for (let i = 0; i < 30; i++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          try {
-            const receipt = (await rpcCall(
-              config.l1Rpc,
-              "eth_getTransactionReceipt",
-              [txHash],
-            )) as TxReceipt | null;
-            if (receipt) {
-              if (receipt.status === "0x1") {
-                // Get the proxy address
-                const proxy = expectedAddr || (await computeProxyAddress(targetAddr)) || "";
-                setState({
-                  phase: "confirmed",
-                  proxyAddress: proxy,
-                  targetAddress: targetAddr,
-                  calldata: "",
-                  txHash,
-                  error: null,
-                });
-
-                const updated = { ...savedProxies, [targetAddr.toLowerCase()]: proxy };
-                setSavedProxies(updated);
-                localStorage.setItem(
-                  "crossChainProxies",
-                  JSON.stringify(updated),
-                );
-
-                log(`Proxy created at ${proxy}`);
-                setTimeout(
-                  () =>
-                    setState((s) => (s.phase === "confirmed" ? IDLE : s)),
-                  5000,
-                );
-              } else {
-                const reason = await fetchRevertReason(config.l1Rpc, txHash);
-                const errorMsg = reason ? `Reverted: ${reason}` : "Transaction reverted";
-                setState({
-                  phase: "failed",
-                  proxyAddress: "",
-                  targetAddress: targetAddr,
-                  calldata: "",
-                  txHash,
-                  error: errorMsg,
-                });
-                log(`Create proxy tx reverted${reason ? `: ${reason}` : ""}`, "err");
-              }
-              return;
-            }
-          } catch {
-            /* not mined yet */
-          }
-        }
-
-        setState((s) => ({
-          ...s,
-          phase: "failed",
-          error: "No receipt after 30s",
-        }));
-      } catch (e) {
-        const msg = (e as Error).message;
-        setState({
-          phase: "failed",
-          proxyAddress: "",
-          targetAddress: targetAddr,
-          calldata: "",
-          txHash: null,
-          error: msg,
-        });
-        log(`Create proxy failed: ${msg}`, "err");
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith("Transaction reverted")) throw error;
+        // A temporary read-RPC failure must not be treated as a failed transaction.
       }
-    },
-    [log, sendL1Tx, computeProxyAddress, proxyExists, savedProxies],
-  );
+    }
+    throw new Error(`No ${route.source.toUpperCase()} receipt after 60s. The transaction may still confirm; check the explorer.`);
+  }, []);
 
-  /**
-   * Send a cross-chain call through the L1 proxy.
-   *
-   * The L1 proxy does NOT forward the tx to L1 immediately. Instead:
-   * 1. Proxy traces the tx, detects the cross-chain call
-   * 2. Proxy queues execution entries + raw L1 tx with the builder
-   * 3. Proxy returns a pre-computed tx hash (from the raw tx bytes)
-   * 4. Builder later includes entries in an L2 block, submits postBatch to L1,
-   *    then forwards the queued user L1 tx — both land in the same L1 block
-   *
-   * This means the tx hash we get back may not exist on L1 for 24-36s
-   * (builder needs to build a block + submit postBatch + L1 block time).
-   * If the builder is stuck, the tx may never reach L1 at all.
-   */
-  const sendCrossChainCall = useCallback(
-    async (proxyAddr: string, calldata: string, targetAddr?: string, _value?: string, gas?: string) => {
-      setState({
-        phase: "sending",
-        proxyAddress: proxyAddr,
-        targetAddress: targetAddr || "",
-        calldata,
-        txHash: null,
-        error: null,
-      });
-      log(
-        `Sending cross-chain call to ${proxyAddr.slice(0, 10)}...`,
-        "info",
-      );
-
-      try {
-        // Use pre-estimated gas if provided, otherwise estimate now
-        let gasHex = gas;
-        if (!gasHex) {
-          try {
-            const est = await estimateCrossChainGas({
-              l1Rpc: config.l1Rpc,
-              proxyAddress: proxyAddr,
-              calldata,
-              from: ESTIMATION_SENDER,
-            });
-            gasHex = gasToHex(est.gasLimit);
-            log(`Gas estimated: ${Number(est.rawEstimate).toLocaleString()} (limit: ${Number(est.gasLimit).toLocaleString()}, method: ${est.method})`);
-          } catch (e) {
-            log(`Gas estimation failed: ${(e as Error).message}`, "err");
-          }
-        }
-
-        // The current composer simulates the complete synchronous envelope.
-        // Keep the canonical E2E gas limit unless the user explicitly supplied
-        // that same limit through the legacy editor.
-        gasHex = "0x1e8480";
-
-        // Build tx params — always include gas to prevent wallet from
-        // re-estimating (which fails for cross-chain calls and produces
-        // incorrect values like Rabby's 2M fallback).
-        const txParams: Record<string, string> = {
-          to: proxyAddr,
-          data: calldata,
-        };
-        if (_value) txParams.value = _value;
-        if (gasHex) txParams.gas = gasHex;
-
-        // Send through L1 proxy — queues execution entries + raw tx with the builder.
-        // Returns a pre-computed tx hash (tx is NOT on L1 yet).
-        const txHash = await sendL1ProxyTx(txParams);
-
-        setState({
-          phase: "l1-pending",
-          proxyAddress: proxyAddr,
-          targetAddress: targetAddr || "",
-          calldata,
-          txHash,
-          error: null,
-        });
-        log(`Cross-chain call queued: ${txHash.slice(0, 18)}... (waiting for composer to submit)`);
-
-        // Poll for L1 receipt.
-        // The tx hash is pre-computed — it won't appear on L1 until the builder
-        // forwards it alongside a postBatch (typically 24-36s). We poll for 60s
-        // and periodically check if the tx has even been broadcast to L1.
-        let txSeenOnL1 = false;
-        for (let i = 0; i < 60; i++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          try {
-            const receipt = (await rpcCall(
-              config.l1Rpc,
-              "eth_getTransactionReceipt",
-              [txHash],
-            )) as TxReceipt | null;
-            if (receipt) {
-              if (receipt.status === "0x1") {
-                setState({
-                  phase: "confirmed",
-                  proxyAddress: proxyAddr,
-                  targetAddress: targetAddr || "",
-                  calldata,
-                  txHash,
-                  error: null,
-                });
-                log("Cross-chain call confirmed on L1 — L2 state updated");
-                setTimeout(
-                  () =>
-                    setState((s) => (s.phase === "confirmed" ? IDLE : s)),
-                  5000,
-                );
-              } else {
-                const reason = await fetchRevertReason(config.l1Rpc, txHash);
-                const errorMsg = reason ? `Reverted: ${reason}` : "L1 transaction reverted";
-                setState({
-                  phase: "failed",
-                  proxyAddress: proxyAddr,
-                  targetAddress: targetAddr || "",
-                  calldata,
-                  txHash,
-                  error: errorMsg,
-                });
-                log(`Cross-chain call reverted${reason ? `: ${reason}` : ""}`, "err");
-              }
-              return;
-            }
-          } catch {
-            /* not mined yet */
-          }
-
-          // Every 12s, check if the tx even exists on L1 (has it been broadcast?)
-          if (i > 0 && i % 12 === 0 && !txSeenOnL1) {
-            try {
-              const tx = await rpcCall(config.l1Rpc, "eth_getTransactionByHash", [txHash]);
-              if (tx) {
-                txSeenOnL1 = true;
-                log("Transaction seen on L1, waiting for confirmation...");
-              } else if (i >= 36) {
-                // After 36s with no sign of the tx on L1, the builder is likely stuck
-                const errorMsg = "Transaction not broadcast to L1 — composer may be unable to submit batches. Check node health.";
-                setState({
-                  phase: "failed",
-                  proxyAddress: proxyAddr,
-                  targetAddress: targetAddr || "",
-                  calldata,
-                  txHash,
-                  error: errorMsg,
-                });
-                log(errorMsg, "err");
-                return;
-              }
-            } catch {
-              /* ignore check errors */
-            }
-          }
-        }
-
-        // Final timeout — check why
-        const finalErrorMsg = txSeenOnL1
-          ? "L1 transaction pending but not confirmed after 60s — it may still confirm. Check the explorer."
-          : "Transaction not broadcast to L1 after 60s — composer may be unable to submit batches. Check node health.";
-        setState((s) => ({
-          ...s,
-          phase: "failed",
-          error: finalErrorMsg,
-        }));
-        log(finalErrorMsg, "err");
-      } catch (e) {
-        const msg = (e as Error).message;
-        setState({
-          phase: "failed",
-          proxyAddress: proxyAddr,
-          targetAddress: targetAddr || "",
-          calldata,
-          txHash: null,
-          error: msg,
-        });
-        log(`Cross-chain call failed: ${msg}`, "err");
+  const createProxy = useCallback(async (target: string, direction: CrossChainDirection = "l1-to-l2") => {
+    const route = crossChainRoute(direction);
+    const transaction = { ...IDLE, direction, targetAddress: target, phase: "creating-proxy" as CrossChainPhase };
+    setState(transaction);
+    try {
+      if (!validAddress(target)) throw new Error("Enter a valid destination address");
+      if (!route.manager || !route.remoteRollupId) throw new Error("Proxy manager is not configured on " + route.source.toUpperCase());
+      const send = direction === "l1-to-l2" ? sendL1Tx : sendL2Tx;
+      if (!send) throw new Error("L2 wallet submission is not available");
+      const proxy = await computeProxyAddress(target, direction);
+      if (!proxy) throw new Error("Unable to compute the proxy address");
+      const code = await rpcCall(route.rpc, "eth_getCode", [proxy, "latest"]);
+      if (code && code !== "0x" && code !== "0x0") {
+        saveProxy(target, proxy, direction);
+        finish({ ...transaction, phase: "confirmed", proxyAddress: proxy });
+        return;
       }
-    },
-    [log, sendL1ProxyTx],
-  );
+      const data = "0xa7587c62" + encodeTarget(target, route.remoteRollupId);
+      let gas: string | undefined;
+      try { gas = gasToHex((await estimateGas({ rpcUrl: route.rpc, to: route.manager, data, from: sender })).gasLimit); }
+      catch { /* Proxy deployment is a local transaction; the wallet may estimate it. */ }
+      const hash = await send({ to: route.manager, data, ...(gas ? { gas } : {}) });
+      const pending = { ...transaction, phase: "proxy-pending" as CrossChainPhase, proxyAddress: proxy, txHash: hash };
+      setState(pending);
+      await waitForReceipt(pending);
+      saveProxy(target, proxy, direction);
+      finish({ ...pending, phase: "confirmed" });
+      log(`Proxy created on ${route.source.toUpperCase()} at ${proxy}`, "ok");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setState(current => ({ ...current, phase: "failed", error: message }));
+      log(message, "err");
+    }
+  }, [sendL1Tx, sendL2Tx, sender, computeProxyAddress, saveProxy, finish, waitForReceipt, log]);
 
-  /** Look up saved proxy for a target address (reads localStorage fresh for cross-instance sync) */
-  const getProxy = useCallback(
-    (targetAddr: string): string | null => {
-      // Check in-memory first
-      const inMemory = savedProxies[targetAddr.toLowerCase()];
-      if (inMemory) return inMemory;
-      // Also check localStorage for proxies created by other hook instances
-      try {
-        const stored = JSON.parse(localStorage.getItem("crossChainProxies") || "{}") as Record<string, string>;
-        return stored[targetAddr.toLowerCase()] || null;
-      } catch {
-        return null;
-      }
-    },
-    [savedProxies],
-  );
+  const sendCrossChainCall = useCallback(async (proxy: string, calldata: string, target?: string, value = "0x0", gas?: string,
+    direction: CrossChainDirection = "l1-to-l2") => {
+    const route = crossChainRoute(direction);
+    const transaction = { ...IDLE, direction, proxyAddress: proxy, targetAddress: target || "", calldata, phase: "sending" as CrossChainPhase };
+    setState(transaction);
+    try {
+      if (!validAddress(proxy) || !/^0x(?:[0-9a-f]{2})*$/i.test(calldata)) throw new Error("Enter a valid proxy address and hexadecimal calldata");
+      const send = direction === "l1-to-l2" ? sendL1ProxyTx : sendL2ProxyTx;
+      if (!send) throw new Error("L2 wallet submission is not available");
+      const chosenGas = gas || gasToHex((await estimateComposerGas({ rpcUrl: route.composerRpc, from: sender, to: proxy, data: calldata, value })).gasLimit);
+      const hash = await send({ to: proxy, data: calldata, value, gas: chosenGas });
+      const pending = { ...transaction, phase: (direction === "l1-to-l2" ? "l1-pending" : "l2-pending") as CrossChainPhase, txHash: hash };
+      setState(pending);
+      await waitForReceipt(pending);
+      finish({ ...pending, phase: "confirmed" });
+      log(`Cross-chain call confirmed on ${route.source.toUpperCase()}`, "ok");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setState(current => ({ ...current, phase: "failed", error: message }));
+      log(message, "err");
+    }
+  }, [sendL1ProxyTx, sendL2ProxyTx, sender, waitForReceipt, finish, log]);
 
   const reset = useCallback(() => setState(IDLE), []);
-
-  return {
-    state,
-    savedProxies,
-    createProxy,
-    sendCrossChainCall,
-    computeProxyAddress,
-    getProxy,
-    reset,
-  };
+  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, getProxy, reset };
 }

@@ -3,6 +3,7 @@ import { encodeFunctionData, decodeFunctionResult } from "viem";
 import { rpcCall } from "../rpc";
 import type { AbiFunction } from "../hooks/useBlockscoutAbi";
 import styles from "./AbiMethodSelector.module.css";
+import { L1_CHAIN, L2_CHAIN } from "../config";
 
 interface Props {
   abi: AbiFunction[];
@@ -10,6 +11,7 @@ interface Props {
   onCalldataChange: (calldata: string | null) => void;
   onValueChange?: (value: string) => void;
   l2Rpc: string;
+  nativeSymbol?: string;
 }
 
 type Mode = "write" | "read";
@@ -55,7 +57,7 @@ function parseParam(type: string, raw: string): unknown {
   return raw;
 }
 
-export function AbiMethodSelector({ abi, targetAddress, onCalldataChange, onValueChange, l2Rpc }: Props) {
+export function AbiMethodSelector({ abi, targetAddress, onCalldataChange, onValueChange, l2Rpc, nativeSymbol = L2_CHAIN.nativeCurrency.symbol || L1_CHAIN.nativeCurrency.symbol }: Props) {
   const [mode, setMode] = useState<Mode>("write");
   const [selectedFn, setSelectedFn] = useState("");
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
@@ -84,7 +86,7 @@ export function AbiMethodSelector({ abi, targetAddress, onCalldataChange, onValu
   // Encode calldata when params change (write mode only)
   useEffect(() => {
     if (mode !== "write" || !currentFn) {
-      if (mode === "write") onCalldataChange(null);
+      onCalldataChange(null);
       return;
     }
 
@@ -226,7 +228,7 @@ export function AbiMethodSelector({ abi, targetAddress, onCalldataChange, onValu
 
           {currentFn?.stateMutability === "payable" && (
             <div className={styles.valueRow}>
-              <label className={styles.valueLabel}>ETH Value</label>
+              <label className={styles.valueLabel}>{nativeSymbol} Value</label>
               <input
                 className={styles.valueInput}
                 value={ethValue}

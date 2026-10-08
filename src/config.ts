@@ -17,9 +17,9 @@ export const config = {
   l1Rpc: params.get("l1") || absolute("/rpc/l1"),
   /** L2 RPC endpoint (builder) */
   l2Rpc: params.get("l2") || absolute("/rpc/l2"),
-  /** L1 composer RPC — used only for cross-chain transaction submission */
+  /** L1 Composer RPC — cross-chain estimates and transaction submission */
   l1ProxyRpc: params.get("l1proxy") || absolute("/composer/l1"),
-  /** L2 composer RPC — used only for L2→L1 cross-chain transaction submission */
+  /** L2 Composer RPC — cross-chain estimates and transaction submission */
   l2ProxyRpc: params.get("l2proxy") || absolute("/composer/l2"),
 
   /** BasedRollup contract address — loaded from runtime config or URL param */

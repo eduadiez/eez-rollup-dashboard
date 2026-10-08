@@ -36,6 +36,15 @@ and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
 
+Cross-Chain Calls supports L1 → L2 and L2 → L1, including contract and EOA
+destinations. Selecting a proxy switches the connected wallet to its source
+network; a rejected switch preserves the current selection. Existing L1 proxy
+mappings remain in `crossChainProxies`, with L2 proxies stored separately in
+`crossChainProxiesL2`. Contract names and ABIs come from the destination explorer.
+Raw calls accept empty calldata (`0x`) and an optional native-currency value.
+Calls use the source Composer's gas estimate or an explicit manual limit, and
+poll the source chain for confirmation. The ABI editor has a fixed size.
+
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
 L2 source transactions link to their canonical L1 settlement batch (labeled

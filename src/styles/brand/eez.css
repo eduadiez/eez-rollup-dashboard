@@ -144,9 +144,13 @@
 }
 .eez-card.eez-card::before {
   content: ""; position: absolute; pointer-events: none;
-  top: 0; left: 16px; right: 16px; height: 2px;
-  background: var(--eez-logo-grad); opacity: 0; transition: opacity .2s ease;
-  mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+  top: 0; left: 0; right: 0; height: 20px; padding: 2px;
+  border-radius: 15px 15px 0 0;
+  background: var(--eez-grad); opacity: 0; transition: opacity .2s ease;
+  /* Follow the rounded edge, then fade as the rail turns down each corner. */
+  mask-image: linear-gradient(#000 2px, transparent 18px), linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: border-box, content-box, border-box;
+  mask-composite: intersect, exclude;
 }
 .eez-card.eez-card:is(:hover, :focus-within) { border-color: #333; background: #0d0d0d; }
 .eez-card.eez-card:is(:hover, :focus-within)::before { opacity: 1; }
