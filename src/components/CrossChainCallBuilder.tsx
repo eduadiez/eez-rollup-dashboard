@@ -246,14 +246,14 @@ export function CrossChainCallBuilder({
         <div className={styles.endpoint} role="group" aria-label="Source proxy">
           <span className={styles.endpointLabel}>Source proxy</span>
           <span className={styles.endpointNetwork}><NetworkIcon chain={route.source} decorative />{sourceName}</span>
-          <ExplorerLink value={proxyAddress} label={proxyAddress} chain={route.source} className={styles.endpointAddress} />
+          <ExplorerLink value={proxyAddress} label={`${proxyAddress.slice(0, 10)}…${proxyAddress.slice(-6)}`} chain={route.source} className={styles.endpointAddress} />
         </div>
         <span className={styles.routeArrow} aria-hidden="true">→</span>
         <div className={styles.endpoint} role="group" aria-label="Destination">
           <span className={styles.endpointLabel}>Destination</span>
           <span className={styles.endpointNetwork}><NetworkIcon chain={route.destination} decorative />{destinationName}</span>
           {contractName && <span className={styles.endpointName}>{contractName}</span>}
-          <ExplorerLink value={targetAddress} label={targetAddress} chain={route.destination} className={styles.endpointAddress} />
+          <ExplorerLink value={targetAddress} label={`${targetAddress.slice(0, 10)}…${targetAddress.slice(-6)}`} chain={route.destination} className={styles.endpointAddress} />
         </div>
       </div>
 

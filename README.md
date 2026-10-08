@@ -49,7 +49,8 @@ Detected proxies can be saved explicitly, or imported by entering their source
 address alongside the destination. Saving verifies the registry mapping and
 deployed code without sending a transaction. Removing a saved row only clears
 its browser entry; removing the selected proxy also clears the call form.
-Prepare Call shows both network names and full source/destination addresses.
+Prepare Call shows both network names and shortened source/destination addresses,
+with full addresses available in tooltips, explorer links, and clipboard copies.
 Recent addresses reflow within the form rather than overlapping call preparation.
 Raw calls accept empty calldata (`0x`) and an optional native-currency value.
 Calls use the source Composer's gas estimate or an explicit manual limit, and
