@@ -40,7 +40,11 @@ Cross-Chain Calls supports L1 → L2 and L2 → L1, including contract and EOA
 destinations. Selecting a proxy switches the connected wallet to its source
 network; a rejected switch preserves the current selection. Existing L1 proxy
 mappings remain in `crossChainProxies`, with L2 proxies stored separately in
-`crossChainProxiesL2`. Contract names and ABIs come from the destination explorer.
+`crossChainProxiesL2`. These browser-saved mappings are checked against the
+source manager's computed proxy address and `eth_getCode` when selected and
+before sending. Confirmed mismatches or missing code clear stale mappings;
+RPC errors retain saved data but prevent unverified selection or submission.
+Contract names and ABIs come from the destination explorer.
 Raw calls accept empty calldata (`0x`) and an optional native-currency value.
 Calls use the source Composer's gas estimate or an explicit manual limit, and
 poll the source chain for confirmation. The ABI editor has a fixed size.

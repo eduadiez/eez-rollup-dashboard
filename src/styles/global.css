@@ -428,8 +428,9 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, te
   background-color: #090909; border: 1px solid var(--eez-edge); border-radius: 12px;
 }
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  border-color: var(--eez-green); outline: 2px solid var(--eez-green); outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(63,185,80,.15);
+  /* Fit the field's rounded border even when its container clips overflow. */
+  border-color: var(--eez-green); outline: 2px solid var(--eez-green); outline-offset: -2px;
+  box-shadow: none;
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

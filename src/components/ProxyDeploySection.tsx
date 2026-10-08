@@ -41,6 +41,7 @@ function ProxyRow({ target, proxy, direction, selected, disabled, onSelect }: {
       <NetworkIcon chain={route.source} /><span aria-hidden="true">→</span><NetworkIcon chain={route.destination} />
     </div></td>
     <td className={styles.tdNarrow}><button className={styles.callBtn} disabled={disabled} onClick={onSelect} aria-pressed={selected}
+      title={`Saved in this browser. Selecting checks the registry address and deployed code on ${route.source === "l1" ? config.l1NetworkName : config.rollupName}.`}
       aria-label={`${selected ? "Selected proxy" : "Select proxy"} for ${target} on ${route.source.toUpperCase()}`}>{selected ? "Selected" : "Select"}</button></td>
   </tr>;
 }
@@ -77,7 +78,7 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
         const computed = await computeProxyAddress(target, direction);
         if (!computed || cancelled) return;
         const code = await rpcCall(crossChainRoute(direction).rpc, "eth_getCode", [computed, "latest"]);
-        if (!cancelled && code && code !== "0x" && code !== "0x0") {
+        if (!cancelled && typeof code === "string" && /^0x(?:[0-9a-f]{2})+$/i.test(code)) {
           setDetected({ proxy: computed, target: targetAddress, direction });
           onProxyDetected(computed, targetAddress, direction);
         }

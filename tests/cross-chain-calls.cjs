@@ -9,6 +9,7 @@ const proxyFor=(address,l1)=>address===target?(l1?addr('55'):addr('66')):address
 async function fixture(browser,options={}){
  const context=await browser.newContext(), page=await context.newPage();
  const requests=[],errors=[],receipt={value:null},estimation={error:null,delay:false,pending:[]};
+ const verification={codeError:options.codeError??false,missing:false,mismatch:false},deployed=new Set(),deploying=new Set();
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.addInitScript(({account,hash,forward,reverse})=>{
   localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
@@ -40,21 +41,27 @@ async function fixture(browser,options={}){
   if(method==='eth_getBlockByNumber')result={number:'0x10',timestamp:'0x65000000',gasUsed:'0x0',gasLimit:'0x1c9c380',baseFeePerGas:'0x7',transactions:[]};
   if(method==='eth_call'&&params[0].data.startsWith('0xeb20c0aa')){
    assert.equal(params[0].to,l1?registry:manager);assert.equal(BigInt('0x'+params[0].data.slice(-64)),l1?1n:0n);
-   const destination='0x'+params[0].data.slice(34,74);result='0x'+proxyFor(destination,l1).slice(2).padStart(64,'0');
+   const destination='0x'+params[0].data.slice(34,74);result='0x'+(verification.mismatch?addr('ee'):proxyFor(destination,l1)).slice(2).padStart(64,'0');
   }
   if(method==='eth_getCode'){
-   if(options.codeError)return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32000,message:'Read RPC temporarily unavailable'}}});
-   result=[...Object.values(forward),...Object.values(reverse)].includes(params[0])?'0x6000':'0x';
+   if(verification.codeError)return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32000,message:'Read RPC temporarily unavailable'}}});
+   result=!verification.missing&&([...Object.values(forward),...Object.values(reverse)].includes(params[0])||deployed.has(params[0]))?'0x6000':'0x';
   }
   if(method==='eth_estimateGas'){
-   if(path.startsWith('/rpc/'))assert.equal(params[0].to,l1?registry:manager,'proxy calls must estimate through Composer');
+   if(path.startsWith('/rpc/')){
+    assert.equal(params[0].to,l1?registry:manager,'proxy calls must estimate through Composer');
+    if(params[0].data.startsWith('0xa7587c62'))deploying.add(proxyFor('0x'+params[0].data.slice(34,74),l1));
+   }
    if(path.startsWith('/composer/')){
     if(estimation.delay)await new Promise(resolve=>estimation.pending.push(resolve));
     if(estimation.error)return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:3,message:estimation.error}}});
    }
    return reply('0x671af');
   }
-  if(method==='eth_getTransactionReceipt')result=receipt.value;
+  if(method==='eth_getTransactionReceipt'){
+   result=receipt.value;
+   if(result?.status==='0x1'){for(const proxy of deploying)deployed.add(proxy);deploying.clear();}
+  }
   if(method==='eth_gasPrice'||method==='eth_maxPriorityFeePerGas')result='0x3b9aca00';
   if(method==='eth_getLogs'||method==='eez_getSettledL2RangesByL1Block')result=[];
   return reply(result);
@@ -64,7 +71,7 @@ async function fixture(browser,options={}){
  await panel.getByText('L2 Counter',{exact:false}).first().waitFor();await panel.getByText('L1 Vault',{exact:false}).first().waitFor();
  const select=async(address,back)=>panel.getByRole('button',{name:`Select proxy for ${address} on ${back?'L2':'L1'}`,exact:true}).click();
  const send=panel.getByRole('button',{name:'Send Cross-Chain Transaction',exact:true});
- return {page,context,panel,select,send,requests,errors,receipt,estimation};
+ return {page,context,panel,select,send,requests,errors,receipt,estimation,verification};
 }
 async function until(condition, message) {
  const deadline=Date.now()+5000;
@@ -131,6 +138,25 @@ async function until(condition, message) {
    assert.deepEqual(await f.page.evaluate(()=>JSON.parse(localStorage.getItem('crossChainProxiesL2'))),reverse);
    assert(f.requests.some(r=>r.method==='eth_getCode'&&r.path==='/rpc/l1'));
    assert(f.requests.some(r=>r.method==='eth_getCode'&&r.path==='/rpc/l2'));
+   await f.select(target,false);await f.panel.getByRole('alert').filter({hasText:'Cannot verify proxy'}).waitFor();
+   assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0);
+   assert.equal(await f.page.evaluate(()=>window.switches.length),0);
+   assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  for(const failure of ['missing','mismatch']){
+   const f=await fixture(browser);await f.select(eoa,true);await f.send.click({trial:true});
+   f.verification[failure]=true;await f.send.click();
+   await f.panel.getByText(failure==='missing'?'Proxy is not deployed on L2':'Saved proxy does not match the registry address for this destination',{exact:false}).waitFor();
+   assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0,'invalid proxy must not reach the wallet');
+   assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  {
+   const f=await fixture(browser);await f.select(eoa,false);await f.panel.getByLabel('Value (xDAI)',{exact:true}).focus();
+   assert.equal(await f.panel.getByLabel('Value (xDAI)',{exact:true}).evaluate(e=>getComputedStyle(e).outlineOffset),'-2px');
+   const paint=await f.panel.evaluate(e=>{const s=getComputedStyle(e,'::before');return {top:s.top,left:s.left,right:s.right,radius:s.borderTopLeftRadius,overflow:getComputedStyle(e).overflow};});
+   assert.deepEqual(paint,{top:'-1px',left:'-1px',right:'-1px',radius:'16px',overflow:'visible'});
+   await f.panel.getByLabel('Value (xDAI)',{exact:true}).screenshot({path:'/tmp/eez-contained-focus-ring.png'});
+   await f.panel.screenshot({path:'/tmp/eez-card-border-alignment.png'});
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
   {
@@ -164,6 +190,6 @@ async function until(condition, message) {
    await f.page.setViewportSize({width:1440,height:1080});await f.panel.hover();await f.panel.screenshot({path:'/tmp/eez-bidirectional-calls.png'});
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
-  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,responsiveWidths:8,transactionsBroadcast:0}));
+  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,responsiveWidths:8,transactionsBroadcast:0}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

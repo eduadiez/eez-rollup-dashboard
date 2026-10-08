@@ -214,7 +214,7 @@
   font: 500 32px/1.4 var(--sans);
   letter-spacing: -.025em;
 }
-.amountRow .input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.amountRow .input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .amountSymbol { align-self: center; color: var(--text-dim); font: 500 16px/1.4 var(--sans); max-width: 90px; overflow-wrap: anywhere; }
 .amountSection { padding: 20px; margin-bottom: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-inset); }
 .amountHeader { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }

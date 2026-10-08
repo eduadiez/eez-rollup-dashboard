@@ -43,6 +43,23 @@ function encodeTarget(address: string, rollupId: string) {
   return address.slice(2).toLowerCase().padStart(64, "0") + BigInt(rollupId).toString(16).padStart(64, "0");
 }
 
+async function computeProxy(target: string, direction: CrossChainDirection): Promise<string | null> {
+  const route = crossChainRoute(direction);
+  if (!validAddress(target) || !route.manager || !route.remoteRollupId) return null;
+  const result = await rpcCall(route.rpc, "eth_call", [{ to: route.manager,
+    data: "0xeb20c0aa" + encodeTarget(target, route.remoteRollupId) }, "latest"]);
+  if (typeof result !== "string" || !/^0x[0-9a-f]{64}$/i.test(result)) return null;
+  const address = "0x" + result.slice(-40);
+  return BigInt(address) === 0n ? null : address;
+}
+
+async function checkProxyCode(proxy: string, direction: CrossChainDirection) {
+  const code = await rpcCall(crossChainRoute(direction).rpc, "eth_getCode", [proxy, "latest"]);
+  if (code === "0x0") return false;
+  if (typeof code !== "string" || !/^0x(?:[0-9a-f]{2})*$/i.test(code)) throw new Error("RPC did not return valid contract code");
+  return code !== "0x";
+}
+
 export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Sender, options?: {
   sendL2Tx: Sender; sendL2ProxyTx: Sender; senderAddress: string | null; ready?: boolean;
 }) {
@@ -63,8 +80,8 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
       const missing: [string, string][] = [];
       for (const [target, proxy] of Object.entries(loadProxies(direction))) {
         try {
-          const code = await rpcCall(crossChainRoute(direction).rpc, "eth_getCode", [proxy, "latest"]);
-          if (code === "0x" || code === "0x0") missing.push([target, proxy]);
+          const computed = await computeProxy(target, direction);
+          if (computed && computed.toLowerCase() !== proxy.toLowerCase() || !await checkProxyCode(proxy, direction)) missing.push([target, proxy]);
         } catch { /* Keep the mapping until an on-chain absence is confirmed. */ }
         if (cancelled) return;
       }
@@ -90,14 +107,13 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
     return loadProxies(direction)[target.toLowerCase()] || cached[target.toLowerCase()] || null;
   }, [savedProxies, savedL2Proxies]);
 
-  const computeProxyAddress = useCallback(async (target: string, direction: CrossChainDirection = "l1-to-l2"): Promise<string | null> => {
-    const route = crossChainRoute(direction);
-    if (!validAddress(target) || !route.manager || !route.remoteRollupId) return null;
-    const result = await rpcCall(route.rpc, "eth_call", [{ to: route.manager,
-      data: "0xeb20c0aa" + encodeTarget(target, route.remoteRollupId) }, "latest"]);
-    if (typeof result !== "string" || !/^0x[0-9a-f]{64}$/i.test(result)) return null;
-    const address = "0x" + result.slice(-40);
-    return BigInt(address) === 0n ? null : address;
+  const computeProxyAddress = useCallback((target: string, direction: CrossChainDirection = "l1-to-l2") => computeProxy(target, direction), []);
+
+  const verifyProxy = useCallback(async (target: string, proxy: string, direction: CrossChainDirection = "l1-to-l2") => {
+    const computed = await computeProxy(target, direction);
+    if (!computed) throw new Error("Unable to verify the proxy with the source-chain registry");
+    if (computed.toLowerCase() !== proxy.toLowerCase()) throw new Error("Saved proxy does not match the registry address for this destination");
+    if (!await checkProxyCode(proxy, direction)) throw new Error("Proxy is not deployed on " + crossChainRoute(direction).source.toUpperCase());
   }, []);
 
   const finish = useCallback((transaction: CrossChainState) => {
@@ -142,8 +158,7 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
       if (!send) throw new Error("L2 wallet submission is not available");
       const proxy = await computeProxyAddress(target, direction);
       if (!proxy) throw new Error("Unable to compute the proxy address");
-      const code = await rpcCall(route.rpc, "eth_getCode", [proxy, "latest"]);
-      if (code && code !== "0x" && code !== "0x0") {
+      if (await checkProxyCode(proxy, direction)) {
         saveProxy(target, proxy, direction);
         finish({ ...transaction, phase: "confirmed", proxyAddress: proxy });
         return;
@@ -175,6 +190,8 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
       if (!validAddress(proxy) || !/^0x(?:[0-9a-f]{2})*$/i.test(calldata)) throw new Error("Enter a valid proxy address and hexadecimal calldata");
       const send = direction === "l1-to-l2" ? sendL1ProxyTx : sendL2ProxyTx;
       if (!send) throw new Error("L2 wallet submission is not available");
+      if (target) await verifyProxy(target, proxy, direction);
+      else if (!await checkProxyCode(proxy, direction)) throw new Error("Proxy is not deployed on " + route.source.toUpperCase());
       const chosenGas = gas || gasToHex((await estimateComposerGas({ rpcUrl: route.composerRpc, from: sender, to: proxy, data: calldata, value })).gasLimit);
       const hash = await send({ to: proxy, data: calldata, value, gas: chosenGas });
       const pending = { ...transaction, phase: (direction === "l1-to-l2" ? "l1-pending" : "l2-pending") as CrossChainPhase, txHash: hash };
@@ -187,8 +204,8 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
       setState(current => ({ ...current, phase: "failed", error: message }));
       log(message, "err");
     }
-  }, [sendL1ProxyTx, sendL2ProxyTx, sender, waitForReceipt, finish, log]);
+  }, [sendL1ProxyTx, sendL2ProxyTx, sender, verifyProxy, waitForReceipt, finish, log]);
 
   const reset = useCallback(() => setState(IDLE), []);
-  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, getProxy, reset };
+  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, verifyProxy, getProxy, reset };
 }

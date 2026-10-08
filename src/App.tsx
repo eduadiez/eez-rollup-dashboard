@@ -255,12 +255,16 @@ export function App() {
     proxySelectionPending.current = true;
     setSelectingProxy(true); setProxySelectionError(null);
     try {
+      const cached = crossChainGeneric.getProxy(target, direction);
+      if (cached) await crossChainGeneric.verifyProxy(target, cached, direction);
       if (wallet.address && !await switchBridgeNetwork(crossChainRoute(direction).source)) {
         setProxySelectionError("Wallet network switch was cancelled. Your selected proxy has not changed.");
         return;
       }
       crossChainGeneric.reset();
       setGenericDirection(direction); setGenericTargetAddr(target);
+    } catch (error) {
+      setProxySelectionError(`Cannot verify proxy: ${error instanceof Error ? error.message : String(error)}`);
     } finally { proxySelectionPending.current = false; setSelectingProxy(false); }
   };
 
