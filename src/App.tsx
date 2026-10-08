@@ -66,7 +66,7 @@ export function App() {
 
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
-  const { l1, l2 } = useDashboard();
+  const { l2 } = useDashboard();
   const counter = useCounter(log, wallet.sendTx);
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
@@ -265,15 +265,6 @@ export function App() {
         currentChainId={wallet.chainId}
         onSwitchL1={() => { void switchBridgeNetwork("l1"); }}
         onSwitchL2={() => { void switchBridgeNetwork("l2"); }}
-        l1={{
-          blockNumber: l1.blockNumber,
-          timestamp: l1.timestamp,
-        }}
-        l2={{
-          blockNumber: l2.blockNumber,
-          timestamp: l2.timestamp,
-          synced: l2.synced,
-        }}
       />
 
       {view === "monitor" ? (

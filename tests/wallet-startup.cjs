@@ -81,7 +81,7 @@ async function fixture(browser, injected) {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   try {
     const noWallet = await fixture(browser, false);
-    await noWallet.page.getByRole('group', { name: 'Chiado latest block' }).getByText('16', { exact: true }).waitFor();
+    assert.equal(await noWallet.page.getByRole('group', { name: 'Latest network blocks' }).count(), 0);
     await noWallet.page.clock.runFor(31000);
     await noWallet.page.getByRole('button', { name: 'Connect Wallet', exact: true }).first().waitFor();
     assert.equal(noWallet.requests.filter(r => r.method === 'eth_getBalance').length, 0,
@@ -97,6 +97,7 @@ async function fixture(browser, injected) {
       'saved wallet reconnect waits for runtime config');
     savedWallet.releaseConfig();
     await savedWallet.page.getByRole('button', { name: /Rabby ·/ }).waitFor();
+    assert.equal(await savedWallet.page.getByRole('button', { name: /Rabby ·/ }).locator('[data-wallet-logo="rabby"]').count(), 1);
     assert.deepEqual(await savedWallet.page.evaluate(() => window.walletRequests.map(r => r.method)),
       ['eth_accounts', 'eth_chainId']);
     await savedWallet.page.clock.runFor(100);

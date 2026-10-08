@@ -32,3 +32,10 @@ Chiado and Gnosis use the unmodified owl mark from the official
 [Gnosis media kit](https://github.com/gnosischain/media-kit/blob/dba66ce30b52f44793cc1d546e1955dcabce3bd6/Logos/Owl_Logo%20-%20Mark.svg).
 Other deployments can provide an L1 name and logo through runtime configuration;
 unknown chains use a neutral network icon.
+
+## Wallet assets
+
+Wallet controls use unmodified, locally bundled symbols from the official
+[Rabby brand assets](https://github.com/RabbyHub/logo/blob/297c81228f53e1db863ee44e49faf68d96719951/symbol.svg)
+and [MetaMask logo pack](https://metamask.io/assets). Wallet names and addresses
+remain available as accessible labels when compact mobile controls show only a logo.

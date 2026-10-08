@@ -40,13 +40,13 @@ L2 source transactions link to their canonical L1 settlement batch (labeled
 within canonical settled blocks. Repeated call hashes with ambiguous origins or
 destinations stay unresolved; missing counterparts are retried every 15 seconds.
 
-The top bar shows the deployment name, stacked block numbers and ages labeled
-with network names, and horizontal balances with deployment-aware logos.
+The top bar shows the deployment name and horizontal network balances beside
+the wallet control. Wallet controls and the provider picker use locally served
+Rabby and MetaMask logos. Block counters are omitted. On narrow screens, balances
+and the compact wallet button share a row below the brand and navigation menu.
 Selecting a network also switches the bridge direction after the wallet confirms
 the switch; ERC-20 addresses are kept unchanged. Chiado/Gnosis deployments use
-xDAI for the native asset on both chains. Block numbers link to
-explorers; balance buttons switch the wallet network. On smaller screens these
-remain visible beneath the brand row, with navigation and wallet controls in the menu.
+xDAI for the native asset on both chains.
 
 Set `EEZ_UI_NETWORK_NAME` in `.env` to the rollup's display name (for example,
 `EEZ-X Devnet`). Runtime `networkName` supplies the bridge's L2 labels and the

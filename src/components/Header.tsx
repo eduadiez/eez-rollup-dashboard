@@ -4,14 +4,9 @@ import { L1_CHAIN, L2_CHAIN, config } from "../config";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
 import { NetworkIcon } from "./NetworkIcon";
+import { WalletIcon } from "./WalletIcon";
 import eezLogo from "../styles/brand/eez-logo.svg";
 import eezLogoLight from "../styles/brand/eez-logo-light.svg";
-
-interface ChainData {
-  blockNumber: number | null;
-  timestamp?: number | null;
-  synced?: boolean | null;
-}
 
 interface Props {
   wallet: WalletState;
@@ -26,8 +21,6 @@ interface Props {
   currentChainId?: string | null;
   onSwitchL1?: () => void;
   onSwitchL2?: () => void;
-  l1?: ChainData;
-  l2?: ChainData;
 }
 
 const NAV_ITEMS = [
@@ -35,38 +28,6 @@ const NAV_ITEMS = [
   { id: "monitor", label: "Monitor" },
   { id: "visualizer", label: "Visualizer" },
 ];
-
-function formatAge(ts: number, now: number): string {
-  const age = now - ts;
-  if (age < 0) return "now";
-  if (age < 60) return `${age}s`;
-  if (age < 3600) return `${Math.floor(age / 60)}m`;
-  return `${Math.floor(age / 3600)}h`;
-}
-
-function ChainMini({ label, chain }: { label: "L1" | "L2"; chain?: ChainData }) {
-  const isL1 = label === "L1";
-  const name = isL1 ? config.l1NetworkName : config.rollupName;
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  useEffect(() => {
-    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const age = chain?.timestamp ? formatAge(chain.timestamp, now) : null;
-  const explorerUrl = isL1 ? config.l1Explorer : config.l2Explorer;
-  const blockUrl = explorerUrl && chain?.blockNumber != null ? `${explorerUrl}/block/${chain.blockNumber}` : undefined;
-  const number = chain?.blockNumber?.toLocaleString() ?? "—";
-  const content = <><span className={styles.blockName}>{name}</span>
-    <span className={styles.blockNumber}>{number}</span></>;
-  return (
-    <div className={styles.chainBlock} data-chain={isL1 ? "l1" : "l2"} role="group" aria-label={`${name} latest block`}>
-      {blockUrl ? <a href={blockUrl} target="_blank" rel="noopener noreferrer" className={styles.blockLink}
-        aria-label={`${name} block ${number}`} title={`${name} · block ${number}`}>{content}</a> :
-        <span className={styles.blockLink} title={`${name} · block ${number}`}>{content}</span>}
-      {age && <span className={styles.blockAge} title={`${name} block age`}>{age}</span>}
-    </div>
-  );
-}
 
 export function Header({
   wallet,
@@ -81,8 +42,6 @@ export function Header({
   currentChainId,
   onSwitchL1,
   onSwitchL2,
-  l1,
-  l2,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -156,16 +115,6 @@ export function Header({
             </nav>
           )}
 
-          <div className={styles.sep} />
-        </div>
-
-        {/* ── Latest blocks: aligned with the navigation ── */}
-        <div className={styles.center}>
-          <div className={styles.blockStack} aria-label="Latest network blocks">
-            <ChainMini label="L1" chain={l1} />
-            <ChainMini label="L2" chain={l2} />
-          </div>
-
         </div>
 
         {/* ── Right: chain selector + wallet dropdown ── */}
@@ -194,9 +143,12 @@ export function Header({
               <>
                 <button
                   className={styles.walletPill}
+                  aria-label={walletName ? `${walletName} · ${shortAddr}` : shortAddr}
+                  aria-expanded={dropdownOpen}
                   title={walletName ? `${walletName} · ${shortAddr}` : shortAddr}
                   onClick={() => setDropdownOpen((v) => !v)}
                 >
+                  <WalletIcon name={walletName} className={styles.walletIcon} />
                   <span className={styles.walletLabel}>{walletName ? `${walletName} · ${shortAddr}` : shortAddr}</span>
                   <svg className={`${styles.walletPillChevron} ${dropdownOpen ? styles.walletPillChevronOpen : ""}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
@@ -230,6 +182,7 @@ export function Header({
                             onConnect(option.id);
                             setDropdownOpen(false);
                           }}>
+                            <WalletIcon name={option.name} className={styles.walletIcon} />
                             {option.name === walletName ? `Reconnect ${option.name}` : `Switch to ${option.name}`}
                           </button>
                         ))}
@@ -267,6 +220,7 @@ export function Header({
                         onConnect(option.id);
                         setDropdownOpen(false);
                       }}>
+                        <WalletIcon name={option.name} className={styles.walletIcon} />
                         {option.name}
                       </button>
                     ))}
@@ -337,7 +291,7 @@ export function Header({
                 {wallet.isConnected && wallet.address ? (
                   <div className={styles.mobileWallet}>
                     <div className={styles.mobileWalletRow}>
-                      {walletName && <span>{walletName}</span>}
+                      {walletName && <><WalletIcon name={walletName} className={styles.walletIcon} /><span>{walletName}</span></>}
                       <ExplorerLink
                         value={wallet.address}
                         chain="l2"
@@ -353,6 +307,7 @@ export function Header({
                         onConnect(option.id);
                         setMenuOpen(false);
                       }}>
+                        <WalletIcon name={option.name} className={styles.walletIcon} />
                         {option.name === walletName ? `Reconnect ${option.name}` : `Switch to ${option.name}`}
                       </button>
                     ))}
@@ -363,6 +318,7 @@ export function Header({
                       onConnect(option.id);
                       setMenuOpen(false);
                     }} style={{ width: "100%" }}>
+                      <WalletIcon name={option.name} className={styles.walletIcon} />
                       Connect {option.name}
                     </button>
                   )) : (

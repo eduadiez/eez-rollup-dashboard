@@ -57,12 +57,14 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
     for(const width of [1920,1440,1280,1201,1200,1024,800,640,390,320]) {
       await page.setViewportSize({width,height:1080});
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);
-      const blocks=header.locator('[data-chain]');assert.equal(await blocks.locator('img').count(),0);
-      const a=await blocks.nth(0).boundingBox(),b=await blocks.nth(1).boundingBox();assert.ok(b.y>=a.y+a.height);
+      assert.equal(await header.locator('[data-chain]').count(),0);
+      assert.equal(await header.getByLabel('Latest network blocks').count(),0);
       const balances=header.getByRole('group',{name:'Network balances'}).getByRole('button');
       const left=await balances.nth(0).boundingBox(),right=await balances.nth(1).boundingBox();
       assert.ok(Math.abs(left.y-right.y)<1);assert.ok(right.x>=left.x+left.width);
       assert.equal(await balances.getByText('xDAI',{exact:true}).count(),2);
+      const wallet=await header.getByRole('button',{name:'Connect Wallet',exact:true}).boundingBox();
+      assert.ok(Math.abs((left.y+left.height/2)-(wallet.y+wallet.height/2))<1,'balances and wallet misaligned at '+width);
     }
     assert.deepEqual(errors,[]);
     console.log(JSON.stringify({passed:true,canonicalTransactionLinks:true,settlementLabel:true,indexRetry:true,historyNetworkLogos:true,blockLinks:true,responsiveWidths:10,horizontalBalances:true,consoleErrors:0,transactionsSent:0}));

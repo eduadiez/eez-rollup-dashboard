@@ -122,9 +122,18 @@ async function fixture(browser, options = {}) {
   });
   await page.goto(origin + '/#/bridge');
   await page.getByRole('button', { name: 'Connect Wallet' }).first().click();
+  if (options.multipleWallets) {
+    for (const brand of ['rabby', 'metamask']) {
+      const logo = page.locator('[data-wallet-logo="' + brand + '"]');
+      await until(() => logo.evaluate(img => img.complete && img.naturalWidth > 0), brand + ' picker logo did not load');
+    }
+  }
   await page.getByRole('button', {
     name: options.multipleWallets ? 'MetaMask' : 'Rabby', exact: true,
   }).first().click();
+  const selectedLogo = page.getByRole('button', { name: options.multipleWallets ? /MetaMask ·/ : /Rabby ·/ })
+    .locator('[data-wallet-logo="' + (options.multipleWallets ? 'metamask' : 'rabby') + '"]');
+  await until(() => selectedLogo.evaluate(img => img.complete && img.naturalWidth > 0), 'selected wallet logo did not load');
   if (options.reverse) await page.getByTitle('Swap direction').click();
   if (options.erc20) {
     await page.getByRole('button', { name: 'ERC20', exact: true }).click();
