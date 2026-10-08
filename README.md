@@ -28,8 +28,8 @@ including live WebSockets.
 
 Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
-Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
-advanced gas settings stay expandable. Proxy selection
+Teleport above the proxy workflow. Saved `#/bridge` links open this combined view;
+gas controls show the estimate and an editable gas limit. Proxy selection
 and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.

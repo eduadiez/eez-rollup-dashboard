@@ -396,7 +396,6 @@ export function BridgePanel({
           estimatedGas={gas.estimate}
           estimatedGasWithBuffer={gas.gasLimit}
           estimating={gas.status === "estimating"}
-          estimationMethod={gas.method}
           onGasOverride={onGasOverride}
           disabled={busy}
         />

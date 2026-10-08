@@ -138,7 +138,6 @@ async function fixture(browser, options = {}) {
   else if (options.unsupported) await page.getByText('This Composer cannot estimate cross-chain gas yet.', {exact:false}).waitFor();
   else if (options.estimateError || options.estimateResult) await page.getByRole('alert').filter({ hasText: 'Gas estimation failed:' }).waitFor();
   else await until(async () => !(await button.isDisabled()), 'Composer estimate or bridge readiness did not finish');
-  await page.getByRole('button', { name: 'Advanced Gas Settings' }).click();
   return { context, page, button, errors, rpcRequests, estimation };
 }
 
@@ -148,7 +147,7 @@ async function fixture(browser, options = {}) {
     let scenarios = 0;
     for (const reverse of [false, true]) for (const erc20 of [false, true]) for (const custom of [null, 500000]) {
       const f = await fixture(browser, { reverse, erc20, destination: recipient });
-      const row = f.page.getByText('Requested gas limit', { exact: true }).locator('..');
+      const row = f.page.getByText('Estimated gas', { exact: true }).locator('..');
       const displayed = (await row.locator('span').last().textContent()).replace(/,/g, '');
       assert.equal(displayed, String(RAW_GAS), 'Composer gas must be displayed without a 1.3x buffer');
       assert.equal(await f.page.getByText('Requested gas limit (1.3x estimate)', { exact: true }).count(), 0);
