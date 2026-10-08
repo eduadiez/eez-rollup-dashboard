@@ -17,6 +17,7 @@ import { CounterPanel } from "./components/CounterPanel";
 import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
 import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
+import { CrossChainTransactionDialog } from "./components/CrossChainTransactionDialog";
 import { BridgePanel } from "./components/BridgePanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
 import styles from "./App.module.css";
@@ -383,7 +384,6 @@ export function App() {
                     savedL2Proxies={crossChainGeneric.savedL2Proxies}
                     onCreateProxy={crossChainGeneric.createProxy}
                     getProxy={crossChainGeneric.getProxy}
-                    onReset={crossChainGeneric.reset}
                     computeProxyAddress={crossChainGeneric.computeProxyAddress}
                     onProxyDetected={handleProxyDetected}
                   />
@@ -402,10 +402,10 @@ export function App() {
                     contractName={blockscoutAbi.contractName}
                     crossChainState={crossChainGeneric.state}
                     onSendCall={handleGenericSendCall}
-                    onReset={crossChainGeneric.reset}
                     destinationRpc={destinationChain === "l1" ? config.l1Rpc : config.l2Rpc}
                     senderAddress={wallet.address}
                   />
+                  <CrossChainTransactionDialog state={crossChainGeneric.state} onDismiss={crossChainGeneric.reset} />
                 </section>
               </div>
             )}

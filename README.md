@@ -47,7 +47,10 @@ RPC errors retain saved data but prevent unverified selection or submission.
 Contract names and ABIs come from the destination explorer.
 Raw calls accept empty calldata (`0x`) and an optional native-currency value.
 Calls use the source Composer's gas estimate or an explicit manual limit, and
-poll the source chain for confirmation. The ABI editor has a fixed size.
+poll the source chain for confirmation. Proxy creation and calls show wallet
+signing, pending status, confirmation, and errors in the same popup as Bridge.
+Closing pending status keeps polling active; the final result reopens the popup
+and stays visible until dismissed. The ABI editor has a fixed size.
 
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.

@@ -24,7 +24,6 @@ interface Props {
   contractName: string | null;
   crossChainState: CrossChainState;
   onSendCall: (proxy: string, calldata: string, target?: string, value?: string, gas?: string) => void;
-  onReset: () => void;
   destinationRpc: string;
   /** Sender address for gas estimation (wallet or demo) */
   senderAddress: string | null;
@@ -74,7 +73,6 @@ export function CrossChainCallBuilder({
   contractName,
   crossChainState,
   onSendCall,
-  onReset,
   destinationRpc,
   senderAddress,
 }: Props) {
@@ -252,33 +250,7 @@ export function CrossChainCallBuilder({
         <ExplorerLink value={proxyAddress} chain={route.source} label={contractName ? `${contractName} proxy` : undefined} className={styles.proxyBannerAddr} />
       </div>
 
-      {/* Phase indicator */}
-      {["sending", "l1-pending", "l2-pending"].includes(crossChainState.phase) && (
-        <div className={styles.phaseBar}>
-          <span className={styles.spinner} />
-          <span>
-            {crossChainState.phase === "sending"
-              ? `Confirm the call in your wallet on ${sourceName}…`
-              : `Waiting for confirmation on ${sourceName}…`}
-          </span>
-        </div>
-      )}
-
       {crossChainState.phase === "confirmed" && crossChainState.txHash && (
-        <div className={`${styles.phaseBar} ${styles.phaseOk}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-          <span>Cross-chain call confirmed on {sourceName}</span>
-        </div>
-      )}
-
-      {crossChainState.phase === "failed" && crossChainState.error && (
-        <div className={styles.errorBar}>
-          {crossChainState.error}
-          <button className="btn btn-sm btn-ghost" onClick={onReset}>Dismiss</button>
-        </div>
-      )}
-
-      {crossChainState.txHash && (
         <div className={styles.txHashRow}>
           <span className={styles.txLabel}>TX</span>
           <TxLink hash={crossChainState.txHash} chain={crossChainRoute(crossChainState.direction).source} className={styles.txValue} />

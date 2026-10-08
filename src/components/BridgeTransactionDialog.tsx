@@ -1,8 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 import type { BridgeState, BridgePhase } from "../hooks/useBridge";
 import { config } from "../config";
-import { TxLink } from "./TxLink";
+import { TransactionDialog } from "./TransactionDialog";
 import styles from "./BridgeTransactionDialog.module.css";
 
 type Transaction = { phase: BridgePhase; hash: string | null; chain: "l1" | "l2"; approval: boolean; error: string | null };
@@ -12,9 +11,6 @@ export function BridgeTransactionDialog({ state, onDismiss }: { state: BridgeSta
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [open, setOpen] = useState(false);
   const previousPhase = useRef<BridgePhase>("idle");
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-  const descriptionId = useId();
   const { phase, txHash, direction, error } = state;
 
   useEffect(() => {
@@ -35,20 +31,6 @@ export function BridgeTransactionDialog({ state, onDismiss }: { state: BridgeSta
         (phase === "confirmed" || phase === "failed") && previous !== phase) setOpen(true);
   }, [phase, txHash, direction, error]);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    else if (!open && dialog.open) dialog.close();
-  }, [open, transaction]);
-
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
-  }, [open]);
-
   if (!transaction) return null;
   const complete = transaction.phase === "confirmed";
   const failed = transaction.phase === "failed";
@@ -68,26 +50,7 @@ export function BridgeTransactionDialog({ state, onDismiss }: { state: BridgeSta
 
   return <>
     {!open && !complete && !failed && phase !== "idle" && <button className={styles.reopen} onClick={() => setOpen(true)}>View transaction</button>}
-    {createPortal(<dialog ref={dialogRef} className={styles.dialog} aria-labelledby={titleId} aria-describedby={descriptionId}
-      onCancel={event => { event.preventDefault(); close(); }}
-      onKeyDown={event => {
-        if (event.key !== "Tab") return;
-        const controls = [...event.currentTarget.querySelectorAll<HTMLElement>("button, a[href]")];
-        const first = controls[0], last = controls[controls.length - 1];
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-      }}>
-      <button className={styles.close} aria-label="Close transaction status" onClick={close}>
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m6 6 12 12M18 6 6 18" /></svg>
-      </button>
-      <div className={styles.content}>
-        {complete ? <svg className={styles.success} viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" /><path d="m7 12 3 3 7-7" /></svg> :
-          failed ? <span className={styles.failure} aria-hidden="true">!</span> : <span className={styles.spinner} aria-hidden="true" />}
-        <h2 id={titleId} className={styles.title}>{title}</h2>
-        <p id={descriptionId} className={styles.description} role={failed ? "alert" : "status"}>{description}</p>
-        {transaction.hash && <TxLink hash={transaction.hash} chain={transaction.chain} className={styles.hash} />}
-        <button className={`btn ${complete || failed ? "btn-solid" : "btn-outline"}`} onClick={close}>{complete || failed ? "Done" : "Close"}</button>
-      </div>
-    </dialog>, document.body)}
+    <TransactionDialog open={open} complete={complete} failed={failed} title={title} description={description}
+      hash={transaction.hash} chain={transaction.chain} onClose={close} />
   </>;
 }

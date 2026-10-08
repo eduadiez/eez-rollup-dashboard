@@ -3,7 +3,6 @@ import { crossChainRoute, type CrossChainState, type CrossChainDirection } from 
 import { useBlockscoutAbi } from "../hooks/useBlockscoutAbi";
 import { config } from "../config";
 import { rpcCall } from "../rpc";
-import { TxLink } from "./TxLink";
 import { ExplorerLink } from "./ExplorerLink";
 import { NetworkIcon } from "./NetworkIcon";
 import { lookupAddressForChain } from "../lib/addressBook";
@@ -23,7 +22,6 @@ interface Props {
   savedL2Proxies?: Record<string, string>;
   onCreateProxy: (target: string, direction?: CrossChainDirection) => void;
   getProxy: (target: string, direction?: CrossChainDirection) => string | null;
-  onReset: () => void;
   computeProxyAddress: (target: string, direction?: CrossChainDirection) => Promise<string | null>;
   onProxyDetected: (proxy: string | null, target: string, direction: CrossChainDirection) => void;
   selecting?: boolean;
@@ -48,7 +46,7 @@ function ProxyRow({ target, proxy, direction, selected, disabled, onSelect }: {
 
 export function ProxyDeploySection({ embedded = false, state, direction = "l1-to-l2", onDirectionChange, onSelectProxy,
   targetAddress, onTargetChange, contractName, recentAddresses, savedProxies, savedL2Proxies = {},
-  onCreateProxy, getProxy, onReset, computeProxyAddress, onProxyDetected, selecting = false }: Props) {
+  onCreateProxy, getProxy, computeProxyAddress, onProxyDetected, selecting = false }: Props) {
   const [showRecent, setShowRecent] = useState(false);
   const [detected, setDetected] = useState<{ proxy: string; target: string; direction: CrossChainDirection } | null>(null);
   const [checking, setChecking] = useState(false);
@@ -63,7 +61,6 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
   const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
   const proxy = getProxy(targetAddress, direction) || (detected?.target === targetAddress && detected.direction === direction ? detected.proxy : null);
   const busy = selecting || !["idle", "confirmed", "failed"].includes(state.phase);
-  const creating = state.phase === "creating-proxy" || state.phase === "proxy-pending";
 
   useEffect(() => { if (entries.length === 0) setDeployOpen(true); }, [entries.length]);
   useEffect(() => {
@@ -117,10 +114,6 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
             <NetworkIcon chain={r.source} /><span aria-hidden="true">→</span><NetworkIcon chain={r.destination} />
           </button>; })}
         </div>}
-        {creating && <div className={styles.phaseBar}><span className={styles.spinner} />
-          {state.phase === "creating-proxy" ? `Creating proxy on ${sourceName}…` : `Waiting for confirmation on ${sourceName}…`}</div>}
-        {state.phase === "failed" && !state.calldata && state.error && <div className={styles.errorBar}>{state.error}<button className={styles.dismissBtn} onClick={onReset}>Dismiss</button></div>}
-        {state.txHash && !state.calldata && <TxLink hash={state.txHash} chain={crossChainRoute(state.direction).source} />}
         <label htmlFor="cross-chain-target" className={styles.sectionTitle}>Destination address · {destinationName}</label>
         <div ref={dropdownRef} className={styles.inputWrapper}>
           <div className={styles.inputGroup}>

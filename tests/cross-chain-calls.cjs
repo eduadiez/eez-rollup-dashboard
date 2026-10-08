@@ -13,13 +13,13 @@ async function fixture(browser,options={}){
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.addInitScript(({account,hash,forward,reverse})=>{
   localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
-  window.walletRequests=[];window.switches=[];window.currentChain='0x27d8';window.rejectSwitch=false;
+  window.walletRequests=[];window.switches=[];window.currentChain='0x27d8';window.rejectSwitch=false;window.holdSignature=false;
   window.ethereum={isRabby:true,on(){},removeListener(){},async request({method,params}){
    if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
    if(method==='eth_chainId')return window.currentChain;
    if(method==='wallet_addEthereumChain')return null;
    if(method==='wallet_switchEthereumChain'){if(window.rejectSwitch)throw new Error('User rejected switch');window.currentChain=params[0].chainId;window.switches.push(window.currentChain);return null;}
-   if(method==='eth_sendTransaction'){window.walletRequests.push({...params[0],walletChain:window.currentChain});return hash;}
+   if(method==='eth_sendTransaction'){window.walletRequests.push({...params[0],walletChain:window.currentChain});if(window.holdSignature)await new Promise(resolve=>window.releaseSignature=resolve);return hash;}
    throw new Error('Unexpected wallet method '+method);
   }};
  },{account,hash,forward,reverse});
@@ -71,7 +71,12 @@ async function fixture(browser,options={}){
  await panel.getByText('L2 Counter',{exact:false}).first().waitFor();await panel.getByText('L1 Vault',{exact:false}).first().waitFor();
  const select=async(address,back)=>panel.getByRole('button',{name:`Select proxy for ${address} on ${back?'L2':'L1'}`,exact:true}).click();
  const send=panel.getByRole('button',{name:'Send Cross-Chain Transaction',exact:true});
- return {page,context,panel,select,send,requests,errors,receipt,estimation,verification};
+ const dialog=page.getByRole('dialog');
+ const waitPending=async(network,creation=false)=>{
+  await dialog.getByRole('heading',{name:'Waiting for confirmation',exact:true}).waitFor();
+  await dialog.getByRole('status').getByText(`Your ${creation?'proxy creation':'cross-chain call'} is pending on ${network}.`,{exact:true}).waitFor();
+ };
+ return {page,context,panel,select,send,requests,errors,receipt,estimation,verification,dialog,waitPending};
 }
 async function until(condition, message) {
  const deadline=Date.now()+5000;
@@ -89,21 +94,22 @@ async function until(condition, message) {
    assert.equal(await f.page.evaluate(()=>window.currentChain),back?'0x1892':'0x27d8');
    const gas=f.panel.getByLabel('Gas limit',{exact:true});await gas.fill('500000');
    await f.page.clock.install();await f.send.click();
-   await f.panel.getByText('Waiting for confirmation on '+(back?'EEZ-X Devnet':'Chiado')+'…',{exact:true}).waitFor();
+   await f.waitPending(back?'EEZ-X Devnet':'Chiado');
    const tx=await f.page.evaluate(()=>window.walletRequests[0]);
    assert.equal(tx.to,back?reverse[target]:forward[target]);assert.equal(tx.walletChain,back?'0x1892':'0x27d8');assert.equal(tx.gas,'0x7a120');assert.equal(tx.gasLimit,tx.gas);
    assert.ok(tx.data.startsWith(back?'0x55241077':'0xd09de08a'));assert.equal(tx.value,'0x0');
    const estimates=f.requests.filter(r=>r.method==='eth_estimateGas'&&r.path.startsWith('/composer/'));assert(estimates.length);assert(estimates.every(r=>r.path===(back?'/composer/l2':'/composer/l1')));
    assert(estimates.every(r=>Object.keys(r.params[0]).sort().join(',')==='data,from,to,value'));assert.equal(estimates.at(-1).params[0].from,account);
    f.receipt.value={status:'0x1',blockNumber:'0x10',logs:[]};await f.page.clock.runFor(1100);
-   await builder.getByText('Cross-chain call confirmed on '+(back?'EEZ-X Devnet':'Chiado'),{exact:true}).waitFor();
+   await f.dialog.getByRole('heading',{name:'Cross-chain call confirmed',exact:true}).waitFor();
+   await f.dialog.getByRole('status').getByText('Cross-chain call confirmed on '+(back?'EEZ-X Devnet':'Chiado')+'.',{exact:true}).waitFor();
    const history=await f.page.evaluate(()=>JSON.parse(localStorage.getItem('txHistory'))[0]);assert.equal(history.direction,back?'l2-to-l1':'l1-to-l2');assert.equal(history.status,'confirmed');
    assert(f.requests.some(r=>r.method==='eth_getTransactionReceipt'&&r.path===(back?'/rpc/l2':'/rpc/l1')));
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
   for(const back of [false,true]){
    const f=await fixture(browser);await f.select(eoa,back);await f.panel.getByLabel('Calldata',{exact:true}).waitFor();await f.panel.getByLabel('Value (xDAI)',{exact:true}).fill('0.01');
-   await f.send.click({trial:true});await f.send.click();await f.panel.getByText('Waiting for confirmation on '+(back?'EEZ-X Devnet':'Chiado')+'…',{exact:true}).waitFor();
+   await f.send.click({trial:true});await f.send.click();await f.waitPending(back?'EEZ-X Devnet':'Chiado');
    const tx=await f.page.evaluate(()=>window.walletRequests[0]);assert.equal(tx.data,'0x');assert.equal(tx.value,'0x2386f26fc10000');assert.equal(tx.gas,'0x671af');assert.equal(tx.gasLimit,tx.gas);
    assert.equal(await f.panel.getByText('Enter calldata above to enable sending',{exact:true}).count(),0);
    assert.equal(await f.panel.getByLabel('ABI JSON',{exact:true}).evaluate(e=>getComputedStyle(e).resize),'none');
@@ -121,14 +127,16 @@ async function until(condition, message) {
     if(back)await f.panel.getByRole('button',{name:'Call L2 to L1',exact:true}).click();
     await f.panel.getByLabel('Destination address',{exact:false}).fill(fresh);
     const create=f.panel.getByRole('button',{name:'Create proxy',exact:true});await create.waitFor();if(!back)await f.page.clock.install();f.receipt.value=null;await create.click();
-    await f.panel.getByText('Waiting for confirmation on '+(back?'EEZ-X Devnet':'Chiado')+'…',{exact:true}).waitFor();
+    await f.waitPending(back?'EEZ-X Devnet':'Chiado',true);
     const tx=await f.page.evaluate(()=>window.walletRequests.at(-1));assert.equal(tx.to,back?manager:registry);assert.equal(tx.data.slice(0,10),'0xa7587c62');assert.equal(BigInt('0x'+tx.data.slice(-64)),back?0n:1n);
     f.receipt.value={status:'0x1',blockNumber:'0x10',logs:[]};await f.page.clock.runFor(1100);
     await f.panel.getByRole('button',{name:`Selected proxy for ${fresh} on ${back?'L2':'L1'}`,exact:true}).waitFor();
+    await f.dialog.getByRole('heading',{name:'Proxy created',exact:true}).waitFor();
     assert.equal(await f.page.evaluate(({key,fresh})=>JSON.parse(localStorage.getItem(key))[fresh],{key:back?'crossChainProxiesL2':'crossChainProxies',fresh}),proxyFor(fresh,!back));
     const row=f.page.getByRole('region',{name:'Transaction history'}).locator('li').first();
     assert.equal(await row.getByRole('group',{name:back?'L2':'L1',exact:true}).count(),1);
     if(!back)assert.equal(await row.getByText('L2 transaction not indexed yet',{exact:true}).count(),0);
+    await f.dialog.getByRole('button',{name:'Done',exact:true}).click();
    }
    assert.equal(await f.page.evaluate(()=>window.walletRequests.length),2);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
@@ -146,7 +154,7 @@ async function until(condition, message) {
   for(const failure of ['missing','mismatch']){
    const f=await fixture(browser);await f.select(eoa,true);await f.send.click({trial:true});
    f.verification[failure]=true;await f.send.click();
-   await f.panel.getByText(failure==='missing'?'Proxy is not deployed on L2':'Saved proxy does not match the registry address for this destination',{exact:false}).waitFor();
+   await f.dialog.getByRole('alert').filter({hasText:failure==='missing'?'Proxy is not deployed on L2':'Saved proxy does not match the registry address for this destination'}).waitFor();
    assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0,'invalid proxy must not reach the wallet');
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
@@ -161,9 +169,10 @@ async function until(condition, message) {
   }
   {
    const f=await fixture(browser);await f.select(eoa,true);await f.send.click({trial:true});await f.page.clock.install();await f.send.click();
-   await f.panel.getByText('Waiting for confirmation on EEZ-X Devnet…',{exact:true}).waitFor();
+   await f.waitPending('EEZ-X Devnet');
    f.receipt.value={status:'0x0',blockNumber:'0x10',logs:[]};await f.page.clock.runFor(1100);
-   await f.panel.getByText('Transaction reverted on L2',{exact:false}).waitFor();
+   await f.dialog.getByRole('heading',{name:'Cross-chain call failed',exact:true}).waitFor();
+   await f.dialog.getByRole('alert').filter({hasText:'Transaction reverted on L2'}).waitFor();
    assert.equal(await f.page.evaluate(()=>JSON.parse(localStorage.getItem('txHistory'))[0].status),'failed');
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
@@ -180,7 +189,7 @@ async function until(condition, message) {
    await until(()=>f.estimation.pending.length===1,'first delayed estimate missing');
    await f.panel.getByLabel('Calldata',{exact:true}).fill('0x5678');await until(()=>f.estimation.pending.length===2,'second delayed estimate missing');
    f.estimation.delay=false;for(const release of f.estimation.pending.splice(0).reverse())release();
-   await f.send.click({trial:true});await f.send.click();await f.panel.getByText('Waiting for confirmation on Chiado…',{exact:true}).waitFor();
+   await f.send.click({trial:true});await f.send.click();await f.waitPending('Chiado');
    assert.equal(await f.page.evaluate(()=>window.walletRequests[0].data),'0x5678','old estimates must not restore stale calldata');
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
@@ -190,6 +199,30 @@ async function until(condition, message) {
    await f.page.setViewportSize({width:1440,height:1080});await f.panel.hover();await f.panel.screenshot({path:'/tmp/eez-bidirectional-calls.png'});
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
-  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,responsiveWidths:8,transactionsBroadcast:0}));
+  for(const back of [false,true]){
+   const f=await fixture(browser);await f.select(eoa,back);await f.send.click({trial:true});
+   await f.page.clock.install();await f.page.evaluate(()=>window.holdSignature=true);await f.send.click();
+   await f.dialog.getByRole('heading',{name:'Confirm in your wallet',exact:true}).waitFor();
+   await f.page.waitForFunction(()=>typeof window.releaseSignature==='function');
+   await f.page.evaluate(()=>window.releaseSignature());await f.waitPending(back?'EEZ-X Devnet':'Chiado');
+   assert.equal(await f.panel.getByText('Waiting for confirmation on '+(back?'EEZ-X Devnet':'Chiado')+'…',{exact:true}).count(),0);
+   const spinner=f.dialog.locator('span[aria-hidden="true"]');
+   const before=await spinner.evaluate(e=>getComputedStyle(e).transform);await f.page.waitForTimeout(220);
+   assert.notEqual(await spinner.evaluate(e=>getComputedStyle(e).transform),before,'proxy spinner rotates');
+   await f.dialog.getByRole('button',{name:'Close',exact:true}).click();assert.equal(await f.dialog.count(),0);
+   assert.equal(await f.page.evaluate(()=>document.body.style.overflow),'');
+   assert(await f.panel.getByRole('button',{name:/Sending/}).isDisabled());
+   await f.panel.getByRole('button',{name:'View transaction',exact:true}).click();await f.waitPending(back?'EEZ-X Devnet':'Chiado');
+   await f.page.keyboard.press('Escape');assert.equal(await f.dialog.count(),0);
+   f.receipt.value={status:'0x1',blockNumber:'0x10',logs:[]};await f.page.clock.runFor(1100);
+   await f.dialog.getByRole('heading',{name:'Cross-chain call confirmed',exact:true}).waitFor();
+   const chain=back?'l2':'l1';assert.equal(await f.dialog.locator(`a[href="https://${chain}.invalid/tx/${hash}"]`).count(),1);
+   await f.page.clock.runFor(6000);await f.dialog.getByRole('heading',{name:'Cross-chain call confirmed',exact:true}).waitFor();
+   await f.page.setViewportSize({width:320,height:844});assert(await f.dialog.evaluate(e=>e.getBoundingClientRect().right<=innerWidth));
+   await f.dialog.screenshot({path:'/tmp/eez-proxy-confirmation-popup.png'});
+   await f.dialog.getByRole('button',{name:'Done',exact:true}).click();assert.equal(await f.dialog.count(),0);
+   assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,transactionPopups:true,pendingDismissKeepsPolling:true,resultReopens:true,spinnerAnimates:true,responsiveWidths:8,transactionsBroadcast:0}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
