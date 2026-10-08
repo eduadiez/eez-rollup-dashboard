@@ -253,18 +253,7 @@
 /* ── Collapsible deploy section ── */
 
 .deploySection {
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.25s ease;
-}
-
-.deployOpen {
-  max-height: 500px;
-  opacity: 1;
-}
-
-.deployClosed {
-  max-height: 0;
-  opacity: 0;
+  overflow: visible;
 }
 
 .deployInner {
@@ -301,17 +290,21 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .input {
-  flex: 1;
+  flex: 1 1 240px;
+  min-width: 0;
+  width: 100%;
   background: var(--bg-inset);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  font-family: var(--mono);
-  font-size: 12px;
+  border-radius: 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 12px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -335,7 +328,7 @@
   background: transparent;
   border: 1px solid var(--border);
   padding: 8px 18px;
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -346,7 +339,8 @@
 }
 
 .deployBtn:hover:not(:disabled) {
-  background: var(--accent-light);
+  color: var(--text-bright);
+  border-color: var(--border-hover);
   box-shadow: none;
 }
 
@@ -551,14 +545,10 @@
 /* ── Recent addresses dropdown ── */
 
 .recentDropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 10;
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border-bright);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   box-shadow: none;
   margin-top: 4px;
   max-height: 200px;
@@ -602,7 +592,9 @@
 
   .inputGroup {
     flex-direction: column;
+    align-items: stretch;
   }
+  .inputGroup .input { flex: none; }
 
   .td {
     max-width: 120px;
@@ -618,7 +610,7 @@
 @media (max-width: 640px) {
   .embedded .table, .embedded .table tbody { display: block; }
   .embedded .table thead { display: none; }
-  .embedded .row { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 0 8px; padding: 8px; border-bottom: 1px solid var(--border); }
+  .embedded .row { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 0 8px; padding: 8px; border-bottom: 1px solid var(--border); }
   .embedded .td { min-width: 0; max-width: none; padding: 6px 0; border: 0; }
   .embedded .td:first-child { grid-column: 1; grid-row: 1; box-shadow: none; }
   .embedded .td:nth-child(2) { grid-column: 1; grid-row: 2; }
@@ -635,9 +627,23 @@
 .route img, .directionButton img { width: 18px; height: 22px; object-fit: contain; }
 .directionSelector { display: flex; gap: 8px; margin-bottom: 16px; }
 .directionButton { border: 1px solid var(--border); border-radius: 100px; padding: 8px 14px; background: transparent; color: var(--text-dim); cursor: pointer; }
-.directionActive { border-color: var(--accent); background: var(--accent-dim); color: var(--text-bright); }
+.directionActive { border-color: var(--text-bright); background: var(--bg-raised); color: var(--text-bright); }
 .directionButton:disabled, .callBtn:disabled, .deployToggle:disabled { opacity: .55; cursor: default; }
 @media (max-width: 640px) {
   .embedded .td:first-child::before { content: 'Destination'; }
   .embedded .td:nth-child(2)::before { content: 'Proxy'; }
 }
+
+.actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.thNarrow:last-child { width: 120px; }
+.tdNarrow:last-child { max-width: none; }
+.removeBtn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text-dim); cursor: pointer; }
+.removeBtn:hover:not(:disabled) { color: var(--red); border-color: var(--red-border); }
+.removeBtn:disabled { opacity: .55; cursor: default; }
+.savedLabel, .contractName { color: var(--text-dim); font: 12px/1.5 var(--sans); }
+.savedLabel { padding: 8px 12px; }
+.importSection > summary { color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); padding: 4px 0; }
+.importSection > summary:hover { color: var(--text-bright); }
+.importSection[open] > summary { margin-bottom: 8px; }
+.importSection .sectionTitle { display: block; margin-bottom: 8px; }
+.saveError { color: var(--red); font: 13px/1.5 var(--sans); overflow-wrap: anywhere; }

@@ -21,14 +21,16 @@ interface Props {
   savedProxies: Record<string, string>;
   savedL2Proxies?: Record<string, string>;
   onCreateProxy: (target: string, direction?: CrossChainDirection) => void;
+  onSaveProxy: (target: string, proxy: string, direction: CrossChainDirection) => Promise<void>;
+  onRemoveProxy: (target: string, direction: CrossChainDirection) => void;
   getProxy: (target: string, direction?: CrossChainDirection) => string | null;
   computeProxyAddress: (target: string, direction?: CrossChainDirection) => Promise<string | null>;
   onProxyDetected: (proxy: string | null, target: string, direction: CrossChainDirection) => void;
   selecting?: boolean;
 }
 
-function ProxyRow({ target, proxy, direction, selected, disabled, onSelect }: {
-  target: string; proxy: string; direction: CrossChainDirection; selected: boolean; disabled: boolean; onSelect: () => void;
+function ProxyRow({ target, proxy, direction, selected, disabled, onSelect, onRemove }: {
+  target: string; proxy: string; direction: CrossChainDirection; selected: boolean; disabled: boolean; onSelect: () => void; onRemove: () => void;
 }) {
   const route = crossChainRoute(direction);
   const { contractName } = useBlockscoutAbi(target, route.destination);
@@ -38,19 +40,26 @@ function ProxyRow({ target, proxy, direction, selected, disabled, onSelect }: {
     <td className={styles.tdNarrow}><div className={styles.route} role="group" aria-label={direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}>
       <NetworkIcon chain={route.source} /><span aria-hidden="true">→</span><NetworkIcon chain={route.destination} />
     </div></td>
-    <td className={styles.tdNarrow}><button className={styles.callBtn} disabled={disabled} onClick={onSelect} aria-pressed={selected}
+    <td className={styles.tdNarrow}><div className={styles.actions}><button className={styles.callBtn} disabled={disabled} onClick={onSelect} aria-pressed={selected}
       title={`Saved in this browser. Selecting checks the registry address and deployed code on ${route.source === "l1" ? config.l1NetworkName : config.rollupName}.`}
-      aria-label={`${selected ? "Selected proxy" : "Select proxy"} for ${target} on ${route.source.toUpperCase()}`}>{selected ? "Selected" : "Select"}</button></td>
+      aria-label={`${selected ? "Selected proxy" : "Select proxy"} for ${target} on ${route.source.toUpperCase()}`}>{selected ? "Selected" : "Select"}</button>
+      <button className={styles.removeBtn} disabled={disabled} onClick={onRemove}
+        aria-label={`Remove saved proxy for ${target} on ${route.source.toUpperCase()}`} title="Remove from this browser; the deployed proxy stays on-chain.">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg>
+      </button></div></td>
   </tr>;
 }
 
 export function ProxyDeploySection({ embedded = false, state, direction = "l1-to-l2", onDirectionChange, onSelectProxy,
   targetAddress, onTargetChange, contractName, recentAddresses, savedProxies, savedL2Proxies = {},
-  onCreateProxy, getProxy, computeProxyAddress, onProxyDetected, selecting = false }: Props) {
+  onCreateProxy, onSaveProxy, onRemoveProxy, getProxy, computeProxyAddress, onProxyDetected, selecting = false }: Props) {
   const [showRecent, setShowRecent] = useState(false);
   const [detected, setDetected] = useState<{ proxy: string; target: string; direction: CrossChainDirection } | null>(null);
   const [checking, setChecking] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
+  const [proxyInput, setProxyInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const entries = [
     ...Object.entries(savedProxies).map(([target, proxy]) => ({ target, proxy, direction: "l1-to-l2" as const })),
@@ -59,8 +68,20 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
   const route = crossChainRoute(direction);
   const sourceName = route.source === "l1" ? config.l1NetworkName : config.rollupName;
   const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
-  const proxy = getProxy(targetAddress, direction) || (detected?.target === targetAddress && detected.direction === direction ? detected.proxy : null);
-  const busy = selecting || !["idle", "confirmed", "failed"].includes(state.phase);
+  const savedProxy = getProxy(targetAddress, direction);
+  const proxy = savedProxy || (detected?.target === targetAddress && detected.direction === direction ? detected.proxy : null);
+  const candidate = proxyInput.trim() || proxy;
+  const validTarget = /^0x[0-9a-f]{40}$/i.test(targetAddress);
+  const busy = saving || selecting || !["idle", "confirmed", "failed"].includes(state.phase);
+  const save = async () => {
+    if (busy || !candidate || !validTarget) return;
+    setSaving(true); setSaveError(null); setShowRecent(false);
+    try { await onSaveProxy(targetAddress, candidate, direction); setProxyInput(""); }
+    catch (error) { setSaveError(error instanceof Error ? error.message : String(error)); }
+    finally { setSaving(false); }
+  };
+
+  useEffect(() => { setProxyInput(""); setSaveError(null); setShowRecent(false); }, [targetAddress, direction]);
 
   useEffect(() => { if (entries.length === 0) setDeployOpen(true); }, [entries.length]);
   useEffect(() => {
@@ -95,16 +116,17 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
     <div className={styles.cardHeader}>
       <div className={styles.headerLeft}><span className={styles.cardTitle}>{embedded ? "[ SELECT A PROXY ]" : "Cross-Chain Proxies"}</span>
         {entries.length > 0 && <span className={styles.countBadge}>{entries.length}</span>}</div>
-      <button className={styles.deployToggle} disabled={busy} onClick={() => setDeployOpen(!deployOpen)} aria-expanded={deployOpen}>
+      <button className={styles.deployToggle} disabled={busy} onClick={() => { setDeployOpen(!deployOpen); setShowRecent(false); }} aria-expanded={deployOpen}>
         {deployOpen ? "Hide address" : "Add address"}</button>
     </div>
     {entries.length > 0 ? <div className={styles.tableWrap}><table className={styles.table}>
       <thead><tr><th className={styles.th}>Destination</th><th className={styles.th}>Proxy</th><th className={styles.thNarrow}>Network</th><th className={styles.thNarrow}>Actions</th></tr></thead>
       <tbody>{entries.map(entry => <ProxyRow key={`${entry.direction}:${entry.target}`} {...entry}
         selected={entry.direction === direction && entry.target.toLowerCase() === targetAddress.toLowerCase()} disabled={busy}
-        onSelect={() => { if (onSelectProxy) onSelectProxy(entry.target, entry.direction); else onTargetChange(entry.target); }} />)}</tbody>
+        onSelect={() => { setShowRecent(false); if (onSelectProxy) onSelectProxy(entry.target, entry.direction); else onTargetChange(entry.target); }}
+        onRemove={() => onRemoveProxy(entry.target, entry.direction)} />)}</tbody>
     </table></div> : <div className={styles.emptyState}><span className={styles.emptyText}>No saved proxies yet</span></div>}
-    <div className={`${styles.deploySection} ${deployOpen ? styles.deployOpen : styles.deployClosed}`}>
+    <div className={styles.deploySection} hidden={!deployOpen}>
       <div className={styles.deployInner}>
         <div className={styles.deploySeparator} />
         {onDirectionChange && <div className={styles.directionSelector} role="group" aria-label="Cross-chain call direction">
@@ -117,17 +139,27 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
         <label htmlFor="cross-chain-target" className={styles.sectionTitle}>Destination address · {destinationName}</label>
         <div ref={dropdownRef} className={styles.inputWrapper}>
           <div className={styles.inputGroup}>
-            <input id="cross-chain-target" type="text" className={styles.input} value={targetAddress} disabled={busy}
-              onChange={event => onTargetChange(event.target.value)} onFocus={() => recentAddresses.length > 0 && setShowRecent(true)} placeholder="0x... contract or EOA address" />
-            {proxy ? <div className={styles.proxyBadge}>Proxy available</div> : checking ? <div className={styles.checkingLabel}><span className={styles.checkSpinner} />Checking…</div> :
+            <input id="cross-chain-target" type="text" className={styles.input} value={targetAddress} disabled={busy} spellCheck={false} autoComplete="off"
+              onKeyDown={event => { if (event.key === "Escape") setShowRecent(false); else if (event.key === "ArrowDown") setShowRecent(true); }}
+              onChange={event => onTargetChange(event.target.value.trim())} onFocus={() => recentAddresses.length > 0 && setShowRecent(true)}
+              onClick={() => recentAddresses.length > 0 && setShowRecent(true)} placeholder="0x... contract or EOA address" />
+            {savedProxy && !proxyInput ? <span className={styles.savedLabel}>Saved</span> : candidate ?
+              <button className="btn btn-solid" disabled={busy || !validTarget || !/^0x[0-9a-f]{40}$/i.test(candidate)} onClick={() => { void save(); }}>{saving ? "Saving…" : "Save proxy"}</button> :
+              checking ? <div className={styles.checkingLabel}><span className={styles.checkSpinner} />Checking…</div> :
               /^0x[0-9a-f]{40}$/i.test(targetAddress) && <button className={styles.deployBtn} disabled={busy} onClick={() => onCreateProxy(targetAddress, direction)}>Create proxy</button>}
           </div>
           {showRecent && !busy && recentAddresses.length > 0 && <div className={styles.recentDropdown}><div className={styles.recentHeader}>Recent addresses</div>
-            {recentAddresses.map(address => <button key={address} className={styles.recentItem} onMouseDown={event => { event.preventDefault(); onTargetChange(address); setShowRecent(false); }}>
+            {recentAddresses.map(address => <button key={address} className={styles.recentItem} onClick={() => { onTargetChange(address); setShowRecent(false); }}>
               {lookupAddressForChain(address, route.destination) || `${address.slice(0, 10)}…${address.slice(-6)}`}</button>)}</div>}
         </div>
-        {contractName && <div className={styles.contractBadge}>{contractName}</div>}
-        {proxy && <div className={styles.proxyAddrRow}><span className={styles.proxyLabel}>Proxy · {sourceName}</span><ExplorerLink value={proxy} chain={route.source} className={styles.proxyValue} /></div>}
+        {validTarget && <details className={styles.importSection}>
+          <summary>Use an existing proxy address</summary>
+          <label htmlFor="existing-proxy-address" className={styles.sectionTitle}>Proxy address · {sourceName}</label>
+          <input id="existing-proxy-address" className={styles.input} value={proxyInput} disabled={busy} spellCheck={false} autoComplete="off"
+            onChange={event => { setProxyInput(event.target.value.trim()); setSaveError(null); }} placeholder={proxy || "0x... proxy on the source network"} />
+        </details>}
+        {saveError && <p className={styles.saveError} role="alert">{saveError}</p>}
+        {contractName && <span className={styles.contractName}>{contractName}</span>}
       </div>
     </div>
   </div>;

@@ -95,7 +95,7 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
   }, [ready]);
 
   const saveProxy = useCallback((target: string, proxy: string, direction: CrossChainDirection) => {
-    if (!validAddress(proxy)) return;
+    if (!validAddress(target) || !validAddress(proxy)) return;
     // Read storage fresh so the demo and generic hook instances do not overwrite each other's proxies.
     const next = { ...loadProxies(direction), [target.toLowerCase()]: proxy };
     localStorage.setItem(storageKey(direction), JSON.stringify(next));
@@ -103,17 +103,29 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
   }, []);
 
   const getProxy = useCallback((target: string, direction: CrossChainDirection = "l1-to-l2") => {
-    const cached = direction === "l1-to-l2" ? savedProxies : savedL2Proxies;
-    return loadProxies(direction)[target.toLowerCase()] || cached[target.toLowerCase()] || null;
+    return loadProxies(direction)[target.toLowerCase()] || null;
   }, [savedProxies, savedL2Proxies]);
 
   const computeProxyAddress = useCallback((target: string, direction: CrossChainDirection = "l1-to-l2") => computeProxy(target, direction), []);
 
   const verifyProxy = useCallback(async (target: string, proxy: string, direction: CrossChainDirection = "l1-to-l2") => {
+    if (!validAddress(target) || !validAddress(proxy)) throw new Error("Enter valid destination and proxy addresses");
     const computed = await computeProxy(target, direction);
     if (!computed) throw new Error("Unable to verify the proxy with the source-chain registry");
     if (computed.toLowerCase() !== proxy.toLowerCase()) throw new Error("Saved proxy does not match the registry address for this destination");
     if (!await checkProxyCode(proxy, direction)) throw new Error("Proxy is not deployed on " + crossChainRoute(direction).source.toUpperCase());
+  }, []);
+
+  const registerProxy = useCallback(async (target: string, proxy: string, direction: CrossChainDirection) => {
+    await verifyProxy(target, proxy, direction);
+    saveProxy(target, proxy, direction);
+  }, [verifyProxy, saveProxy]);
+
+  const removeProxy = useCallback((target: string, direction: CrossChainDirection) => {
+    const next = loadProxies(direction);
+    delete next[target.toLowerCase()];
+    localStorage.setItem(storageKey(direction), JSON.stringify(next));
+    (direction === "l1-to-l2" ? setSavedProxies : setSavedL2Proxies)(next);
   }, []);
 
   const finish = useCallback((transaction: CrossChainState) => {
@@ -207,5 +219,5 @@ export function useCrossChain(log: Logger, sendL1Tx: Sender, sendL1ProxyTx: Send
   }, [sendL1ProxyTx, sendL2ProxyTx, sender, verifyProxy, waitForReceipt, finish, log]);
 
   const reset = useCallback(() => setState(IDLE), []);
-  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, verifyProxy, getProxy, reset };
+  return { state, savedProxies, savedL2Proxies, createProxy, sendCrossChainCall, computeProxyAddress, verifyProxy, registerProxy, removeProxy, getProxy, reset };
 }

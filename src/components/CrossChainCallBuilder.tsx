@@ -92,6 +92,7 @@ export function CrossChainCallBuilder({
   // Effective ABI: blockscout > manual paste > raw calldata
   const route = crossChainRoute(direction);
   const sourceName = route.source === "l1" ? config.l1NetworkName : config.rollupName;
+  const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
   const effectiveAbi = abi || manualAbiParsed;
   const calldata = effectiveAbi ? abiCalldata : rawCalldata || null;
   const validCalldata = !!calldata && /^0x(?:[0-9a-f]{2})*$/i.test(calldata);
@@ -239,15 +240,21 @@ export function CrossChainCallBuilder({
     <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
       <div className={styles.cardHeader}>
         <span className={styles.cardTitle}>{embedded ? "[ PREPARE CALL ]" : "Execute Cross-Chain Call"}</span>
-        <span className={styles.callRoute} role="group" aria-label={direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}><NetworkIcon chain={route.source} /><span aria-hidden="true">→</span><NetworkIcon chain={route.destination} /></span>
       </div>
 
-      {/* Step 1: Show the detected proxy prominently */}
-      <div className={styles.proxyBanner}>
-        <div className={styles.proxyBannerLeft}>
-          <span className={styles.proxyBannerLabel}>Proxy · {sourceName}</span>
+      <div className={styles.routeSummary} role="group" aria-label="Call route">
+        <div className={styles.endpoint} role="group" aria-label="Source proxy">
+          <span className={styles.endpointLabel}>Source proxy</span>
+          <span className={styles.endpointNetwork}><NetworkIcon chain={route.source} decorative />{sourceName}</span>
+          <ExplorerLink value={proxyAddress} label={proxyAddress} chain={route.source} className={styles.endpointAddress} />
         </div>
-        <ExplorerLink value={proxyAddress} chain={route.source} label={contractName ? `${contractName} proxy` : undefined} className={styles.proxyBannerAddr} />
+        <span className={styles.routeArrow} aria-hidden="true">→</span>
+        <div className={styles.endpoint} role="group" aria-label="Destination">
+          <span className={styles.endpointLabel}>Destination</span>
+          <span className={styles.endpointNetwork}><NetworkIcon chain={route.destination} decorative />{destinationName}</span>
+          {contractName && <span className={styles.endpointName}>{contractName}</span>}
+          <ExplorerLink value={targetAddress} label={targetAddress} chain={route.destination} className={styles.endpointAddress} />
+        </div>
       </div>
 
       {crossChainState.phase === "confirmed" && crossChainState.txHash && (
@@ -387,6 +394,8 @@ export function CrossChainCallBuilder({
         )}
 
         {calldata && (
+          <details className={styles.gasSettings}>
+          <summary>Gas settings</summary>
           <GasLimitEditor
             estimatedGas={gasState.status === "estimated" ? gasState.estimate : null}
             estimatedGasWithBuffer={gasState.status === "estimated" ? parseInt(gasState.gasHex, 16) : null}
@@ -394,6 +403,7 @@ export function CrossChainCallBuilder({
             onGasOverride={handleGasOverride}
             disabled={busy}
           />
+          </details>
         )}
 
         <button

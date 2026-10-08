@@ -14,6 +14,8 @@ status tokens live in `src/styles/global.css`.
 - Bridge and cross-chain calls are separate workflows arranged in 40/60 columns,
   stacked on smaller screens. Each workflow may have its own primary action.
   Proxy selection and call preparation are sections of one card, not nested cards.
+  The call route uses neutral surfaces, with network names and linked addresses
+  for the source proxy and destination. Gas settings are collapsed initially.
 - Form values use reading typography; field labels, navigation, filters, badges,
   and actions use mono chrome. Form submit buttons retain a 44px minimum height.
 - Live data and decoded payload panes are runtime output, not source excerpts.

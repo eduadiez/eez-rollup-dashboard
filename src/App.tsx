@@ -383,6 +383,14 @@ export function App() {
                     savedProxies={crossChainGeneric.savedProxies}
                     savedL2Proxies={crossChainGeneric.savedL2Proxies}
                     onCreateProxy={crossChainGeneric.createProxy}
+                    onSaveProxy={crossChainGeneric.registerProxy}
+                    onRemoveProxy={(target, direction) => {
+                      crossChainGeneric.removeProxy(target, direction);
+                      if (direction === genericDirection && target.toLowerCase() === genericTargetAddr.toLowerCase()) {
+                        setGenericTargetAddr(""); setAutoDetectedProxy(null); crossChainGeneric.reset();
+                      }
+                      setProxySelectionError(null);
+                    }}
                     getProxy={crossChainGeneric.getProxy}
                     computeProxyAddress={crossChainGeneric.computeProxyAddress}
                     onProxyDetected={handleProxyDetected}

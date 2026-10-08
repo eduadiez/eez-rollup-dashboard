@@ -45,9 +45,16 @@ source manager's computed proxy address and `eth_getCode` when selected and
 before sending. Confirmed mismatches or missing code clear stale mappings;
 RPC errors retain saved data but prevent unverified selection or submission.
 Contract names and ABIs come from the destination explorer.
+Detected proxies can be saved explicitly, or imported by entering their source
+address alongside the destination. Saving verifies the registry mapping and
+deployed code without sending a transaction. Removing a saved row only clears
+its browser entry; removing the selected proxy also clears the call form.
+Prepare Call shows both network names and full source/destination addresses.
+Recent addresses reflow within the form rather than overlapping call preparation.
 Raw calls accept empty calldata (`0x`) and an optional native-currency value.
 Calls use the source Composer's gas estimate or an explicit manual limit, and
-poll the source chain for confirmation. Proxy creation and calls show wallet
+poll the source chain for confirmation. Gas settings are collapsed by default;
+estimation errors remain visible and prevent submission. Proxy creation and calls show wallet
 signing, pending status, confirmation, and errors in the same popup as Bridge.
 Closing pending status keeps polling active; the final result reopens the popup
 and stays visible until dismissed. The ABI editor has a fixed size.

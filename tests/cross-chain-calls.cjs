@@ -12,7 +12,12 @@ async function fixture(browser,options={}){
  const verification={codeError:options.codeError??false,missing:false,mismatch:false},deployed=new Set(),deploying=new Set();
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.addInitScript(({account,hash,forward,reverse})=>{
-  localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
+  if(!localStorage.getItem('crossChainFixture')){
+   localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
+   const recent=Array.from({length:8},(_,i)=>'0x'+String(i+1).repeat(40));
+   localStorage.setItem('recentL1Addresses',JSON.stringify(recent));localStorage.setItem('recentL2Addresses',JSON.stringify(recent));
+   localStorage.setItem('crossChainFixture','seeded');
+  }
   window.walletRequests=[];window.switches=[];window.currentChain='0x27d8';window.rejectSwitch=false;window.holdSignature=false;
   window.ethereum={isRabby:true,on(){},removeListener(){},async request({method,params}){
    if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
@@ -92,7 +97,18 @@ async function until(condition, message) {
    await builder.getByText(back?'L1 Vault':'L2 Counter',{exact:false}).first().waitFor();
    assert.equal(await f.panel.getByRole('columnheader',{name:'Status',exact:true}).count(),0);
    assert.equal(await f.page.evaluate(()=>window.currentChain),back?'0x1892':'0x27d8');
+   const source=f.panel.getByRole('group',{name:'Source proxy',exact:true}),destination=f.panel.getByRole('group',{name:'Destination',exact:true});
+   assert.equal(await source.getByText(back?'EEZ-X Devnet':'Chiado',{exact:true}).count(),1);
+   assert.equal(await destination.getByText(back?'Chiado':'EEZ-X Devnet',{exact:true}).count(),1);
+   assert.equal(await source.locator(`a[href="https://${back?'l2':'l1'}.invalid/address/${back?reverse[target]:forward[target]}"]`).count(),1);
+   assert.equal(await destination.locator(`a[href="https://${back?'l1':'l2'}.invalid/address/${target}"]`).count(),1);
+   assert(await builder.getByText('[ PREPARE CALL ]',{exact:true}).evaluate(e=>getComputedStyle(e).fontFamily.includes('Geist Mono')));
+   assert(await source.getByText(back?'EEZ-X Devnet':'Chiado',{exact:true}).evaluate(e=>getComputedStyle(e).fontFamily.startsWith('Geist,')));
+   assert.equal(await f.panel.getByRole('group',{name:'Call route',exact:true}).evaluate(e=>getComputedStyle(e).backgroundColor),'rgba(0, 0, 0, 0)','route surface stays neutral');
+   assert.equal(await f.panel.getByLabel('Gas limit',{exact:true}).isVisible(),false);
+   await builder.getByText('Gas settings',{exact:true}).click();
    const gas=f.panel.getByLabel('Gas limit',{exact:true});await gas.fill('500000');
+   await builder.getByText('Gas settings',{exact:true}).click();
    await f.page.clock.install();await f.send.click();
    await f.waitPending(back?'EEZ-X Devnet':'Chiado');
    const tx=await f.page.evaluate(()=>window.walletRequests[0]);
@@ -179,6 +195,7 @@ async function until(condition, message) {
   {
    const f=await fixture(browser);f.estimation.error='execution reverted: refused';await f.select(eoa,true);await f.panel.getByText('Transaction will revert:',{exact:false}).waitFor();
    assert.equal(await f.panel.getByRole('button',{name:'Transaction Will Revert',exact:true}).isDisabled(),true);
+   await f.panel.getByText('Gas settings',{exact:true}).click();
    await f.panel.getByLabel('Gas limit',{exact:true}).fill('500000');assert.equal(await f.panel.getByRole('button',{name:'Transaction Will Revert',exact:true}).isDisabled(),true);
    assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
@@ -223,6 +240,59 @@ async function until(condition, message) {
    await f.dialog.getByRole('button',{name:'Done',exact:true}).click();assert.equal(await f.dialog.count(),0);
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }
-  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,transactionPopups:true,pendingDismissKeepsPolling:true,resultReopens:true,spinnerAnimates:true,responsiveWidths:8,transactionsBroadcast:0}));
+  for(const back of [false,true]){
+   const f=await fixture(browser),key=back?'crossChainProxiesL2':'crossChainProxies',otherKey=back?'crossChainProxies':'crossChainProxiesL2';
+   await f.select(target,back);await f.send.click({trial:true});
+   await f.panel.getByRole('button',{name:`Remove saved proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).click();
+   assert.equal(await f.panel.getByRole('button',{name:`Select proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).count(),0);
+   assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),undefined);
+   assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key:otherKey,target}),back?forward[target]:reverse[target]);
+   assert.equal(await f.send.count(),0,'removing the selected proxy clears the call form');
+   await f.panel.getByRole('button',{name:'Add address',exact:true}).click();
+   const input=f.panel.getByLabel('Destination address',{exact:false});await input.fill(target);
+   const save=f.panel.getByRole('button',{name:'Save proxy',exact:true});await save.waitFor();await save.click();
+   await f.panel.getByRole('button',{name:`Selected proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).waitFor();
+   assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
+   await f.panel.getByText('Use an existing proxy address',{exact:true}).click();
+   const importInput=f.panel.getByLabel('Proxy address',{exact:false});await importInput.fill(addr('ee'));await save.click();
+   await f.panel.getByRole('alert').filter({hasText:'Saved proxy does not match the registry address'}).waitFor();
+   assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
+   f.verification.missing=true;await importInput.fill(back?reverse[target]:forward[target]);await save.click();
+   await f.panel.getByRole('alert').filter({hasText:`Proxy is not deployed on ${back?'L2':'L1'}`}).waitFor();f.verification.missing=false;
+   f.verification.codeError=true;await save.click();
+   await f.panel.getByRole('alert').filter({hasText:'Read RPC temporarily unavailable'}).waitFor();
+   assert.equal(await f.page.evaluate(({key,target})=>JSON.parse(localStorage.getItem(key))[target],{key,target}),back?reverse[target]:forward[target]);
+   f.verification.codeError=false;
+   await save.click();await f.panel.getByText('Saved',{exact:true}).waitFor();
+   await f.panel.getByRole('button',{name:`Remove saved proxy for ${eoa} on ${back?'L2':'L1'}`,exact:true}).click();
+   assert.equal(await f.panel.getByRole('button',{name:`Selected proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).getAttribute('aria-pressed'),'true','removing another row preserves selection');
+   assert.equal(await f.send.count(),1);
+   assert.equal(await f.page.evaluate(()=>window.walletRequests.length),0,'saving and removing proxies are browser-only actions');
+   await f.page.reload();await f.panel.getByRole('button',{name:`Select proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).waitFor();
+   await f.panel.getByRole('button',{name:`Remove saved proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).click();
+   await f.page.reload();await f.panel.getByRole('button',{name:`Select proxy for ${eoa} on ${back?'L1':'L2'}`,exact:true}).waitFor();
+   assert.equal(await f.panel.getByRole('button',{name:`Select proxy for ${target} on ${back?'L2':'L1'}`,exact:true}).count(),0,'removed proxy stays removed after reload');
+   assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  {
+   const f=await fixture(browser);await f.panel.getByRole('button',{name:'Add address',exact:true}).click();
+   const input=f.panel.getByLabel('Destination address',{exact:false});await input.focus();
+   const recent=f.panel.getByText('Recent addresses',{exact:true}).locator('..');await recent.waitFor();
+   assert.equal(await recent.getByRole('button').count(),8);
+   await recent.getByRole('button').last().click();assert.equal(await input.inputValue(),'0x'+'8'.repeat(40));
+   for(const width of [1440,1024,640,390,320]){
+    await f.page.setViewportSize({width,height:1080});await input.click();await recent.waitFor();
+    assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'proxy form overflow at '+width);
+    assert(await recent.evaluate(e=>{const p=e.closest('[hidden]');return !p&&e.getBoundingClientRect().height>=150;}),'recent list clipped at '+width);
+    await f.panel.getByText('[ PREPARE CALL ]',{exact:true}).waitFor();
+    const listBox=await recent.boundingBox(),builderBox=await f.panel.locator('[data-call-builder]').boundingBox();
+    assert(listBox.y+listBox.height<builderBox.y,'recent list overlaps prepare call at '+width);
+    await f.page.keyboard.press('Escape');assert.equal(await recent.isVisible(),false);
+   }
+   await f.page.setViewportSize({width:1440,height:1080});await input.click();await f.panel.screenshot({path:'/tmp/eez-proxy-manager-updated.png'});
+   await f.panel.getByRole('button',{name:'Hide address',exact:true}).click();assert.equal(await input.isVisible(),false);
+   assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+  }
+  console.log(JSON.stringify({passed:true,scenarios,bothDirections:true,sourceComposerEstimates:true,manualGas:true,eoasAndEmptyCalldata:true,proxyCreationBothChains:true,separateCaches:true,registryAndCodeVerified:true,invalidProxiesBlockSubmission:true,focusRingContained:true,accentMatchesBorder:true,chainScopedNamesAndAbi:true,rejectedSwitchPreservesSelection:true,sourceReceiptPolling:true,historyDirections:true,transactionPopups:true,pendingDismissKeepsPolling:true,resultReopens:true,spinnerAnimates:true,proxySaveAndRemove:true,invalidImportsRejected:true,sourceAndDestinationAddresses:true,gasCollapsedByDefault:true,recentAddressesNotClipped:true,responsiveWidths:8,transactionsBroadcast:0}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
