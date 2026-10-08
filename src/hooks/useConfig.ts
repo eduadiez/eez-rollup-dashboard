@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import { config, setConfig, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
-import { registerContractsFromEnv } from "../lib/addressBook";
+import { registerConfiguredContracts } from "../lib/addressBook";
+import { l1Identity, nativeCurrency } from "../lib/networkIdentity";
 
 type RuntimeConfig = {
+  networkName?: string;
+  l1NetworkName?: string;
+  l1NetworkLogoUrl?: string;
+  l1ExplorerApiUrl?: string;
+  tokenListUrl?: string;
   l1RpcUrl?: string;
   l2RpcUrl?: string;
   l1FrontUrl?: string;
@@ -17,14 +23,12 @@ type RuntimeConfig = {
   bridgeL2Address?: string;
   rollupId?: string;
   demoBridgeAddress?: string;
-  demoPrivateKey?: string;
   demoTokenAddress?: string;
   demoPoolAddress?: string;
   demoExecutorL1?: string;
   demoExecutorL2?: string;
   demoWrappedTokenL2?: string;
   demoNftL2?: string;
-  faucetAddress?: string;
   reverseExecutorL2?: string;
   reverseNftL1?: string;
   reverseExecutorL1?: string;
@@ -43,24 +47,13 @@ function absoluteUrl(value: string | undefined): string | undefined {
   return value ? new URL(value, window.location.origin).toString() : undefined;
 }
 
-function parseEnv(text: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const line of text.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq < 0) continue;
-    result[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
-  }
-  return result;
-}
-
-/** Loads config from /shared/ env files and auto-detects chain IDs from RPCs */
+/** Loads runtime config and auto-detects chain IDs from RPCs. */
 export function useConfigLoader() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
+      let l1NameOverride = "";
       // Current EEZ/Kurtosis runtime configuration. The mapping below is the
       // compatibility layer between the POC UI names and the current network.
       try {
@@ -68,11 +61,18 @@ export function useConfigLoader() {
         if (response.ok) {
           const payload = (await response.json()) as RuntimeConfig & { browser?: RuntimeConfig };
           const runtime: RuntimeConfig = payload.browser ?? payload;
+          const rollupName = runtime.networkName?.trim() || payload.networkName?.trim();
+          l1NameOverride = runtime.l1NetworkName?.trim() || payload.l1NetworkName?.trim() || "";
           const l1Rpc = absoluteUrl(runtime.l1RpcUrl);
           const l2Rpc = absoluteUrl(runtime.l2RpcUrl);
           const l1ProxyRpc = absoluteUrl(runtime.l1FrontUrl);
           const l2ProxyRpc = absoluteUrl(runtime.l2FrontUrl);
           setConfig({
+            ...(l1NameOverride ? { l1NetworkName: l1NameOverride } : {}),
+            ...(runtime.l1NetworkLogoUrl ? { l1NetworkLogoUrl: absoluteUrl(runtime.l1NetworkLogoUrl)! } : {}),
+            ...(runtime.l1ExplorerApiUrl ? { l1ExplorerApi: absoluteUrl(runtime.l1ExplorerApiUrl)! } : {}),
+            ...(runtime.tokenListUrl ? { tokenListUrl: absoluteUrl(runtime.tokenListUrl)! } : {}),
+            ...(rollupName ? { rollupName } : {}),
             ...(l1Rpc ? { l1Rpc } : {}),
             ...(l2Rpc ? { l2Rpc } : {}),
             ...(l1ProxyRpc ? { l1ProxyRpc } : {}),
@@ -88,7 +88,6 @@ export function useConfigLoader() {
               l1Bridge: runtime.demoBridgeAddress,
               l2Bridge: runtime.demoBridgeAddress,
             } : {}),
-            ...(runtime.demoPrivateKey ? { demoPrivateKey: runtime.demoPrivateKey } : {}),
             ...(runtime.demoExecutorL1 ? { flashExecutorL1: runtime.demoExecutorL1 } : {}),
             ...(runtime.demoTokenAddress ? { flashTokenAddress: runtime.demoTokenAddress } : {}),
             ...(runtime.demoPoolAddress ? { flashPoolAddress: runtime.demoPoolAddress } : {}),
@@ -96,7 +95,6 @@ export function useConfigLoader() {
             ...(runtime.demoExecutorL2 ? { flashExecutorL2: runtime.demoExecutorL2 } : {}),
             ...(runtime.demoWrappedTokenL2 ? { flashWrappedTokenL2: runtime.demoWrappedTokenL2 } : {}),
             ...(runtime.l2ContractAddress ? { ccmL2Address: runtime.l2ContractAddress } : {}),
-            ...(runtime.faucetAddress ? { faucetAddress: runtime.faucetAddress } : {}),
             ...(runtime.reverseExecutorL2 ? { reverseExecutorL2: runtime.reverseExecutorL2 } : {}),
             ...(runtime.reverseNftL1 ? { reverseNftL1: runtime.reverseNftL1 } : {}),
             ...(runtime.reverseExecutorL1 ? { reverseExecutorL1: runtime.reverseExecutorL1 } : {}),
@@ -112,70 +110,10 @@ export function useConfigLoader() {
           });
         }
       } catch {
-        /* runtime config not present; URL parameters and legacy env remain valid */
+        /* Runtime config is unavailable; retain defaults and URL parameters. */
       }
 
-      // Load env file (unified rollup.env written by deploy.sh)
-      try {
-        const resp = await fetch("/shared/rollup.env");
-        if (resp.ok) {
-          const env = parseEnv(await resp.text());
-          if (!config.rollupsAddress && env["ROLLUPS_ADDRESS"]) {
-            setConfig({ rollupsAddress: env["ROLLUPS_ADDRESS"] });
-          }
-          if (env["ROLLUP_ID"]) {
-            setConfig({ rollupId: env["ROLLUP_ID"] });
-          }
-          if (!config.l1Bridge && env["BRIDGE_L1_ADDRESS"])
-            setConfig({ l1Bridge: env["BRIDGE_L1_ADDRESS"] });
-          if (!config.l2Bridge && env["BRIDGE_L2_ADDRESS"])
-            setConfig({ l2Bridge: env["BRIDGE_L2_ADDRESS"] });
-          if (!config.flashExecutorL1 && env["FLASH_EXECUTOR_L1_ADDRESS"])
-            setConfig({ flashExecutorL1: env["FLASH_EXECUTOR_L1_ADDRESS"] });
-          if (!config.flashTokenAddress && env["FLASH_TOKEN_ADDRESS"])
-            setConfig({ flashTokenAddress: env["FLASH_TOKEN_ADDRESS"] });
-          if (!config.flashPoolAddress && env["FLASH_POOL_ADDRESS"])
-            setConfig({ flashPoolAddress: env["FLASH_POOL_ADDRESS"] });
-          if (!config.flashNftAddress && env["FLASH_NFT_ADDRESS"])
-            setConfig({ flashNftAddress: env["FLASH_NFT_ADDRESS"] });
-          if (!config.flashExecutorL2 && env["FLASH_EXECUTOR_L2_ADDRESS"])
-            setConfig({ flashExecutorL2: env["FLASH_EXECUTOR_L2_ADDRESS"] });
-          if (!config.flashWrappedTokenL2 && env["WRAPPED_TOKEN_L2"])
-            setConfig({ flashWrappedTokenL2: env["WRAPPED_TOKEN_L2"] });
-          if (!config.reverseExecutorL2 && env["REVERSE_EXECUTOR_L2"])
-            setConfig({ reverseExecutorL2: env["REVERSE_EXECUTOR_L2"] });
-          if (!config.reverseNftL1 && env["REVERSE_NFT_L1"])
-            setConfig({ reverseNftL1: env["REVERSE_NFT_L1"] });
-          if (!config.reverseExecutorL1 && env["REVERSE_EXECUTOR_L1"])
-            setConfig({ reverseExecutorL1: env["REVERSE_EXECUTOR_L1"] });
-          if (!config.faucetAddress && env["FAUCET_ADDRESS"])
-            setConfig({ faucetAddress: env["FAUCET_ADDRESS"] });
-          if (!config.ccmL2Address && env["CROSS_CHAIN_MANAGER_ADDRESS"])
-            setConfig({ ccmL2Address: env["CROSS_CHAIN_MANAGER_ADDRESS"] });
-          // Aggregator addresses
-          if (!config.aggWeth && env["AGG_WETH_ADDRESS"])
-            setConfig({ aggWeth: env["AGG_WETH_ADDRESS"] });
-          if (!config.aggUsdc && env["AGG_USDC_ADDRESS"])
-            setConfig({ aggUsdc: env["AGG_USDC_ADDRESS"] });
-          if (!config.aggL1Amm && env["AGG_L1_AMM_ADDRESS"])
-            setConfig({ aggL1Amm: env["AGG_L1_AMM_ADDRESS"] });
-          if (!config.aggAggregator && env["AGG_AGGREGATOR_ADDRESS"])
-            setConfig({ aggAggregator: env["AGG_AGGREGATOR_ADDRESS"] });
-          if (!config.aggL2Executor && env["AGG_L2_EXECUTOR_ADDRESS"])
-            setConfig({ aggL2Executor: env["AGG_L2_EXECUTOR_ADDRESS"] });
-          if (!config.aggL2Amm && env["AGG_L2_AMM_ADDRESS"])
-            setConfig({ aggL2Amm: env["AGG_L2_AMM_ADDRESS"] });
-          if (!config.aggL2ExecutorProxy && env["AGG_L2_EXECUTOR_PROXY_ADDRESS"])
-            setConfig({ aggL2ExecutorProxy: env["AGG_L2_EXECUTOR_PROXY_ADDRESS"] });
-          if (!config.aggWrappedWethL2 && env["AGG_WRAPPED_WETH_L2"])
-            setConfig({ aggWrappedWethL2: env["AGG_WRAPPED_WETH_L2"] });
-          if (!config.aggWrappedUsdcL2 && env["AGG_WRAPPED_USDC_L2"])
-            setConfig({ aggWrappedUsdcL2: env["AGG_WRAPPED_USDC_L2"] });
-          registerContractsFromEnv(env);
-        }
-      } catch {
-        /* shared not mounted */
-      }
+      registerConfiguredContracts(config);
 
       // Auto-detect chain IDs from RPCs
       try {
@@ -184,8 +122,10 @@ export function useConfigLoader() {
           "eth_chainId",
         )) as string;
         L1_CHAIN.chainId = l1ChainId;
-        const dec = parseInt(l1ChainId, 16);
-        L1_CHAIN.chainName = `EEZ L1 (${dec})`;
+        const identity = l1Identity(l1ChainId);
+        L1_CHAIN.nativeCurrency = nativeCurrency(l1ChainId);
+        L2_CHAIN.nativeCurrency = nativeCurrency(l1ChainId);
+        setConfig({ l1NetworkName: l1NameOverride || identity.name, l1NetworkLogo: identity.logo });
       } catch {
         /* keep defaults */
       }
@@ -196,8 +136,7 @@ export function useConfigLoader() {
           "eth_chainId",
         )) as string;
         L2_CHAIN.chainId = l2ChainId;
-        const dec = parseInt(l2ChainId, 16);
-        L2_CHAIN.chainName = `EEZ L2 (${dec})`;
+        L2_CHAIN.chainName = config.rollupName;
       } catch {
         /* keep defaults */
       }

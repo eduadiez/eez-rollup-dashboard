@@ -55,6 +55,7 @@ async function fixture(browser, options = {}) {
       configRequested = true;
       if (options.configGate) await options.configGate.promise;
       return route.fulfill({ json: {
+        networkName: 'EEZ-X Devnet',
         bridgeL1Address: bridge.l1, bridgeL2Address: bridge.l2,
         l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
         l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
@@ -106,7 +107,7 @@ async function fixture(browser, options = {}) {
   };
   if (!options.configGate) await connect();
   return { page, modes, calls, connect, configRequested: () => configRequested,
-    button: page.getByRole('button', { name: 'Bridge ETH', exact: true }),
+    button: page.getByRole('button', { name: 'Bridge xDAI', exact: true }),
     async clean() {
       assert.deepEqual(writes, [], 'the test must never submit or sign a transaction');
       assert.deepEqual(errors, [], 'browser runtime errors');
@@ -124,7 +125,7 @@ async function fixture(browser, options = {}) {
     configGate.release();
     await f.connect();
     await f.page.getByText('Checking bridge on L1…', { exact: true }).waitFor();
-    await f.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.001');
+    await f.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
     assert.equal(await f.button.isDisabled(), true, 'unknown readiness must disable bridging');
     await until(() => f.calls.length >= 2, 'both configured bridges must be checked immediately');
     assert.equal(await f.page.getByText(missing, { exact: false }).count(), 0);
@@ -133,9 +134,10 @@ async function fixture(browser, options = {}) {
     assert.equal(f.calls.length, inFlight, 'slow readiness checks must not overlap');
     readGate.release();
     await until(() => f.button.isEnabled(), 'ready bridge waited for the 10-second retry');
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l1', origin).href);
+    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('Chiado').count(), 1);
     await f.page.getByTitle('Swap direction').click();
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l2', origin).href);
+    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('EEZ-X Devnet').count(), 1);
+    assert.equal(await f.page.getByLabel('Bridge wallet RPC').count(), 0);
     assert.deepEqual(await f.page.evaluate(() => window.bridgeMissingMessages), [],
       'a false missing-deployment warning appeared during startup');
     results.push('Delayed config/readiness: no false warning; disabled until ready; immediate check; no overlapping reads; both RPC directions');
@@ -146,7 +148,7 @@ async function fixture(browser, options = {}) {
       const isMissing = mode === 'no-code' || mode === 'zero-manager';
       const message = isMissing ? missing : 'Unable to check the bridge on L1. Retrying…';
       await f.page.getByText(message, { exact: false }).waitFor();
-      await f.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.001');
+      await f.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
       assert.equal(await f.button.isDisabled(), true);
       if (!isMissing) assert.deepEqual(await f.page.evaluate(() => window.bridgeMissingMessages), []);
       f.modes.l1 = 'ready';
@@ -163,7 +165,7 @@ async function fixture(browser, options = {}) {
     const reverse = await fixture(browser, { modes: { l2: 'no-code' } });
     await reverse.page.getByTitle('Swap direction').click();
     await reverse.page.getByText(missing + ' on L2.', { exact: true }).waitFor();
-    await reverse.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.001');
+    await reverse.page.getByLabel('Bridge amount', { exact: true }).fill('0.001');
     assert.equal(await reverse.button.isDisabled(), true);
     await reverse.page.getByTitle('Swap direction').click();
     await until(() => reverse.button.isEnabled(), 'L2 missing deployment incorrectly blocked ready L1');

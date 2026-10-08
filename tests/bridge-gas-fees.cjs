@@ -23,21 +23,26 @@ async function until(predicate, message) {
 }
 
 async function fixture(browser, options = {}) {
+  const nativeSymbol = options.chain === '0x1' ? 'ETH' : 'xDAI';
   const context = await browser.newContext();
   const page = await context.newPage();
   const errors = [], rpcRequests = [];
+  const receipt = { result: null };
   const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af" };
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(({ account, receiptHash, multipleWallets }) => {
+  await page.addInitScript(({ account, receiptHash, multipleWallets, chain }) => {
     window.walletRequests = [];
     window.walletSenders = [];
+    window.walletChains = [];
+    window.rejectSwitch = false;
     const provider = name => ({
       isRabby: name === 'Rabby', isMetaMask: name === 'MetaMask',
       on() {}, removeListener() {},
       async request({ method, params }) {
         if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [account];
-        if (method === 'eth_chainId') return '0x27d8';
-        if (method === 'wallet_addEthereumChain' || method === 'wallet_switchEthereumChain') return null;
+        if (method === 'eth_chainId') return chain || '0x27d8';
+        if (method === 'wallet_addEthereumChain') { window.walletChains.push(params[0]); return null; }
+        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); return null; }
         if (method === 'eth_sendTransaction') {
           window.walletSenders.push(name);
           window.walletRequests.push(params[0]);
@@ -59,14 +64,14 @@ async function fixture(browser, options = {}) {
         announce('MetaMask', 'metamask-provider', 'io.metamask', metamask);
       });
     }
-  }, { account, receiptHash, multipleWallets: options.multipleWallets });
+  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain });
   await page.route('**/*', route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/config.json')) return route.fulfill({ json: {
       l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
       l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
-      demoBridgeAddress: bridge, rollupId: '1',
+      demoBridgeAddress: bridge, rollupId: '1', networkName: 'EEZ-X Devnet',
     } });
     if (path === '/shared/rollup.env' || path === '/shared/faucet.key') {
       return route.fulfill({ status: 404, body: '' });
@@ -78,7 +83,7 @@ async function fixture(browser, options = {}) {
       jsonrpc: '2.0', id, error: { code: 3, message },
     } });
     if (/send|sign/i.test(method)) throw new Error('Unexpected broadcast RPC: ' + method);
-    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : '0x27d8');
+    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : options.chain || '0x27d8');
     if (method === 'eth_getCode') return reply(params[0]?.toLowerCase() === bridge ? '0x6000' : '0x');
     if (method === 'eth_call' && params[0]?.to?.toLowerCase() === bridge
         && params[0]?.data === '0x481c6a75') {
@@ -112,31 +117,46 @@ async function fixture(browser, options = {}) {
     });
     if (method === 'eth_gasPrice') return reply('0x3b9aca00');
     if (method === 'eth_maxPriorityFeePerGas') return reply('0x3b9aca00');
-    if (method === 'eth_getTransactionReceipt' || method === 'eth_getTransactionByHash') return reply(null);
+    if (method === 'eth_getTransactionReceipt') return reply(receipt.result);
+    if (method === 'eth_getTransactionByHash') return reply(null);
     if (method === 'eth_getLogs') return reply([]);
     return reply('0x0');
   });
   await page.goto(origin + '/#/bridge');
   await page.getByRole('button', { name: 'Connect Wallet' }).first().click();
+  if (options.multipleWallets) {
+    for (const brand of ['rabby', 'metamask']) {
+      const logo = page.locator('[data-wallet-logo="' + brand + '"]');
+      await until(() => logo.evaluate(img => img.complete && img.naturalWidth > 0), brand + ' picker logo did not load');
+    }
+  }
   await page.getByRole('button', {
     name: options.multipleWallets ? 'MetaMask' : 'Rabby', exact: true,
   }).first().click();
+  const selectedLogo = page.getByRole('button', { name: options.multipleWallets ? /MetaMask ·/ : /Rabby ·/ })
+    .locator('[data-wallet-logo="' + (options.multipleWallets ? 'metamask' : 'rabby') + '"]');
+  await until(() => selectedLogo.evaluate(img => img.complete && img.naturalWidth > 0), 'selected wallet logo did not load');
   if (options.reverse) await page.getByTitle('Swap direction').click();
   if (options.erc20) {
     await page.getByRole('button', { name: 'ERC20', exact: true }).click();
     await page.getByPlaceholder('0x... (ERC20 token address)', { exact: true }).fill(token);
-    await until(async () => (await page.getByPlaceholder('0.0 ' + (options.symbol || '???')).count()) === 1, 'token metadata did not load');
+    await until(async () => (await page.getByLabel('Bridge amount', { exact: true }).locator('..').locator('span').textContent()) === (options.symbol || '???'), 'token metadata did not load');
   }
-  if (options.destination) await page.getByPlaceholder(account, { exact: true }).fill(options.destination);
-  await page.getByPlaceholder(options.erc20 ? '0.0 ' + (options.symbol || '???') : '0.0 ETH', { exact: true }).fill(options.amount || '0.001');
-  const button = page.getByRole('button', { name: options.erc20 ? 'Bridge ' + (options.symbol || '???') : 'Bridge ETH', exact: true });
+  if (options.destination) {
+    await page.getByRole('button', { name: 'Change recipient', exact: true }).click();
+    await page.getByLabel('Recipient address', { exact: true }).fill(options.destination);
+  }
+  await page.getByLabel('Bridge amount', { exact: true }).fill(options.amount || '0.001');
+  const button = page.getByRole('button', { name: options.erc20 ? 'Bridge ' + (options.symbol || '???') : 'Bridge ' + nativeSymbol, exact: true });
   if (options.tokenInfoError) await page.getByText('Unable to check the token:', {exact:false}).waitFor();
   else if (options.approvalRequired) await page.getByRole('button', {name:'Approve ' + (options.symbol || '???'),exact:true}).waitFor();
   else if (options.unsupported) await page.getByText('This Composer cannot estimate cross-chain gas yet.', {exact:false}).waitFor();
   else if (options.estimateError || options.estimateResult) await page.getByRole('alert').filter({ hasText: 'Gas estimation failed:' }).waitFor();
   else await until(async () => !(await button.isDisabled()), 'Composer estimate or bridge readiness did not finish');
-  await page.getByRole('button', { name: 'Advanced Gas Settings' }).click();
-  return { context, page, button, errors, rpcRequests, estimation };
+  assert.equal(await page.getByText('You receive', { exact: true }).count(), 0);
+  assert.equal(await page.getByLabel('Gas limit', { exact: true }).isVisible(), false, 'gas controls start collapsed');
+  if (options.expandGas !== false) await page.getByText('Gas settings', { exact: true }).click();
+  return { context, page, button, errors, rpcRequests, estimation, receipt };
 }
 
 (async () => {
@@ -145,7 +165,7 @@ async function fixture(browser, options = {}) {
     let scenarios = 0;
     for (const reverse of [false, true]) for (const erc20 of [false, true]) for (const custom of [null, 500000]) {
       const f = await fixture(browser, { reverse, erc20, destination: recipient });
-      const row = f.page.getByText('Requested gas limit', { exact: true }).locator('..');
+      const row = f.page.getByText('Estimated gas', { exact: true }).locator('..');
       const displayed = (await row.locator('span').last().textContent()).replace(/,/g, '');
       assert.equal(displayed, String(RAW_GAS), 'Composer gas must be displayed without a 1.3x buffer');
       assert.equal(await f.page.getByText('Requested gas limit (1.3x estimate)', { exact: true }).count(), 0);
@@ -157,6 +177,9 @@ async function fixture(browser, options = {}) {
       await f.button.click();
       await until(async () => (await f.page.evaluate(() => window.walletRequests.length)) === 1, 'wallet did not receive bridge');
       const tx = await f.page.evaluate(() => window.walletRequests[0]);
+      const record = await f.page.evaluate(() => JSON.parse(localStorage.getItem('txHistory'))[0]);
+      assert.equal(record.type, 'bridge');
+      assert.equal(record.direction, reverse ? 'l2-to-l1' : 'l1-to-l2');
       assert.equal(BigInt(tx.gas), custom ? BigInt(custom) : RAW_GAS);
       assert.equal(tx.gasLimit, tx.gas);
       assert.equal(tx.type, '0x2');
@@ -174,6 +197,100 @@ async function fixture(browser, options = {}) {
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }
+    // Pending status can be hidden/reopened without cancelling. Receipts reopen the success popup.
+    for (const reverse of [false, true]) {
+      const f = await fixture(browser, { reverse, expandGas: false });
+      await f.page.clock.install();
+      const amount = f.page.getByLabel('Bridge amount', { exact: true });
+      assert.equal(await amount.getAttribute('placeholder'), '0.0');
+      await f.page.getByText('Gas settings', { exact: true }).click();
+      await f.page.getByLabel('Gas limit', { exact: true }).fill('500000');
+      await f.page.getByText('Gas settings', { exact: true }).click();
+      assert.equal(await f.page.getByLabel('Gas limit', { exact: true }).isVisible(), false);
+      await f.button.click();
+      const popup = f.page.getByRole('dialog');
+      await popup.getByRole('heading', { name: 'Waiting for confirmation', exact: true }).waitFor();
+      assert.equal(await amount.isDisabled(), true);
+      assert.equal(BigInt((await f.page.evaluate(() => window.walletRequests[0])).gas), 500000n);
+      assert.equal(await popup.evaluate(d => d.matches(':modal')), true);
+      assert.equal(await popup.locator('span[aria-hidden="true"]').evaluate(e => e.getAnimations().filter(a => a.playState === 'running').length), 1,
+        'pending spinner must have a running rotation animation');
+      await f.page.emulateMedia({ reducedMotion:'reduce' });
+      assert.equal(await popup.locator('span[aria-hidden="true"]').evaluate(e => e.getAnimations().length), 0, 'spinner respects reduced motion');
+      await f.page.emulateMedia({ reducedMotion:'no-preference' });
+      for (let tab = 0; tab < 4; tab++) {
+        await f.page.keyboard.press('Tab');
+        assert.equal(await popup.evaluate(d => d.contains(document.activeElement)), true, 'focus stays in the popup');
+      }
+      await f.page.keyboard.press('Escape');
+      assert.equal(await popup.isVisible(), false);
+      assert.equal(await amount.isDisabled(), true, 'closing status must not reset transaction state');
+      await f.page.getByRole('button', { name: 'View transaction', exact: true }).click();
+      await popup.getByRole('heading', { name: 'Waiting for confirmation', exact: true }).waitFor();
+      await popup.getByRole('button', { name: 'Close', exact: true }).click();
+      f.receipt.result = { status:'0x1', blockNumber:'0x10', blockHash:'0x'+'55'.repeat(32), logs:[] };
+      await f.page.clock.runFor(1100);
+      await popup.getByRole('heading', { name: 'Bridge transaction confirmed', exact: true }).waitFor();
+      await f.page.clock.runFor(6000);
+      assert.equal(await popup.isVisible(), true, 'confirmation remains visible until dismissed');
+      assert.equal(await popup.locator('a, span[title*="copy"]').count() > 0, true);
+      await f.page.setViewportSize({ width:320, height:640 });
+      assert.equal(await popup.evaluate(d => d.getBoundingClientRect().width <= innerWidth - 30), true);
+      assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await popup.getByRole('button', { name: 'Done', exact: true }).click();
+      assert.equal(await popup.isVisible(), false);
+      assert.equal(await amount.isDisabled(), false);
+      assert.equal(await f.page.evaluate(() => window.walletRequests.length), 1);
+      assert.equal(await f.page.evaluate(() => JSON.parse(localStorage.getItem('txHistory'))[0].status), 'confirmed');
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    {
+      const f = await fixture(browser, { erc20:true, symbol:'DAI', allowance:0n, approvalRequired:true, expandGas:false });
+      await f.page.clock.install();
+      await f.page.getByRole('button', { name:'Approve DAI', exact:true }).click();
+      const popup=f.page.getByRole('dialog');
+      await popup.getByRole('heading', {name:'Waiting for confirmation',exact:true}).waitFor();
+      f.receipt.result={status:'0x1',blockNumber:'0x10',blockHash:'0x'+'55'.repeat(32),logs:[]};
+      await f.page.clock.runFor(1100);
+      await popup.getByRole('heading', {name:'Approval confirmed',exact:true}).waitFor();
+      await popup.getByRole('button', {name:'Done',exact:true}).click();
+      assert.equal(await f.page.getByRole('button',{name:'Approve DAI',exact:true}).count(),0);
+      assert.equal(await f.page.getByLabel('Bridge amount',{exact:true}).isDisabled(),false);
+      assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
+    }
+    // Top-bar selection follows a successful wallet switch, preserving the token address.
+    {
+      const f = await fixture(browser, { erc20: true, symbol: 'DAI' });
+      const source = f.page.getByRole('group', { name: 'Source network', exact: true });
+      await f.page.getByRole('button', { name: 'Switch wallet to EEZ-X Devnet', exact: true }).click();
+      await source.getByText('EEZ-X Devnet', { exact: true }).waitFor();
+      assert.equal(await f.page.getByPlaceholder('0x... (ERC20 token address)').inputValue(), token);
+      await until(() => f.button.isEnabled(), 'reverse estimate did not finish');
+      assert.equal(f.rpcRequests.filter(r => r.method === 'eth_estimateGas').at(-1).path, '/composer/l2');
+      await f.page.evaluate(() => { window.rejectSwitch = true; });
+      await f.page.getByRole('button', { name: 'Switch wallet to Chiado', exact: true }).click();
+      await f.page.waitForTimeout(200);
+      assert.equal(await source.getByText('EEZ-X Devnet', { exact: true }).count(), 1);
+      await f.page.evaluate(() => { window.rejectSwitch = false; });
+      await f.page.getByRole('button', { name: 'Switch wallet to Chiado', exact: true }).click();
+      await source.getByText('Chiado', { exact: true }).waitFor();
+      assert.equal(await f.page.getByPlaceholder('0x... (ERC20 token address)').inputValue(), token);
+      const definitions = await f.page.evaluate(() => window.walletChains);
+      assert.ok(definitions.every(chain => chain.nativeCurrency.symbol === 'xDAI'));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    {
+      const f = await fixture(browser, { chain: '0x1' });
+      assert.equal(await f.page.getByRole('button', { name: 'Bridge ETH', exact: true }).count(), 1);
+      await f.page.getByRole('button', { name: 'Switch wallet to EEZ-X Devnet', exact: true }).click();
+      await f.page.getByRole('group', { name: 'Source network', exact: true }).getByText('EEZ-X Devnet').waitFor();
+      assert.ok((await f.page.evaluate(() => window.walletChains)).every(chain => chain.nativeCurrency.symbol === 'ETH'));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
+      await f.context.close(); scenarios++;
+    }
     // Failure cannot be bypassed by a manual override. Changing inputs retries
     // without reusing the old gas cap, and a valid new estimate unblocks sending.
     for (const reverse of [false, true]) {
@@ -184,7 +301,7 @@ async function fixture(browser, options = {}) {
       await f.button.evaluate(button => { button.click(); });
       await f.page.getByText('Composer simulation failed', { exact: false }).first().waitFor();
       assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
-      const amount = f.page.getByPlaceholder('0.0 ETH', { exact: true });
+      const amount = f.page.getByLabel('Bridge amount', { exact: true });
       f.estimation.error = null;
       await amount.fill('0.002');
       await until(() => f.button.isEnabled(), 'valid Composer estimate did not unblock retry');
@@ -204,7 +321,7 @@ async function fixture(browser, options = {}) {
     for (const reverse of [false, true]) {
       const f = await fixture(browser, { reverse });
       f.estimation.error = 'Updated bridge transaction cannot be estimated';
-      await f.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.003');
+      await f.page.getByLabel('Bridge amount', { exact: true }).fill('0.003');
       await until(() => f.button.isDisabled(), 'changed transaction should disable the bridge');
       await f.page.getByRole('alert').waitFor();
       await f.button.evaluate(button => { button.click(); });
@@ -245,6 +362,7 @@ async function fixture(browser, options = {}) {
     assert.equal(metamaskTx.type, '0x2');
     assert.deepEqual(await metamask.page.evaluate(() => window.walletSenders), ['MetaMask'],
       'the selected MetaMask provider must handle the transaction, not window.ethereum');
+    await metamask.page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
     await metamask.page.getByRole('button', { name: /MetaMask ·/ }).click();
     await metamask.page.getByRole('button', { name: 'Switch to Rabby' }).click();
     await metamask.page.getByRole('button', { name: /Rabby ·/ }).waitFor();

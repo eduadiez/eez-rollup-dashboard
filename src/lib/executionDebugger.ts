@@ -296,6 +296,32 @@ export async function inspectDebugTransaction(hash: string, chain: DebugChain | 
   return withCounterpart(block, selected, rpc, syncOnly);
 }
 
+export type InspectionKind = "transaction" | "block";
+
+/** One lookup for transaction hashes, block hashes, and block numbers.
+ * Numeric selectors use L1 unless a chain is selected; hashes search both chains. */
+export async function inspectExecution(value: string, chain: DebugChain | "auto" = "auto", kind: InspectionKind | "auto" = "auto", rpc: Rpc = debugRequest): Promise<{ context: DebugContext; kind: InspectionKind }> {
+  const query = value.trim();
+  if (!/^(latest|\d+|0x[\da-f]+)$/i.test(query)) throw new Error("Enter a transaction hash, block number, block hash, or latest.");
+  const hash = /^0x[\da-f]{64}$/i.test(query);
+  let transactionError: Error | undefined;
+  if (kind === "transaction" || kind === "auto" && hash) {
+    try { return { context: await inspectDebugTransaction(query, chain, rpc, true), kind: "transaction" }; }
+    catch (error) {
+      // Ambiguity, missing receipts, or failed block inspection must remain visible.
+      if (kind === "transaction" || !/^Transaction not found on /.test((error as Error).message)) throw error;
+      transactionError = error as Error;
+    }
+  }
+  const chains: DebugChain[] = chain === "auto" ? hash ? ["l1", "l2"] : ["l1"] : [chain];
+  const results = await Promise.allSettled(chains.map(side => inspectDebugBlock(side, query, rpc, true)));
+  const found = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
+  if (found.length > 1) throw new Error("This block hash exists on both chains. Select L1 or L2 to inspect it.");
+  if (found[0]) return { context: found[0], kind: "block" };
+  const errors = results.flatMap((result, i) => result.status === "rejected" ? [`${chains[i]!.toUpperCase()}: ${message(result.reason)}`] : []);
+  throw new Error(`${transactionError ? `${transactionError.message} ` : ""}Block lookup failed. ${errors.join("; ")}`);
+}
+
 export async function fetchDebugTrace(tx: DebugTransaction, rpc: Rpc = debugRequest): Promise<CallTrace> {
   const trace = await rpc(debugRpc(tx.chain), "debug_traceTransaction", [tx.tx.hash, { tracer: "callTracer", timeout: "20s" }]) as CallTrace | null;
   if (!trace || typeof trace.type !== "string") throw new Error("The RPC did not return a callTracer tree.");
@@ -311,6 +337,18 @@ export type LiveBatchHistory = {
   batches: LiveBatch[]; l1Head: string; l2Head: string | null; before: string | null; warnings: string[]; registryAddress?: string;
 };
 export const LIVE_BATCH_LIMIT = 50;
+
+export async function inspectPostedBatch(batch: LiveBatch, rpc: Rpc = debugRequest): Promise<DebugContext> {
+  // Some L1 nodes retain block bodies and receipts after pruning their hash
+  // lookup index. A posting log supplies the exact block and transaction hash.
+  const block = await fetchDebugBlock("l1", batch.blockHash, rpc);
+  if (!same(block.hash, batch.blockHash) || BigInt(block.number) !== BigInt(batch.blockNumber)) {
+    throw new Error("Batch block changed; retrying inspection");
+  }
+  const selected = block.transactions.find(tx => same(tx.tx.hash, batch.transactionHash));
+  if (!selected) throw new Error("Posted transaction is missing from its block; retrying inspection");
+  return withCounterpart(block, selected, rpc, true);
+}
 
 // Read compact posting logs, rather than hydrating thousands of L2 blocks on
 // every poll. Selecting a post loads its exact receipts and settlement range.

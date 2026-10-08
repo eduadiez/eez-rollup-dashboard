@@ -326,6 +326,19 @@ def decode_operations(payload: bytes) -> dict[str, Any]:
     if not payload:
         raise BlobDecodeError("ChainOperation payload is empty")
     tag = payload[0]
+    if tag == 0:
+        # Direct V0 replaced the historical tag-0 RLP envelope. Preserve old
+        # captures only when the entire suffix is an exact RLP list. Prefer the
+        # current columnar wire, including large sparse empty runs.
+        try:
+            return _decode_direct_operations(payload)
+        except BlobDecodeError as direct_error:
+            try:
+                legacy = _decode_rlp_exact(payload[1:])
+            except BlobDecodeError:
+                raise direct_error
+            if not isinstance(legacy, _RlpList):
+                raise direct_error
     body = _as_list(_decode_rlp_exact(payload[1:]), "payload")
     if tag == 3:
         return _decode_derivable(body, len(payload))
@@ -380,6 +393,115 @@ def decode_operations(payload: bytes) -> dict[str, Any]:
         "l2EntryBytes": [len(entry) for entry in entries],
         "outboundGroupSizes": groups,
         "blocks": blocks,
+    }
+
+
+def _decode_direct_operations(payload: bytes) -> dict[str, Any]:
+    """Bounded structural counterpart of eez-payload-codec/src/v0.rs.
+
+    Keep count/metadata runs sparse: a u32 block count must never allocate a
+    dense array or claim that absent headers/state roots were reconstructed.
+    Signed transaction bytes remain opaque; signature/schema checks and block
+    reconstruction belong to the protocol verifier.
+    """
+    position = 1
+
+    def take(size: int, field: str) -> bytes:
+        nonlocal position
+        value, position = _fixed(payload, position, size, field)
+        return value
+
+    def number() -> int:
+        nonlocal position
+        start = position
+        value, position = _varint(payload, position)
+        if position - start > 1 and payload[position - 1] == 0:
+            raise BlobDecodeError("non-canonical operations u32 varint")
+        return value
+
+    count = number()
+    if not count:
+        raise BlobDecodeError("direct operations must cover at least one block")
+    covered = transactions = empty_blocks = 0
+    previous_empty = False
+    runs = []
+    while covered < count:
+        token = take(1, "transaction-count token")[0]
+        if token == 0:
+            blocks, txs = 1, 0
+        elif token < 128:
+            blocks, txs = 1, token
+        elif token < 192:
+            blocks, txs = 1, ((token & 63) << 8) | take(1, "transaction-count token")[0]
+            if txs < 128:
+                raise BlobDecodeError("non-canonical two-byte transaction count")
+        elif token < 255:
+            blocks, txs = token - 192 + 2, 0
+        else:
+            blocks, txs = number(), 0
+            if blocks < 65:
+                raise BlobDecodeError("non-canonical extended empty run")
+        if not txs and previous_empty:
+            raise BlobDecodeError("adjacent empty count runs must be merged")
+        if covered + blocks > count:
+            raise BlobDecodeError("transaction-count coverage exceeds block count")
+        runs.append({"position": covered, "blocks": blocks, "transactionsPerBlock": txs})
+        covered += blocks
+        transactions += txs
+        empty_blocks += blocks if not txs else 0
+        previous_empty = not txs
+
+    def metadata(variable: bool) -> list[dict[str, Any]]:
+        covered = 0
+        previous = None
+        result = []
+        while covered < count:
+            blocks = number()
+            if not blocks or covered + blocks > count:
+                raise BlobDecodeError("metadata runs must be positive and cover every block")
+            size = take(1, "extraData length")[0] if variable else 20
+            if variable and size > 32:
+                raise BlobDecodeError("extraData exceeds 32 bytes")
+            value = take(size, "extraData" if variable else "beneficiary")
+            if value == previous:
+                raise BlobDecodeError("adjacent equal metadata runs must be merged")
+            result.append({"position": covered, "blocks": blocks, "value": "0x" + value.hex()})
+            previous = value
+            covered += blocks
+        return result
+
+    beneficiaries = metadata(False)
+    extra_data = metadata(True)
+    if transactions > (len(payload) - position) // 2:
+        raise BlobDecodeError("pure L2 transaction count exceeds remaining-byte bound")
+    sizes = []
+    for _ in range(transactions):
+        size = number()
+        if not size:
+            raise BlobDecodeError("transaction length must be positive")
+        sizes.append(size)
+    if sum(sizes) != len(payload) - position:
+        raise BlobDecodeError("transaction lengths do not match remaining operations bytes")
+    for size in sizes:
+        raw = take(size, "pure L2 transaction")
+        if raw[0] in (3, 0x76):
+            raise BlobDecodeError("blob and native transactions cannot appear in the pure L2 column")
+        typed = raw[0] in (1, 2, 4)
+        if not typed and raw[0] < 192:
+            raise BlobDecodeError("unsupported pure L2 transaction envelope")
+        root = _decode_rlp_exact(raw[1:] if typed else raw)
+        def validate_list(value: Any) -> None:
+            for item in _iter_list(value, "transaction"):
+                if isinstance(item, _RlpList):
+                    validate_list(item)
+        validate_list(root)
+    return {
+        "tag": 0, "format": "direct-v0", "bytes": len(payload),
+        "blockCount": count, "blockTxCounts": None, "countRuns": runs,
+        "implicitEmptyBlockCount": empty_blocks, "beneficiaryRuns": beneficiaries,
+        "extraDataRuns": extra_data, "transactionCount": transactions,
+        "transactionBytes": sizes, "l2EntryCount": None, "l2EntryBytes": None,
+        "outboundGroupSizes": None, "blocks": [],
     }
 
 

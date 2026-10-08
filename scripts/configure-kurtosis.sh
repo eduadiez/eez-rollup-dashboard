@@ -43,12 +43,6 @@ if [[ -n "$demo_env" && -f "$demo_env" ]]; then
     set +a
 fi
 
-EEZ_UI_DEMO_ENABLED="${EEZ_UI_DEMO_ENABLED:-false}"
-EEZ_UI_DEMO_ACCOUNT_ADDRESS="${EEZ_UI_DEMO_ACCOUNT_ADDRESS:-}"
-EEZ_UI_DEMO_PRIVATE_KEY="${EEZ_UI_DEMO_PRIVATE_KEY:-}"
-if [[ "$EEZ_UI_DEMO_ENABLED" == "true" && -z "$EEZ_UI_DEMO_PRIVATE_KEY" ]]; then
-    EEZ_UI_DEMO_PRIVATE_KEY="0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
-fi
 EEZ_UI_DEMO_BRIDGE_ADDRESS="${EEZ_UI_DEMO_BRIDGE_ADDRESS:-}"
 EEZ_UI_DEMO_TOKEN_ADDRESS="${EEZ_UI_DEMO_TOKEN_ADDRESS:-}"
 EEZ_UI_DEMO_POOL_ADDRESS="${EEZ_UI_DEMO_POOL_ADDRESS:-}"
@@ -56,7 +50,6 @@ EEZ_UI_DEMO_EXECUTOR_L1="${EEZ_UI_DEMO_EXECUTOR_L1:-}"
 EEZ_UI_DEMO_EXECUTOR_L2="${EEZ_UI_DEMO_EXECUTOR_L2:-}"
 EEZ_UI_DEMO_WRAPPED_TOKEN_L2="${EEZ_UI_DEMO_WRAPPED_TOKEN_L2:-}"
 EEZ_UI_DEMO_NFT_L2="${EEZ_UI_DEMO_NFT_L2:-}"
-FAUCET_ADDRESS="${FAUCET_ADDRESS:-}"
 REVERSE_EXECUTOR_L2="${REVERSE_EXECUTOR_L2:-}"
 REVERSE_NFT_L1="${REVERSE_NFT_L1:-}"
 REVERSE_EXECUTOR_L1="${REVERSE_EXECUTOR_L1:-}"
@@ -96,9 +89,6 @@ jq -n \
     --arg bridgeL1 "$EEZ_L1_BRIDGE_SENDER" \
     --arg bridgeL2 "$EEZ_L2_BRIDGE_RECEIVER" \
     --arg rollupId "$EEZ_ROLLUP_ID" \
-    --argjson demoEnabled "$EEZ_UI_DEMO_ENABLED" \
-    --arg demoAccount "$EEZ_UI_DEMO_ACCOUNT_ADDRESS" \
-    --arg demoPrivateKey "$EEZ_UI_DEMO_PRIVATE_KEY" \
     --arg demoBridge "$EEZ_UI_DEMO_BRIDGE_ADDRESS" \
     --arg demoToken "$EEZ_UI_DEMO_TOKEN_ADDRESS" \
     --arg demoPool "$EEZ_UI_DEMO_POOL_ADDRESS" \
@@ -106,7 +96,6 @@ jq -n \
     --arg demoExecutorL2 "$EEZ_UI_DEMO_EXECUTOR_L2" \
     --arg demoWrappedTokenL2 "$EEZ_UI_DEMO_WRAPPED_TOKEN_L2" \
     --arg demoNftL2 "$EEZ_UI_DEMO_NFT_L2" \
-    --arg faucetAddress "$FAUCET_ADDRESS" \
     --arg reverseExecutorL2 "$REVERSE_EXECUTOR_L2" \
     --arg reverseNftL1 "$REVERSE_NFT_L1" \
     --arg reverseExecutorL1 "$REVERSE_EXECUTOR_L1" \
@@ -138,9 +127,6 @@ jq -n \
         bridgeL2Address: $bridgeL2,
         rollupId: $rollupId,
         protocolCommit: $protocolCommit,
-        demoEnabled: $demoEnabled,
-        demoAccountAddress: $demoAccount,
-        demoPrivateKey: $demoPrivateKey,
         demoBridgeAddress: $demoBridge,
         demoTokenAddress: $demoToken,
         demoPoolAddress: $demoPool,
@@ -148,7 +134,6 @@ jq -n \
         demoExecutorL2: $demoExecutorL2,
         demoWrappedTokenL2: $demoWrappedTokenL2,
         demoNftL2: $demoNftL2,
-        faucetAddress: $faucetAddress,
         reverseExecutorL2: $reverseExecutorL2,
         reverseNftL1: $reverseNftL1,
         reverseExecutorL1: $reverseExecutorL1,

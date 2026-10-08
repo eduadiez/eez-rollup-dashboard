@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { config } from "../config";
 import { rpcCall } from "../rpc";
-import type { ChainStats, L2Stats } from "../types";
+import type { ChainStats, HealthData, L2Stats } from "../types";
 
 interface BlockResult {
   number: string;
@@ -123,5 +123,10 @@ export function useDashboard() {
     return () => clearInterval(interval);
   }, [refreshAll]);
 
-  return { l1, l2, connected, refreshAll };
+  // Reuse the block reads instead of polling the obsolete POC /health endpoint.
+  const health: HealthData | null = l1.blockNumber === null && l2.blockNumber === null
+    ? null
+    : { healthy: l1.blockNumber !== null && l2.blockNumber !== null };
+
+  return { l1, l2, health, connected, refreshAll };
 }

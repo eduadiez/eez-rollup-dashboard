@@ -12,10 +12,9 @@ The application preserves the original sync-rollups POC screens:
 
 - Dashboard and generic cross-chain calls
 - Counter demo
-- Bidirectional ETH/ERC-20 bridge
+- Bidirectional native-asset/ERC-20 bridge (xDAI on Chiado/Gnosis, ETH on Ethereum)
 - Nested flash loan
 - Aggregator
-- Faucet
 - Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
 
@@ -26,6 +25,108 @@ the dashboard layout, header, footer, and theme. The monitor page mounts inside
 the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
+
+Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
+on the right, followed by shared transaction history. Smaller screens stack
+Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
+gas settings are collapsed by default and contain the estimate and editable gas
+limit. Pending transactions and their confirmations appear in a dismissible
+popup; closing pending status does not stop receipt polling. Proxy selection
+and call preparation share a panel, while bridge recipients default to the
+connected wallet with an optional address editor. Transaction history supports
+All, Bridge, and Calls filters, including previously saved bridge records.
+
+Cross-Chain Calls supports L1 → L2 and L2 → L1, including contract and EOA
+destinations. Selecting a proxy switches the connected wallet to its source
+network; a rejected switch preserves the current selection. Existing L1 proxy
+mappings remain in `crossChainProxies`, with L2 proxies stored separately in
+`crossChainProxiesL2`. These browser-saved mappings are checked against the
+source manager's computed proxy address and `eth_getCode` when selected and
+before sending. Confirmed mismatches or missing code clear stale mappings;
+RPC errors retain saved data but prevent unverified selection or submission.
+Contract names and ABIs come from the destination explorer.
+Detected proxies can be saved explicitly. To import an existing proxy, select
+its source network and paste the proxy address; the source manager's
+`authorizedProxies` registry supplies its destination automatically. The lookup
+checks the destination network, computed proxy address, and deployed code before
+preparing a call. Invalid addresses or failed lookups prevent call preparation;
+older lookup responses cannot replace a newer input. Saving remains explicit
+and verifies the mapping and deployed code without sending a transaction.
+Removing a saved row only clears
+its browser entry; removing the selected proxy also clears the call form.
+The saved-proxy table pairs the origin-network logo with its proxy address,
+then an arrow separates the destination-network logo and destination address.
+Row actions follow; mobile rows stack the two pairs with a downward arrow.
+Prepare Call shows both network names and shortened source/destination addresses,
+with full addresses available in tooltips, explorer links, and clipboard copies.
+Recent addresses reflow within the form rather than overlapping call preparation.
+Raw calls accept empty calldata (`0x`) and an optional native-currency value.
+Calls use the source Composer's gas estimate or an explicit manual limit, and
+poll the source chain for confirmation. Gas settings are collapsed by default;
+estimation errors remain visible and prevent submission. Proxy creation and calls show wallet
+signing, pending status, confirmation, and errors in the same popup as Bridge.
+Closing pending status keeps polling active; the final result reopens the popup
+and stays visible until dismissed. The ABI editor has a fixed size.
+
+Counter Demo uses the same responsive two-column layout: the counter is on the
+left and cross-chain call preparation is on the right. Choose the counter's
+network to deploy or select a SimpleCounter on L1 or L2; calls originate on the
+opposite network. Counter addresses are saved independently (`counterAddress`
+for the existing L2 cache, `counterAddressL1` for L1). Counts and read functions
+use the deployment chain's read RPC. Direct deployments and increments estimate
+and confirm on that chain; deployment estimates omit `to`, and reverted receipts
+are shown as failures. Proxy calls use the source Composer's raw gas estimate,
+the selected wallet, and the shared collapsed gas controls and transaction popup.
+Missing source proxies can be created from the demo; existing proxies are
+verified before use. Cross-chain history records the actual call direction.
+
+Transaction history uses network logos for the route, labels transaction links
+“L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
+L2 source transactions link to their canonical L1 settlement batch (labeled
+“Settlement”). L1 source transactions link to matching L2 incoming call events
+within canonical settled blocks. Repeated call hashes with ambiguous origins or
+destinations stay unresolved; missing counterparts are retried every 15 seconds.
+
+The top bar shows the deployment name and horizontal network balances beside
+the wallet control. Wallet controls and the provider picker use locally served
+Rabby and MetaMask logos. Block counters are omitted. On narrow screens, balances
+and the compact wallet button share a row below the brand and navigation menu.
+Selecting a network also switches the bridge direction after the wallet confirms
+the switch; ERC-20 addresses are kept unchanged. Chiado/Gnosis deployments use
+xDAI for the native asset on both chains.
+
+Set `EEZ_UI_NETWORK_NAME` in `.env` to the rollup's display name (for example,
+`EEZ-X Devnet`). Runtime `networkName` supplies the bridge's L2 labels and the
+network name used when adding L2 to a wallet. The bridge shows the amount sent;
+gas is paid separately. Saved wallet networks may retain their
+previous name and RPC; cross-chain transactions use `/composer/l1` or
+`/composer/l2` for their source network.
+
+L1 labels and logos are detected from `eth_chainId`: Ethereum, Gnosis, Chiado,
+or Sepolia. Labels do not append “L1.” Override the display name or logo with
+`EEZ_UI_L1_NETWORK_NAME` and `EEZ_UI_L1_NETWORK_LOGO_URL` (runtime
+`l1NetworkName` / `l1NetworkLogoUrl`). Unknown chains get a neutral icon and
+chain ID. These display settings do not change RPCs or transaction routing.
+
+ERC20 bridging supports a searchable token picker alongside manual address
+entry. “Known” includes a small Ethereum mainnet catalog of common contract
+metadata verified against the [Uniswap default token list](https://github.com/Uniswap/default-token-list).
+It is filtered by the source chain; those addresses are never offered on Chiado
+or an EEZ rollup. Configure `EEZ_UI_TOKEN_LIST_URL` (runtime `tokenListUrl`) with
+a CORS-enabled list in the standard `{ "tokens": [{ "chainId", "address",
+"name", "symbol", "decimals" }] }` format to supply deployment-specific tokens.
+Use the actual wrapped-token addresses for L2.
+
+“Your tokens” uses the source explorer's Blockscout v2 token-balances API when
+available. Set `EEZ_UI_L1_EXPLORER_API_URL` (runtime `l1ExplorerApiUrl`) for L1;
+L2 reuses `EEZ_UI_L2_EXPLORER_API_URL`. Without a working indexer, it checks
+balances of up to 24 known/recent tokens through the source read RPC, so it
+cannot discover every token. Discovery runs only when the picker opens; failures
+leave address entry available. “Recent” is stored per source chain; older records
+without a chain ID are not offered. Selection still runs the bridge's on-chain
+metadata, balance, approval, and gas checks. A token appearing in the list does
+not guarantee that the deployed bridge supports it.
+
 One root `.env` and Compose project configure both services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head
@@ -34,9 +135,10 @@ finality details reconcile separately without delaying live heads. Optional
 Beacon, Blobscan, and settlement-policy settings are in `.env.example`.
 
 Feature availability depends on the contracts deployed by the target network.
-The current defensive-checks devnet supports the counter, bridge, faucet, and
-forward flash-loan flows. Its reverse-flash and aggregator contracts are not yet
-deployed, so those screens are present but not operational.
+Bridge requires its configured contracts. Counter Demo deploys its own counters
+and uses the configured source managers for cross-chain proxies. Flash-loan and
+aggregator components remain in the source but are not enabled in navigation.
+Transactions require a connected browser wallet such as Rabby or MetaMask.
 
 ## Deployment architecture
 
@@ -68,10 +170,6 @@ configured upstreams, avoiding browser CORS and mixed-content problems.
 The Compose defaults target the public-forwarder ports used by the local EEZ
 development network. On Linux, `host.docker.internal` is mapped automatically to
 the Docker host.
-
-Never put a production or valuable private key in `.env`. The optional demo key
-is delivered to every browser through `config.json` and is intended only for a
-disposable private devnet.
 
 ## Independent deployment behind a gateway
 
@@ -148,6 +246,9 @@ All contract addresses can be supplied as environment variables listed in
 `.env.example`. The container also supports the Kurtosis artifact mounts
 `/out/deployments.env` and `/demo/demo.env`.
 
+The browser reads `config.json` for runtime addresses and optional demo contract addresses.
+It does not request the legacy `/shared/rollup.env` or `/shared/faucet.key` files.
+
 ## Kurtosis integration
 
 The rollup repository's `testing/kurtosis/start.sh` builds this checkout by
@@ -191,6 +292,11 @@ docker build -t eez-rollup-ui:local .
 Monitor regression checks and optional telemetry settings are documented in
 `src/monitor/README.md`.
 
+With Playwright installed and a production preview running, run
+`node tests/counter-demo.cjs` and `node tests/cross-chain-calls.cjs` for mocked
+wallet/RPC coverage. They default to `http://127.0.0.1:8083/dashboard`; override
+that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
+
 ## Bridge gas and approvals
 
 Bridge gas is estimated against the source chain's Composer (`/composer/l1`
@@ -213,13 +319,16 @@ node tests/gas-estimation-unfunded.test.mjs
 # Against a running UI, with Playwright installed:
 node tests/bridge-gas-fees.cjs
 node tests/bridge-readiness.cjs
+node tests/wallet-startup.cjs
 ```
 
 ## Execution visualizer
 
-Open **Visualizer** or `/dashboard/#/visualizer`. Debug TX accepts any L1 or L2
-transaction hash and auto-detects its chain. Transaction History's Debug action
-opens the same view. Failed transactions and contract creations are supported.
+Open **Visualizer** or `/dashboard/#/visualizer`. **Live** opens first by default.
+**Inspect** accepts a transaction hash, block number, block hash, or `latest` in
+one form. Hashes are detected on either chain; numeric blocks and `latest` use
+L1 unless L2 is selected. Transaction History's **View execution** action opens
+the source transaction in this same view. Failed transactions and contract creations are supported.
 
 The debugger uses mined receipts, EEZ events, posting/loading calldata, and an
 optional `debug_traceTransaction` call tracer. Expand execution/static entries
@@ -244,8 +353,8 @@ hashes appear as candidates; a repeated hash is not a unique execution occurrenc
 For work that has not settled, supply the optional counterpart transaction hash.
 Missing index or trace methods show a message while preserving available data.
 
-Block Explorer reads either chain by number or hash, including ordinary and
-protocol transactions. Live is the default view and retains the latest 50 posted
+Inspect reads either chain by number or hash using the same EEZ transaction
+filter as transaction inspection. Live retains the latest 50 posted
 batches from the connected rollup, newest first. The configured registry or
 a matching canonical L2 settlement identifies that deployment; unrelated L1
 registries are excluded. Rows show linked L1 blocks, L2 ranges, settlement
@@ -257,7 +366,8 @@ the loaded context and traces. Deep links support `tx`, `chain`, `mode`, `block`
 and `counterpart` parameters inside the hash fragment. **Copy inspection link**
 also includes the Live `batch`, `selected` transaction and `selectedChain`,
 protocol `event` index, inspector `tab`, and focused `call` hash. Live links
-restore the selected batch without switching to Debug TX.
+restore the selected batch without switching to Inspect. Existing `mode=debug`
+and `mode=explorer` links continue to open the combined Inspect view.
 
 The inspector opens **Flow** by default: entry groups containing aligned L1/L2
 call requests and reverse return arrows. Nested calls sit inside their parent's

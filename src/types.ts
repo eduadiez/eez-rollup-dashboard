@@ -20,6 +20,11 @@ export interface ChainStats {
   txCount: number | null;
 }
 
+/** Whether the dashboard can currently read blocks from both chain RPCs. */
+export interface HealthData {
+  healthy: boolean;
+}
+
 export interface L2Stats extends ChainStats {
   synced: boolean | null;
   /** Current gas price in gwei */

@@ -5,16 +5,24 @@ const ORIGIN = window.location.origin;
 const absolute = (path: string) => new URL(path, ORIGIN).toString();
 
 export const config = {
+  /** Human-readable rollup name, supplied by runtime networkName. */
+  rollupName: "EEZ L2",
+  l1NetworkName: "L1 network",
+  l1NetworkLogo: "generic" as "ethereum" | "gnosis" | "generic",
+  l1NetworkLogoUrl: "",
+  /** Optional Blockscout API and chain-filtered public token list. */
+  l1ExplorerApi: "",
+  tokenListUrl: "",
   /** L1 RPC endpoint */
   l1Rpc: params.get("l1") || absolute("/rpc/l1"),
   /** L2 RPC endpoint (builder) */
   l2Rpc: params.get("l2") || absolute("/rpc/l2"),
-  /** L1 composer RPC — used only for cross-chain transaction submission */
+  /** L1 Composer RPC — cross-chain estimates and transaction submission */
   l1ProxyRpc: params.get("l1proxy") || absolute("/composer/l1"),
-  /** L2 composer RPC — used only for L2→L1 cross-chain transaction submission */
+  /** L2 Composer RPC — cross-chain estimates and transaction submission */
   l2ProxyRpc: params.get("l2proxy") || absolute("/composer/l2"),
 
-  /** BasedRollup contract address — loaded from /shared/rollup.env or URL param */
+  /** BasedRollup contract address — loaded from runtime config or URL param */
   rollupsAddress: params.get("rollups") || "",
   /** Rollup ID for state root queries */
   rollupId: params.get("rollupId") || "1",
@@ -26,24 +34,20 @@ export const config = {
   /** Bridge contract addresses */
   l1Bridge: params.get("l1bridge") || "",
   l2Bridge: params.get("l2bridge") || "",
-  /** Flash loan contract addresses (loaded from rollup.env) */
+  /** Flash loan contract addresses (loaded from runtime config) */
   flashExecutorL1: params.get("flashExecutorL1") || "",
   flashTokenAddress: params.get("flashTokenAddress") || "",
   flashPoolAddress: params.get("flashPoolAddress") || "",
   flashNftAddress: params.get("flashNftAddress") || "",
   flashExecutorL2: params.get("flashExecutorL2") || "",
   flashWrappedTokenL2: params.get("flashWrappedTokenL2") || "",
-  /** Reverse flash loan contract addresses (L2→L1 direction, loaded from rollup.env) */
+  /** Reverse flash loan contract addresses (L2→L1 direction, loaded from runtime config) */
   reverseExecutorL2: params.get("reverseExecutorL2") || "",
   reverseNftL1: params.get("reverseNftL1") || "",
   reverseExecutorL1: params.get("reverseExecutorL1") || "",
-  /** Faucet address — loaded from /shared/rollup.env or URL param */
-  faucetAddress: params.get("faucetAddress") || "",
-  /** Local-only Kurtosis faucet signer; never configured on public networks. */
-  demoPrivateKey: "",
-  /** L2 CrossChainManager address — loaded from rollup.env */
+  /** L2 CrossChainManager address — loaded from runtime config */
   ccmL2Address: params.get("ccmL2") || "",
-  /** Aggregator contract addresses (loaded from rollup.env) */
+  /** Aggregator contract addresses (loaded from runtime config) */
   aggWeth: params.get("aggWeth") || "",
   aggUsdc: params.get("aggUsdc") || "",
   aggL1Amm: params.get("aggL1Amm") || "",
@@ -60,6 +64,8 @@ export function setConfig(updates: Partial<typeof config>) {
   Object.assign(config, updates);
   if (updates.l1ProxyRpc) L1_CHAIN.rpcUrls = [updates.l1ProxyRpc];
   if (updates.l2ProxyRpc) L2_CHAIN.rpcUrls = [updates.l2ProxyRpc];
+  if (updates.rollupName) L2_CHAIN.chainName = updates.rollupName;
+  if (updates.l1NetworkName) L1_CHAIN.chainName = updates.l1NetworkName;
 }
 
 /** L1 chain definition for wallet_addEthereumChain — populated at runtime */
@@ -75,7 +81,7 @@ export const L1_CHAIN = {
  * mempool and holding only L2→L1 cross-chain calls. */
 export const L2_CHAIN = {
   chainId: "0xa455", // default 42069, auto-detected on init
-  chainName: "EEZ L2",
+  chainName: config.rollupName,
   rpcUrls: [config.l2ProxyRpc],
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 };

@@ -10,6 +10,9 @@
 .search select, .search input { border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: var(--bg); color: var(--text); font-family: var(--mono); min-width: 0; }
 .query { flex: 1; min-width: 220px; }
 .compare { width: 100%; }
+.compare summary { color: var(--text-dim); font-size: 12px; cursor: pointer; }
+.compare label { margin-top: 12px; }
+@media (max-width: 480px) { .query { min-width: 0; width: 100%; flex-basis: 100%; } }
 .muted { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
 .warning, .error { padding: 12px 16px; border: 1px solid var(--border); border-left: 3px solid var(--yellow); border-radius: 6px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .error { border-left-color: var(--red); }

@@ -5,7 +5,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px 24px;
+  padding: 28px 26px 26px;
   position: relative;
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.1s both;
@@ -17,6 +17,18 @@
   border-color: var(--border-bright);
   box-shadow: none;
 }
+
+.card.embedded.embedded, .card.embedded.embedded:hover {
+  padding: 0 0 20px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  animation: none;
+}
+.card.embedded.embedded::before { display: none; }
+.embedded .cardTitle { font: 400 12.5px/1.5 var(--mono); letter-spacing: .1em; color: var(--text-dim); }
+.embedded .deployToggle { font-size: 12px; min-height: 32px; }
 
 /* ── Header ── */
 
@@ -48,23 +60,23 @@
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: var(--accent-dim);
-  border: 1px solid var(--green-border);
-  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 100px;
   font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--accent-light);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
 }
 
 .deployToggle {
   border-radius: 100px;
-  font-family: var(--sans);
-  font-size: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--accent-light);
-  background: var(--accent-dim);
-  border: 1px solid var(--green-border);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
   padding: 4px 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -87,23 +99,24 @@
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .th {
-  font-family: var(--sans);
-  font-size: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   text-align: left;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .thNarrow {
   composes: th;
-  width: 70px;
+  width: 66px;
   text-align: center;
 }
 
@@ -114,12 +127,15 @@
 .row:hover {
   background: var(--overlay-light);
 }
+.selectedRow { background: var(--accent-dim); }
+.selectedRow td:first-child { box-shadow: inset 3px 0 var(--accent); }
+.selectedRow .callBtn { background: transparent; color: var(--accent-light); border: 1px solid var(--green-border); }
 
 .td {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
@@ -134,9 +150,15 @@
   overflow: visible;
 }
 
+.thArrow { composes: th; width: 20px; padding: 0; }
+.arrowCell { composes: td; padding: 8px 0; text-align: center; color: var(--text-dim); }
+
 .addrLink {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   transition: color 0.15s;
 }
@@ -151,8 +173,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--sans);
-  font-size: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--green);
 }
@@ -168,8 +190,8 @@
 }
 
 .statusGone {
-  font-family: var(--sans);
-  font-size: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--text-dim);
   opacity: 0.6;
@@ -181,21 +203,21 @@
   justify-content: center;
 }
 
-/* ── Call button (tiny accent pill) ── */
+/* ── Proxy selection ── */
 
 .callBtn {
-  font-family: var(--sans);
-  font-size: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--on-color, #fff);
-  background: var(--accent);
-  border: none;
-  padding: 3px 10px;
-  border-radius: var(--radius-xs);
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 100px;
   cursor: pointer;
   transition: all 0.12s ease;
   line-height: 1;
-  height: 22px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -203,7 +225,8 @@
 }
 
 .callBtn:hover {
-  background: var(--accent-light);
+  color: var(--text-bright);
+  border-color: var(--border-hover);
   box-shadow: none;
 }
 
@@ -222,14 +245,14 @@
 }
 
 .emptyText {
-  font-family: var(--sans);
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   color: var(--text-dim);
 }
 
 .emptyArrow {
-  font-family: var(--sans);
-  font-size: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   color: var(--text-dim);
   opacity: 0.6;
 }
@@ -237,18 +260,7 @@
 /* ── Collapsible deploy section ── */
 
 .deploySection {
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.25s ease;
-}
-
-.deployOpen {
-  max-height: 500px;
-  opacity: 1;
-}
-
-.deployClosed {
-  max-height: 0;
-  opacity: 0;
+  overflow: visible;
 }
 
 .deployInner {
@@ -267,8 +279,8 @@
 /* ── Section title ── */
 
 .sectionTitle {
-  font-family: var(--sans);
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -285,17 +297,21 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .input {
-  flex: 1;
+  flex: 1 1 240px;
+  min-width: 0;
+  width: 100%;
   background: var(--bg-inset);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  font-family: var(--mono);
-  font-size: 12px;
+  border-radius: 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 12px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -312,14 +328,14 @@
 /* ── Deploy button ── */
 
 .deployBtn {
-  font-family: var(--sans);
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--on-color, #fff);
-  background: var(--accent);
-  border: none;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
   padding: 8px 18px;
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
@@ -330,7 +346,8 @@
 }
 
 .deployBtn:hover:not(:disabled) {
-  background: var(--accent-light);
+  color: var(--text-bright);
+  border-color: var(--border-hover);
   box-shadow: none;
 }
 
@@ -353,7 +370,7 @@
   background: var(--green-dim);
   border: 1px solid var(--green-border);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--green);
   white-space: nowrap;
@@ -378,7 +395,7 @@
   background: var(--green-dim);
   border: 1px solid var(--green-border);
   border-radius: var(--radius-xs);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--green);
 }
@@ -396,7 +413,7 @@
 }
 
 .proxyLabel {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -406,7 +423,7 @@
 
 .proxyValue {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   cursor: pointer;
   transition: color 0.15s;
@@ -426,7 +443,7 @@
   border-radius: var(--radius-sm);
   background: var(--accent-dim);
   border: 1px solid var(--green-border);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   font-weight: 500;
   animation: slideDown 0.2s ease-out;
@@ -447,13 +464,13 @@
   border-radius: var(--radius-sm);
   background: var(--red-dim);
   border: 1px solid var(--red-border);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--red);
 }
 
 .dismissBtn {
-  font-family: var(--sans);
-  font-size: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--red);
   background: none;
@@ -479,11 +496,11 @@
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .txLabel {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -492,7 +509,7 @@
 
 .txValue {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   cursor: pointer;
   transition: color 0.15s;
@@ -510,7 +527,7 @@
   border: 2px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: global(spin) 0.8s linear infinite;
   flex-shrink: 0;
 }
 
@@ -520,12 +537,12 @@
   border: 1.5px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: global(spin) 0.8s linear infinite;
   display: inline-block;
 }
 
 .checkingLabel {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-dim);
   display: flex;
   align-items: center;
@@ -535,14 +552,10 @@
 /* ── Recent addresses dropdown ── */
 
 .recentDropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 10;
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border-bright);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   box-shadow: none;
   margin-top: 4px;
   max-height: 200px;
@@ -557,7 +570,7 @@
   background: none;
   border: none;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   cursor: pointer;
   transition: background 0.1s;
@@ -569,8 +582,8 @@
 
 .recentHeader {
   padding: 6px 12px 4px;
-  font-family: var(--sans);
-  font-size: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -586,7 +599,9 @@
 
   .inputGroup {
     flex-direction: column;
+    align-items: stretch;
   }
+  .inputGroup .input { flex: none; }
 
   .td {
     max-width: 120px;
@@ -597,3 +612,48 @@
     width: 50px;
   }
 }
+
+/* Keep proxy selection visible without horizontal scrolling on phones. */
+@media (max-width: 640px) {
+  .embedded .table, .embedded .table tbody { display: block; }
+  .embedded .table thead { display: none; }
+  .embedded .row { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 0 8px; padding: 8px; border-bottom: 1px solid var(--border); }
+  .embedded .td { min-width: 0; max-width: none; padding: 6px 0; border: 0; }
+  .embedded .td:first-child { grid-column: 1; grid-row: 1; box-shadow: none; width: auto; align-self: end; }
+  .embedded .td:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .embedded .td:nth-child(3) { grid-column: 1; grid-row: 2; padding: 0; }
+  .embedded .arrowCell span { display: inline-block; transform: rotate(90deg); }
+  .embedded .td:nth-child(4) { grid-column: 1; grid-row: 3; width: auto; align-self: end; }
+  .embedded .td:nth-child(5) { grid-column: 2; grid-row: 3; }
+  .embedded .td:nth-child(6) { grid-column: 1 / -1; grid-row: 4; width: auto; }
+  .embedded .td:nth-child(6) .actions { justify-content: flex-end; }
+  .embedded .td:nth-child(2)::before, .embedded .td:nth-child(5)::before { display: block; color: var(--text-dim); font: 500 11px/1.5 var(--sans); margin-bottom: 2px; }
+  .embedded .td:nth-child(2)::before { content: 'Proxy'; }
+  .embedded .td:nth-child(5)::before { content: 'Destination'; }
+  .embedded .addrLink { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .embedded .selectedRow { box-shadow: inset 3px 0 var(--accent); }
+}
+
+.network { display: flex; align-items: center; justify-content: center; }
+.directionButton { display: flex; align-items: center; gap: 6px; }
+.network img, .directionButton img { width: 18px; height: 22px; object-fit: contain; }
+.directionSelector { display: flex; gap: 8px; margin-bottom: 16px; }
+.directionButton { border: 1px solid var(--border); border-radius: 100px; padding: 8px 14px; background: transparent; color: var(--text-dim); cursor: pointer; }
+.directionActive { border-color: var(--text-bright); background: var(--bg-raised); color: var(--text-bright); }
+.directionButton:disabled, .callBtn:disabled, .deployToggle:disabled { opacity: .55; cursor: default; }
+
+.actions { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.thNarrow:nth-child(4) { width: 94px; }
+.thNarrow:last-child { width: 128px; }
+.tdNarrow:last-child { max-width: none; }
+.removeBtn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text-dim); cursor: pointer; }
+.removeBtn:hover:not(:disabled) { color: var(--red); border-color: var(--red-border); }
+.removeBtn:disabled { opacity: .55; cursor: default; }
+.savedLabel, .contractName { color: var(--text-dim); font: 12px/1.5 var(--sans); }
+.savedLabel { padding: 8px 12px; }
+.inputModeToggle { align-self: flex-start; max-width: 100%; color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); text-align: left; padding: 4px 0; background: transparent; border: 0; text-decoration: underline; text-underline-offset: 3px; }
+.inputModeToggle:hover { color: var(--text-bright); }
+.inputModeToggle:disabled { opacity: .55; cursor: default; }
+.fieldHint { color: var(--text-dim); font: 13px/1.5 var(--sans); overflow-wrap: anywhere; }
+.detectedDestination { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font: 12px/1.5 var(--mono); }
+.saveError { color: var(--red); font: 13px/1.5 var(--sans); overflow-wrap: anywhere; }

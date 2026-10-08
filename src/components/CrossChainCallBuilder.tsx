@@ -1,17 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { parseEther } from "viem";
-import { config, ESTIMATION_SENDER } from "../config";
+import { config, L1_CHAIN, L2_CHAIN, ESTIMATION_SENDER } from "../config";
 import { rpcCall } from "../rpc";
-import { estimateCrossChainGas, GasEstimateError, gasToHex } from "../lib/gasEstimation";
-import type { CrossChainState } from "../hooks/useCrossChain";
+import { estimateComposerGas, GasEstimateError, gasToHex } from "../lib/gasEstimation";
+import { crossChainRoute, type CrossChainDirection, type CrossChainState } from "../hooks/useCrossChain";
 import type { AbiFunction } from "../hooks/useBlockscoutAbi";
 import { AbiMethodSelector } from "./AbiMethodSelector";
 import { GasLimitEditor } from "./GasLimitEditor";
 import { TxLink } from "./TxLink";
 import { ExplorerLink } from "./ExplorerLink";
+import { NetworkIcon } from "./NetworkIcon";
 import styles from "./CrossChainCallBuilder.module.css";
 
 interface Props {
+  embedded?: boolean;
+  direction?: CrossChainDirection;
+  selecting?: boolean;
   targetAddress: string;
   proxyAddress: string | null;
   abi: AbiFunction[] | null;
@@ -20,8 +24,7 @@ interface Props {
   contractName: string | null;
   crossChainState: CrossChainState;
   onSendCall: (proxy: string, calldata: string, target?: string, value?: string, gas?: string) => void;
-  onReset: () => void;
-  l2Rpc: string;
+  destinationRpc: string;
   /** Sender address for gas estimation (wallet or demo) */
   senderAddress: string | null;
 }
@@ -35,7 +38,7 @@ interface TxReceipt {
 type GasState =
   | { status: "idle" }
   | { status: "estimating" }
-  | { status: "estimated"; estimate: number; gasHex: string; method: string }
+  | { status: "estimated"; estimate: number; gasHex: string; method: string; requestKey: string }
   | { status: "revert"; reason: string }
   | { status: "rpc-error"; message: string };
 
@@ -59,6 +62,9 @@ function parseManualAbi(json: string): AbiFunction[] | null {
 }
 
 export function CrossChainCallBuilder({
+  embedded = false,
+  direction = "l1-to-l2",
+  selecting = false,
   targetAddress,
   proxyAddress,
   abi,
@@ -67,11 +73,10 @@ export function CrossChainCallBuilder({
   contractName,
   crossChainState,
   onSendCall,
-  onReset,
-  l2Rpc,
+  destinationRpc,
   senderAddress,
 }: Props) {
-  const [rawCalldata, setRawCalldata] = useState("");
+  const [rawCalldata, setRawCalldata] = useState("0x");
   const [abiCalldata, setAbiCalldata] = useState<string | null>(null);
   const [ethValue, setEthValue] = useState("");
   const [gasState, setGasState] = useState<GasState>({ status: "idle" });
@@ -85,9 +90,18 @@ export function CrossChainCallBuilder({
   const [manualAbiError, setManualAbiError] = useState<string | null>(null);
 
   // Effective ABI: blockscout > manual paste > raw calldata
+  const route = crossChainRoute(direction);
+  const sourceName = route.source === "l1" ? config.l1NetworkName : config.rollupName;
+  const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
   const effectiveAbi = abi || manualAbiParsed;
   const calldata = effectiveAbi ? abiCalldata : rawCalldata || null;
-  const busy = !["idle", "confirmed", "failed"].includes(crossChainState.phase);
+  const validCalldata = !!calldata && /^0x(?:[0-9a-f]{2})*$/i.test(calldata);
+  let valueHex: string | null = null;
+  try { const value = parseEther(ethValue || "0"); if (value >= 0n) valueHex = "0x" + value.toString(16); } catch { /* Invalid input cannot be submitted. */ }
+  const requestKey = `${direction}:${proxyAddress}:${calldata}:${valueHex}:${senderAddress}`;
+  const gasBlocked = gasState.status === "revert" ||
+    !(gasOverrideHex || gasState.status === "estimated" && gasState.requestKey === requestKey);
+  const busy = selecting || !["idle", "confirmed", "failed"].includes(crossChainState.phase);
 
   // Parse manual ABI when text changes
   useEffect(() => {
@@ -106,9 +120,9 @@ export function CrossChainCallBuilder({
     }
   }, [manualAbiJson]);
 
-  // Gas estimation using the robust multi-strategy estimator
+  // Composer estimates the complete call on the selected source chain.
   useEffect(() => {
-    if (!proxyAddress || !calldata) {
+    if (!proxyAddress || !validCalldata || !calldata) {
       setGasState({ status: "idle" });
       return;
     }
@@ -119,12 +133,14 @@ export function CrossChainCallBuilder({
     const timer = setTimeout(async () => {
       try {
         const from = senderAddress || ESTIMATION_SENDER;
-        const value = ethValue ? "0x" + parseEther(ethValue).toString(16) : undefined;
+        const parsedValue = ethValue ? parseEther(ethValue) : 0n;
+        if (parsedValue < 0n) throw new Error("Value must not be negative");
+        const value = "0x" + parsedValue.toString(16);
 
-        const result = await estimateCrossChainGas({
-          l1Rpc: config.l1Rpc,
-          proxyAddress,
-          calldata,
+        const result = await estimateComposerGas({
+          rpcUrl: route.composerRpc,
+          to: proxyAddress,
+          data: calldata,
           from,
           value,
         });
@@ -135,6 +151,7 @@ export function CrossChainCallBuilder({
             estimate: Number(result.rawEstimate),
             gasHex: gasToHex(result.gasLimit),
             method: result.method,
+            requestKey,
           });
         }
       } catch (e) {
@@ -152,16 +169,14 @@ export function CrossChainCallBuilder({
             });
           }
         } else {
-          setGasState({
-            status: "rpc-error",
-            message: (e as Error).message || "Unknown error",
-          });
+          const message = (e as Error).message || "Unknown error";
+          setGasState(/revert|invalid opcode|out of gas/i.test(message) ? { status: "revert", reason: message } : { status: "rpc-error", message });
         }
       }
     }, 300);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [proxyAddress, calldata, ethValue, senderAddress]);
+  }, [proxyAddress, calldata, ethValue, senderAddress, direction, validCalldata, route.composerRpc, requestKey]);
 
   // Fetch receipt on confirm
   useEffect(() => {
@@ -173,21 +188,21 @@ export function CrossChainCallBuilder({
     let cancelled = false;
     (async () => {
       try {
-        const r = (await rpcCall(config.l1Rpc, "eth_getTransactionReceipt", [
+        const r = (await rpcCall(crossChainRoute(crossChainState.direction).rpc, "eth_getTransactionReceipt", [
           crossChainState.txHash,
         ])) as TxReceipt | null;
         if (!cancelled && r) setReceipt(r);
       } catch { /* ignore */ }
     })();
     return () => { cancelled = true; };
-  }, [crossChainState.phase, crossChainState.txHash]);
+  }, [crossChainState.phase, crossChainState.txHash, crossChainState.direction]);
 
   const handleGasOverride = useCallback((hex: string | null) => {
     setGasOverrideHex(hex);
   }, []);
 
   const handleSend = useCallback(() => {
-    if (!proxyAddress || !calldata) return;
+    if (!proxyAddress || !validCalldata || !calldata || !valueHex || gasBlocked || busy || !senderAddress) return;
     // Use custom gas override if set, otherwise use the estimate
     const gas = gasOverrideHex
       ?? (gasState.status === "estimated" ? gasState.gasHex : undefined);
@@ -195,23 +210,23 @@ export function CrossChainCallBuilder({
       proxyAddress,
       calldata,
       targetAddress,
-      ethValue ? "0x" + parseEther(ethValue).toString(16) : undefined,
+      valueHex,
       gas,
     );
-  }, [proxyAddress, calldata, targetAddress, ethValue, onSendCall, gasState, gasOverrideHex]);
+  }, [proxyAddress, calldata, targetAddress, valueHex, onSendCall, gasState, gasOverrideHex, validCalldata, gasBlocked, busy, senderAddress]);
 
   // --- No proxy: show waiting message ---
   if (!proxyAddress) {
-    if (!targetAddress || !/^0x[0-9a-fA-F]{40}$/.test(targetAddress)) {
-      return null; // Don't show anything until there's a valid address
-    }
+    const validTarget = /^0x[0-9a-fA-F]{40}$/.test(targetAddress);
     return (
-      <div className={styles.card}>
+      <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
         <div className={styles.cardHeader}>
-          <span className={styles.cardTitle}>Execute Cross-Chain Call</span>
+          <span className={styles.cardTitle}>{embedded ? "[ PREPARE CALL ]" : "Execute Cross-Chain Call"}</span>
         </div>
         <div className={styles.noProxy}>
-          No L1 proxy found for this contract. Create one above to send cross-chain calls.
+          {validTarget
+            ? `Create a proxy on ${sourceName} for this destination address.`
+            : "Select a proxy or enter a destination address above."}
         </div>
       </div>
     );
@@ -221,55 +236,31 @@ export function CrossChainCallBuilder({
   const writeFnCount = effectiveAbi ? effectiveAbi.filter((f) => f.stateMutability !== "view" && f.stateMutability !== "pure").length : 0;
   const readFnCount = effectiveAbi ? effectiveAbi.filter((f) => f.stateMutability === "view" || f.stateMutability === "pure").length : 0;
 
-  // Can only send if gas estimation didn't detect a revert
-  const gasBlocked = gasState.status === "revert";
-
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Execute Cross-Chain Call</span>
-        <span className={styles.subtitle}>L1 Proxy → L2</span>
+        <span className={styles.cardTitle}>{embedded ? "[ PREPARE CALL ]" : "Execute Cross-Chain Call"}</span>
       </div>
 
-      {/* Step 1: Show the detected proxy prominently */}
-      <div className={styles.proxyBanner}>
-        <div className={styles.proxyBannerLeft}>
-          <span className={styles.proxyDot} />
-          <span className={styles.proxyBannerLabel}>L1 Proxy</span>
+      <div className={styles.routeSummary} role="group" aria-label="Call route">
+        <div className={styles.endpoint} role="group" aria-label="Source proxy">
+          <span className={styles.endpointLabel}>Source proxy</span>
+          <span className={styles.endpointNetwork}><NetworkIcon chain={route.source} decorative />{sourceName}</span>
+          <ExplorerLink value={proxyAddress} label={`${proxyAddress.slice(0, 10)}…${proxyAddress.slice(-6)}`} chain={route.source} className={styles.endpointAddress} />
         </div>
-        <ExplorerLink value={proxyAddress} chain="l1" className={styles.proxyBannerAddr} />
+        <span className={styles.routeArrow} aria-hidden="true">→</span>
+        <div className={styles.endpoint} role="group" aria-label="Destination">
+          <span className={styles.endpointLabel}>Destination</span>
+          <span className={styles.endpointNetwork}><NetworkIcon chain={route.destination} decorative />{destinationName}</span>
+          {contractName && <span className={styles.endpointName}>{contractName}</span>}
+          <ExplorerLink value={targetAddress} label={`${targetAddress.slice(0, 10)}…${targetAddress.slice(-6)}`} chain={route.destination} className={styles.endpointAddress} />
+        </div>
       </div>
-
-      {/* Phase indicator */}
-      {["sending", "l1-pending"].includes(crossChainState.phase) && (
-        <div className={styles.phaseBar}>
-          <span className={styles.spinner} />
-          <span>
-            {crossChainState.phase === "sending"
-              ? "Sending cross-chain call via L1 proxy..."
-              : "Waiting for L1 confirmation — L2 state updating atomically..."}
-          </span>
-        </div>
-      )}
 
       {crossChainState.phase === "confirmed" && crossChainState.txHash && (
-        <div className={`${styles.phaseBar} ${styles.phaseOk}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-          <span>Cross-chain call confirmed — L2 state updated</span>
-        </div>
-      )}
-
-      {crossChainState.phase === "failed" && crossChainState.error && (
-        <div className={styles.errorBar}>
-          {crossChainState.error}
-          <button className="btn btn-sm btn-ghost" onClick={onReset}>Dismiss</button>
-        </div>
-      )}
-
-      {crossChainState.txHash && (
         <div className={styles.txHashRow}>
           <span className={styles.txLabel}>TX</span>
-          <TxLink hash={crossChainState.txHash} chain="l1" className={styles.txValue} />
+          <TxLink hash={crossChainState.txHash} chain={crossChainRoute(crossChainState.direction).source} className={styles.txValue} />
         </div>
       )}
 
@@ -281,7 +272,7 @@ export function CrossChainCallBuilder({
             onClick={() => setShowReceipt(!showReceipt)}
           >
             <span>Transaction Receipt</span>
-            <span>{showReceipt ? "\u25B2" : "\u25BC"}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" style={{ transform: showReceipt ? "rotate(180deg)" : undefined }}><path d="m6 9 6 6 6-6" /></svg>
           </button>
           {showReceipt && (
             <div className={styles.receiptDetails}>
@@ -300,7 +291,7 @@ export function CrossChainCallBuilder({
               {crossChainState.txHash && (
                 <div className={styles.receiptRow}>
                   <span className={styles.receiptKey}>Explorer</span>
-                  <ExplorerLink value={crossChainState.txHash} type="tx" chain="l1" />
+                  <ExplorerLink value={crossChainState.txHash} type="tx" chain={crossChainRoute(crossChainState.direction).source} />
                 </div>
               )}
             </div>
@@ -333,47 +324,50 @@ export function CrossChainCallBuilder({
 
         {/* ABI source: from Blockscout, or manual paste, or raw calldata */}
         {effectiveAbi ? (
+          <fieldset disabled={busy} className={styles.functionFields}>
           <AbiMethodSelector
             abi={effectiveAbi}
             targetAddress={targetAddress}
             onCalldataChange={setAbiCalldata}
             onValueChange={setEthValue}
-            l2Rpc={l2Rpc}
+            l2Rpc={destinationRpc}
+            nativeSymbol={(route.source === "l1" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol}
           />
+          </fieldset>
         ) : (
           <>
             {/* Manual ABI paste fallback */}
-            <div className={styles.abiPasteSection}>
-              <div className={styles.abiPasteHeader}>
-                <span className={styles.abiPasteLabel}>
-                  {!abi && !abiError ? "No verified ABI found — " : ""}Paste ABI JSON or enter raw calldata
-                </span>
-              </div>
+            <details className={styles.abiPasteSection}>
+              <summary className={styles.abiPasteLabel}>Use ABI JSON</summary>
               <textarea
                 className={styles.abiPasteArea}
                 value={manualAbiJson}
                 onChange={(e) => setManualAbiJson(e.target.value)}
                 placeholder={'[\n  {"type":"function","name":"increment","inputs":[],"stateMutability":"nonpayable"},\n  ...\n]'}
                 rows={4}
+                aria-label="ABI JSON"
+                disabled={busy}
               />
               {manualAbiError && (
                 <div className={styles.abiPasteError}>{manualAbiError}</div>
               )}
-            </div>
+            </details>
 
             {/* Raw calldata fallback (only if no manual ABI either) */}
             {!manualAbiParsed && (
               <>
-                <div className={styles.orDivider}>
-                  <span>or enter raw calldata</span>
-                </div>
+                <label htmlFor="cross-chain-calldata" className={styles.sectionTitle}>Calldata</label>
                 <input
+                  id="cross-chain-calldata"
                   type="text"
+                  disabled={busy}
                   className={styles.rawInput}
                   value={rawCalldata}
                   onChange={(e) => setRawCalldata(e.target.value)}
-                  placeholder="0x... (function selector + encoded params)"
+                  placeholder="0x (empty call) or encoded calldata"
                 />
+                <label htmlFor="cross-chain-value" className={styles.sectionTitle}>Value ({(route.source === "l1" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol})</label>
+                <input id="cross-chain-value" className={styles.rawInput} inputMode="decimal" value={ethValue} disabled={busy} onChange={event => setEthValue(event.target.value)} placeholder="0" />
               </>
             )}
           </>
@@ -400,45 +394,33 @@ export function CrossChainCallBuilder({
         )}
 
         {calldata && (
+          <details className={styles.gasSettings}>
+          <summary>Gas settings</summary>
           <GasLimitEditor
             estimatedGas={gasState.status === "estimated" ? gasState.estimate : null}
             estimatedGasWithBuffer={gasState.status === "estimated" ? parseInt(gasState.gasHex, 16) : null}
             estimating={gasState.status === "estimating"}
-            estimationMethod={
-              gasState.status === "estimated" &&
-              gasState.method !== "direct" &&
-              gasState.method !== "unpriced"
-                ? gasState.method === "calldata-computed"
-                  ? "L1 calldata analysis"
-                  : gasState.method === "legacy-params"
-                    ? "legacy"
-                    : "simulation"
-                : null
-            }
             onGasOverride={handleGasOverride}
             disabled={busy}
           />
+          </details>
         )}
 
         <button
           className="btn btn-solid btn-green btn-block"
           onClick={handleSend}
-          disabled={busy || !calldata || gasBlocked}
+          disabled={busy || !validCalldata || !valueHex || gasBlocked || !senderAddress}
         >
           {busy ? (
             <><span className="btn-spinner" /> Sending...</>
-          ) : gasBlocked ? (
+          ) : gasState.status === "revert" ? (
             "Transaction Will Revert"
           ) : (
             "Send Cross-Chain Transaction"
           )}
         </button>
 
-        {!calldata && !busy && (
-          <div className={styles.sendHint}>
-            {effectiveAbi ? "Select a write function above" : "Enter calldata above to enable sending"}
-          </div>
-        )}
+
       </div>
     </div>
   );

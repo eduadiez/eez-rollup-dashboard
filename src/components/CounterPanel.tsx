@@ -1,245 +1,68 @@
-import type { TxStatus } from "../hooks/useCounter";
-import { TxLink } from "./TxLink";
+import { useEffect, useRef, useState } from "react";
+import { config } from "../config";
+import type { CounterChain, TxStatus } from "../hooks/useCounter";
+import { ExplorerLink } from "./ExplorerLink";
+import { NetworkIcon } from "./NetworkIcon";
+import { TransactionDialog } from "./TransactionDialog";
 import styles from "./CounterPanel.module.css";
 
 interface Props {
-  address: string;
-  onAddressChange: (addr: string) => void;
-  count: number | null;
-  prevCount: number | null;
-  deploying: boolean;
-  incrementing: boolean;
-  txStatus: TxStatus;
-  totalIncrements: number;
-  onDeploy: () => void;
-  onIncrement: () => void;
-  onRefresh: () => void;
-  connected: boolean;
+  chain: CounterChain; onChainChange: (chain: CounterChain) => void;
+  address: string; onAddressChange: (address: string) => void;
+  count: bigint | null; prevCount: bigint | null; readError: string | null;
+  txStatus: TxStatus; busy: boolean; walletConnected: boolean;
+  onDeploy: () => void; onIncrement: () => void; onRefresh: () => void; onReset: () => void;
 }
 
-function StepIndicator({
-  step,
-  active,
-  done,
-  label,
-}: {
-  step: number;
-  active: boolean;
-  done: boolean;
-  label: string;
-}) {
-  return (
-    <div
-      className={`${styles.step} ${active ? styles.stepActive : ""} ${done ? styles.stepDone : ""}`}
-    >
-      <div className={styles.stepCircle}>
-        {done ? (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : (
-          step
-        )}
-      </div>
-      <span className={styles.stepLabel}>{label}</span>
+export function CounterPanel({ chain, onChainChange, address, onAddressChange, count, prevCount,
+  readError, txStatus, busy, walletConnected, onDeploy, onIncrement, onRefresh, onReset }: Props) {
+  const validAddress = /^0x[0-9a-f]{40}$/i.test(address);
+  const network = chain === "l1" ? config.l1NetworkName : config.rollupName;
+  const [open, setOpen] = useState(false), [transaction, setTransaction] = useState<TxStatus | null>(null);
+  const previousPhase = useRef<TxStatus["phase"]>("idle");
+  useEffect(() => {
+    const previous = previousPhase.current; previousPhase.current = txStatus.phase;
+    if (txStatus.phase === "idle") return;
+    setTransaction(txStatus);
+    if (previous === "idle" || txStatus.phase === "sending" && previous !== "sending" ||
+      (txStatus.phase === "confirmed" || txStatus.phase === "failed") && previous !== txStatus.phase) setOpen(true);
+  }, [txStatus]);
+  const complete = transaction?.phase === "confirmed", failed = transaction?.phase === "failed";
+  const deploy = transaction?.action === "deploy";
+  const close = () => { setOpen(false); if (complete || failed) onReset(); };
+  const delta = count !== null && prevCount !== null ? count - prevCount : 0n;
+
+  return <section className={styles.card} aria-label="Counter demo">
+    <div className={styles.header}><h2>Counter Demo</h2><p>Deploy or select a counter, then control it from the other network.</p></div>
+    <fieldset className={styles.networkFields} disabled={busy}>
+      <legend className={styles.label}>Counter network</legend>
+      <div className={styles.networkSelector}>{(["l1", "l2"] as const).map(side => <button key={side}
+        className={`btn ${chain === side ? "btn-solid" : "btn-outline"}`} aria-pressed={chain === side}
+        onClick={() => onChainChange(side)}><NetworkIcon chain={side} decorative />{side === "l1" ? config.l1NetworkName : config.rollupName}</button>)}</div>
+    </fieldset>
+    <div className={styles.display} role="group" aria-label={`Counter value on ${network}`}>
+      <span className={styles.number}>{count === null ? "—" : count.toLocaleString()}</span>
+      <span className={styles.label}>Current count</span>
+      {delta !== 0n && <span className={styles.delta}>{delta > 0n ? "+" : ""}{delta.toLocaleString()}</span>}
     </div>
-  );
-}
-
-function TxLifecycle({ status }: { status: TxStatus }) {
-  if (status.phase === "idle") return null;
-
-  const phaseLabels = {
-    sending: "Sending transaction...",
-    pending: "Waiting for confirmation...",
-    confirming: "Processing...",
-    confirmed: "Confirmed",
-    failed: "Failed",
-  };
-
-  return (
-    <div
-      className={`${styles.txBar} ${status.phase === "confirmed" ? styles.txConfirmed : ""} ${status.phase === "failed" ? styles.txFailed : ""}`}
-    >
-      <div className={styles.txPhase}>
-        {(status.phase === "sending" || status.phase === "pending") && (
-          <span className={styles.spinner} />
-        )}
-        {status.phase === "confirmed" && (
-          <svg className={styles.txIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-        {status.phase === "failed" && (
-          <svg className={styles.txIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        )}
-        <span>{phaseLabels[status.phase]}</span>
-      </div>
-      <div className={styles.txMeta}>
-        {status.hash && (
-          <TxLink hash={status.hash} chain="l2" className={styles.txHash} />
-        )}
-        {status.gasUsed && (
-          <span className={styles.txGas}>{status.gasUsed} gas</span>
-        )}
-        {status.error && (
-          <span className={styles.txError}>{status.error}</span>
-        )}
-      </div>
+    <label className={styles.label} htmlFor="counter-address">Counter address on {network}</label>
+    <input id="counter-address" className={styles.input} value={address} spellCheck={false} autoComplete="off" disabled={busy}
+      onChange={event => onAddressChange(event.target.value)} placeholder="0x... existing counter address" />
+    {validAddress && <div className={styles.addressRow}><ExplorerLink value={address} chain={chain} /><button className="btn btn-sm btn-ghost" disabled={busy} onClick={() => onAddressChange("")}>Clear</button></div>}
+    {address && !validAddress && <p className={styles.error} role="alert">Enter a valid counter address</p>}
+    {readError && <p className={styles.error} role="alert">{readError}</p>}
+    <div className={styles.actions}>
+      {validAddress && <button className="btn btn-solid" disabled={busy || !walletConnected || count === null} onClick={onIncrement}>Increment (+1)</button>}
+      <button className={`btn ${validAddress ? "btn-outline" : "btn-solid"}`} disabled={busy || !walletConnected} onClick={onDeploy}>{validAddress ? "Deploy new counter" : "Deploy counter"}</button>
+      {validAddress && <button className="btn btn-outline" disabled={busy} onClick={onRefresh}>Refresh</button>}
     </div>
-  );
-}
-
-export function CounterPanel({
-  address,
-  onAddressChange,
-  count,
-  prevCount,
-  deploying,
-  incrementing,
-  txStatus,
-  totalIncrements,
-  onDeploy,
-  onIncrement,
-  onRefresh,
-  connected,
-}: Props) {
-  const hasContract = address.startsWith("0x") && address.length === 42;
-  const hasInteracted = totalIncrements > 0 || (count !== null && count > 0);
-
-  return (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Counter Demo</span>
-        <span className={styles.status}>
-          <span
-            className={`${styles.dot} ${connected ? styles.ok : styles.err}`}
-          />
-          {connected ? "Connected to L2" : "Disconnected"}
-        </span>
-      </div>
-
-      {/* Step indicators */}
-      <div className={styles.steps}>
-        <StepIndicator step={1} active={!hasContract} done={hasContract} label="Deploy" />
-        <div className={styles.stepLine} />
-        <StepIndicator step={2} active={hasContract && !hasInteracted} done={hasInteracted} label="Increment" />
-        <div className={styles.stepLine} />
-        <StepIndicator step={3} active={hasInteracted} done={false} label="Interact" />
-      </div>
-
-      {/* Tx lifecycle bar */}
-      <TxLifecycle status={txStatus} />
-
-      <div className={styles.grid}>
-        {/* Counter display */}
-        <div className={styles.display}>
-          <div className={`${styles.number} ${txStatus.phase === "confirmed" ? styles.numberPop : ""}`}>
-            {count !== null ? count : "\u2014"}
-          </div>
-          <div className={styles.label}>Current Count</div>
-          {prevCount !== null && count !== null && count !== prevCount && (
-            <div className={styles.delta}>
-              +{count - prevCount}
-            </div>
-          )}
-          {totalIncrements > 0 && (
-            <div className={styles.sessionCount}>
-              {totalIncrements} tx{totalIncrements !== 1 ? "s" : ""} this session
-            </div>
-          )}
-        </div>
-
-        {/* Controls */}
-        <div className={styles.controls}>
-          {!hasContract ? (
-            <>
-              <p className={styles.hint}>
-                Deploy a simple counter contract to L2. This creates a contract with
-                <code>increment()</code> and <code>getCount()</code> functions.
-              </p>
-              <div className={styles.inputRow}>
-                <input
-                  type="text"
-                  className={styles.input}
-                  value={address}
-                  onChange={(e) => onAddressChange(e.target.value)}
-                  placeholder="Paste existing address or deploy new..."
-                />
-              </div>
-              <div className={styles.btnRow}>
-                <button
-                  className="btn btn-solid"
-                  onClick={onDeploy}
-                  disabled={deploying}
-                >
-                  {deploying ? (
-                    <><span className="btn-spinner" /> Deploying...</>
-                  ) : (
-                    "Deploy Counter"
-                  )}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={styles.contractAddr}>
-                <span className={styles.contractLabel}>Contract</span>
-                <span
-                  className={styles.contractValue}
-                  onClick={() => navigator.clipboard.writeText(address)}
-                  title="Click to copy"
-                >
-                  {address.slice(0, 14)}...{address.slice(-10)}
-                </span>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  onClick={() => {
-                    onAddressChange("");
-                    localStorage.removeItem("counterAddress");
-                  }}
-                  title="Use a different contract"
-                >
-                  Change
-                </button>
-              </div>
-
-              <div className={styles.btnRow}>
-                <button
-                  className="btn btn-solid btn-green"
-                  onClick={onIncrement}
-                  disabled={incrementing}
-                >
-                  {incrementing ? (
-                    <><span className="btn-spinner" /> Sending...</>
-                  ) : (
-                    "Increment (+1)"
-                  )}
-                </button>
-                <button
-                  className="btn btn-solid"
-                  onClick={onDeploy}
-                  disabled={deploying}
-                >
-                  {deploying ? "Deploying..." : "Deploy New"}
-                </button>
-                <button className="btn btn-outline" onClick={onRefresh}>
-                  Refresh
-                </button>
-              </div>
-
-              {!hasInteracted && (
-                <p className={styles.hint}>
-                  Click <strong>Increment</strong> to send a transaction that increases the counter by 1.
-                  The count updates after the tx is confirmed (~12s).
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+    <p className={styles.hint}>{validAddress ? `Increment here on ${network}, or use Cross-Chain Calls to increment from the other network.` : `Deploy a SimpleCounter on ${network} or paste an existing counter address.`}</p>
+    {!walletConnected && <p className={styles.hint}>Connect your wallet to deploy or increment a counter.</p>}
+    {transaction && <>
+      {!open && !complete && !failed && txStatus.phase !== "idle" && <button className="btn btn-outline" onClick={() => setOpen(true)}>View transaction</button>}
+      <TransactionDialog open={open} complete={!!complete} failed={!!failed} chain={chain} hash={transaction.hash} onClose={close}
+        title={failed ? "Counter transaction failed" : complete ? deploy ? "Counter deployed" : "Counter incremented" : transaction.phase === "sending" ? "Confirm in your wallet" : "Waiting for confirmation"}
+        description={failed ? transaction.error || "The transaction could not be completed." : complete ? `Counter ${deploy ? "deployed" : "incremented"} on ${network}.` : transaction.phase === "sending" ? `Review the counter ${deploy ? "deployment" : "increment"} in your wallet on ${network}.` : `Your counter transaction is pending on ${network}.`} />
+    </>}
+  </section>;
 }

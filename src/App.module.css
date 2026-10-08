@@ -6,7 +6,7 @@
 
 .intro {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
@@ -15,7 +15,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 28px;
+  margin: 0 0 20px;
 }
 
 .tab {
@@ -33,6 +33,26 @@
 .tabActive { color: var(--eez-pill-ink); background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); }
 .tabActive:hover { color: var(--eez-pill-ink); }
 .content { display: flex; flex-direction: column; gap: 16px; }
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 16px;
+}
+.bridgeColumn { min-width: 0; }
+.proxyColumn {
+  composes: eez-card from global;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 28px 26px 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.workflowHeader { margin-bottom: 24px; }
+.workflowHeader h2 { color: var(--text-bright); font: 600 17.5px/1.35 var(--sans); letter-spacing: -.01em; }
+.workflowHeader p { margin-top: 6px; color: var(--text-dim); font-size: 13px; }
 .footer {
   display: flex;
   justify-content: space-between;
@@ -50,11 +70,16 @@
 .footer a:hover { color: var(--text-bright); }
 
 @media (max-width: 900px) {
-  .intro { align-items: flex-start; flex-direction: column; }
   .footer { margin: 0 32px; }
+}
+@media (max-width: 1000px) {
+  .dashboardGrid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }
 @media (max-width: 640px) {
   .page { padding: 0 18px 100px; }
+  .intro { align-items: flex-start; gap: 16px; flex-wrap: wrap;  }
+  .proxyColumn {
+  composes: eez-card from global; padding: 20px; }
   .tabs { gap: 6px; }
   .tab { padding: 8px 12px; font-size: 11px; }
   .footer { margin: 0 18px; flex-wrap: wrap; }

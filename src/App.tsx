@@ -1,38 +1,36 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { config } from "./config";
+import { config, L1_CHAIN, L2_CHAIN } from "./config";
 import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
-import { useDashboard } from "./hooks/useDashboard";
-import { useHealth } from "./hooks/useHealth";
 import { useCounter } from "./hooks/useCounter";
-import { useCrossChain } from "./hooks/useCrossChain";
+import { useCrossChain, crossChainRoute, type CrossChainDirection } from "./hooks/useCrossChain";
+import { lookupAddressForChain } from "./lib/addressBook";
 import { useBridge } from "./hooks/useBridge";
 import { useTxHistory } from "./hooks/useTxHistory";
 import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
-import { useFaucet } from "./hooks/useFaucet";
 import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
-// NodeHealth merged into Header
 import { CounterPanel } from "./components/CounterPanel";
 import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
 import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
+import { CrossChainTransactionDialog } from "./components/CrossChainTransactionDialog";
 import { BridgePanel } from "./components/BridgePanel";
-import { FaucetPanel } from "./components/FaucetPanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
 import styles from "./App.module.css";
 
 const VisualizerView = lazy(() => import("./components/VisualizerView").then(module => ({ default: module.VisualizerView })));
 
 // Flash-loan and aggregator views are retained but are not enabled on this network.
-type DashboardTab = "dashboard" | "counter-demo" | "bridge";
+type DashboardTab = "dashboard" | "counter-demo";
 
 /** Dashboard sub-tabs that can be deep-linked via hash */
 const HASH_TO_TAB: Record<string, DashboardTab> = {
   "counter-demo": "counter-demo",
-  "bridge": "bridge",
+  // Keep saved bridge links opening the combined dashboard.
+  "bridge": "dashboard",
 };
 
 function getInitialView(): string {
@@ -62,7 +60,6 @@ function getHashParam(key: string): string | null {
 const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "counter-demo", label: "Counter Demo" },
-  { id: "bridge", label: "Bridge" },
 ];
 
 export function App() {
@@ -70,22 +67,38 @@ export function App() {
 
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
-  const { l1, l2 } = useDashboard();
-  const health = useHealth();
-  const counter = useCounter(log, wallet.sendTx);
-  const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
-  const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
+  const [counterChain, setCounterChain] = useState<"l1" | "l2">("l2");
+  const counterL1 = useCounter(log, wallet.sendL1Tx, { chain: "l1", senderAddress: wallet.address, ready: configLoaded });
+  const counterL2 = useCounter(log, wallet.sendTx, { chain: "l2", senderAddress: wallet.address, ready: configLoaded });
+  const counter = counterChain === "l1" ? counterL1 : counterL2;
+  const counterDirection: CrossChainDirection = counterChain === "l1" ? "l2-to-l1" : "l1-to-l2";
+  const crossChainOptions = { sendL2Tx: wallet.sendTx, sendL2ProxyTx: wallet.sendL2ProxyTx, senderAddress: wallet.address, ready: configLoaded };
+  const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
+  const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
-  const faucet = useFaucet(log, wallet.address);
 
   const txHistory = useTxHistory();
+  const latestBridgeState = useRef(bridgeHook.state);
+  latestBridgeState.current = bridgeHook.state;
+  const switchBridgeNetwork = async (chain: "l1" | "l2") => {
+    const switched = await (chain === "l1" ? wallet.switchToL1() : wallet.switchToL2());
+    const direction = chain === "l1" ? "l1-to-l2" : "l2-to-l1";
+    if (switched && ["idle", "confirmed", "failed"].includes(latestBridgeState.current.phase)
+        && direction !== latestBridgeState.current.direction) bridgeHook.setDirection(direction);
+    return switched;
+  };
 
   // Dashboard tab hooks
   const [genericTargetAddr, setGenericTargetAddr] = useState<string>(() => {
     return getHashParam("target") || "";
   });
-  const blockscoutAbi = useBlockscoutAbi(genericTargetAddr);
-  const recentAddrs = useRecentAddresses();
+  const [genericDirection, setGenericDirection] = useState<CrossChainDirection>("l1-to-l2");
+  const [selectingProxy, setSelectingProxy] = useState(false);
+  const proxySelectionPending = useRef(false);
+  const [proxySelectionError, setProxySelectionError] = useState<string | null>(null);
+  const destinationChain = crossChainRoute(genericDirection).destination;
+  const blockscoutAbi = useBlockscoutAbi(genericTargetAddr, destinationChain);
+  const recentAddrs = useRecentAddresses(destinationChain);
 
   const [view, setView] = useState(getInitialView);
   const [visualizerRoute, setVisualizerRoute] = useState(() => window.location.hash);
@@ -132,7 +145,7 @@ export function App() {
   const prevCCPhase = useRef(crossChain.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress, proxyAddress } = crossChain.state;
+    const { phase, txHash, targetAddress, direction } = crossChain.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -142,11 +155,11 @@ export function App() {
       const label =
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
-          : `Call → ${proxyAddress.slice(0, 10)}...`;
-      ccTxRef.current = txHistory.addTx(type, label);
+          : `Call → ${targetAddress.slice(0, 10)}...`;
+      ccTxRef.current = txHistory.addTx(type, label, null, direction);
     }
 
-    if (txHash && ccTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
+    if (txHash && ccTxRef.current && (phase === "proxy-pending" || phase === "l1-pending" || phase === "l2-pending")) {
       txHistory.updateTx(ccTxRef.current, { hash: txHash });
     }
 
@@ -161,12 +174,18 @@ export function App() {
     prevCCPhase.current = phase;
   }, [crossChain.state.phase, crossChain.state.txHash]);
 
+  // Read the destination counter after source-chain confirmation; polling continues
+  // to pick up any later state visibility on either network.
+  useEffect(() => {
+    if (crossChain.state.phase === "confirmed" && crossChain.state.calldata) void counter.refresh();
+  }, [crossChain.state.phase, crossChain.state.txHash, counter.refresh]);
+
   // Track generic cross-chain transactions in history
   const ccGenTxRef = useRef<string | null>(null);
   const prevCCGenPhase = useRef(crossChainGeneric.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress, proxyAddress } = crossChainGeneric.state;
+    const { phase, txHash, targetAddress, direction } = crossChainGeneric.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -176,11 +195,11 @@ export function App() {
       const label =
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
-          : `Call → ${proxyAddress.slice(0, 10)}...`;
-      ccGenTxRef.current = txHistory.addTx(type, label);
+          : `Call → ${lookupAddressForChain(targetAddress, crossChainRoute(direction).destination) || targetAddress.slice(0, 10) + "…"}`;
+      ccGenTxRef.current = txHistory.addTx(type, label, null, direction);
     }
 
-    if (txHash && ccGenTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
+    if (txHash && ccGenTxRef.current && (phase === "proxy-pending" || phase === "l1-pending" || phase === "l2-pending")) {
       txHistory.updateTx(ccGenTxRef.current, { hash: txHash });
     }
 
@@ -203,11 +222,13 @@ export function App() {
     const { phase, txHash, direction, asset, amount, tokenMeta } = bridgeHook.state;
 
     if (phase === "sending" && prevBridgePhase.current !== "sending") {
-      const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
+      const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol : (tokenMeta?.symbol || "tokens");
       const dirLabel = direction === "l1-to-l2" ? "L1\u2192L2" : "L2\u2192L1";
       bridgeTxRef.current = txHistory.addTx(
-        "cross-chain-call",
+        "bridge",
         `Bridge ${amount} ${symbol} ${dirLabel}`,
+        null,
+        direction,
       );
     }
 
@@ -226,52 +247,43 @@ export function App() {
     prevBridgePhase.current = phase;
   }, [bridgeHook.state.phase, bridgeHook.state.txHash]);
 
-  // Track faucet transactions in history
-  const faucetTxRef = useRef<string | null>(null);
-  const prevFaucetPhase = useRef(faucet.state.phase);
-
-  useEffect(() => {
-    const { phase, txHash, chain } = faucet.state;
-
-    if (phase === "sending" && prevFaucetPhase.current !== "sending") {
-      const addr = wallet.address ? `${wallet.address.slice(0, 10)}...` : "?";
-      faucetTxRef.current = txHistory.addTx(
-        "faucet",
-        `Faucet 0.5 ETH to ${addr} (${chain.toUpperCase()})`,
-      );
-    }
-
-    if (txHash && faucetTxRef.current && phase === "tx-pending") {
-      txHistory.updateTx(faucetTxRef.current, { hash: txHash });
-    }
-
-    if ((phase === "confirmed" || phase === "failed") && faucetTxRef.current) {
-      txHistory.updateTx(faucetTxRef.current, {
-        status: phase === "confirmed" ? "confirmed" : "failed",
-        hash: txHash ?? undefined,
-      });
-      faucetTxRef.current = null;
-    }
-
-    prevFaucetPhase.current = phase;
-  }, [faucet.state.phase, faucet.state.txHash]);
-
   // Track auto-detected proxy from ProxyDeploySection (on-chain but not in localStorage)
-  const [autoDetectedProxy, setAutoDetectedProxy] = useState<string | null>(null);
+  const [autoDetectedProxy, setAutoDetectedProxy] = useState<{ address: string; target: string; direction: CrossChainDirection } | null>(null);
+  const handleProxyDetected = useCallback((address: string | null, target: string, direction: CrossChainDirection) => {
+    setAutoDetectedProxy(address ? { address, target, direction } : null);
+  }, []);
 
-  // Effective proxy: saved (localStorage) takes priority, then auto-detected (on-chain)
+  // A newly verified on-chain proxy takes priority over an older browser mapping.
   const savedProxy = genericTargetAddr
-    ? crossChainGeneric.getProxy(genericTargetAddr)
+    ? crossChainGeneric.getProxy(genericTargetAddr, genericDirection)
     : null;
-  const genericProxy = savedProxy || autoDetectedProxy;
+  const genericProxy = (autoDetectedProxy?.target === genericTargetAddr && autoDetectedProxy.direction === genericDirection ? autoDetectedProxy.address : null) || savedProxy;
+
+  const selectGenericProxy = async (target: string, direction: CrossChainDirection) => {
+    if (proxySelectionPending.current || !["idle", "confirmed", "failed"].includes(crossChainGeneric.state.phase)) return;
+    proxySelectionPending.current = true;
+    setSelectingProxy(true); setProxySelectionError(null);
+    try {
+      const cached = crossChainGeneric.getProxy(target, direction);
+      if (cached) await crossChainGeneric.verifyProxy(target, cached, direction);
+      if (wallet.address && !await switchBridgeNetwork(crossChainRoute(direction).source)) {
+        setProxySelectionError("Wallet network switch was cancelled. Your selected proxy has not changed.");
+        return;
+      }
+      crossChainGeneric.reset();
+      setGenericDirection(direction); setGenericTargetAddr(target);
+    } catch (error) {
+      setProxySelectionError(`Cannot verify proxy: ${error instanceof Error ? error.message : String(error)}`);
+    } finally { proxySelectionPending.current = false; setSelectingProxy(false); }
+  };
 
   // Wrapper for generic sendCrossChainCall that also saves to recent addresses
   const handleGenericSendCall = useCallback(
     (proxy: string, calldata: string, target?: string, _value?: string, gas?: string) => {
       if (target) recentAddrs.addAddress(target);
-      crossChainGeneric.sendCrossChainCall(proxy, calldata, target, _value, gas);
+      crossChainGeneric.sendCrossChainCall(proxy, calldata, target, _value, gas, genericDirection);
     },
-    [crossChainGeneric, recentAddrs],
+    [crossChainGeneric, recentAddrs, genericDirection],
   );
 
   if (!configLoaded) return null;
@@ -289,24 +301,8 @@ export function App() {
         currentView={view}
         theme="dark"
         currentChainId={wallet.chainId}
-        onSwitchL1={wallet.switchToL1}
-        onSwitchL2={wallet.switchToL2}
-        health={health}
-        l1={{
-          blockNumber: l1.blockNumber,
-          txCount: l1.txCount,
-          gasUsed: l1.gasUsed,
-          gasLimit: l1.gasLimit,
-          timestamp: l1.timestamp,
-        }}
-        l2={{
-          blockNumber: l2.blockNumber,
-          txCount: l2.txCount,
-          gasUsed: l2.gasUsed,
-          gasLimit: l2.gasLimit,
-          timestamp: l2.timestamp,
-          synced: l2.synced,
-        }}
+        onSwitchL1={() => { void switchBridgeNetwork("l1"); }}
+        onSwitchL2={() => { void switchBridgeNetwork("l2"); }}
       />
 
       {view === "monitor" ? (
@@ -330,15 +326,15 @@ export function App() {
           />
         </Suspense>
       ) : (
-        <main id="main" tabIndex={-1} className={styles.page}>
-          <section className={`eez-intro ${styles.intro}`} aria-labelledby="page-heading">
+        <main id="main" tabIndex={-1} className={styles.page} data-dashboard>
+          <section className={`${styles.intro} eez-intro`} aria-labelledby="page-heading">
             <div>
-              <p className="eez-eyebrow">[ EEZ ROLLUP DASHBOARD ]</p>
-              <h1 id="page-heading" className="eez-page-heading"><strong>Build across chains.</strong> With EEZ.</h1>
-              <p className="eez-description">Explore synchronous execution. Deploy, connect, and interact across L1 and L2.</p>
+              <p className="eez-eyebrow">[ {config.rollupName} · DASHBOARD ]</p>
+              <h1 id="page-heading" className="eez-page-heading">Toward a <strong>synchronous Ethereum</strong></h1>
+              <p className="eez-description">Experience <strong>atomic synchronous composability</strong> across L1 and L2 with EEZ</p>
             </div>
             <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
-              EEZ quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
+              Quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
             </a>
           </section>
 
@@ -357,102 +353,121 @@ export function App() {
 
           <div className={styles.content}>
             {dashboardTab === "dashboard" && (
-              <>
-                <FaucetPanel
-                  state={faucet.state}
-                  ready={faucet.ready}
-                  cooldownRemaining={faucet.cooldownRemaining}
-                  faucetBalance={faucet.faucetBalance}
-                  walletAddress={wallet.address}
-                  onSetChain={faucet.setChain}
-                  onRequestFunds={faucet.requestFunds}
-                  onDismiss={faucet.dismiss}
-                />
+              <div className={styles.dashboardGrid}>
+                <section className={styles.bridgeColumn} aria-label="Bridge transfers">
+                  <BridgePanel
+                    state={bridgeHook.state}
+                    recentTokens={bridgeHook.recentTokens}
+                    walletAddress={wallet.address}
+                    onSetDirection={bridgeHook.setDirection}
+                    onSetAsset={bridgeHook.setAsset}
+                    onSetAmount={bridgeHook.setAmount}
+                    onSetDestination={bridgeHook.setDestination}
+                    onSetTokenAddress={bridgeHook.setTokenAddress}
+                    onSetMax={bridgeHook.setMax}
+                    onApprove={bridgeHook.approve}
+                    onBridge={bridgeHook.bridge}
+                    onDismiss={bridgeHook.dismiss}
+                    onGasOverride={bridgeHook.setGasOverride}
+                  />
+                </section>
 
-                <ProxyDeploySection
-                  state={crossChainGeneric.state}
-                  targetAddress={genericTargetAddr}
-                  onTargetChange={setGenericTargetAddr}
-                  contractName={blockscoutAbi.contractName}
-                  recentAddresses={recentAddrs.addresses}
-                  savedProxies={crossChainGeneric.savedProxies}
-                  onCreateProxy={crossChainGeneric.createProxy}
-                  getProxy={crossChainGeneric.getProxy}
-                  onReset={crossChainGeneric.reset}
-                  computeProxyAddress={crossChainGeneric.computeProxyAddress}
-                  onProxyDetected={setAutoDetectedProxy}
-                />
+                <section className={styles.proxyColumn} aria-label="Cross-chain contracts">
+                  <div className={styles.workflowHeader}>
+                    <h2>Cross-Chain Calls</h2>
+                    <p>Call a contract or address on either network through its proxy.</p>
+                  </div>
+                  <ProxyDeploySection
+                    embedded
+                    direction={genericDirection}
+                    selecting={selectingProxy}
+                    onDirectionChange={direction => { void selectGenericProxy("", direction); }}
+                    onSelectProxy={(target, direction) => { void selectGenericProxy(target, direction); }}
+                    state={crossChainGeneric.state}
+                    targetAddress={genericTargetAddr}
+                    onTargetChange={setGenericTargetAddr}
+                    contractName={blockscoutAbi.contractName}
+                    recentAddresses={recentAddrs.addresses}
+                    savedProxies={crossChainGeneric.savedProxies}
+                    savedL2Proxies={crossChainGeneric.savedL2Proxies}
+                    onCreateProxy={crossChainGeneric.createProxy}
+                    onSaveProxy={crossChainGeneric.registerProxy}
+                    onLookupProxy={crossChainGeneric.lookupProxy}
+                    onRemoveProxy={(target, direction) => {
+                      crossChainGeneric.removeProxy(target, direction);
+                      if (direction === genericDirection && target.toLowerCase() === genericTargetAddr.toLowerCase()) {
+                        setGenericTargetAddr(""); setAutoDetectedProxy(null); crossChainGeneric.reset();
+                      }
+                      setProxySelectionError(null);
+                    }}
+                    getProxy={crossChainGeneric.getProxy}
+                    computeProxyAddress={crossChainGeneric.computeProxyAddress}
+                    onProxyDetected={handleProxyDetected}
+                  />
+                  {proxySelectionError && <p role="alert">{proxySelectionError}</p>}
 
-                <CrossChainCallBuilder
-                  targetAddress={genericTargetAddr}
-                  proxyAddress={genericProxy}
-                  abi={blockscoutAbi.abi}
-                  abiLoading={blockscoutAbi.loading}
-                  abiError={blockscoutAbi.error}
-                  contractName={blockscoutAbi.contractName}
-                  crossChainState={crossChainGeneric.state}
-                  onSendCall={handleGenericSendCall}
-                  onReset={crossChainGeneric.reset}
-                  l2Rpc={config.l2Rpc}
-                  senderAddress={wallet.address}
-                />
-              </>
+                  <CrossChainCallBuilder
+                    embedded
+                    key={`${genericDirection}:${genericTargetAddr}:${genericProxy}`}
+                    direction={genericDirection}
+                    selecting={selectingProxy}
+                    targetAddress={genericTargetAddr}
+                    proxyAddress={genericProxy}
+                    abi={blockscoutAbi.abi}
+                    abiLoading={blockscoutAbi.loading}
+                    abiError={blockscoutAbi.error}
+                    contractName={blockscoutAbi.contractName}
+                    crossChainState={crossChainGeneric.state}
+                    onSendCall={handleGenericSendCall}
+                    destinationRpc={destinationChain === "l1" ? config.l1Rpc : config.l2Rpc}
+                    senderAddress={wallet.address}
+                  />
+                  <CrossChainTransactionDialog state={crossChainGeneric.state} onDismiss={crossChainGeneric.reset} />
+                </section>
+              </div>
             )}
 
             {dashboardTab === "counter-demo" && (
-              <>
+              <div className={styles.dashboardGrid}>
                 <CounterPanel
+                  key={counterChain}
+                  chain={counterChain}
+                  onChainChange={chain => { crossChain.reset(); counter.reset(); setCounterChain(chain); }}
                   address={counter.address}
-                  onAddressChange={counter.setAddress}
+                  onAddressChange={address => { crossChain.reset(); counter.reset(); counter.setAddress(address); }}
                   count={counter.count}
                   prevCount={counter.prevCount}
-                  deploying={counter.deploying}
-                  incrementing={counter.incrementing}
+                  readError={counter.readError}
+                  busy={counterL1.busy || counterL2.busy || !["idle", "confirmed", "failed"].includes(crossChain.state.phase)}
+                  walletConnected={wallet.isConnected}
                   txStatus={counter.txStatus}
-                  totalIncrements={counter.totalIncrements}
                   onDeploy={counter.deploy}
                   onIncrement={counter.increment}
                   onRefresh={counter.refresh}
-                  connected={l2.blockNumber !== null}
+                  onReset={counter.reset}
                 />
 
                 <CrossChainPanel
                   state={crossChain.state}
+                  direction={counterDirection}
                   counterAddress={counter.address}
-                  count={counter.count}
-                  prevCount={counter.prevCount}
-                  savedProxies={crossChain.savedProxies}
+                  counterReady={counter.count !== null}
+                  senderAddress={wallet.address}
+                  locked={counterL1.busy || counterL2.busy}
                   onCreateProxy={crossChain.createProxy}
                   onSendCall={crossChain.sendCrossChainCall}
                   getProxy={crossChain.getProxy}
+                  computeProxyAddress={crossChain.computeProxyAddress}
+                  verifyProxy={crossChain.verifyProxy}
                   onReset={crossChain.reset}
                 />
-              </>
-            )}
-
-            {dashboardTab === "bridge" && (
-              <BridgePanel
-                state={bridgeHook.state}
-                recentTokens={bridgeHook.recentTokens}
-                walletAddress={wallet.address}
-                onSetDirection={bridgeHook.setDirection}
-                onSetAsset={bridgeHook.setAsset}
-                onSetAmount={bridgeHook.setAmount}
-                onSetDestination={bridgeHook.setDestination}
-                onSetTokenAddress={bridgeHook.setTokenAddress}
-                onSetMax={bridgeHook.setMax}
-                onApprove={bridgeHook.approve}
-                onBridge={bridgeHook.bridge}
-                onDismiss={bridgeHook.dismiss}
-                onGasOverride={bridgeHook.setGasOverride}
-              />
+              </div>
             )}
 
             <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
-              onDebug={(hash) => { window.location.hash = `#/visualizer?tx=${hash}`; }}
-              onViewBlock={(block) => { window.location.hash = `#/visualizer?mode=explorer&chain=l1&block=${block}`; }}
+              onInspect={(hash, chain) => { window.location.hash = `#/visualizer?mode=inspect&chain=${chain}&tx=${hash}`; }}
             />
 
 

@@ -139,8 +139,9 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
                   <p>A failed return and a forced rollback are different facts: <code>ReturnFail</code> records one call's result, while <code>Snapshot … Revert</code> marks the whole enclosed call span as rolled back. The result view exposes both independently.</p>
                 </li>
                 <li>
-                  <h3>Tagged operation payload</h3>
-                  <p>The first operation byte selects an RLP body:</p>
+                  <h3>Direct V0 operation payload</h3>
+                  <p>The current RollupX payload starts with version <code>0x00</code>, followed by a block-count varint, transaction-count tokens, beneficiary runs, extra-data runs, transaction lengths, and signed pure L2 transaction bytes. Empty prefixes and repeated metadata use compact runs. The terminal prefix is included; headers and cross-chain entries require execution replay.</p>
+                  <p>Historical deployments used these tagged RLP bodies:</p>
                   <div className="table-scroll"><table className="codec-tags"><thead><tr><th>Tag</th><th>Format</th><th>RLP body</th></tr></thead><tbody>
                     <tr><td><code>0x00</code></td><td>Legacy calldata</td><td><code>[blockTxCounts, transactions, l2Entries]</code></td></tr>
                     <tr><td><code>0x01</code></td><td>Grouped calldata</td><td><code>[blockTxCounts, transactions, l2Entries, outboundGroupSizes]</code></td></tr>

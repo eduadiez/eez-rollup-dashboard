@@ -1,0 +1,56 @@
+import { useEffect, useRef, useState } from "react";
+import type { BridgeState, BridgePhase } from "../hooks/useBridge";
+import { config } from "../config";
+import { TransactionDialog } from "./TransactionDialog";
+import styles from "./BridgeTransactionDialog.module.css";
+
+type Transaction = { phase: BridgePhase; hash: string | null; chain: "l1" | "l2"; approval: boolean; error: string | null };
+
+/** Dismissing pending status hides the popup without cancelling receipt polling. */
+export function BridgeTransactionDialog({ state, onDismiss }: { state: BridgeState; onDismiss: () => void }) {
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [open, setOpen] = useState(false);
+  const previousPhase = useRef<BridgePhase>("idle");
+  const { phase, txHash, direction, error } = state;
+
+  useEffect(() => {
+    const previous = previousPhase.current;
+    previousPhase.current = phase;
+    if (phase === "idle") {
+      // Approval receipts return the form to idle; retain their hash for the success popup.
+      if (previous === "approve-pending") {
+        setTransaction(current => current ? { ...current, phase: "confirmed" } : null);
+        setOpen(true);
+      }
+      return;
+    }
+    setTransaction(() => ({ phase, hash: txHash, chain: direction === "l1-to-l2" ? "l1" : "l2",
+      approval: phase === "approving" || phase === "approve-pending" || phase === "failed" && (previous === "approving" || previous === "approve-pending"),
+      error }));
+    if (previous === "idle" || phase === "sending" || phase === "approving" ||
+        (phase === "confirmed" || phase === "failed") && previous !== phase) setOpen(true);
+  }, [phase, txHash, direction, error]);
+
+  if (!transaction) return null;
+  const complete = transaction.phase === "confirmed";
+  const failed = transaction.phase === "failed";
+  const signing = transaction.phase === "sending" || transaction.phase === "approving";
+  const network = transaction.chain === "l1" ? config.l1NetworkName : config.rollupName;
+  const title = failed ? transaction.approval ? "Approval failed" : "Bridge transaction failed" :
+    complete ? transaction.approval ? "Approval confirmed" : "Bridge transaction confirmed" :
+    signing ? "Confirm in your wallet" : "Waiting for confirmation";
+  const description = failed ? transaction.error || "The transaction could not be completed." :
+    complete ? transaction.approval ? "Token spending approved. You can now bridge your tokens." : `Transaction confirmed on ${network}.` :
+    signing ? `Review the ${transaction.approval ? "approval" : "bridge transaction"} in your wallet.` :
+    `Your ${transaction.approval ? "approval" : "bridge transaction"} is pending on ${network}.`;
+  const close = () => {
+    setOpen(false);
+    if (complete || failed) onDismiss();
+  };
+
+  return <>
+    {!open && !complete && !failed && phase !== "idle" && <button className={styles.reopen} onClick={() => setOpen(true)}>View transaction</button>}
+    <TransactionDialog open={open} complete={complete} failed={failed} title={title} description={description}
+      hash={transaction.hash} chain={transaction.chain} onClose={close} />
+  </>;
+}

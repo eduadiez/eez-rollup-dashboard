@@ -130,7 +130,7 @@ assert.match(decoded, /Message type/);
 assert.match(decoded, /Important parameters/);
 assert.match(decoded, /Expand info/);
 assert.doesNotMatch(decoded, /<i>2<\/i>Call/);
-assert.match(decoded, /Cross-chain information is not hidden inside this RLP/);
+assert.match(decoded, /Each originating cross-chain transaction is encoded afterward/);
 
 renderDecoded({ chainOperation: { chainId: 1, operations: {
   tag: 3, profileId: 1, format: "derivable-ordinary", firstBlockNumber: 1,
@@ -144,6 +144,20 @@ assert.match(element("decoder-result").innerHTML, /Derived state roots and block
 assert.match(element("decoder-result").innerHTML, /ordinaryBlockCount, environment, records/);
 assert.match(element("decoder-result").innerHTML, /block\/155/);
 assert.doesNotMatch(element("decoder-result").innerHTML, /block\/154/);
+
+renderDecoded({ chainOperation: { chainId: 1, operations: {
+  tag: 0, format: "direct-v0", bytes: 31, blockCount: 165, transactionCount: 0,
+  implicitEmptyBlockCount: 165, l2EntryCount: null, blocks: [],
+  countRuns: [{ position: 0, blocks: 165, transactionsPerBlock: 0 }],
+} } });
+const direct = element("decoder-result").innerHTML;
+assert.match(direct, /Reconstructed during execution/);
+assert.match(direct, /transaction-count tokens, beneficiary runs/);
+assert.match(direct, /165 empty ordinary prefixes/);
+assert.match(direct, /Pure L2 transactions per block/);
+assert.doesNotMatch(direct, /RLP\(\[blockTxCounts/);
+assert.doesNotMatch(direct, /operation RLP/);
+assert.match(direct, /operation columns carry ordinary transaction prefixes and metadata/);
 
 const noSemantics = decodedSemantics({
   messages: ["ChainOperation", "CloseBlobStream"],

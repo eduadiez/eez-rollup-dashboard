@@ -1,20 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  createWalletClient,
-  defineChain,
-  http,
-  type Address,
-  type Hex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
 import { useWalletProviders } from "./useWalletProviders";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
-
-type LocalAccount = ReturnType<typeof privateKeyToAccount>;
 
 export function useWallet(log: Logger, configLoaded = false) {
   const [state, setState] = useState<WalletState>({
@@ -27,7 +17,6 @@ export function useWallet(log: Logger, configLoaded = false) {
 
   const stateRef = useRef(state);
   stateRef.current = state;
-  const localAccountRef = useRef<LocalAccount | null>(null);
   const selectedProviderRef = useRef<EthereumProvider | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<EthereumProvider | null>(null);
   const [discoveryReady, setDiscoveryReady] = useState(false);
@@ -39,48 +28,6 @@ export function useWallet(log: Logger, configLoaded = false) {
     const timer = setTimeout(() => setDiscoveryReady(true), 300);
     return () => clearTimeout(timer);
   }, []);
-
-  /**
-   * The disposable local signer remains a fallback for browsers without an
-   * injected wallet. Rabby/MetaMask use the composer-backed chain definitions;
-   * the composer now forwards ordinary transactions automatically.
-   */
-  const sendLocalTx = useCallback(
-    async (
-      rpcUrl: string,
-      chainDef: typeof L1_CHAIN | typeof L2_CHAIN,
-      txParams: Record<string, string>,
-    ): Promise<string> => {
-      const account = localAccountRef.current;
-      if (!account) throw new Error("Local demo signer is not configured");
-
-      const chain = defineChain({
-        id: Number(BigInt(chainDef.chainId)),
-        name: chainDef.chainName,
-        nativeCurrency: chainDef.nativeCurrency,
-        rpcUrls: { default: { http: [rpcUrl] } },
-      });
-      const client = createWalletClient({
-        account,
-        chain,
-        transport: http(rpcUrl),
-      });
-      const gas = txParams.gas ?? txParams.gasLimit;
-      const request = {
-        account,
-        chain,
-        ...(txParams.to ? { to: txParams.to as Address } : {}),
-        ...(txParams.data ? { data: txParams.data as Hex } : {}),
-        ...(txParams.value ? { value: BigInt(txParams.value) } : {}),
-        ...(gas ? { gas: BigInt(gas) } : {}),
-        ...(txParams.type === "0x2" ? { type: "eip1559" as const } : {}),
-        ...(txParams.maxFeePerGas ? { maxFeePerGas: BigInt(txParams.maxFeePerGas) } : {}),
-        ...(txParams.maxPriorityFeePerGas ? { maxPriorityFeePerGas: BigInt(txParams.maxPriorityFeePerGas) } : {}),
-      };
-      return client.sendTransaction(request);
-    },
-    [],
-  );
 
   const refreshBalance = useCallback(async (address: string) => {
     // Fetch L1 and L2 balances in parallel
@@ -114,25 +61,6 @@ export function useWallet(log: Logger, configLoaded = false) {
 
   const connect = useCallback(async (providerId?: string) => {
     if (!hasProvider) {
-      if (config.demoPrivateKey) {
-        try {
-          const account = privateKeyToAccount(config.demoPrivateKey as Hex);
-          localAccountRef.current = account;
-          setState({
-            address: account.address,
-            chainId: L1_CHAIN.chainId,
-            l1Balance: null,
-            l2Balance: null,
-            isConnected: true,
-          });
-          refreshBalance(account.address);
-          log(`Local demo signer connected: ${account.address.slice(0, 8)}...${account.address.slice(-6)}`, "info");
-          return;
-        } catch (e) {
-          log(`Local demo signer failed: ${(e as Error).message}`, "err");
-          return;
-        }
-      }
       log("No wallet detected — install Rabby or MetaMask to connect", "err");
       return;
     }
@@ -154,8 +82,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         method: "eth_chainId",
       })) as string;
 
-      // Keep the current signer usable if the new wallet rejects either request.
-      localAccountRef.current = null;
+      // Keep the current wallet connected if the new wallet rejects either request.
       selectedProviderRef.current = choice.provider;
       setSelectedProvider(choice.provider);
       setState({
@@ -178,7 +105,6 @@ export function useWallet(log: Logger, configLoaded = false) {
   }, [hasProvider, walletOptions, log, refreshBalance]);
 
   const disconnect = useCallback(() => {
-    localAccountRef.current = null;
     selectedProviderRef.current = null;
     setSelectedProvider(null);
     setState({
@@ -197,11 +123,7 @@ export function useWallet(log: Logger, configLoaded = false) {
     async (chainId: string, chainDef: typeof L1_CHAIN | typeof L2_CHAIN) => {
       if (!state.isConnected) {
         log("Connect wallet first", "err");
-        return;
-      }
-      if (localAccountRef.current) {
-        setState((current) => ({ ...current, chainId }));
-        return;
+        return false;
       }
       const provider = selectedProviderRef.current;
       if (!provider) throw new Error("Connect wallet first");
@@ -220,8 +142,11 @@ export function useWallet(log: Logger, configLoaded = false) {
           method: "wallet_switchEthereumChain",
           params: [{ chainId }],
         });
+        setState(s => ({ ...s, chainId }));
+        return true;
       } catch (e) {
         log(`Switch chain failed: ${(e as Error).message}`, "err");
+        return false;
       }
     },
     [state.isConnected, log],
@@ -242,10 +167,6 @@ export function useWallet(log: Logger, configLoaded = false) {
    */
   const ensureChain = useCallback(
     async (chainDef: typeof L1_CHAIN | typeof L2_CHAIN) => {
-      if (localAccountRef.current) {
-        setState((current) => ({ ...current, chainId: chainDef.chainId }));
-        return;
-      }
       const provider = selectedProviderRef.current;
       if (!provider) throw new Error("Connect wallet first");
       if (stateRef.current.chainId === chainDef.chainId) return;
@@ -266,157 +187,36 @@ export function useWallet(log: Logger, configLoaded = false) {
   );
 
   /**
-   * Prepare tx params for wallet submission.
-   * Ensures gas is passed as both `gas` and `gasLimit` for maximum wallet compatibility
-   * (MetaMask uses `gas`, some wallets use `gasLimit`).
+   * All transactions use the selected wallet and Composer-backed chain definition.
+   * Existing wallet network entries must use the Composer RPC URL; adding a known
+   * chain does not guarantee that the wallet updates its saved RPC.
    */
-  function prepareWalletParams(
+  const sendOnChain = useCallback(async (
+    chain: typeof L1_CHAIN | typeof L2_CHAIN,
     txParams: Record<string, string>,
-    from: string,
-  ): Record<string, string> {
-    const params: Record<string, string> = { ...txParams, from };
-    // Wallets vary on whether they read `gas` or `gasLimit` — set both
-    if (params.gas && !params.gasLimit) {
-      params.gasLimit = params.gas;
-    }
-    return params;
-  }
+  ): Promise<string> => {
+    if (!stateRef.current.isConnected) throw new Error("Connect wallet to send transactions");
+    await ensureChain(chain);
+    const provider = selectedProviderRef.current;
+    if (!provider) throw new Error("Connect wallet first");
+    const gas = txParams.gas ?? txParams.gasLimit;
+    return await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        ...txParams,
+        from: stateRef.current.address!,
+        ...(gas ? { gas, gasLimit: gas } : {}),
+      }],
+    }) as string;
+  }, [ensureChain]);
 
-  /**
-   * Send a tx to L2.
-   *
-   * Requires a connected wallet — auto-switches to L2 chain and routes through wallet.
-   */
-  const sendTx = useCallback(
-    async (txParams: Record<string, string>): Promise<string> => {
-      if (!stateRef.current.isConnected) {
-        throw new Error("Connect wallet to send transactions");
-      }
-      if (localAccountRef.current) {
-        return sendLocalTx(config.l2Rpc, L2_CHAIN, txParams);
-      }
-      await ensureChain(L2_CHAIN);
-      return (await selectedProviderRef.current!.request({
-        method: "eth_sendTransaction",
-        params: [prepareWalletParams(txParams, stateRef.current.address!)],
-      })) as string;
-    },
-    [ensureChain, sendLocalTx],
-  );
-
-  /**
-   * Send a tx to L1.
-   *
-   * Requires a connected wallet — auto-switches to L1. Injected wallets use
-   * the classifying front; the fallback signer sends ordinary work directly.
-   */
-  const sendL1Tx = useCallback(
-    async (txParams: Record<string, string>): Promise<string> => {
-      if (!stateRef.current.isConnected) {
-        throw new Error("Connect wallet to send transactions");
-      }
-      if (localAccountRef.current) {
-        return sendLocalTx(config.l1Rpc, L1_CHAIN, txParams);
-      }
-      await ensureChain(L1_CHAIN);
-      return (await selectedProviderRef.current!.request({
-        method: "eth_sendTransaction",
-        params: [prepareWalletParams(txParams, stateRef.current.address!)],
-      })) as string;
-    },
-    [ensureChain, sendLocalTx],
-  );
-
-  /**
-   * Send a tx to L1 via the L1 RPC proxy (port 9556).
-   *
-   * MUST be used for cross-chain calls — the proxy traces the tx,
-   * detects executeCrossChainCall, populates the L2 execution table,
-   * then forwards to L1. Without the proxy, the execution table is
-   * empty and the tx reverts with ExecutionNotFound.
-   *
-   * An injected wallet broadcasts through its selected network RPC. Its saved
-   * chain entry must use the composer URL; matching chain IDs does not prove
-   * that wallet_addEthereumChain updated an existing RPC. The fallback signer
-   * chooses the composer endpoint directly.
-   */
-  const sendL1ProxyTx = useCallback(
-    async (txParams: Record<string, string>): Promise<string> => {
-      if (!stateRef.current.isConnected) {
-        throw new Error("Connect wallet to send transactions");
-      }
-      if (localAccountRef.current) {
-        return sendLocalTx(config.l1ProxyRpc, L1_CHAIN, txParams);
-      }
-      await ensureChain(L1_CHAIN);
-      return (await selectedProviderRef.current!.request({
-        method: "eth_sendTransaction",
-        params: [prepareWalletParams(txParams, stateRef.current.address!)],
-      })) as string;
-    },
-    [ensureChain, sendLocalTx],
-  );
-
-  /**
-   * Send a tx to L2 via the L2 RPC proxy (port 9548).
-   *
-   * MUST be used for L2→L1 cross-chain calls — the composer detects
-   * executeCrossChainCall via trace, queues entries BEFORE forwarding
-   * the tx to the builder (hold-then-forward pattern).
-   */
-  const sendL2ProxyTx = useCallback(
-    async (txParams: Record<string, string>): Promise<string> => {
-      if (!stateRef.current.isConnected) {
-        throw new Error("Connect wallet to send transactions");
-      }
-      if (localAccountRef.current) {
-        return sendLocalTx(config.l2ProxyRpc, L2_CHAIN, txParams);
-      }
-      await ensureChain(L2_CHAIN);
-      return (await selectedProviderRef.current!.request({
-        method: "eth_sendTransaction",
-        params: [prepareWalletParams(txParams, stateRef.current.address!)],
-      })) as string;
-    },
-    [ensureChain, sendLocalTx],
-  );
-
-  // Browsers without Rabby/MetaMask fall back to the disposable Kurtosis key.
-  // An injected wallet always remains the primary signer.
-  useEffect(() => {
-    if (
-      !configLoaded ||
-      !discoveryReady ||
-      hasProvider ||
-      !config.demoPrivateKey ||
-      localAccountRef.current
-    ) {
-      return;
-    }
-    try {
-      const account = privateKeyToAccount(config.demoPrivateKey as Hex);
-      localAccountRef.current = account;
-      setState({
-        address: account.address,
-        chainId: L1_CHAIN.chainId,
-        l1Balance: null,
-        l2Balance: null,
-        isConnected: true,
-      });
-      refreshBalance(account.address);
-      log(
-        `Local Kurtosis signer ready: ${account.address.slice(0, 8)}...${account.address.slice(-6)}`,
-        "info",
-      );
-    } catch (e) {
-      log(`Invalid local demo signer: ${(e as Error).message}`, "err");
-    }
-  }, [configLoaded, discoveryReady, hasProvider, log, refreshBalance]);
+  const sendTx = useCallback((params: Record<string, string>) => sendOnChain(L2_CHAIN, params), [sendOnChain]);
+  const sendL1Tx = useCallback((params: Record<string, string>) => sendOnChain(L1_CHAIN, params), [sendOnChain]);
 
   // Auto-reconnect on mount
   useEffect(() => {
     if (
-      !discoveryReady || !hasProvider || stateRef.current.isConnected ||
+      !configLoaded || !discoveryReady || !hasProvider || stateRef.current.isConnected ||
       localStorage.getItem("walletConnected") !== "true"
     ) return;
     const savedKey = localStorage.getItem("walletProvider");
@@ -452,7 +252,7 @@ export function useWallet(log: Logger, configLoaded = false) {
         }
       })();
     }
-  }, [discoveryReady, hasProvider, walletOptions, refreshBalance]);
+  }, [configLoaded, discoveryReady, hasProvider, walletOptions, refreshBalance]);
 
   // Listen for account/chain changes
   useEffect(() => {
@@ -491,17 +291,17 @@ export function useWallet(log: Logger, configLoaded = false) {
 
   return {
     ...state,
-    hasProvider: hasProvider || Boolean(localAccountRef.current),
+    hasProvider,
     walletName: walletOptions.find((option) => option.provider === selectedProvider)?.name
-      ?? (localAccountRef.current ? "Local signer" : null),
+      ?? null,
     walletOptions: walletOptions.map(({ id, name }) => ({ id, name })),
     connect,
     disconnect,
     switchToL1,
     switchToL2,
     sendTx,
-    sendL2ProxyTx,
+    sendL2ProxyTx: sendTx,
     sendL1Tx,
-    sendL1ProxyTx,
+    sendL1ProxyTx: sendL1Tx,
   };
 }
