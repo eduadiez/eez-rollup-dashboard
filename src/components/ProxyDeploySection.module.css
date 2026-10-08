@@ -99,6 +99,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .th {
@@ -109,13 +110,13 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   text-align: left;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .thNarrow {
   composes: th;
-  width: 90px;
+  width: 74px;
   text-align: center;
 }
 
@@ -134,7 +135,7 @@
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text);
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
   overflow: hidden;
@@ -150,6 +151,9 @@
 }
 
 .addrLink {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text);
@@ -610,32 +614,32 @@
 @media (max-width: 640px) {
   .embedded .table, .embedded .table tbody { display: block; }
   .embedded .table thead { display: none; }
-  .embedded .row { display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 0 8px; padding: 8px; border-bottom: 1px solid var(--border); }
+  .embedded .row { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 0 8px; padding: 8px; border-bottom: 1px solid var(--border); }
   .embedded .td { min-width: 0; max-width: none; padding: 6px 0; border: 0; }
   .embedded .td:first-child { grid-column: 1; grid-row: 1; box-shadow: none; }
-  .embedded .td:nth-child(2) { grid-column: 1; grid-row: 2; }
-  .embedded .td:nth-child(3) { grid-column: 2; grid-row: 1; align-self: center; }
+  .embedded .td:nth-child(2) { grid-column: 2; grid-row: 1; align-self: center; }
+  .embedded .td:nth-child(3) { grid-column: 1; grid-row: 2; }
   .embedded .td:nth-child(4) { grid-column: 2; grid-row: 2; align-self: center; }
-  .embedded .td:first-child::before, .embedded .td:nth-child(2)::before { display: block; color: var(--text-dim); font: 500 11px/1.5 var(--sans); margin-bottom: 2px; }
-  .embedded .td:first-child::before { content: 'L2 contract'; }
-  .embedded .td:nth-child(2)::before { content: 'L1 proxy'; }
+  .embedded .td:nth-child(5) { grid-column: 1 / -1; grid-row: 3; width: auto; }
+  .embedded .td:nth-child(5) .actions { justify-content: flex-end; }
+  .embedded .td:first-child::before, .embedded .td:nth-child(3)::before { display: block; color: var(--text-dim); font: 500 11px/1.5 var(--sans); margin-bottom: 2px; }
+  .embedded .td:first-child::before { content: 'Proxy'; }
+  .embedded .td:nth-child(3)::before { content: 'Destination'; }
   .embedded .addrLink { display: block; overflow: hidden; text-overflow: ellipsis; }
   .embedded .selectedRow { box-shadow: inset 3px 0 var(--accent); }
 }
 
-.route, .directionButton { display: flex; align-items: center; gap: 6px; }
-.route img, .directionButton img { width: 18px; height: 22px; object-fit: contain; }
+.network { display: flex; align-items: center; justify-content: center; }
+.directionButton { display: flex; align-items: center; gap: 6px; }
+.network img, .directionButton img { width: 18px; height: 22px; object-fit: contain; }
 .directionSelector { display: flex; gap: 8px; margin-bottom: 16px; }
 .directionButton { border: 1px solid var(--border); border-radius: 100px; padding: 8px 14px; background: transparent; color: var(--text-dim); cursor: pointer; }
 .directionActive { border-color: var(--text-bright); background: var(--bg-raised); color: var(--text-bright); }
 .directionButton:disabled, .callBtn:disabled, .deployToggle:disabled { opacity: .55; cursor: default; }
-@media (max-width: 640px) {
-  .embedded .td:first-child::before { content: 'Destination'; }
-  .embedded .td:nth-child(2)::before { content: 'Proxy'; }
-}
 
 .actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.thNarrow:last-child { width: 120px; }
+.thNarrow:nth-child(4) { width: 94px; }
+.thNarrow:last-child { width: 134px; }
 .tdNarrow:last-child { max-width: none; }
 .removeBtn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text-dim); cursor: pointer; }
 .removeBtn:hover:not(:disabled) { color: var(--red); border-color: var(--red-border); }

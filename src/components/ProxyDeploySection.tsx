@@ -33,13 +33,14 @@ function ProxyRow({ target, proxy, direction, selected, disabled, onSelect, onRe
   target: string; proxy: string; direction: CrossChainDirection; selected: boolean; disabled: boolean; onSelect: () => void; onRemove: () => void;
 }) {
   const route = crossChainRoute(direction);
+  const sourceName = route.source === "l1" ? config.l1NetworkName : config.rollupName;
+  const destinationName = route.destination === "l1" ? config.l1NetworkName : config.rollupName;
   const { contractName } = useBlockscoutAbi(target, route.destination);
   return <tr className={`${styles.row} ${selected ? styles.selectedRow : ""}`}>
-    <td className={styles.td}><ExplorerLink value={target} chain={route.destination} label={contractName || undefined} className={styles.addrLink} /></td>
-    <td className={styles.td}><ExplorerLink value={proxy} chain={route.source} label={contractName ? `${contractName} proxy` : undefined} className={styles.addrLink} /></td>
-    <td className={styles.tdNarrow}><div className={styles.route} role="group" aria-label={direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}>
-      <NetworkIcon chain={route.source} /><span aria-hidden="true">→</span><NetworkIcon chain={route.destination} />
-    </div></td>
+    <td className={styles.td}><ExplorerLink value={proxy} chain={route.source} label={contractName ? `${contractName} proxy` : lookupAddressForChain(proxy, route.source) || `${proxy.slice(0, 10)}…${proxy.slice(-6)}`} className={styles.addrLink} /></td>
+    <td className={styles.tdNarrow}><span className={styles.network} role="group" aria-label={`Origin network: ${sourceName}`} title={sourceName}><NetworkIcon chain={route.source} decorative /></span></td>
+    <td className={styles.td}><ExplorerLink value={target} chain={route.destination} label={contractName || lookupAddressForChain(target, route.destination) || `${target.slice(0, 10)}…${target.slice(-6)}`} className={styles.addrLink} /></td>
+    <td className={styles.tdNarrow}><span className={styles.network} role="group" aria-label={`Destination network: ${destinationName}`} title={destinationName}><NetworkIcon chain={route.destination} decorative /></span></td>
     <td className={styles.tdNarrow}><div className={styles.actions}><button className={styles.callBtn} disabled={disabled} onClick={onSelect} aria-pressed={selected}
       title={`Saved in this browser. Selecting checks the registry address and deployed code on ${route.source === "l1" ? config.l1NetworkName : config.rollupName}.`}
       aria-label={`${selected ? "Selected proxy" : "Select proxy"} for ${target} on ${route.source.toUpperCase()}`}>{selected ? "Selected" : "Select"}</button>
@@ -120,7 +121,7 @@ export function ProxyDeploySection({ embedded = false, state, direction = "l1-to
         {deployOpen ? "Hide address" : "Add address"}</button>
     </div>
     {entries.length > 0 ? <div className={styles.tableWrap}><table className={styles.table}>
-      <thead><tr><th className={styles.th}>Destination</th><th className={styles.th}>Proxy</th><th className={styles.thNarrow}>Network</th><th className={styles.thNarrow}>Actions</th></tr></thead>
+      <thead><tr><th className={styles.th}>Proxy</th><th className={styles.thNarrow}>Origin network</th><th className={styles.th}>Destination address</th><th className={styles.thNarrow}>Destination network</th><th className={styles.thNarrow}>Actions</th></tr></thead>
       <tbody>{entries.map(entry => <ProxyRow key={`${entry.direction}:${entry.target}`} {...entry}
         selected={entry.direction === direction && entry.target.toLowerCase() === targetAddress.toLowerCase()} disabled={busy}
         onSelect={() => { setShowRecent(false); if (onSelectProxy) onSelectProxy(entry.target, entry.direction); else onTargetChange(entry.target); }}
