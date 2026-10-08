@@ -68,6 +68,18 @@ signing, pending status, confirmation, and errors in the same popup as Bridge.
 Closing pending status keeps polling active; the final result reopens the popup
 and stays visible until dismissed. The ABI editor has a fixed size.
 
+Counter Demo uses the same responsive two-column layout: the counter is on the
+left and cross-chain call preparation is on the right. Choose the counter's
+network to deploy or select a SimpleCounter on L1 or L2; calls originate on the
+opposite network. Counter addresses are saved independently (`counterAddress`
+for the existing L2 cache, `counterAddressL1` for L1). Counts and read functions
+use the deployment chain's read RPC. Direct deployments and increments estimate
+and confirm on that chain; deployment estimates omit `to`, and reverted receipts
+are shown as failures. Proxy calls use the source Composer's raw gas estimate,
+the selected wallet, and the shared collapsed gas controls and transaction popup.
+Missing source proxies can be created from the demo; existing proxies are
+verified before use. Cross-chain history records the actual call direction.
+
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
 L2 source transactions link to their canonical L1 settlement batch (labeled
@@ -123,7 +135,8 @@ finality details reconcile separately without delaying live heads. Optional
 Beacon, Blobscan, and settlement-policy settings are in `.env.example`.
 
 Feature availability depends on the contracts deployed by the target network.
-The counter and bridge require their configured contracts. Flash-loan and
+Bridge requires its configured contracts. Counter Demo deploys its own counters
+and uses the configured source managers for cross-chain proxies. Flash-loan and
 aggregator components remain in the source but are not enabled in navigation.
 Transactions require a connected browser wallet such as Rabby or MetaMask.
 
@@ -278,6 +291,11 @@ docker build -t eez-rollup-ui:local .
 
 Monitor regression checks and optional telemetry settings are documented in
 `src/monitor/README.md`.
+
+With Playwright installed and a production preview running, run
+`node tests/counter-demo.cjs` and `node tests/cross-chain-calls.cjs` for mocked
+wallet/RPC coverage. They default to `http://127.0.0.1:8083/dashboard`; override
+that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
 
 ## Bridge gas and approvals
 

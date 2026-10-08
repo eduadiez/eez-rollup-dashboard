@@ -3,7 +3,6 @@ import { config, L1_CHAIN, L2_CHAIN } from "./config";
 import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
-import { useDashboard } from "./hooks/useDashboard";
 import { useCounter } from "./hooks/useCounter";
 import { useCrossChain, crossChainRoute, type CrossChainDirection } from "./hooks/useCrossChain";
 import { lookupAddressForChain } from "./lib/addressBook";
@@ -68,8 +67,11 @@ export function App() {
 
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
-  const { l2 } = useDashboard();
-  const counter = useCounter(log, wallet.sendTx);
+  const [counterChain, setCounterChain] = useState<"l1" | "l2">("l2");
+  const counterL1 = useCounter(log, wallet.sendL1Tx, { chain: "l1", senderAddress: wallet.address, ready: configLoaded });
+  const counterL2 = useCounter(log, wallet.sendTx, { chain: "l2", senderAddress: wallet.address, ready: configLoaded });
+  const counter = counterChain === "l1" ? counterL1 : counterL2;
+  const counterDirection: CrossChainDirection = counterChain === "l1" ? "l2-to-l1" : "l1-to-l2";
   const crossChainOptions = { sendL2Tx: wallet.sendTx, sendL2ProxyTx: wallet.sendL2ProxyTx, senderAddress: wallet.address, ready: configLoaded };
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
@@ -143,7 +145,7 @@ export function App() {
   const prevCCPhase = useRef(crossChain.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress } = crossChain.state;
+    const { phase, txHash, targetAddress, direction } = crossChain.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -154,10 +156,10 @@ export function App() {
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
           : `Call → ${targetAddress.slice(0, 10)}...`;
-      ccTxRef.current = txHistory.addTx(type, label, null, phase === "sending" ? "l1-to-l2" : undefined);
+      ccTxRef.current = txHistory.addTx(type, label, null, direction);
     }
 
-    if (txHash && ccTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
+    if (txHash && ccTxRef.current && (phase === "proxy-pending" || phase === "l1-pending" || phase === "l2-pending")) {
       txHistory.updateTx(ccTxRef.current, { hash: txHash });
     }
 
@@ -171,6 +173,12 @@ export function App() {
 
     prevCCPhase.current = phase;
   }, [crossChain.state.phase, crossChain.state.txHash]);
+
+  // Read the destination counter after source-chain confirmation; polling continues
+  // to pick up any later state visibility on either network.
+  useEffect(() => {
+    if (crossChain.state.phase === "confirmed" && crossChain.state.calldata) void counter.refresh();
+  }, [crossChain.state.phase, crossChain.state.txHash, counter.refresh]);
 
   // Track generic cross-chain transactions in history
   const ccGenTxRef = useRef<string | null>(null);
@@ -420,34 +428,40 @@ export function App() {
             )}
 
             {dashboardTab === "counter-demo" && (
-              <>
+              <div className={styles.dashboardGrid}>
                 <CounterPanel
+                  key={counterChain}
+                  chain={counterChain}
+                  onChainChange={chain => { crossChain.reset(); counter.reset(); setCounterChain(chain); }}
                   address={counter.address}
-                  onAddressChange={counter.setAddress}
+                  onAddressChange={address => { crossChain.reset(); counter.reset(); counter.setAddress(address); }}
                   count={counter.count}
                   prevCount={counter.prevCount}
-                  deploying={counter.deploying}
-                  incrementing={counter.incrementing}
+                  readError={counter.readError}
+                  busy={counterL1.busy || counterL2.busy || !["idle", "confirmed", "failed"].includes(crossChain.state.phase)}
+                  walletConnected={wallet.isConnected}
                   txStatus={counter.txStatus}
-                  totalIncrements={counter.totalIncrements}
                   onDeploy={counter.deploy}
                   onIncrement={counter.increment}
                   onRefresh={counter.refresh}
-                  connected={l2.blockNumber !== null}
+                  onReset={counter.reset}
                 />
 
                 <CrossChainPanel
                   state={crossChain.state}
+                  direction={counterDirection}
                   counterAddress={counter.address}
-                  count={counter.count}
-                  prevCount={counter.prevCount}
-                  savedProxies={crossChain.savedProxies}
+                  counterReady={counter.count !== null}
+                  senderAddress={wallet.address}
+                  locked={counterL1.busy || counterL2.busy}
                   onCreateProxy={crossChain.createProxy}
                   onSendCall={crossChain.sendCrossChainCall}
                   getProxy={crossChain.getProxy}
+                  computeProxyAddress={crossChain.computeProxyAddress}
+                  verifyProxy={crossChain.verifyProxy}
                   onReset={crossChain.reset}
                 />
-              </>
+              </div>
             )}
 
             <TxHistoryPanel
