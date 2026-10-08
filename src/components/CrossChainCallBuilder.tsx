@@ -202,16 +202,16 @@ export function CrossChainCallBuilder({
 
   // --- No proxy: show waiting message ---
   if (!proxyAddress) {
-    if (!targetAddress || !/^0x[0-9a-fA-F]{40}$/.test(targetAddress)) {
-      return null; // Don't show anything until there's a valid address
-    }
+    const validTarget = /^0x[0-9a-fA-F]{40}$/.test(targetAddress);
     return (
       <div className={styles.card}>
         <div className={styles.cardHeader}>
           <span className={styles.cardTitle}>Execute Cross-Chain Call</span>
         </div>
         <div className={styles.noProxy}>
-          No L1 proxy found for this contract. Create one above to send cross-chain calls.
+          {validTarget
+            ? "No L1 proxy found for this contract. Create one above to send cross-chain calls."
+            : "Select a proxy or enter an L2 contract above to prepare a cross-chain call."}
         </div>
       </div>
     );

@@ -25,6 +25,11 @@ the dashboard layout, header, footer, and theme. The monitor page mounts inside
 the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
+
+Dashboard combines Bridge on the left with proxy creation and cross-chain calls
+on the right, followed by shared transaction history. Smaller screens stack
+Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
+wallet RPC guidance and advanced gas settings stay expandable.
 One root `.env` and Compose project configure both services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head

@@ -312,7 +312,7 @@ export function BridgePanel({
       {/* Warning: bridge not deployed */}
       {!bridgeConfigured && (
         <div className={styles.warningBar}>
-          Bridge contract address not configured. Set via URL param ?l1bridge= / ?l2bridge= or runtime config.
+          Bridge contracts are not configured for this network.
         </div>
       )}
       {bridgeConfigured && sourceBridgeReady === null && (
@@ -335,16 +335,6 @@ export function BridgePanel({
           onSetDirection(direction === "l1-to-l2" ? "l2-to-l1" : "l1-to-l2")
         }
       />
-
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Wallet RPC for cross-chain transfers</div>
-        <input className={styles.input} aria-label="Bridge wallet RPC" readOnly
-          value={sourceRpc} onClick={(event) => event.currentTarget.select()} />
-        <div className={styles.validationHint}>
-          Set this RPC for the source network in your wallet before bridging.
-          An existing network may keep its previously selected RPC.
-        </div>
-      </div>
 
       {/* Asset toggle */}
       <AssetToggle asset={asset} onChange={onSetAsset} />
@@ -425,7 +415,20 @@ export function BridgePanel({
         </div>
       )}
 
-      {/* Gas settings */}
+      <details className={styles.rpcSettings}>
+        <summary>Wallet RPC settings</summary>
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Source network RPC</div>
+          <input className={styles.input} aria-label="Bridge wallet RPC" readOnly
+            value={sourceRpc} onClick={(event) => event.currentTarget.select()} />
+          <div className={styles.validationHint}>
+            Set this RPC for the source network in your wallet before bridging.
+            An existing network may keep its previously selected RPC.
+          </div>
+        </div>
+      </details>
+
+      {/* Gas settings are already collapsed; keep estimation errors visible. */}
       {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
       {gas.status === "error" && gas.errorMessage && (
         <div className={styles.errorBar} role="alert">Gas estimation failed: {gas.errorMessage}</div>

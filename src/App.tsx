@@ -24,12 +24,13 @@ import styles from "./App.module.css";
 const VisualizerView = lazy(() => import("./components/VisualizerView").then(module => ({ default: module.VisualizerView })));
 
 // Flash-loan and aggregator views are retained but are not enabled on this network.
-type DashboardTab = "dashboard" | "counter-demo" | "bridge";
+type DashboardTab = "dashboard" | "counter-demo";
 
 /** Dashboard sub-tabs that can be deep-linked via hash */
 const HASH_TO_TAB: Record<string, DashboardTab> = {
   "counter-demo": "counter-demo",
-  "bridge": "bridge",
+  // Keep saved bridge links opening the combined dashboard.
+  "bridge": "dashboard",
 };
 
 function getInitialView(): string {
@@ -59,7 +60,6 @@ function getHashParam(key: string): string | null {
 const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "counter-demo", label: "Counter Demo" },
-  { id: "bridge", label: "Bridge" },
 ];
 
 export function App() {
@@ -322,35 +322,55 @@ export function App() {
 
           <div className={styles.content}>
             {dashboardTab === "dashboard" && (
-              <>
-                <ProxyDeploySection
-                  state={crossChainGeneric.state}
-                  targetAddress={genericTargetAddr}
-                  onTargetChange={setGenericTargetAddr}
-                  contractName={blockscoutAbi.contractName}
-                  recentAddresses={recentAddrs.addresses}
-                  savedProxies={crossChainGeneric.savedProxies}
-                  onCreateProxy={crossChainGeneric.createProxy}
-                  getProxy={crossChainGeneric.getProxy}
-                  onReset={crossChainGeneric.reset}
-                  computeProxyAddress={crossChainGeneric.computeProxyAddress}
-                  onProxyDetected={setAutoDetectedProxy}
-                />
+              <div className={styles.dashboardGrid}>
+                <section className={styles.bridgeColumn} aria-label="Bridge transfers">
+                  <BridgePanel
+                    state={bridgeHook.state}
+                    recentTokens={bridgeHook.recentTokens}
+                    walletAddress={wallet.address}
+                    onSetDirection={bridgeHook.setDirection}
+                    onSetAsset={bridgeHook.setAsset}
+                    onSetAmount={bridgeHook.setAmount}
+                    onSetDestination={bridgeHook.setDestination}
+                    onSetTokenAddress={bridgeHook.setTokenAddress}
+                    onSetMax={bridgeHook.setMax}
+                    onApprove={bridgeHook.approve}
+                    onBridge={bridgeHook.bridge}
+                    onDismiss={bridgeHook.dismiss}
+                    onGasOverride={bridgeHook.setGasOverride}
+                  />
+                </section>
 
-                <CrossChainCallBuilder
-                  targetAddress={genericTargetAddr}
-                  proxyAddress={genericProxy}
-                  abi={blockscoutAbi.abi}
-                  abiLoading={blockscoutAbi.loading}
-                  abiError={blockscoutAbi.error}
-                  contractName={blockscoutAbi.contractName}
-                  crossChainState={crossChainGeneric.state}
-                  onSendCall={handleGenericSendCall}
-                  onReset={crossChainGeneric.reset}
-                  l2Rpc={config.l2Rpc}
-                  senderAddress={wallet.address}
-                />
-              </>
+                <section className={styles.proxyColumn} aria-label="Cross-chain contracts">
+                  <ProxyDeploySection
+                    state={crossChainGeneric.state}
+                    targetAddress={genericTargetAddr}
+                    onTargetChange={setGenericTargetAddr}
+                    contractName={blockscoutAbi.contractName}
+                    recentAddresses={recentAddrs.addresses}
+                    savedProxies={crossChainGeneric.savedProxies}
+                    onCreateProxy={crossChainGeneric.createProxy}
+                    getProxy={crossChainGeneric.getProxy}
+                    onReset={crossChainGeneric.reset}
+                    computeProxyAddress={crossChainGeneric.computeProxyAddress}
+                    onProxyDetected={setAutoDetectedProxy}
+                  />
+
+                  <CrossChainCallBuilder
+                    targetAddress={genericTargetAddr}
+                    proxyAddress={genericProxy}
+                    abi={blockscoutAbi.abi}
+                    abiLoading={blockscoutAbi.loading}
+                    abiError={blockscoutAbi.error}
+                    contractName={blockscoutAbi.contractName}
+                    crossChainState={crossChainGeneric.state}
+                    onSendCall={handleGenericSendCall}
+                    onReset={crossChainGeneric.reset}
+                    l2Rpc={config.l2Rpc}
+                    senderAddress={wallet.address}
+                  />
+                </section>
+              </div>
             )}
 
             {dashboardTab === "counter-demo" && (
@@ -382,24 +402,6 @@ export function App() {
                   onReset={crossChain.reset}
                 />
               </>
-            )}
-
-            {dashboardTab === "bridge" && (
-              <BridgePanel
-                state={bridgeHook.state}
-                recentTokens={bridgeHook.recentTokens}
-                walletAddress={wallet.address}
-                onSetDirection={bridgeHook.setDirection}
-                onSetAsset={bridgeHook.setAsset}
-                onSetAmount={bridgeHook.setAmount}
-                onSetDestination={bridgeHook.setDestination}
-                onSetTokenAddress={bridgeHook.setTokenAddress}
-                onSetMax={bridgeHook.setMax}
-                onApprove={bridgeHook.approve}
-                onBridge={bridgeHook.bridge}
-                onDismiss={bridgeHook.dismiss}
-                onGasOverride={bridgeHook.setGasOverride}
-              />
             )}
 
             <TxHistoryPanel

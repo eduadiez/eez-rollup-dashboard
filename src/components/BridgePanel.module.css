@@ -3,7 +3,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 28px 26px 26px;
+  padding: 20px 24px;
   position: relative;
   overflow: hidden;
   animation: fadeSlideUp 0.4s ease-out 0.15s both;
@@ -15,6 +15,23 @@
   border-color: var(--border-bright);
   box-shadow: none;
 }
+
+.rpcSettings {
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border);
+}
+.rpcSettings summary {
+  padding: 10px 0;
+  font: 500 11px/1.5 var(--sans);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.rpcSettings summary:hover { color: var(--text); }
+.rpcSettings summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.rpcSettings .section { margin-bottom: 0; }
 
 .cardHeader {
   display: flex;

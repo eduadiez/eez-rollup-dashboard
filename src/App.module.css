@@ -33,6 +33,19 @@
 .tabActive { color: var(--eez-pill-ink); background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); }
 .tabActive:hover { color: var(--eez-pill-ink); }
 .content { display: flex; flex-direction: column; gap: 16px; }
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 24px;
+}
+.bridgeColumn { min-width: 0; }
+.proxyColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+}
 .footer {
   display: flex;
   justify-content: space-between;
@@ -52,6 +65,9 @@
 @media (max-width: 900px) {
   .intro { align-items: flex-start; flex-direction: column; }
   .footer { margin: 0 32px; }
+}
+@media (max-width: 1000px) {
+  .dashboardGrid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 }
 @media (max-width: 640px) {
   .page { padding: 0 18px 100px; }
