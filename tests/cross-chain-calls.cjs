@@ -119,6 +119,9 @@ async function until(condition, message) {
     f.receipt.value={status:'0x1',blockNumber:'0x10',logs:[]};await f.page.clock.runFor(1100);
     await f.panel.getByRole('button',{name:`Selected proxy for ${fresh} on ${back?'L2':'L1'}`,exact:true}).waitFor();
     assert.equal(await f.page.evaluate(({key,fresh})=>JSON.parse(localStorage.getItem(key))[fresh],{key:back?'crossChainProxiesL2':'crossChainProxies',fresh}),proxyFor(fresh,!back));
+    const row=f.page.getByRole('region',{name:'Transaction history'}).locator('li').first();
+    assert.equal(await row.getByRole('group',{name:back?'L2':'L1',exact:true}).count(),1);
+    if(!back)assert.equal(await row.getByText('L2 transaction not indexed yet',{exact:true}).count(),0);
    }
    assert.equal(await f.page.evaluate(()=>window.walletRequests.length),2);assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }

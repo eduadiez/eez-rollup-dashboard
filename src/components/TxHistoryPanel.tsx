@@ -67,9 +67,15 @@ function txChain(tx: TxRecord): "l1" | "l2" {
 }
 
 function routeLabel(tx: TxRecord): string {
+  if (tx.type === "cross-chain-proxy") return txChain(tx).toUpperCase();
   const direction = directionOf(tx);
   if (direction) return direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1";
-  return isBridge(tx) ? "—" : tx.type === "cross-chain-proxy" ? "L1" : tx.type === "faucet" ? "—" : "L2";
+  return isBridge(tx) ? "—" : tx.type === "faucet" ? "—" : "L2";
+}
+
+function expectsCounterpart(tx: TxRecord): boolean {
+  // Creating an L1 proxy is local; L2 deployments still settle on L1.
+  return !!directionOf(tx) && (tx.type !== "cross-chain-proxy" || txChain(tx) === "l2");
 }
 
 export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props) {
@@ -84,7 +90,7 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
       if (running) return;
       running = true;
       const queue = records.filter(tx => tx.status === "confirmed" && tx.hash &&
-        (!cacheRef.current.has(tx.hash) || directionOf(tx) &&
+        (!cacheRef.current.has(tx.hash) || expectsCounterpart(tx) &&
           !(cacheRef.current.get(tx.hash)?.l1Hash && cacheRef.current.get(tx.hash)?.l2Hashes.length)));
       await Promise.all(Array.from({ length: Math.min(4, queue.length) }, async () => {
         while (!cancelled && queue.length) {
@@ -139,7 +145,7 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
                   {tx.gasUsed && <span className={styles.noHash}>{tx.gasUsed} gas</span>}
                 </div>
                 <div className={styles.routeCol} role="group" aria-label={routeLabel(tx)}>
-                  {directionOf(tx) ? <><NetworkIcon chain={txChain(tx)} /><span aria-hidden="true">→</span><NetworkIcon chain={txChain(tx) === "l1" ? "l2" : "l1"} /></> :
+                  {directionOf(tx) && tx.type !== "cross-chain-proxy" ? <><NetworkIcon chain={txChain(tx)} /><span aria-hidden="true">→</span><NetworkIcon chain={txChain(tx) === "l1" ? "l2" : "l1"} /></> :
                     tx.type !== "faucet" && <NetworkIcon chain={txChain(tx)} />}
                 </div>
                 <div className={styles.transactionCol} role="group" aria-label="Transaction links">
@@ -150,7 +156,7 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
                     </div>}
                     {(info?.l2Hashes.length ? info.l2Hashes : (info?.chain ?? txChain(tx)) === "l2" ? [tx.hash] : []).map(hash =>
                       <div className={styles.transactionLink} key={hash}><span className={styles.transactionLabel}>L2 tx:</span><TxLink hash={hash} chain="l2" className={styles.hash} /></div>)}
-                    {directionOf(tx) && !(info?.l1Hash && info.l2Hashes.length) && <span className={styles.noHash}>
+                    {expectsCounterpart(tx) && !(info?.l1Hash && info.l2Hashes.length) && <span className={styles.noHash}>
                       {tx.status === "failed" ? "Counterpart unavailable" : `${(info?.chain ?? txChain(tx)) === "l1" ? "L2 transaction" : "L1 settlement"} not indexed yet`}
                     </span>}
                   </> : <span className={styles.noHash}>No transaction hash</span>}
