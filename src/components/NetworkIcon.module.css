@@ -1,0 +1,2 @@
+:where(.icon) { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+.icon.gnosis { height: auto; aspect-ratio: 1; padding: 2px; background: #fff; border-radius: 50%; }

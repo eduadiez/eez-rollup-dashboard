@@ -6,9 +6,7 @@ import { GasLimitEditor } from "./GasLimitEditor";
 import { TxLink } from "./TxLink";
 import styles from "./BridgePanel.module.css";
 import { BridgeTokenPicker } from "./BridgeTokenPicker";
-import gnosisIcon from "../styles/brand/gnosis-icon.svg";
-import ethereumIcon from "../styles/brand/ethereum-icon.svg";
-import eezIcon from "../styles/brand/eez-icon.svg";
+import { NetworkIcon } from "./NetworkIcon";
 
 interface Props {
   state: BridgeState;
@@ -29,11 +27,9 @@ interface Props {
 function NetworkBadge({ chain, role }: { chain: "l1" | "l2"; role: "Source" | "Destination" }) {
   const isL1 = chain === "l1";
   const name = isL1 ? config.l1NetworkName : config.rollupName;
-  const logo = isL1 ? (config.l1NetworkLogoUrl || (config.l1NetworkLogo === "ethereum" ? ethereumIcon : config.l1NetworkLogo === "gnosis" ? gnosisIcon : null)) : eezIcon;
   return (
     <div className={styles.chainBadge} role="group" aria-label={`${role} network`}>
-      {logo ? <img className={`${styles.chainIcon} ${isL1 && !config.l1NetworkLogoUrl && config.l1NetworkLogo === "gnosis" ? styles.gnosisIcon : ""}`} src={logo} alt={isL1 ? name : "EEZ"} /> :
-        <svg className={styles.chainIcon} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2 22 7v10l-10 5-10-5V7zM2 7l10 5 10-5M12 12v10" /></svg>}
+      <NetworkIcon chain={chain} className={styles.chainIcon} />
       <div className={styles.chainName} title={name}>{name}</div>
       <div className={styles.chainRole}>{role}</div>
     </div>
@@ -265,14 +261,12 @@ export function BridgePanel({
       needsApproval ? `Approve ${tokenMeta?.symbol || "the token"} before bridging.` :
       gas.status === "idle" || gas.status === "estimating" ? "Waiting for a Composer gas estimate…" : null : null;
 
-  const dirLabel = direction === "l1-to-l2" ? "L1 \u2192 L2" : "L2 \u2192 L1";
-  const actionLabel = asset === "eth" ? "Bridge ETH" : `Bridge ${tokenMeta?.symbol || "Tokens"}`;
+  const actionLabel = asset === "eth" ? "Transfer ETH" : `Transfer ${tokenMeta?.symbol || "Tokens"}`;
 
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Bridge</span>
-        <span className={styles.subtitle}>{dirLabel}</span>
+        <span className={styles.cardTitle}>Transfer</span>
       </div>
 
       {/* Warning: bridge not deployed */}
@@ -431,17 +425,13 @@ export function BridgePanel({
         disabled={!canBridge}
       >
         {busy ? (
-          <><span className="btn-spinner" /> Bridging...</>
+          <><span className="btn-spinner" /> Transferring...</>
         ) : (
           actionLabel
         )}
       </button>
 
-      {!amount && !busy && phase === "idle" && (
-        <div style={{ fontSize: 11, color: "var(--text-dim)", textAlign: "center", padding: "4px 0" }}>
-          Enter an amount to bridge
-        </div>
-      )}
+
     </div>
   );
 }

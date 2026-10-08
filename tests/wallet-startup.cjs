@@ -81,7 +81,7 @@ async function fixture(browser, injected) {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   try {
     const noWallet = await fixture(browser, false);
-    await noWallet.page.getByTitle('L1 and L2 RPCs reachable', { exact: true }).waitFor();
+    await noWallet.page.getByRole('img', { name: /Networks reachable|L1 and L2 RPCs reachable/ }).waitFor();
     await noWallet.page.clock.runFor(31000);
     await noWallet.page.getByRole('button', { name: 'Connect Wallet', exact: true }).first().waitFor();
     assert.equal(noWallet.requests.filter(r => r.method === 'eth_getBalance').length, 0,

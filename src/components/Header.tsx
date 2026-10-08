@@ -1,18 +1,16 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { WalletState } from "../types";
 import type { HealthData } from "../types";
 import { L1_CHAIN, L2_CHAIN, config } from "../config";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
+import { NetworkIcon } from "./NetworkIcon";
 import nhStyles from "./NodeHealth.module.css";
 import eezLogo from "../styles/brand/eez-logo.svg";
 import eezLogoLight from "../styles/brand/eez-logo-light.svg";
 
 interface ChainData {
   blockNumber: number | null;
-  txCount?: number | null;
-  gasUsed?: number | null;
-  gasLimit?: number | null;
   timestamp?: number | null;
   synced?: boolean | null;
 }
@@ -49,52 +47,27 @@ function formatAge(ts: number, now: number): string {
   return `${Math.floor(age / 3600)}h`;
 }
 
-function formatGas(used: number, limit: number): string {
-  const m = (used / 1e6).toFixed(1);
-  return limit > 0 ? `${m}M (${Math.round((used / limit) * 100)}%)` : `${m}M`;
-}
-
 function ChainMini({ label, chain }: { label: "L1" | "L2"; chain?: ChainData }) {
   const isL1 = label === "L1";
+  const name = isL1 ? config.l1NetworkName : config.rollupName;
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
     const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
     return () => clearInterval(id);
   }, []);
   const age = chain?.timestamp ? formatAge(chain.timestamp, now) : null;
-  const gas = useMemo(
-    () => chain?.gasUsed != null && chain?.gasLimit ? formatGas(chain.gasUsed, chain.gasLimit) : null,
-    [chain?.gasUsed, chain?.gasLimit],
-  );
-
   const explorerUrl = isL1 ? config.l1Explorer : config.l2Explorer;
-  const blockUrl = chain?.blockNumber != null
-    ? `${explorerUrl}/block/${chain.blockNumber}`
-    : undefined;
-
+  const blockUrl = explorerUrl && chain?.blockNumber != null ? `${explorerUrl}/block/${chain.blockNumber}` : undefined;
+  const number = chain?.blockNumber?.toLocaleString() ?? "—";
+  const content = <><NetworkIcon chain={isL1 ? "l1" : "l2"} className={styles.blockIcon} decorative />
+    <span className={styles.blockNumber}>{number}</span></>;
   return (
-    <span className={nhStyles.chainGroup} data-chain={isL1 ? "l1" : "l2"}>
-      <a
-        href={explorerUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`${nhStyles.chainPill} ${isL1 ? nhStyles.pillL1 : nhStyles.pillL2}`}
-      >
-        {label}
-      </a>
-      {blockUrl ? (
-        <a href={blockUrl} target="_blank" rel="noopener noreferrer" className={nhStyles.blockLink}>
-          {chain!.blockNumber!.toLocaleString()}
-        </a>
-      ) : (
-        <span className={nhStyles.blockNum}>&mdash;</span>
-      )}
-      {chain?.txCount != null && (
-        <span className={nhStyles.meta}>{chain.txCount}{chain.txCount === 1 ? "tx" : "txs"}</span>
-      )}
-      {gas && <span className={`${nhStyles.meta} ${nhStyles.gas}`}>{gas}</span>}
-      {age && <span className={nhStyles.age}>{age}</span>}
-    </span>
+    <div className={styles.chainBlock} data-chain={isL1 ? "l1" : "l2"} role="group" aria-label={`${name} latest block`}>
+      {blockUrl ? <a href={blockUrl} target="_blank" rel="noopener noreferrer" className={styles.blockLink}
+        aria-label={`${name} block ${number}`} title={`${name} · block ${number}`}>{content}</a> :
+        <span className={styles.blockLink} title={`${name} · block ${number}`}>{content}</span>}
+      {age && <span className={styles.blockAge} title={`${name} block age`}>{age}</span>}
+    </div>
   );
 }
 
@@ -157,9 +130,9 @@ export function Header({
     ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`
     : "";
 
-  const shortBal = (b: string) => parseFloat(b).toFixed(2);
-
   const synced = l2?.synced;
+  const status = !health ? "Connecting to networks" : !health.healthy ? "A chain RPC is unavailable" :
+    synced === false ? "Networks reachable · rollup syncing" : synced === true ? "Networks reachable · rollup synced" : "L1 and L2 RPCs reachable";
 
   return (
       <header className={styles.header}>
@@ -171,7 +144,7 @@ export function Header({
               alt="EEZ"
               className={styles.logoIcon}
             />
-            <span className={styles.productName}>Rollup</span>
+            <span className={styles.productName} title={config.rollupName}>{config.rollupName}</span>
           </a>
 
           <div className={styles.sep} />
@@ -196,67 +169,30 @@ export function Header({
 
         {/* ── Center: health status (inline on desktop, second row on mobile) ── */}
         <div className={styles.center}>
-          {!health ? (
-            <span className={nhStyles.statusGroup}>
-              <span className={`${nhStyles.dot} ${nhStyles.warn}`} />
-              <span className={nhStyles.statusText}>Connecting...</span>
-            </span>
-          ) : (
-            <>
-              <ChainMini label="L1" chain={l1} />
-              <span className={nhStyles.sep} />
-              <ChainMini label="L2" chain={l2} />
-
-              <span className={nhStyles.rightCluster}>
-                {synced != null && (
-                  <span className={`${nhStyles.syncBadge} ${synced ? nhStyles.synced : nhStyles.syncing}`}>
-                    {synced ? "SYNCED" : "SYNCING"}
-                  </span>
-                )}
-                {synced != null && (
-                  <span
-                    className={`${nhStyles.syncDot} ${synced ? nhStyles.syncDotOk : nhStyles.syncDotWarn}`}
-                    title={synced ? "Synced" : "Syncing"}
-                  />
-                )}
-                <span className={`${nhStyles.dot} ${health.healthy ? nhStyles.ok : nhStyles.err}`} title={health.healthy ? "L1 and L2 RPCs reachable" : "A chain RPC is unavailable"} />
-              </span>
-            </>
-          )}
+          <div className={styles.blockStack} aria-label="Latest network blocks">
+            <ChainMini label="L1" chain={l1} />
+            <ChainMini label="L2" chain={l2} />
+          </div>
+          <span className={`${nhStyles.dot} ${!health || synced === false && health.healthy ? nhStyles.warn : health.healthy ? nhStyles.ok : nhStyles.err}`}
+            role="img" aria-label={status} title={status} />
         </div>
 
         {/* ── Right: chain selector + wallet dropdown ── */}
         <div className={styles.right}>
           {showChainSwitcher && (
-            <div className={styles.chainSwitcher}>
-              <button
-                className={`${styles.chainBtn} ${l1Active ? styles.chainBtnL1Active : ""}`}
-                onClick={onSwitchL1}
-                title="Switch wallet to L1"
-              >
-                <span className={styles.chainBtnDot} />
-                L1
-                {wallet.l1Balance && (
-                  <>
-                    <span className={styles.chainBal}>{wallet.l1Balance} ETH</span>
-                    <span className={styles.chainBalShort}>{shortBal(wallet.l1Balance)}</span>
-                  </>
-                )}
-              </button>
-              <button
-                className={`${styles.chainBtn} ${l2Active ? styles.chainBtnL2Active : ""}`}
-                onClick={onSwitchL2}
-                title="Switch wallet to L2"
-              >
-                <span className={styles.chainBtnDot} />
-                L2
-                {wallet.l2Balance && (
-                  <>
-                    <span className={styles.chainBal}>{wallet.l2Balance} ETH</span>
-                    <span className={styles.chainBalShort}>{shortBal(wallet.l2Balance)}</span>
-                  </>
-                )}
-              </button>
+            <div className={styles.chainSwitcher} role="group" aria-label="Network balances">
+              {(["l1", "l2"] as const).map(chain => {
+                const l1 = chain === "l1";
+                const name = l1 ? config.l1NetworkName : config.rollupName;
+                const balance = l1 ? wallet.l1Balance : wallet.l2Balance;
+                const active = l1 ? l1Active : l2Active;
+                return <button key={chain} className={`${styles.chainBtn} ${active ? styles.chainBtnActive : ""}`}
+                  onClick={l1 ? onSwitchL1 : onSwitchL2} aria-label={`Switch wallet to ${name}`} aria-describedby={`header-balance-${chain}`} aria-pressed={active}
+                  title={`${name}: ${balance ?? "—"} ETH · switch wallet network`}>
+                  <NetworkIcon chain={chain} className={styles.balanceIcon} decorative />
+                  <span id={`header-balance-${chain}`} className={styles.chainBal}>{balance ?? "—"} <span className={styles.balanceUnit}>ETH</span></span>
+                </button>;
+              })}
             </div>
           )}
 
@@ -266,10 +202,11 @@ export function Header({
               <>
                 <button
                   className={styles.walletPill}
+                  title={walletName ? `${walletName} · ${shortAddr}` : shortAddr}
                   onClick={() => setDropdownOpen((v) => !v)}
                 >
                   <span className={styles.walletPillDot} />
-                  {walletName ? `${walletName} · ${shortAddr}` : shortAddr}
+                  <span className={styles.walletLabel}>{walletName ? `${walletName} · ${shortAddr}` : shortAddr}</span>
                   <svg className={`${styles.walletPillChevron} ${dropdownOpen ? styles.walletPillChevronOpen : ""}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
                   </svg>

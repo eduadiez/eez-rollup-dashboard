@@ -261,16 +261,10 @@ export function App() {
         health={health}
         l1={{
           blockNumber: l1.blockNumber,
-          txCount: l1.txCount,
-          gasUsed: l1.gasUsed,
-          gasLimit: l1.gasLimit,
           timestamp: l1.timestamp,
         }}
         l2={{
           blockNumber: l2.blockNumber,
-          txCount: l2.txCount,
-          gasUsed: l2.gasUsed,
-          gasLimit: l2.gasLimit,
           timestamp: l2.timestamp,
           synced: l2.synced,
         }}

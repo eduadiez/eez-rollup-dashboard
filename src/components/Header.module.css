@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   padding: 0 var(--sp-7);
-  height: 72px;
+  min-height: 72px;
   background: var(--header-bg);
 
   border-bottom: 1px solid #1a1a1a;
@@ -23,6 +23,7 @@
   align-items: center;
   gap: var(--sp-4);
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -47,9 +48,13 @@
 .productName {
   padding-left: 12px;
   border-left: 1px solid var(--border);
-  color: var(--text-dim);
-  font: 400 11px var(--mono);
-  letter-spacing: .04em;
+  color: var(--text);
+  font: 500 12px/1.4 var(--mono);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: .02em;
 }
 
 .sep {
@@ -96,18 +101,21 @@
 /* ── Center: health strip (fills space between nav and controls) ── */
 
 .center {
-  flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  overflow: hidden;
-  white-space: nowrap;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
   font-family: var(--mono);
-  font-size: 11px;
   color: var(--text-dim);
-  justify-content: center;
 }
+.blockStack { display: grid; gap: 5px; }
+.chainBlock { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.blockLink { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; }
+a.blockLink:hover { color: var(--text-bright); }
+.blockIcon { width: 16px; height: 18px; }
+.blockNumber { font: 500 12px/1.4 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.blockAge { color: var(--text-dim); font: 400 10px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
 
 /* ── Right side ── */
 
@@ -120,87 +128,27 @@
 
 /* ── Chain switcher pills ── */
 
-.chainSwitcher {
+.chainSwitcher { display: grid; gap: 3px; }
+.chainBtn {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px;
-  background: var(--bg-inset);
-  border: 1px solid var(--border);
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
   border-radius: 100px;
-}
-
-.chainBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 100px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition:
-    color var(--duration) var(--ease),
-    background var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
-}
-
-.chainBtn:hover {
+  background: transparent;
   color: var(--text);
-  background: var(--overlay-light);
+  font-family: var(--mono);
+  cursor: pointer;
+  max-width: 180px;
+  transition: color .2s ease, background .2s ease, border-color .2s ease;
 }
-
-.chainBtnDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  transition: background var(--duration) var(--ease),
-              box-shadow var(--duration) var(--ease);
-  flex-shrink: 0;
-}
-
-.chainBal {
-  font-weight: 500;
-  font-size: 9px;
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-
-.chainBalShort {
-  display: none;
-  font-weight: 500;
-  font-size: 9px;
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-
-/* L1 active: indigo */
-.chainBtnL1Active {
-  color: var(--chain-l1);
-  background: rgba(154, 163, 179, 0.10);
-}
-
-.chainBtnL1Active .chainBtnDot {
-  background: var(--eez-label);
-  box-shadow: none;
-}
-
-/* L2 active: emerald */
-.chainBtnL2Active {
-  color: var(--chain-l2);
-  background: rgba(154, 163, 179, 0.10);
-}
-
-.chainBtnL2Active .chainBtnDot {
-  background: var(--eez-label);
-  box-shadow: none;
-}
+.chainBtn:hover { color: var(--text-bright); border-color: var(--border-hover); background: var(--overlay-light); }
+.chainBtnActive { background: var(--bg-raised); border-color: var(--border); color: var(--text-bright); }
+.balanceIcon { width: 18px; height: 20px; }
+.chainBal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 14px/1.35 var(--mono); font-variant-numeric: tabular-nums; }
+.balanceUnit { color: var(--text-dim); font-size: 11px; }
+.chainBtnDot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
 
 /* ── Wallet area (pill + dropdown wrapper) ── */
 
@@ -217,9 +165,10 @@
   padding: 5px 12px;
   background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 100px;
   color: var(--text);
   font-family: var(--mono);
+  max-width: 260px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -228,6 +177,8 @@
     background var(--duration) var(--ease),
     box-shadow var(--duration) var(--ease);
 }
+
+.walletLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .walletPill:hover {
   border-color: var(--border-bright);
@@ -618,63 +569,34 @@
    Responsive breakpoints
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
   .header {
-    flex-wrap: wrap;
-    height: auto;
-    padding: var(--sp-2) var(--sp-4);
-    gap: var(--sp-2);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 12px 16px;
+    gap: 12px 16px;
   }
-
-  /* Row 1: logo + chain selector + hamburger */
-  .left {
-    gap: var(--sp-2);
-    flex: 0 0 auto;
-  }
-
-  /* Hide nav links and separators — keep logo */
-  .nav,
-  .walletArea,
-  .sep {
-    display: none;
-  }
-
-  /* Chain selector stays visible on mobile (inside .right) */
-  .chainSwitcher {
-    display: flex;
-  }
-
-  .right {
-    margin-left: auto;
-    gap: var(--sp-2);
-  }
-
-  /* Row 2: health bar full width */
-  .center {
-    order: 3;
-    flex-basis: 100%;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    padding: var(--sp-2) 0 0;
-    border-top: 1px solid var(--border);
-    gap: 6px 10px;
-    font-size: 10px;
-  }
-
-  /* Balance: show short (2 decimals), hide full */
-  .chainBal {
-    display: none;
-  }
-
-  .chainBalShort {
-    display: inline;
-  }
-
-  .hamburger {
-    display: flex;
-  }
-
-  .mobileMenu {
-    display: block;
-  }
+  .left { grid-column: 1; grid-row: 1; gap: 8px; min-width: 0; }
+  .logo { min-width: 0; flex-shrink: 1; }
+  .nav, .walletArea, .sep { display: none; }
+  .right { display: contents; }
+  .center { grid-column: 1; grid-row: 2; margin-left: 0; justify-self: start; }
+  .chainSwitcher { grid-column: 2; grid-row: 2; justify-self: end; }
+  .hamburger { grid-column: 2; grid-row: 1; justify-self: end; display: flex; }
+  .mobileMenu { display: block; }
+  .mobileMenuInner { max-height: calc(100dvh - 130px); overflow-y: auto; }
+  .mobileChainRow { flex-wrap: wrap; }
+  .mobileChainBtn { min-width: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 420px) {
+  .header { gap: 10px 12px; }
+  .logoIcon { width: 60px; }
+  .productName { padding-left: 8px; max-width: 150px; font-size: 11px; }
+  .chainBal { font-size: 12.5px; }
+  .chainBtn { max-width: 144px; padding: 4px 6px; gap: 6px; }
+  .center { gap: 6px; }
+  .chainBlock { gap: 6px; }
+  .blockLink { gap: 6px; }
+  .blockNumber { font-size: 11px; }
 }

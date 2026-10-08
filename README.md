@@ -26,13 +26,18 @@ the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
 
-Dashboard combines Bridge on the left with proxy creation and cross-chain calls
+Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
 Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
 advanced gas settings stay expandable. Proxy selection
 and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
+
+The top bar shows the deployment name, stacked block numbers and ages, and
+larger network balances with deployment-aware logos. Block numbers link to
+explorers; balance buttons switch the wallet network. On smaller screens these
+remain visible beneath the brand row, with navigation and wallet controls in the menu.
 
 Set `EEZ_UI_NETWORK_NAME` in `.env` to the rollup's display name (for example,
 `EEZ-X Devnet`). Runtime `networkName` supplies the bridge's L2 labels and the

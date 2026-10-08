@@ -132,7 +132,7 @@ async function fixture(browser, options = {}) {
     await page.getByLabel('Recipient address', { exact: true }).fill(options.destination);
   }
   await page.getByPlaceholder(options.erc20 ? '0.0 ' + (options.symbol || '???') : '0.0 ETH', { exact: true }).fill(options.amount || '0.001');
-  const button = page.getByRole('button', { name: options.erc20 ? 'Bridge ' + (options.symbol || '???') : 'Bridge ETH', exact: true });
+  const button = page.getByRole('button', { name: options.erc20 ? 'Transfer ' + (options.symbol || '???') : 'Transfer ETH', exact: true });
   if (options.tokenInfoError) await page.getByText('Unable to check the token:', {exact:false}).waitFor();
   else if (options.approvalRequired) await page.getByRole('button', {name:'Approve ' + (options.symbol || '???'),exact:true}).waitFor();
   else if (options.unsupported) await page.getByText('This Composer cannot estimate cross-chain gas yet.', {exact:false}).waitFor();
