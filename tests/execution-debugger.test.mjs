@@ -402,11 +402,13 @@ const { decodeTraceCall, getExecutionAbi } = await import('../src/lib/executionA
 test('precompile ABI lookup never contacts an explorer on either chain', async () => {
   const originalFetch = globalThis.fetch;
   setConfig({ l1Explorer: 'https://abi-test.invalid', l2ExplorerApi: 'https://abi-test.invalid/l2' });
-  globalThis.fetch = async () => { throw new Error('precompiles must not request a contract ABI'); };
+  let requests = 0;
+  globalThis.fetch = async () => { requests++; throw new Error('precompiles must not request a contract ABI'); };
   try {
     for (const chain of ['l1', 'l2']) for (const value of [1, 2, 9, 10, 17, 256]) {
       assert.equal(await getExecutionAbi(chain, '0x' + value.toString(16).padStart(40, '0')), null);
     }
+    assert.equal(requests, 0, 'precompile lookups must never reach the explorer, even when errors are caught');
   } finally { globalThis.fetch = originalFetch; setConfig({ l1Explorer: '', l2ExplorerApi: '' }); }
 });
 

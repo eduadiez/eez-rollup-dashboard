@@ -156,6 +156,8 @@ assert.match(direct, /transaction-count tokens, beneficiary runs/);
 assert.match(direct, /165 empty ordinary prefixes/);
 assert.match(direct, /Pure L2 transactions per block/);
 assert.doesNotMatch(direct, /RLP\(\[blockTxCounts/);
+assert.doesNotMatch(direct, /operation RLP/);
+assert.match(direct, /operation columns carry ordinary transaction prefixes and metadata/);
 
 const noSemantics = decodedSemantics({
   messages: ["ChainOperation", "CloseBlobStream"],

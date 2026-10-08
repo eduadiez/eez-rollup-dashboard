@@ -528,7 +528,10 @@ function decodedSemantics(payload) {
   const timeline = groupedSequence.length
     ? `<div class="semantic-timeline" aria-label="Grouped blob message sequence">${groupedSequence.map((message, index) => `<span class="${message === "ChainOperation" || message === "CloseBlobStream" ? "carrier" : "transaction"}"><i>${index}</i>${h(message)}</span>`).join("")}</div>`
     : "";
-  const intro = `<div class="semantic-heading"><div><p class="eyebrow">CROSS-CHAIN MESSAGE STREAM</p><h3>${number(transactions.length)} semantic transaction(s)</h3></div><p>These brackets follow <code>ChainOperation</code> in the same logical blob stream. They describe cross-chain authorization and effects; the operation RLP separately carries the blocks and entries needed to synchronize this rollup.</p></div>${timeline}`;
+  const operationDescription = payload.chainOperation?.operations?.format === "direct-v0"
+    ? "the operation columns carry ordinary transaction prefixes and metadata. Cross-chain execution and entries require replay."
+    : "the operation RLP separately carries the blocks and entries needed to synchronize this rollup.";
+  const intro = `<div class="semantic-heading"><div><p class="eyebrow">CROSS-CHAIN MESSAGE STREAM</p><h3>${number(transactions.length)} semantic transaction(s)</h3></div><p>These brackets follow <code>ChainOperation</code> in the same logical blob stream. They describe cross-chain authorization and effects; ${operationDescription}</p></div>${timeline}`;
 
   if (!transactions.length) {
     return `<section class="semantic-section">${intro}<p class="semantic-empty">No <code>InitiateCrossChainTransaction</code> bracket is present. This is a chain-local synchronization batch, so there is no cross-chain call forest to display.</p></section>`;
