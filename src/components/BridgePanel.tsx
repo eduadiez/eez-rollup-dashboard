@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { BridgeState, BridgeDirection, BridgeAsset, TokenMeta } from "../hooks/useBridge";
 import { config } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
@@ -69,12 +70,14 @@ function AssetToggle({
     <div className={styles.assetToggle}>
       <button
         className={`${styles.assetBtn} ${asset === "eth" ? styles.assetActive : ""}`}
+        aria-pressed={asset === "eth"}
         onClick={() => onChange("eth")}
       >
         ETH
       </button>
       <button
         className={`${styles.assetBtn} ${asset === "erc20" ? styles.assetActive : ""}`}
+        aria-pressed={asset === "erc20"}
         onClick={() => onChange("erc20")}
       >
         ERC20
@@ -140,6 +143,7 @@ function AmountSection({
   tokenMeta,
   sourceBalanceRaw,
   onAmountChange,
+  onAssetChange,
   onMax,
 }: {
   amount: string;
@@ -148,6 +152,7 @@ function AmountSection({
   tokenMeta: TokenMeta | null;
   sourceBalanceRaw: bigint | null;
   onAmountChange: (amt: string) => void;
+  onAssetChange: (asset: BridgeAsset) => void;
   onMax: () => void;
 }) {
   const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
@@ -166,25 +171,28 @@ function AmountSection({
   }
 
   return (
-    <div className={styles.section}>
-      <div className={styles.sectionTitle}>Amount</div>
+    <div className={styles.amountSection}>
+      <div className={styles.amountHeader}>
+        <label htmlFor="bridge-amount" className={styles.sectionTitle}>You send</label>
+        <AssetToggle asset={asset} onChange={onAssetChange} />
+      </div>
       <div className={styles.amountRow}>
         <input
+          id="bridge-amount"
+          aria-label="Bridge amount"
+          inputMode="decimal"
           type="text"
           className={styles.input}
           value={amount}
           onChange={(e) => onAmountChange(e.target.value)}
           placeholder={`0.0 ${symbol}`}
         />
-        <button className={styles.maxBtn} onClick={onMax} disabled={!sourceBalance}>
-          MAX
-        </button>
+        <span className={styles.amountSymbol}>{symbol}</span>
       </div>
-      {sourceBalance !== null && (
-        <div className={styles.balanceRow}>
-          Balance: <span className={styles.balanceValue}>{sourceBalance} {symbol}</span>
-        </div>
-      )}
+      <div className={styles.balanceRow}>
+        <span>{sourceBalance !== null ? <>Balance: <span className={styles.balanceValue}>{sourceBalance} {symbol}</span></> : "Balance unavailable"}</span>
+        <button className={styles.maxBtn} onClick={onMax} disabled={!sourceBalance}>MAX</button>
+      </div>
       {insufficientBalance && (
         <div className={styles.validationHint}>Insufficient balance</div>
       )}
@@ -209,8 +217,11 @@ function ReceivePreview({
 
   return (
     <div className={styles.receivePreview}>
+      <div>
+        <div className={styles.sectionTitle}>You receive</div>
+        <div className={styles.receiveChain}>on {destChain}</div>
+      </div>
       <div className={styles.receiveAmount}>~{amount} {symbol}</div>
-      <div className={styles.receiveChain}>on {destChain}</div>
     </div>
   );
 }
@@ -250,6 +261,7 @@ export function BridgePanel({
   onDismiss,
   onGasOverride,
 }: Props) {
+  const [editingRecipient, setEditingRecipient] = useState(false);
   const {
     phase, direction, asset, amount, tokenAddress, tokenMeta,
     txHash, error, sourceBalance, sourceBalanceRaw, allowance,
@@ -336,9 +348,6 @@ export function BridgePanel({
         }
       />
 
-      {/* Asset toggle */}
-      <AssetToggle asset={asset} onChange={onSetAsset} />
-
       {/* Token address input (ERC20 only) */}
       {asset === "erc20" && (
         <TokenInput
@@ -357,24 +366,9 @@ export function BridgePanel({
         tokenMeta={tokenMeta}
         sourceBalanceRaw={sourceBalanceRaw}
         onAmountChange={onSetAmount}
+        onAssetChange={onSetAsset}
         onMax={onSetMax}
       />
-
-      {/* Destination address */}
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Destination Address</div>
-        <input
-          type="text"
-          className={styles.input}
-          value={destinationAddress}
-          onChange={(e) => onSetDestination(e.target.value)}
-          placeholder={walletAddress || "0x... (defaults to your wallet)"}
-          disabled={busy}
-        />
-        {!destinationAddress && walletAddress && (
-          <div className={styles.sectionHint}>Defaults to your connected wallet</div>
-        )}
-      </div>
 
       {/* Receive preview */}
       <ReceivePreview
@@ -383,6 +377,31 @@ export function BridgePanel({
         tokenMeta={tokenMeta}
         direction={direction}
       />
+
+      <div className={styles.recipientSection}>
+        <div className={styles.recipientHeader}>
+          <div>
+            <div className={styles.sectionTitle}>Recipient</div>
+            {!editingRecipient && !destinationAddress && <div className={styles.recipientWallet}>
+              Your wallet <span title={walletAddress || undefined}>{walletAddress ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : "Connect a wallet"}</span>
+            </div>}
+          </div>
+          <button className={styles.recipientToggle} disabled={busy}
+            aria-expanded={editingRecipient || !!destinationAddress} aria-controls="bridge-recipient"
+            onClick={() => {
+              if (editingRecipient || destinationAddress) { onSetDestination(""); setEditingRecipient(false); }
+              else setEditingRecipient(true);
+            }}>
+            {editingRecipient || destinationAddress ? "Use my wallet" : "Change recipient"}
+          </button>
+        </div>
+        {(editingRecipient || destinationAddress) && <div id="bridge-recipient">
+          <input type="text" className={styles.input} aria-label="Recipient address"
+            value={destinationAddress} onChange={(e) => onSetDestination(e.target.value)}
+            placeholder={walletAddress || "0x... (defaults to your wallet)"} disabled={busy} />
+          <div className={styles.sectionHint}>Leave empty to use your connected wallet.</div>
+        </div>}
+      </div>
 
       {/* Phase indicator */}
       <PhaseIndicator phase={phase} />

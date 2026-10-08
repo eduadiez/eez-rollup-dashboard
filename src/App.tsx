@@ -127,7 +127,7 @@ export function App() {
   const prevCCPhase = useRef(crossChain.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress, proxyAddress } = crossChain.state;
+    const { phase, txHash, targetAddress } = crossChain.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -137,8 +137,8 @@ export function App() {
       const label =
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
-          : `Call → ${proxyAddress.slice(0, 10)}...`;
-      ccTxRef.current = txHistory.addTx(type, label);
+          : `Call → ${targetAddress.slice(0, 10)}...`;
+      ccTxRef.current = txHistory.addTx(type, label, null, phase === "sending" ? "l1-to-l2" : undefined);
     }
 
     if (txHash && ccTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
@@ -161,7 +161,7 @@ export function App() {
   const prevCCGenPhase = useRef(crossChainGeneric.state.phase);
 
   useEffect(() => {
-    const { phase, txHash, targetAddress, proxyAddress } = crossChainGeneric.state;
+    const { phase, txHash, targetAddress } = crossChainGeneric.state;
 
     if (
       (phase === "creating-proxy" || phase === "sending") &&
@@ -171,8 +171,8 @@ export function App() {
       const label =
         phase === "creating-proxy"
           ? `Proxy for ${targetAddress.slice(0, 10)}...`
-          : `Call → ${proxyAddress.slice(0, 10)}...`;
-      ccGenTxRef.current = txHistory.addTx(type, label);
+          : `Call → ${targetAddress.slice(0, 10)}...`;
+      ccGenTxRef.current = txHistory.addTx(type, label, null, phase === "sending" ? "l1-to-l2" : undefined);
     }
 
     if (txHash && ccGenTxRef.current && (phase === "proxy-pending" || phase === "l1-pending")) {
@@ -201,8 +201,10 @@ export function App() {
       const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
       const dirLabel = direction === "l1-to-l2" ? "L1\u2192L2" : "L2\u2192L1";
       bridgeTxRef.current = txHistory.addTx(
-        "cross-chain-call",
+        "bridge",
         `Bridge ${amount} ${symbol} ${dirLabel}`,
+        null,
+        direction,
       );
     }
 
@@ -295,15 +297,14 @@ export function App() {
           />
         </Suspense>
       ) : (
-        <main id="main" tabIndex={-1} className={styles.page}>
-          <section className={`eez-intro ${styles.intro}`} aria-labelledby="page-heading">
+        <main id="main" tabIndex={-1} className={styles.page} data-dashboard>
+          <section className={styles.intro} aria-labelledby="page-heading">
             <div>
-              <p className="eez-eyebrow">[ EEZ ROLLUP DASHBOARD ]</p>
-              <h1 id="page-heading" className="eez-page-heading"><strong>Build across chains.</strong> With EEZ.</h1>
-              <p className="eez-description">Explore synchronous execution. Deploy, connect, and interact across L1 and L2.</p>
+              <h1 id="page-heading" className={styles.heading}>Dashboard</h1>
+              <p className={styles.description}>Transfer assets and interact with contracts across L1 and L2.</p>
             </div>
-            <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
-              EEZ quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
+            <a className={styles.quickstarts} href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
+              Quickstarts <span aria-hidden="true">↗</span>
             </a>
           </section>
 
@@ -342,7 +343,12 @@ export function App() {
                 </section>
 
                 <section className={styles.proxyColumn} aria-label="Cross-chain contracts">
+                  <div className={styles.workflowHeader}>
+                    <h2>Cross-Chain Calls</h2>
+                    <p>Select an L1 proxy to interact with its L2 contract.</p>
+                  </div>
                   <ProxyDeploySection
+                    embedded
                     state={crossChainGeneric.state}
                     targetAddress={genericTargetAddr}
                     onTargetChange={setGenericTargetAddr}
@@ -357,6 +363,7 @@ export function App() {
                   />
 
                   <CrossChainCallBuilder
+                    embedded
                     targetAddress={genericTargetAddr}
                     proxyAddress={genericProxy}
                     abi={blockscoutAbi.abi}

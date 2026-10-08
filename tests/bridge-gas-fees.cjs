@@ -127,7 +127,10 @@ async function fixture(browser, options = {}) {
     await page.getByPlaceholder('0x... (ERC20 token address)', { exact: true }).fill(token);
     await until(async () => (await page.getByPlaceholder('0.0 ' + (options.symbol || '???')).count()) === 1, 'token metadata did not load');
   }
-  if (options.destination) await page.getByPlaceholder(account, { exact: true }).fill(options.destination);
+  if (options.destination) {
+    await page.getByRole('button', { name: 'Change recipient', exact: true }).click();
+    await page.getByLabel('Recipient address', { exact: true }).fill(options.destination);
+  }
   await page.getByPlaceholder(options.erc20 ? '0.0 ' + (options.symbol || '???') : '0.0 ETH', { exact: true }).fill(options.amount || '0.001');
   const button = page.getByRole('button', { name: options.erc20 ? 'Bridge ' + (options.symbol || '???') : 'Bridge ETH', exact: true });
   if (options.tokenInfoError) await page.getByText('Unable to check the token:', {exact:false}).waitFor();
@@ -157,6 +160,9 @@ async function fixture(browser, options = {}) {
       await f.button.click();
       await until(async () => (await f.page.evaluate(() => window.walletRequests.length)) === 1, 'wallet did not receive bridge');
       const tx = await f.page.evaluate(() => window.walletRequests[0]);
+      const record = await f.page.evaluate(() => JSON.parse(localStorage.getItem('txHistory'))[0]);
+      assert.equal(record.type, 'bridge');
+      assert.equal(record.direction, reverse ? 'l2-to-l1' : 'l1-to-l2');
       assert.equal(BigInt(tx.gas), custom ? BigInt(custom) : RAW_GAS);
       assert.equal(tx.gasLimit, tx.gas);
       assert.equal(tx.type, '0x2');

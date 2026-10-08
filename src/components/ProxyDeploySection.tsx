@@ -7,6 +7,7 @@ import { ExplorerLink } from "./ExplorerLink";
 import styles from "./ProxyDeploySection.module.css";
 
 interface Props {
+  embedded?: boolean;
   state: CrossChainState;
   targetAddress: string;
   onTargetChange: (addr: string) => void;
@@ -33,6 +34,7 @@ async function hasCode(address: string): Promise<boolean> {
 }
 
 export function ProxyDeploySection({
+  embedded = false,
   state,
   targetAddress,
   onTargetChange,
@@ -155,11 +157,11 @@ export function ProxyDeploySection({
   const isProxyPhase = state.phase === "creating-proxy" || state.phase === "proxy-pending";
 
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} ${embedded ? styles.embedded : ""}`}>
       {/* Header */}
       <div className={styles.cardHeader}>
         <div className={styles.headerLeft}>
-          <span className={styles.cardTitle}>Cross-Chain Proxies</span>
+          <span className={styles.cardTitle}>{embedded ? "Select a proxy" : "Cross-Chain Proxies"}</span>
           {proxyCount > 0 && (
             <span className={styles.countBadge}>{proxyCount}</span>
           )}
@@ -167,6 +169,7 @@ export function ProxyDeploySection({
         <button
           className={styles.deployToggle}
           onClick={() => setDeployOpen(!deployOpen)}
+          aria-expanded={deployOpen}
         >
           {deployOpen ? "- Hide" : "+ Deploy New"}
         </button>
@@ -178,8 +181,8 @@ export function ProxyDeploySection({
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.th}>Target</th>
-                <th className={styles.th}>Proxy</th>
+                <th className={styles.th}>L2 contract</th>
+                <th className={styles.th}>L1 proxy</th>
                 <th className={styles.thNarrow}>Status</th>
                 <th className={styles.thNarrow}>Actions</th>
               </tr>
@@ -187,8 +190,9 @@ export function ProxyDeploySection({
             <tbody>
               {proxyEntries.map(([target, proxy]) => {
                 const live = proxyLiveness[proxy];
+                const selected = target.toLowerCase() === targetAddress.trim().toLowerCase();
                 return (
-                  <tr key={target} className={styles.row}>
+                  <tr key={target} className={`${styles.row} ${selected ? styles.selectedRow : ""}`}>
                     <td className={styles.td}>
                       <ExplorerLink value={target} chain="l2" className={styles.addrLink} />
                     </td>
@@ -213,8 +217,10 @@ export function ProxyDeploySection({
                       <button
                         className={styles.callBtn}
                         onClick={() => handleCallProxy(target)}
+                        aria-pressed={selected}
+                        aria-label={`${selected ? "Selected proxy" : "Select proxy"} for ${target}`}
                       >
-                        Call
+                        {selected ? "Selected" : "Select"}
                       </button>
                     </td>
                   </tr>

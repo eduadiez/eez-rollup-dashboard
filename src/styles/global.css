@@ -88,6 +88,8 @@ body {
   overflow-x: hidden;
 }
 
+body:has([data-dashboard]) { --eez-grid: rgba(255, 255, 255, .025); }
+
 #root {
   min-height: 100vh;
   position: relative;

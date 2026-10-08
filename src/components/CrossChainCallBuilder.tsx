@@ -12,6 +12,7 @@ import { ExplorerLink } from "./ExplorerLink";
 import styles from "./CrossChainCallBuilder.module.css";
 
 interface Props {
+  embedded?: boolean;
   targetAddress: string;
   proxyAddress: string | null;
   abi: AbiFunction[] | null;
@@ -59,6 +60,7 @@ function parseManualAbi(json: string): AbiFunction[] | null {
 }
 
 export function CrossChainCallBuilder({
+  embedded = false,
   targetAddress,
   proxyAddress,
   abi,
@@ -204,9 +206,9 @@ export function CrossChainCallBuilder({
   if (!proxyAddress) {
     const validTarget = /^0x[0-9a-fA-F]{40}$/.test(targetAddress);
     return (
-      <div className={styles.card}>
+      <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
         <div className={styles.cardHeader}>
-          <span className={styles.cardTitle}>Execute Cross-Chain Call</span>
+          <span className={styles.cardTitle}>{embedded ? "Prepare call" : "Execute Cross-Chain Call"}</span>
         </div>
         <div className={styles.noProxy}>
           {validTarget
@@ -225,9 +227,9 @@ export function CrossChainCallBuilder({
   const gasBlocked = gasState.status === "revert";
 
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Execute Cross-Chain Call</span>
+        <span className={styles.cardTitle}>{embedded ? "Prepare call" : "Execute Cross-Chain Call"}</span>
         <span className={styles.subtitle}>L1 Proxy → L2</span>
       </div>
 
