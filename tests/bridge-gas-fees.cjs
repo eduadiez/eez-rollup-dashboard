@@ -23,21 +23,25 @@ async function until(predicate, message) {
 }
 
 async function fixture(browser, options = {}) {
+  const nativeSymbol = options.chain === '0x1' ? 'ETH' : 'xDAI';
   const context = await browser.newContext();
   const page = await context.newPage();
   const errors = [], rpcRequests = [];
   const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af" };
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(({ account, receiptHash, multipleWallets }) => {
+  await page.addInitScript(({ account, receiptHash, multipleWallets, chain }) => {
     window.walletRequests = [];
     window.walletSenders = [];
+    window.walletChains = [];
+    window.rejectSwitch = false;
     const provider = name => ({
       isRabby: name === 'Rabby', isMetaMask: name === 'MetaMask',
       on() {}, removeListener() {},
       async request({ method, params }) {
         if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [account];
-        if (method === 'eth_chainId') return '0x27d8';
-        if (method === 'wallet_addEthereumChain' || method === 'wallet_switchEthereumChain') return null;
+        if (method === 'eth_chainId') return chain || '0x27d8';
+        if (method === 'wallet_addEthereumChain') { window.walletChains.push(params[0]); return null; }
+        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); return null; }
         if (method === 'eth_sendTransaction') {
           window.walletSenders.push(name);
           window.walletRequests.push(params[0]);
@@ -59,14 +63,14 @@ async function fixture(browser, options = {}) {
         announce('MetaMask', 'metamask-provider', 'io.metamask', metamask);
       });
     }
-  }, { account, receiptHash, multipleWallets: options.multipleWallets });
+  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain });
   await page.route('**/*', route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/config.json')) return route.fulfill({ json: {
       l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
       l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
-      demoBridgeAddress: bridge, rollupId: '1',
+      demoBridgeAddress: bridge, rollupId: '1', networkName: 'EEZ-X Devnet',
     } });
     if (path === '/shared/rollup.env' || path === '/shared/faucet.key') {
       return route.fulfill({ status: 404, body: '' });
@@ -78,7 +82,7 @@ async function fixture(browser, options = {}) {
       jsonrpc: '2.0', id, error: { code: 3, message },
     } });
     if (/send|sign/i.test(method)) throw new Error('Unexpected broadcast RPC: ' + method);
-    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : '0x27d8');
+    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : options.chain || '0x27d8');
     if (method === 'eth_getCode') return reply(params[0]?.toLowerCase() === bridge ? '0x6000' : '0x');
     if (method === 'eth_call' && params[0]?.to?.toLowerCase() === bridge
         && params[0]?.data === '0x481c6a75') {
@@ -131,8 +135,8 @@ async function fixture(browser, options = {}) {
     await page.getByRole('button', { name: 'Change recipient', exact: true }).click();
     await page.getByLabel('Recipient address', { exact: true }).fill(options.destination);
   }
-  await page.getByPlaceholder(options.erc20 ? '0.0 ' + (options.symbol || '???') : '0.0 ETH', { exact: true }).fill(options.amount || '0.001');
-  const button = page.getByRole('button', { name: options.erc20 ? 'Teleport ' + (options.symbol || '???') : 'Teleport ETH', exact: true });
+  await page.getByPlaceholder(options.erc20 ? '0.0 ' + (options.symbol || '???') : '0.0 ' + nativeSymbol, { exact: true }).fill(options.amount || '0.001');
+  const button = page.getByRole('button', { name: options.erc20 ? 'Bridge ' + (options.symbol || '???') : 'Bridge ' + nativeSymbol, exact: true });
   if (options.tokenInfoError) await page.getByText('Unable to check the token:', {exact:false}).waitFor();
   else if (options.approvalRequired) await page.getByRole('button', {name:'Approve ' + (options.symbol || '???'),exact:true}).waitFor();
   else if (options.unsupported) await page.getByText('This Composer cannot estimate cross-chain gas yet.', {exact:false}).waitFor();
@@ -179,6 +183,38 @@ async function fixture(browser, options = {}) {
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }
+    // Top-bar selection follows a successful wallet switch, preserving the token address.
+    {
+      const f = await fixture(browser, { erc20: true, symbol: 'DAI' });
+      const source = f.page.getByRole('group', { name: 'Source network', exact: true });
+      await f.page.getByRole('button', { name: 'Switch wallet to EEZ-X Devnet', exact: true }).click();
+      await source.getByText('EEZ-X Devnet', { exact: true }).waitFor();
+      assert.equal(await f.page.getByPlaceholder('0x... (ERC20 token address)').inputValue(), token);
+      await until(() => f.button.isEnabled(), 'reverse estimate did not finish');
+      assert.equal(f.rpcRequests.filter(r => r.method === 'eth_estimateGas').at(-1).path, '/composer/l2');
+      await f.page.evaluate(() => { window.rejectSwitch = true; });
+      await f.page.getByRole('button', { name: 'Switch wallet to Chiado', exact: true }).click();
+      await f.page.waitForTimeout(200);
+      assert.equal(await source.getByText('EEZ-X Devnet', { exact: true }).count(), 1);
+      await f.page.evaluate(() => { window.rejectSwitch = false; });
+      await f.page.getByRole('button', { name: 'Switch wallet to Chiado', exact: true }).click();
+      await source.getByText('Chiado', { exact: true }).waitFor();
+      assert.equal(await f.page.getByPlaceholder('0x... (ERC20 token address)').inputValue(), token);
+      const definitions = await f.page.evaluate(() => window.walletChains);
+      assert.ok(definitions.every(chain => chain.nativeCurrency.symbol === 'xDAI'));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    {
+      const f = await fixture(browser, { chain: '0x1' });
+      assert.equal(await f.page.getByRole('button', { name: 'Bridge ETH', exact: true }).count(), 1);
+      await f.page.getByRole('button', { name: 'Switch wallet to EEZ-X Devnet', exact: true }).click();
+      await f.page.getByRole('group', { name: 'Source network', exact: true }).getByText('EEZ-X Devnet').waitFor();
+      assert.ok((await f.page.evaluate(() => window.walletChains)).every(chain => chain.nativeCurrency.symbol === 'ETH'));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
+      await f.context.close(); scenarios++;
+    }
     // Failure cannot be bypassed by a manual override. Changing inputs retries
     // without reusing the old gas cap, and a valid new estimate unblocks sending.
     for (const reverse of [false, true]) {
@@ -189,7 +225,7 @@ async function fixture(browser, options = {}) {
       await f.button.evaluate(button => { button.click(); });
       await f.page.getByText('Composer simulation failed', { exact: false }).first().waitFor();
       assert.deepEqual(await f.page.evaluate(() => window.walletRequests), []);
-      const amount = f.page.getByPlaceholder('0.0 ETH', { exact: true });
+      const amount = f.page.getByPlaceholder('0.0 xDAI', { exact: true });
       f.estimation.error = null;
       await amount.fill('0.002');
       await until(() => f.button.isEnabled(), 'valid Composer estimate did not unblock retry');
@@ -209,7 +245,7 @@ async function fixture(browser, options = {}) {
     for (const reverse of [false, true]) {
       const f = await fixture(browser, { reverse });
       f.estimation.error = 'Updated bridge transaction cannot be estimated';
-      await f.page.getByPlaceholder('0.0 ETH', { exact: true }).fill('0.003');
+      await f.page.getByPlaceholder('0.0 xDAI', { exact: true }).fill('0.003');
       await until(() => f.button.isDisabled(), 'changed transaction should disable the bridge');
       await f.page.getByRole('alert').waitFor();
       await f.button.evaluate(button => { button.click(); });

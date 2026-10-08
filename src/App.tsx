@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { config } from "./config";
+import { config, L1_CHAIN, L2_CHAIN } from "./config";
 import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
@@ -12,7 +12,6 @@ import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
 import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
-// NodeHealth merged into Header
 import { CounterPanel } from "./components/CounterPanel";
 import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
@@ -67,13 +66,21 @@ export function App() {
 
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
-  const { l1, l2, health } = useDashboard();
+  const { l1, l2 } = useDashboard();
   const counter = useCounter(log, wallet.sendTx);
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
 
   const txHistory = useTxHistory();
+  const latestBridgeState = useRef(bridgeHook.state);
+  latestBridgeState.current = bridgeHook.state;
+  const switchBridgeNetwork = async (chain: "l1" | "l2") => {
+    const switched = await (chain === "l1" ? wallet.switchToL1() : wallet.switchToL2());
+    const direction = chain === "l1" ? "l1-to-l2" : "l2-to-l1";
+    if (switched && ["idle", "confirmed", "failed"].includes(latestBridgeState.current.phase)
+        && direction !== latestBridgeState.current.direction) bridgeHook.setDirection(direction);
+  };
 
   // Dashboard tab hooks
   const [genericTargetAddr, setGenericTargetAddr] = useState<string>(() => {
@@ -198,7 +205,7 @@ export function App() {
     const { phase, txHash, direction, asset, amount, tokenMeta } = bridgeHook.state;
 
     if (phase === "sending" && prevBridgePhase.current !== "sending") {
-      const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
+      const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol : (tokenMeta?.symbol || "tokens");
       const dirLabel = direction === "l1-to-l2" ? "L1\u2192L2" : "L2\u2192L1";
       bridgeTxRef.current = txHistory.addTx(
         "bridge",
@@ -256,9 +263,8 @@ export function App() {
         currentView={view}
         theme="dark"
         currentChainId={wallet.chainId}
-        onSwitchL1={wallet.switchToL1}
-        onSwitchL2={wallet.switchToL2}
-        health={health}
+        onSwitchL1={() => { void switchBridgeNetwork("l1"); }}
+        onSwitchL2={() => { void switchBridgeNetwork("l2"); }}
         l1={{
           blockNumber: l1.blockNumber,
           timestamp: l1.timestamp,

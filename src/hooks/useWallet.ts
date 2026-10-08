@@ -123,7 +123,7 @@ export function useWallet(log: Logger, configLoaded = false) {
     async (chainId: string, chainDef: typeof L1_CHAIN | typeof L2_CHAIN) => {
       if (!state.isConnected) {
         log("Connect wallet first", "err");
-        return;
+        return false;
       }
       const provider = selectedProviderRef.current;
       if (!provider) throw new Error("Connect wallet first");
@@ -142,8 +142,11 @@ export function useWallet(log: Logger, configLoaded = false) {
           method: "wallet_switchEthereumChain",
           params: [{ chainId }],
         });
+        setState(s => ({ ...s, chainId }));
+        return true;
       } catch (e) {
         log(`Switch chain failed: ${(e as Error).message}`, "err");
+        return false;
       }
     },
     [state.isConnected, log],

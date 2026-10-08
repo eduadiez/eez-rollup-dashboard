@@ -9,3 +9,11 @@ export function l1Identity(chainId: string): { name: string; logo: "ethereum" | 
     default: return { name: `L1 network (${id})`, logo: "generic" };
   }
 }
+
+/** The rollup bridges the deployment’s L1 native asset one-to-one. */
+export function nativeCurrency(chainId: string) {
+  const id = Number(BigInt(chainId));
+  return id === 100 || id === 10200
+    ? { name: "xDAI", symbol: "xDAI", decimals: 18 }
+    : { name: "Ether", symbol: "ETH", decimals: 18 };
+}

@@ -12,7 +12,7 @@ The application preserves the original sync-rollups POC screens:
 
 - Dashboard and generic cross-chain calls
 - Counter demo
-- Bidirectional ETH/ERC-20 bridge
+- Bidirectional native-asset/ERC-20 bridge (xDAI on Chiado/Gnosis, ETH on Ethereum)
 - Nested flash loan
 - Aggregator
 - Network monitor (heads, blobs, commitments, and settlement correlations)
@@ -28,14 +28,23 @@ including live WebSockets.
 
 Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
-Teleport above the proxy workflow. Saved `#/bridge` links open this combined view;
+Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
 gas controls show the estimate and an editable gas limit. Proxy selection
 and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
 
-The top bar shows the deployment name, stacked block numbers and ages, and
-larger network balances with deployment-aware logos. Block numbers link to
+Transaction history uses network logos and links to both chains when indexed.
+L2 source transactions link to their canonical L1 settlement batch (labeled
+“Settlement”). L1 source transactions link to matching L2 incoming call events
+within canonical settled blocks. Repeated call hashes with ambiguous origins or
+destinations stay unresolved; missing counterparts are retried every 15 seconds.
+
+The top bar shows the deployment name, stacked block numbers and ages labeled
+with network names, and horizontal balances with deployment-aware logos.
+Selecting a network also switches the bridge direction after the wallet confirms
+the switch; ERC-20 addresses are kept unchanged. Chiado/Gnosis deployments use
+xDAI for the native asset on both chains. Block numbers link to
 explorers; balance buttons switch the wallet network. On smaller screens these
 remain visible beneath the brand row, with navigation and wallet controls in the menu.
 

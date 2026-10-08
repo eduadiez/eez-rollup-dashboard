@@ -688,7 +688,7 @@ export function useBridge(
       if (walletRef.current !== from || estimatedRequest.current !== composerRpc + JSON.stringify(transaction)) {
         throw new Error("Bridge transaction changed; wait for a new Composer gas estimate");
       }
-      const symbol = asset === "eth" ? "ETH" : tokenMeta?.symbol || "tokens";
+      const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol : tokenMeta?.symbol || "tokens";
       log(`Bridging ${amount} ${symbol} ${direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}...`, "info");
       const txHash = direction === "l1-to-l2"
         ? await sendL1ProxyTx({ ...transaction, ...gasParam })

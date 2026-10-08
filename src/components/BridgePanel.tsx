@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { formatUnits } from "viem";
 import type { BridgeState, BridgeDirection, BridgeAsset, TokenMeta } from "../hooks/useBridge";
-import { config } from "../config";
+import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
 import { TxLink } from "./TxLink";
 import styles from "./BridgePanel.module.css";
@@ -61,7 +61,9 @@ function DirectionSelector({
 function AssetToggle({
   asset,
   onChange,
+  nativeSymbol,
 }: {
+  nativeSymbol: string;
   asset: BridgeAsset;
   onChange: (a: BridgeAsset) => void;
 }) {
@@ -72,7 +74,7 @@ function AssetToggle({
         aria-pressed={asset === "eth"}
         onClick={() => onChange("eth")}
       >
-        ETH
+        {nativeSymbol}
       </button>
       <button
         className={`${styles.assetBtn} ${asset === "erc20" ? styles.assetActive : ""}`}
@@ -91,10 +93,12 @@ function AmountSection({
   asset,
   tokenMeta,
   sourceBalanceRaw,
+  nativeSymbol,
   onAmountChange,
   onAssetChange,
   onMax,
 }: {
+  nativeSymbol: string;
   amount: string;
   sourceBalance: string | null;
   asset: BridgeAsset;
@@ -104,7 +108,7 @@ function AmountSection({
   onAssetChange: (asset: BridgeAsset) => void;
   onMax: () => void;
 }) {
-  const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
+  const symbol = asset === "eth" ? nativeSymbol : (tokenMeta?.symbol || "tokens");
   const decimals = asset === "eth" ? 18 : (tokenMeta?.decimals ?? 18);
 
   // Validate amount vs balance
@@ -123,7 +127,7 @@ function AmountSection({
     <div className={styles.amountSection}>
       <div className={styles.amountHeader}>
         <label htmlFor="bridge-amount" className={styles.sectionTitle}>You send</label>
-        <AssetToggle asset={asset} onChange={onAssetChange} />
+        <AssetToggle asset={asset} nativeSymbol={nativeSymbol} onChange={onAssetChange} />
       </div>
       <div className={styles.amountRow}>
         <input
@@ -163,7 +167,7 @@ function ReceivePreview({
   direction: BridgeDirection;
 }) {
   if (rawAmount <= 0n) return null;
-  const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
+  const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L2_CHAIN : L1_CHAIN).nativeCurrency.symbol : (tokenMeta?.symbol || "tokens");
   const destChain = direction === "l1-to-l2" ? config.rollupName : config.l1NetworkName;
 
   return (
@@ -219,6 +223,7 @@ export function BridgePanel({
     l1BridgeReady, l2BridgeReady, gas, destinationAddress, tokenNeedsApproval, tokenReadError,
   } = state;
 
+  const nativeSymbol = (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol;
   const busy = !["idle", "confirmed", "failed"].includes(phase);
   const sourceBridgeReady = direction === "l1-to-l2" ? l1BridgeReady : l2BridgeReady;
   const sourceBridgeError = direction === "l1-to-l2" ? state.l1BridgeError : state.l2BridgeError;
@@ -257,16 +262,16 @@ export function BridgePanel({
     !canBridge && !busy && sourceBridgeReady && rawAmount > 0n ?
       asset === "erc20" && tokenReadError ? `Unable to check the token: ${tokenReadError}. Retrying…` :
       asset === "erc20" && (tokenNeedsApproval === null || sourceBalanceRaw === null) ? "Checking token balance and approval…" :
-      insufficientBalance ? `Insufficient ${asset === "eth" ? "ETH" : tokenMeta?.symbol || "token"} balance on ${direction === "l1-to-l2" ? "L1" : "L2"}.` :
+      insufficientBalance ? `Insufficient ${asset === "eth" ? nativeSymbol : tokenMeta?.symbol || "token"} balance on ${direction === "l1-to-l2" ? "L1" : "L2"}.` :
       needsApproval ? `Approve ${tokenMeta?.symbol || "the token"} before bridging.` :
       gas.status === "idle" || gas.status === "estimating" ? "Waiting for a Composer gas estimate…" : null : null;
 
-  const actionLabel = asset === "eth" ? "Teleport ETH" : `Teleport ${tokenMeta?.symbol || "Tokens"}`;
+  const actionLabel = asset === "eth" ? `Bridge ${nativeSymbol}` : `Bridge ${tokenMeta?.symbol || "Tokens"}`;
 
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Teleport</span>
+        <span className={styles.cardTitle}>Bridge</span>
       </div>
 
       {/* Warning: bridge not deployed */}
@@ -311,6 +316,7 @@ export function BridgePanel({
 
       {/* Amount */}
       <AmountSection
+        nativeSymbol={nativeSymbol}
         amount={amount}
         sourceBalance={sourceBalance}
         asset={asset}
@@ -424,7 +430,7 @@ export function BridgePanel({
         disabled={!canBridge}
       >
         {busy ? (
-          <><span className="btn-spinner" /> Teleporting...</>
+          <><span className="btn-spinner" /> Bridging...</>
         ) : (
           actionLabel
         )}
