@@ -29,7 +29,10 @@ status tokens live in `src/styles/global.css`.
 
 ## Network assets
 
-Ethereum uses the canonical grayscale diamond; EEZ uses the existing local mark.
+Ethereum uses the diamond silhouette with a custom periwinkle facet palette
+(`#7D88BD`, `#C1C9EF`, `#56618F`, `#98A4D6`), chosen to complement DESIGN.md's
+cool label color. This is an application recolor, not an official Ethereum color
+variant. EEZ uses the existing local mark.
 Chiado and Gnosis use the unmodified owl mark from the official
 [Gnosis media kit](https://github.com/gnosischain/media-kit/blob/dba66ce30b52f44793cc1d546e1955dcabce3bd6/Logos/Owl_Logo%20-%20Mark.svg).
 Other deployments can provide an L1 name and logo through runtime configuration;
