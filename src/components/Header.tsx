@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import type { WalletState } from "../types";
-import type { HealthData } from "../hooks/useHealth";
+import type { HealthData } from "../types";
 import { L1_CHAIN, L2_CHAIN, config } from "../config";
 import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
@@ -219,20 +219,7 @@ export function Header({
                     title={synced ? "Synced" : "Syncing"}
                   />
                 )}
-                {health.pending_submissions > 0 && (
-                  <span className={nhStyles.alertBadge}>
-                    {health.pending_submissions} pending
-                  </span>
-                )}
-                {health.consecutive_rewind_cycles > 0 && (
-                  <span className={nhStyles.rewindBadge}>
-                    {health.consecutive_rewind_cycles} rewinds
-                  </span>
-                )}
-                <span className={`${nhStyles.dot} ${health.healthy ? nhStyles.ok : nhStyles.err}`} />
-                {health.commit && (
-                  <span className={nhStyles.commit}>{health.commit.slice(0, 7)}</span>
-                )}
+                <span className={`${nhStyles.dot} ${health.healthy ? nhStyles.ok : nhStyles.err}`} title={health.healthy ? "L1 and L2 RPCs reachable" : "A chain RPC is unavailable"} />
               </span>
             </>
           )}
@@ -473,11 +460,6 @@ export function Header({
                 </div>
               )}
 
-              {health?.commit && (
-                <div className={styles.mobileCommit}>
-                  Git: {health.commit.slice(0, 7)}
-                </div>
-              )}
             </div>
           </div>
         )}

@@ -4,7 +4,6 @@ import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
 import { useDashboard } from "./hooks/useDashboard";
-import { useHealth } from "./hooks/useHealth";
 import { useCounter } from "./hooks/useCounter";
 import { useCrossChain } from "./hooks/useCrossChain";
 import { useBridge } from "./hooks/useBridge";
@@ -70,8 +69,7 @@ export function App() {
 
   const { entries: _entries, log } = useLog();
   const wallet = useWallet(log, configLoaded);
-  const { l1, l2 } = useDashboard();
-  const health = useHealth();
+  const { l1, l2, health } = useDashboard();
   const counter = useCounter(log, wallet.sendTx);
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);

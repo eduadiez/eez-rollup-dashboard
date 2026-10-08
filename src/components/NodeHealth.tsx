@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import type { HealthData } from "../hooks/useHealth";
+import type { HealthData } from "../types";
 import { config } from "../config";
 import styles from "./NodeHealth.module.css";
 
@@ -106,23 +106,7 @@ export function NodeHealth({ health, l1, l2 }: Props) {
           </span>
         )}
 
-        {health.pending_submissions > 0 && (
-          <span className={styles.alertBadge}>
-            {health.pending_submissions} pending
-          </span>
-        )}
-
-        {health.consecutive_rewind_cycles > 0 && (
-          <span className={styles.rewindBadge}>
-            {health.consecutive_rewind_cycles} rewinds
-          </span>
-        )}
-
-        <span className={`${styles.dot} ${health.healthy ? styles.ok : styles.err}`} />
-
-        {health.commit && (
-          <span className={styles.commit}>{health.commit.slice(0, 7)}</span>
-        )}
+        <span className={`${styles.dot} ${health.healthy ? styles.ok : styles.err}`} title={health.healthy ? "L1 and L2 RPCs reachable" : "A chain RPC is unavailable"} />
       </span>
     </div>
   );
