@@ -261,12 +261,12 @@ export function BridgePanel({
       needsApproval ? `Approve ${tokenMeta?.symbol || "the token"} before bridging.` :
       gas.status === "idle" || gas.status === "estimating" ? "Waiting for a Composer gas estimate…" : null : null;
 
-  const actionLabel = asset === "eth" ? "Transfer ETH" : `Transfer ${tokenMeta?.symbol || "Tokens"}`;
+  const actionLabel = asset === "eth" ? "Teleport ETH" : `Teleport ${tokenMeta?.symbol || "Tokens"}`;
 
   return (
     <div className={styles.card}>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>Transfer</span>
+        <span className={styles.cardTitle}>Teleport</span>
       </div>
 
       {/* Warning: bridge not deployed */}
@@ -425,7 +425,7 @@ export function BridgePanel({
         disabled={!canBridge}
       >
         {busy ? (
-          <><span className="btn-spinner" /> Transferring...</>
+          <><span className="btn-spinner" /> Teleporting...</>
         ) : (
           actionLabel
         )}

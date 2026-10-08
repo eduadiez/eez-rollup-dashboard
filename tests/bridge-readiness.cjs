@@ -107,7 +107,7 @@ async function fixture(browser, options = {}) {
   };
   if (!options.configGate) await connect();
   return { page, modes, calls, connect, configRequested: () => configRequested,
-    button: page.getByRole('button', { name: 'Transfer ETH', exact: true }),
+    button: page.getByRole('button', { name: 'Teleport ETH', exact: true }),
     async clean() {
       assert.deepEqual(writes, [], 'the test must never submit or sign a transaction');
       assert.deepEqual(errors, [], 'browser runtime errors');
