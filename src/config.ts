@@ -14,7 +14,7 @@ export const config = {
   /** L2 composer RPC — used only for L2→L1 cross-chain transaction submission */
   l2ProxyRpc: params.get("l2proxy") || absolute("/composer/l2"),
 
-  /** BasedRollup contract address — loaded from /shared/rollup.env or URL param */
+  /** BasedRollup contract address — loaded from runtime config or URL param */
   rollupsAddress: params.get("rollups") || "",
   /** Rollup ID for state root queries */
   rollupId: params.get("rollupId") || "1",
@@ -26,24 +26,24 @@ export const config = {
   /** Bridge contract addresses */
   l1Bridge: params.get("l1bridge") || "",
   l2Bridge: params.get("l2bridge") || "",
-  /** Flash loan contract addresses (loaded from rollup.env) */
+  /** Flash loan contract addresses (loaded from runtime config) */
   flashExecutorL1: params.get("flashExecutorL1") || "",
   flashTokenAddress: params.get("flashTokenAddress") || "",
   flashPoolAddress: params.get("flashPoolAddress") || "",
   flashNftAddress: params.get("flashNftAddress") || "",
   flashExecutorL2: params.get("flashExecutorL2") || "",
   flashWrappedTokenL2: params.get("flashWrappedTokenL2") || "",
-  /** Reverse flash loan contract addresses (L2→L1 direction, loaded from rollup.env) */
+  /** Reverse flash loan contract addresses (L2→L1 direction, loaded from runtime config) */
   reverseExecutorL2: params.get("reverseExecutorL2") || "",
   reverseNftL1: params.get("reverseNftL1") || "",
   reverseExecutorL1: params.get("reverseExecutorL1") || "",
-  /** Faucet address — loaded from /shared/rollup.env or URL param */
+  /** Faucet address — loaded from runtime config or URL param */
   faucetAddress: params.get("faucetAddress") || "",
   /** Local-only Kurtosis faucet signer; never configured on public networks. */
   demoPrivateKey: "",
-  /** L2 CrossChainManager address — loaded from rollup.env */
+  /** L2 CrossChainManager address — loaded from runtime config */
   ccmL2Address: params.get("ccmL2") || "",
-  /** Aggregator contract addresses (loaded from rollup.env) */
+  /** Aggregator contract addresses (loaded from runtime config) */
   aggWeth: params.get("aggWeth") || "",
   aggUsdc: params.get("aggUsdc") || "",
   aggL1Amm: params.get("aggL1Amm") || "",

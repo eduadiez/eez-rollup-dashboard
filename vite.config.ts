@@ -3,7 +3,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
-import { readFile } from "fs/promises";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const runtimeConfigPath = path.resolve(rootDir, ".runtime/config.json");
@@ -40,27 +39,6 @@ function rpcProxy(target: string | undefined): ProxyOptions | undefined {
   return { target, changeOrigin: true, rewrite: () => "/" };
 }
 
-/**
- * Serve /shared/* requests from the /shared directory on disk.
- * In Docker, /shared is a volume mount with rollup.env.
- */
-function serveSharedPlugin(): Plugin {
-  return {
-    name: "serve-shared",
-    configureServer(server) {
-      server.middlewares.use("/shared", (req, res, next) => {
-        const filePath = `/shared${req.url || ""}`;
-        readFile(filePath, "utf-8")
-          .then((content) => {
-            res.setHeader("Content-Type", "text/plain");
-            res.end(content);
-          })
-          .catch(() => next());
-      });
-    },
-  };
-}
-
 export default defineConfig(() => {
   const runtime = loadRuntimeFile();
   const proxy = runtime.proxy ?? {};
@@ -81,7 +59,7 @@ export default defineConfig(() => {
 
   return {
     base: process.env.EEZ_UI_BASE_PATH || "/dashboard/",
-    plugins: [react(), serveSharedPlugin(), runtimeConfigPlugin(runtime)],
+    plugins: [react(), runtimeConfigPlugin(runtime)],
     server: {
       port: 8080,
       host: "0.0.0.0",

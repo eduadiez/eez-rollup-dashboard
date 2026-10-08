@@ -148,6 +148,9 @@ All contract addresses can be supplied as environment variables listed in
 `.env.example`. The container also supports the Kurtosis artifact mounts
 `/out/deployments.env` and `/demo/demo.env`.
 
+The browser reads `config.json` for runtime addresses and local demo settings.
+It does not request the legacy `/shared/rollup.env` or `/shared/faucet.key` files.
+
 ## Kurtosis integration
 
 The rollup repository's `testing/kurtosis/start.sh` builds this checkout by

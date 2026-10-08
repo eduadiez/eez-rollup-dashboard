@@ -74,7 +74,7 @@ export function App() {
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
-  const faucet = useFaucet(log, wallet.address);
+  const faucet = useFaucet(log, wallet.address, configLoaded);
 
   const txHistory = useTxHistory();
 

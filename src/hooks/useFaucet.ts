@@ -93,7 +93,7 @@ function getCooldownRemaining(address: string, chain: string): number {
 }
 
 /** Faucet hook — sends 0.5 ETH to the connected wallet address. */
-export function useFaucet(log: Logger, walletAddress: string | null) {
+export function useFaucet(log: Logger, walletAddress: string | null, configLoaded: boolean) {
   const [state, setState] = useState<FaucetState>(INITIAL_STATE);
   const [faucetKey, setFaucetKey] = useState<string | null>(null);
   const [faucetReady, setFaucetReady] = useState(false);
@@ -105,42 +105,20 @@ export function useFaucet(log: Logger, walletAddress: string | null) {
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
 
-  // On mount, fetch the faucet private key
+  // The main config loader supplies the disposable local-demo signer.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        let key = config.demoPrivateKey;
-        if (!key) {
-          const runtimeResponse = await fetch(`${import.meta.env.BASE_URL}config.json`);
-          if (runtimeResponse.ok) {
-            const payload = (await runtimeResponse.json()) as {
-              demoPrivateKey?: string;
-              browser?: { demoPrivateKey?: string };
-            };
-            key = payload.browser?.demoPrivateKey ?? payload.demoPrivateKey ?? "";
-          }
-        }
-        if (!key) {
-          const resp = await fetch("/shared/faucet.key");
-          if (resp.ok) key = (await resp.text()).trim();
-        }
-        const raw = key.trim();
-        // Vite dev server returns HTML for 404 — detect that
-        if (!raw || !raw.startsWith("0x") || raw.length < 64 || raw.includes("<")) {
-          if (!cancelled) setFaucetReady(false);
-          return;
-        }
-        if (!cancelled) {
-          setFaucetKey(raw);
-          setFaucetReady(true);
-        }
-      } catch {
-        if (!cancelled) setFaucetReady(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+    if (!configLoaded) return;
+    const key = config.demoPrivateKey.trim();
+    try {
+      if (!/^0x[0-9a-fA-F]{64}$/.test(key)) throw new Error("Invalid demo key");
+      privateKeyToAccount(key as Hex);
+      setFaucetKey(key);
+      setFaucetReady(true);
+    } catch {
+      setFaucetKey(null);
+      setFaucetReady(false);
+    }
+  }, [configLoaded]);
 
   // Poll faucet L1 balance every 30s
   useEffect(() => {
@@ -188,7 +166,7 @@ export function useFaucet(log: Logger, walletAddress: string | null) {
     const recipientAddress = walletRef.current;
 
     if (!faucetKey || !faucetReady) {
-      setState((s) => ({ ...s, phase: "failed", error: "Faucet not configured — redeploy with updated deploy.sh" }));
+      setState((s) => ({ ...s, phase: "failed", error: "Faucet not configured for this network" }));
       return;
     }
 

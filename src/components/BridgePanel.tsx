@@ -312,7 +312,7 @@ export function BridgePanel({
       {/* Warning: bridge not deployed */}
       {!bridgeConfigured && (
         <div className={styles.warningBar}>
-          Bridge contract address not configured. Set via URL param ?l1bridge= / ?l2bridge= or rollup.env.
+          Bridge contract address not configured. Set via URL param ?l1bridge= / ?l2bridge= or runtime config.
         </div>
       )}
       {bridgeConfigured && sourceBridgeReady === null && (
