@@ -322,8 +322,8 @@ export function App() {
           <section className={`${styles.intro} eez-intro`} aria-labelledby="page-heading">
             <div>
               <p className="eez-eyebrow">[ {config.rollupName} · DASHBOARD ]</p>
-              <h1 id="page-heading" className="eez-page-heading"><strong>Toward</strong> a synchronous Ethereum.</h1>
-              <p className="eez-description">Experience atomic, synchronous execution across L1 and L2 with EEZ.</p>
+              <h1 id="page-heading" className="eez-page-heading">Toward a <strong>synchronous Ethereum</strong></h1>
+              <p className="eez-description">Experience <strong>atomic synchronous composability</strong> across L1 and L2 with EEZ</p>
             </div>
             <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
               Quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
