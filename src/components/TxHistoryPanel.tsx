@@ -123,7 +123,7 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
         </button>)}
       </div>
       <div className={styles.columns} aria-hidden="true">
-        <span>Action / details</span><span>Network</span><span>Transaction / blocks</span><span>Status</span><span>Time</span><span />
+        <span>Action / details</span><span>Network</span><span>Transactions</span><span>Blocks</span><span>Status</span><span>Time</span><span />
       </div>
       {visibleRecords.length === 0 ? <p className={styles.emptyState}>No {filter === "bridge" ? "bridge transfers" : "calls"} in your history yet.</p> : (
         <ol className={styles.list}>
@@ -136,28 +136,29 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
                 <div className={styles.actionCol}>
                   <span className={styles.typeLabel}>{bridge ? "Bridge" : TYPE_LABELS[tx.type]}</span>
                   <span className={styles.detail} title={detail}>{detail}</span>
+                  {tx.gasUsed && <span className={styles.noHash}>{tx.gasUsed} gas</span>}
                 </div>
                 <div className={styles.routeCol} role="group" aria-label={routeLabel(tx)}>
                   {directionOf(tx) ? <><NetworkIcon chain={txChain(tx)} /><span aria-hidden="true">→</span><NetworkIcon chain={txChain(tx) === "l1" ? "l2" : "l1"} /></> :
                     tx.type !== "faucet" && <NetworkIcon chain={txChain(tx)} />}
                 </div>
-                <div className={styles.transactionCol}>
+                <div className={styles.transactionCol} role="group" aria-label="Transaction links">
                   {tx.hash ? <>
                     {(info?.l1Hash || (info?.chain ?? txChain(tx)) === "l1") && <div className={styles.transactionLink}>
-                      <NetworkIcon chain="l1" decorative /><TxLink hash={info?.l1Hash ?? tx.hash} chain="l1" className={styles.hash} />
+                      <span className={styles.transactionLabel}>L1 tx:</span><TxLink hash={info?.l1Hash ?? tx.hash} chain="l1" className={styles.hash} />
                       {info?.settlement && <span className={styles.noHash}>Settlement</span>}
                     </div>}
                     {(info?.l2Hashes.length ? info.l2Hashes : (info?.chain ?? txChain(tx)) === "l2" ? [tx.hash] : []).map(hash =>
-                      <div className={styles.transactionLink} key={hash}><NetworkIcon chain="l2" decorative /><TxLink hash={hash} chain="l2" className={styles.hash} /></div>)}
+                      <div className={styles.transactionLink} key={hash}><span className={styles.transactionLabel}>L2 tx:</span><TxLink hash={hash} chain="l2" className={styles.hash} /></div>)}
                     {directionOf(tx) && !(info?.l1Hash && info.l2Hashes.length) && <span className={styles.noHash}>
                       {tx.status === "failed" ? "Counterpart unavailable" : `${(info?.chain ?? txChain(tx)) === "l1" ? "L2 transaction" : "L1 settlement"} not indexed yet`}
                     </span>}
                   </> : <span className={styles.noHash}>No transaction hash</span>}
-                  {(info || tx.gasUsed) && <div className={styles.blockInfo}>
-                    {info?.l1 != null && <ExplorerLink value={String(info.l1)} type="block" chain="l1" label={`L1 #${info.l1.toLocaleString()}`} />}
-                    {info?.l2 != null && <ExplorerLink value={String(info.l2)} type="block" chain="l2" label={`L2 #${info.l2.toLocaleString()}`} />}
-                    {tx.gasUsed && <span>{tx.gasUsed} gas</span>}
-                  </div>}
+                </div>
+                <div className={styles.blockCol} role="group" aria-label="Blocks">
+                  {info?.l1 != null && <ExplorerLink value={String(info.l1)} type="block" chain="l1" label={`L1 #${info.l1.toLocaleString()}`} />}
+                  {info?.l2 != null && <ExplorerLink value={String(info.l2)} type="block" chain="l2" label={`L2 #${info.l2.toLocaleString()}`} />}
+                  {info?.l1 == null && info?.l2 == null && <span className={styles.noHash}>—</span>}
                 </div>
                 <div className={styles.statusCol}><StatusBadge status={tx.status} /></div>
                 <time className={styles.timeCol} dateTime={new Date(tx.timestamp).toISOString()} title={new Date(tx.timestamp).toLocaleString()}>{timeAgo(tx.timestamp)}</time>

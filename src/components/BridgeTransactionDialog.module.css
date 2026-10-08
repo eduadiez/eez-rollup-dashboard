@@ -8,7 +8,7 @@
 .hash { font: 12px/1.5 var(--mono); max-width: 100%; overflow-wrap: anywhere; }
 .success { color: var(--green); }
 .failure { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--red); border-radius: 50%; color: var(--red); font: 600 18px/1 var(--sans); }
-.spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+.spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: global(spin) .8s linear infinite; }
 .reopen { align-self: center; padding: 4px 8px; background: transparent; border: 0; color: var(--text-dim); font: 12px/1.5 var(--mono); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .reopen:hover { color: var(--text-bright); }
 @media (max-width: 420px) { .dialog { padding: 32px 20px 24px; } }

@@ -36,7 +36,8 @@ and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
 
-Transaction history uses network logos and links to both chains when indexed.
+Transaction history uses network logos for the route, labels transaction links
+“L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
 L2 source transactions link to their canonical L1 settlement batch (labeled
 “Settlement”). L1 source transactions link to matching L2 incoming call events
 within canonical settled blocks. Repeated call hashes with ambiguous origins or

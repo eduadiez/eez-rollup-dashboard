@@ -54,6 +54,17 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
     assert.equal(await reverse.getByRole('group',{name:'L2 → L1',exact:true}).locator('img').count(),2);
     assert.equal(await forward.locator('a[href="https://l1.invalid/block/100"]').count(),1);
     assert.equal(await forward.locator('a[href="https://l2.invalid/block/7"]').count(),1);
+    for (const row of [forward, reverse]) {
+      const transactions = row.getByRole('group',{name:'Transaction links',exact:true});
+      const blocks = row.getByRole('group',{name:'Blocks',exact:true});
+      assert.equal(await transactions.getByText('L1 tx:',{exact:true}).count(),1);
+      assert.equal(await transactions.getByText('L2 tx:',{exact:true}).count(),1);
+      assert.equal(await transactions.locator('img').count(),0,'transaction links use chain labels');
+      assert.equal(await transactions.locator('a[href*="/block/"]').count(),0,'blocks have their own column');
+      assert.equal(await blocks.locator('a[href*="/block/"]').count(),2);
+      const txBox=await transactions.boundingBox(), blockBox=await blocks.boundingBox();
+      assert.ok(blockBox.x >= txBox.x+txBox.width,'block column is separate from transactions');
+    }
     for(const width of [1920,1440,1280,1201,1200,1024,800,640,390,320]) {
       await page.setViewportSize({width,height:1080});
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);
@@ -67,6 +78,6 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
       assert.ok(Math.abs((left.y+left.height/2)-(wallet.y+wallet.height/2))<1,'balances and wallet misaligned at '+width);
     }
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,canonicalTransactionLinks:true,settlementLabel:true,indexRetry:true,historyNetworkLogos:true,blockLinks:true,responsiveWidths:10,horizontalBalances:true,consoleErrors:0,transactionsSent:0}));
+    console.log(JSON.stringify({passed:true,canonicalTransactionLinks:true,settlementLabel:true,indexRetry:true,historyNetworkLogos:true,labeledTransactionLinks:true,separateBlockColumn:true,blockLinks:true,responsiveWidths:10,horizontalBalances:true,consoleErrors:0,transactionsSent:0}));
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -213,6 +213,11 @@ async function fixture(browser, options = {}) {
       assert.equal(await amount.isDisabled(), true);
       assert.equal(BigInt((await f.page.evaluate(() => window.walletRequests[0])).gas), 500000n);
       assert.equal(await popup.evaluate(d => d.matches(':modal')), true);
+      assert.equal(await popup.locator('span[aria-hidden="true"]').evaluate(e => e.getAnimations().filter(a => a.playState === 'running').length), 1,
+        'pending spinner must have a running rotation animation');
+      await f.page.emulateMedia({ reducedMotion:'reduce' });
+      assert.equal(await popup.locator('span[aria-hidden="true"]').evaluate(e => e.getAnimations().length), 0, 'spinner respects reduced motion');
+      await f.page.emulateMedia({ reducedMotion:'no-preference' });
       for (let tab = 0; tab < 4; tab++) {
         await f.page.keyboard.press('Tab');
         assert.equal(await popup.evaluate(d => d.contains(document.activeElement)), true, 'focus stays in the popup');

@@ -243,19 +243,22 @@ body {
 
 /* ── Solid — filled background, high emphasis ── */
 .btn-solid {
-  background: var(--eez-pill-bg);
-  border-color: var(--eez-pill-bg);
+  background-color: var(--eez-pill-bg);
+  background-image: none;
+  background-clip: padding-box;
+  background-repeat: no-repeat;
+  border-color: transparent;
   color: var(--eez-pill-ink);
 }
 
 .btn-solid:hover:not(:disabled) {
-  background: var(--eez-grad-btn);
+  background-image: var(--eez-grad-btn);
   border-color: transparent;
   box-shadow: none;
 }
 
 .btn-solid:active:not(:disabled) {
-  background: var(--eez-grad-btn);
+  background-image: var(--eez-grad-btn);
   border-color: transparent;
   box-shadow: inset 0 1px 4px rgba(0,0,0,0.3);
 }
@@ -315,8 +318,8 @@ body {
 /* ── Color modifiers ── */
 
 /* Green */
-.btn-green.btn-solid { background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); color: var(--eez-pill-ink); }
-.btn-green.btn-solid:hover:not(:disabled) { background: var(--eez-grad-btn); border-color: transparent; }
+.btn-green.btn-solid { background-color: var(--eez-pill-bg); color: var(--eez-pill-ink); }
+.btn-green.btn-solid:hover:not(:disabled) { background-image: var(--eez-grad-btn); border-color: transparent; }
 
 .btn-green.btn-tint {
   background: var(--green-dim);
