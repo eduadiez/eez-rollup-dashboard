@@ -14,7 +14,7 @@
 .filter { border: 1px solid transparent; border-radius: 100px; padding: 6px 14px; background: #0d0d0d; color: var(--text-dim); font: 500 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .02em; cursor: pointer; }
 .filter:hover { color: var(--text-bright); }
 .filterActive { color: var(--eez-pill-ink); background: var(--eez-pill-bg); border-color: var(--eez-pill-bg); }
-.columns, .row { display: grid; grid-template-columns: minmax(120px, 1.2fr) 84px minmax(180px, 1.5fr) minmax(110px, .8fr) 100px 68px 110px; align-items: center; gap: 16px; }
+.columns, .row { display: grid; grid-template-columns: minmax(120px, 1.2fr) 84px minmax(180px, 1.5fr) minmax(110px, .8fr) 100px 68px 120px; align-items: center; gap: 16px; }
 .columns { padding: 0 0 10px; font: 400 12px/1.5 var(--mono); text-transform: uppercase; border-bottom: 1px solid var(--border); }
 .list { list-style: none; max-height: 360px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .row { padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -34,8 +34,8 @@
 .badge.failed { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
 .timeCol { color: var(--text-dim); font-size: 12px; }
 .actionsCol { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px; }
-.explorerBtn { padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: transparent; color: var(--text); font: 500 11.5px/1.5 var(--mono); cursor: pointer; }
-.explorerBtn:hover { border-color: var(--border-hover); color: var(--text-bright); }
+.inspectBtn { padding: 6px 8px; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text); font: 500 11.5px/1.5 var(--mono); cursor: pointer; }
+.inspectBtn:hover { border-color: var(--border-hover); color: var(--text-bright); }
 .emptyState { padding: 20px 0; font-size: 13px; color: var(--text-dim); }
 .spinner { width: 10px; height: 10px; border: 1.5px solid var(--border); border-top-color: currentColor; border-radius: 50%; animation: global(spin) .8s linear infinite; }
 @media (max-width: 1100px) {

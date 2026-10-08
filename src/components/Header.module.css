@@ -115,7 +115,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px;
+  height: 32px;
+  padding: 5px 10px;
   border: 1px solid transparent;
   border-radius: 100px;
   background: transparent;
@@ -127,8 +128,8 @@
 }
 .chainBtn:hover { color: var(--text-bright); border-color: var(--border-hover); background: var(--overlay-light); }
 .chainBtnActive { background: var(--bg-raised); border-color: var(--border); color: var(--text-bright); }
-.balanceIcon { width: 18px; height: 20px; }
-.chainBal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 16px/1.35 var(--mono); font-variant-numeric: tabular-nums; }
+.balanceIcon { width: 18px; height: 18px; }
+.chainBal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 11px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
 .balanceUnit { color: var(--text-dim); font-size: 11px; }
 .chainBtnDot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
 
@@ -144,6 +145,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: 32px;
   padding: 5px 12px;
   background: var(--bg-inset);
   border: 1px solid var(--border);
@@ -568,12 +570,10 @@
   .walletPill { width: 32px; height: 32px; padding: 6px; justify-content: center; }
   .walletLabel, .walletPillChevron { display: none; }
   .walletArea > button:not(.walletPill) { padding: 7px 10px; font-size: 11px; }
-  .chainBal { font-size: 14px; }
   .chainBtn { padding: 4px 6px; gap: 6px; }
   .balanceUnit { font-size: 10px; }
 }
 @media (max-width: 420px) {
   .logoIcon { width: 60px; }
   .productName { padding-left: 8px; max-width: 150px; font-size: 11px; }
-  .chainBal { font-size: 12.5px; }
 }

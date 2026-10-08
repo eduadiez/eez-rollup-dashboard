@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  fetchLiveBatchHistory, fetchDebugTrace, inspectDebugBlock, inspectDebugTransaction, inspectPostedBatch,
+  fetchLiveBatchHistory, fetchDebugTrace, inspectDebugTransaction, inspectPostedBatch, inspectExecution,
   jsonDebug, loadMoreDebugBlocks, quantity, relatedTransactions, settlementRange, transactionHashes,
-  type CallTrace, type DebugChain, type DebugContext, type DebugTransaction, type LiveBatch, type LiveBatchHistory,
+  type CallTrace, type DebugChain, type DebugContext, type DebugTransaction, type LiveBatch, type LiveBatchHistory, type InspectionKind,
 } from "../../lib/executionDebugger";
 import { ExplorerLink } from "../ExplorerLink";
 import { contextTransactions, inspectionHash, isEezTransaction, summarizeBatch, txKey, type BatchExecutionSummary } from "../../lib/executionAnalysis";
 import { ExecutionInspector, inspectorTab, type InspectorTab } from "./ExecutionInspector";
 import styles from "./ExecutionDebugger.module.css";
 
-type Mode = "debug" | "explorer" | "live";
+type Mode = "inspect" | "live";
 export interface DebuggerProps {
   onBack: () => void;
   initialDebugHash?: string | null;
@@ -29,7 +29,7 @@ const batchVersion = (batch: LiveBatch) => `${batch.blockHash}:${batch.l2Range?.
 const status = (tx: DebugTransaction) => !tx.receipt ? tx.tx.blockHash ? "Receipt unavailable" : "Pending" : tx.receipt.status === "0x1" ? "Success" : "Reverted";
 
 export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initialChain, initialBlock, initialCounterpart, initialBatch, initialSelected, initialSelectedChain, initialEvent, initialTab, initialCall }: DebuggerProps) {
-  const [mode, setMode] = useState<Mode>(initialDebugHash ? "debug" : initialBlock ? "explorer" : initialMode === "debug" || initialMode === "explorer" ? initialMode : "live");
+  const [mode, setMode] = useState<Mode>(initialDebugHash || initialBlock || ["debug", "explorer", "inspect"].includes(initialMode ?? "") ? "inspect" : "live");
   const [chain, setChain] = useState<DebugChain | "auto">(initialChain === "l1" || initialChain === "l2" ? initialChain : initialMode === "explorer" ? "l1" : "auto");
   const [query, setQuery] = useState(initialDebugHash ?? initialBlock ?? "");
   const [counterpart, setCounterpart] = useState(initialCounterpart ?? "");
@@ -44,7 +44,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   const [liveLoading, setLiveLoading] = useState(false);
   const historyRef = useRef<LiveBatchHistory | null>(null);
   const liveSelection = useRef<string | null>(initialBatch ?? null);
-  const initialLiveBatch = useRef(initialBatch && initialMode !== "debug" && initialMode !== "explorer" ? initialBatch : null);
+  const initialLiveBatch = useRef(initialBatch && !initialDebugHash && !initialBlock && !["debug", "explorer", "inspect"].includes(initialMode ?? "") ? initialBatch : null);
   const [updated, setUpdated] = useState<Date | null>(null);
   const [traces, setTraces] = useState<Record<string, CallTrace>>({});
   const traceRequests = useRef(new Map<string, Promise<CallTrace>>());
@@ -65,7 +65,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   const steps = useRef(new Map<string, number>());
   const [focused, setFocused] = useState<string | null>(initialCall ?? null);
   const [shareStatus, setShareStatus] = useState("");
-  const [source, setSource] = useState({ chain: initialChain ?? "auto", value: initialDebugHash ?? initialBlock ?? "", counterpart: initialCounterpart ?? "" });
+  const [source, setSource] = useState<{ chain: string; value: string; counterpart: string; kind: InspectionKind }>({ chain: initialChain ?? "auto", value: initialDebugHash ?? initialBlock ?? initialBatch ?? "", counterpart: initialCounterpart ?? "", kind: initialBlock ? "block" : "transaction" });
   const restore = useRef(true);
   const alive = useRef(true);
   const remember = useCallback((hash: string, result: DebugContext) => {
@@ -154,27 +154,27 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
     if (event !== undefined) setTab(current => current === "flow" ? "flow" : "timeline");
   };
   const request = useRef(0);
-  const load = useCallback(async (nextMode: Mode, nextChain: DebugChain | "auto", value: string, compare = "", fromLive = false) => {
+  const load = useCallback(async (kind: InspectionKind | "auto", nextChain: DebugChain | "auto", value: string, compare = "", fromLive = false) => {
     const id = ++request.current;
     setLoading(true); setError(null); setContext(null); setSelected(null); setFlowDetailAction(null);
     try {
       let result: DebugContext;
-      if (nextMode === "debug") {
-        result = fromLive ? await inspectLiveBatch(value.trim()) : await inspectDebugTransaction(value.trim(), nextChain, undefined, true);
-        if (compare.trim()) {
-          try {
-            const other = await inspectDebugTransaction(compare.trim(), "auto", undefined, true);
-            const existing = new Set(result.blocks.map(block => `${block.chain}:${block.hash}`));
-            result.blocks.push(...other.blocks.filter(block => !existing.has(`${block.chain}:${block.hash}`)));
-            result.remainingBlocks = [...(result.remainingBlocks ?? []), ...(other.remainingBlocks ?? [])].filter((block, i, all) =>
-              !result.blocks.some(loaded => loaded.chain === block.chain && loaded.hash === block.hash) && all.findIndex(item => item.chain === block.chain && item.hash === block.hash) === i);
-            result.warnings.push(...other.warnings);
-            if (!other.sourceBlock) result.warnings.push("Supplied counterpart transaction is pending; retry after inclusion.");
-          } catch (error) { result.warnings.push(`Counterpart lookup failed: ${(error as Error).message}`); }
-        }
-      } else {
-        if (!/^(latest|\d+|0x[\da-f]+)$/i.test(value.trim())) throw new Error("Enter a block number, block hash, or latest.");
-        result = await inspectDebugBlock(nextChain === "auto" ? "l1" : nextChain, value.trim(), undefined, true);
+      let resolvedKind: InspectionKind = "transaction";
+      if (fromLive) result = await inspectLiveBatch(value.trim());
+      else {
+        const lookup = await inspectExecution(value, nextChain, kind);
+        result = lookup.context; resolvedKind = lookup.kind;
+      }
+      if (compare.trim()) {
+        try {
+          const other = await inspectDebugTransaction(compare.trim(), "auto", undefined, true);
+          const existing = new Set(result.blocks.map(block => `${block.chain}:${block.hash}`));
+          result.blocks.push(...other.blocks.filter(block => !existing.has(`${block.chain}:${block.hash}`)));
+          result.remainingBlocks = [...(result.remainingBlocks ?? []), ...(other.remainingBlocks ?? [])].filter((block, i, all) =>
+            !result.blocks.some(loaded => loaded.chain === block.chain && loaded.hash === block.hash) && all.findIndex(item => item.chain === block.chain && item.hash === block.hash) === i);
+          result.warnings.push(...other.warnings);
+          if (!other.sourceBlock) result.warnings.push("Supplied counterpart transaction is pending; retry after inclusion.");
+        } catch (error) { result.warnings.push(`Counterpart lookup failed: ${(error as Error).message}`); }
       }
       if (id !== request.current) return;
       if (fromLive) remember(value, result);
@@ -184,22 +184,22 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
       setStep(restore.current ? Math.min(Math.max(0, Number(initialEvent) || 0), Math.max(0, (chosen?.events.filter(event => event.protocol).length ?? 0) - 1)) : chosen ? steps.current.get(txKey(chosen)) ?? 0 : 0);
       if (!restore.current) setFocused(null);
       restore.current = false;
-      if (!fromLive) setSource({ chain: nextChain, value: value.trim(), counterpart: compare.trim() });
+      if (!fromLive) setSource({ chain: result.sourceChain, value: value.trim(), counterpart: compare.trim(), kind: resolvedKind });
     } catch (err) { if (id === request.current) setError((err as Error).message); }
     finally { if (id === request.current) setLoading(false); }
   }, [remember, inspectLiveBatch, initialSelected, initialSelectedChain, initialEvent]);
   useEffect(() => {
     if (initialDebugHash) {
-      setMode("debug"); setQuery(initialDebugHash);
+      setMode("inspect"); setQuery(initialDebugHash);
       const side = initialChain === "l1" || initialChain === "l2" ? initialChain : "auto";
-      setChain(side); void load("debug", side, initialDebugHash, initialCounterpart ?? "");
+      setChain(side); void load("transaction", side, initialDebugHash, initialCounterpart ?? "");
     } else if (initialBatch) {
       // Live links wait for posting logs so a pruned transaction-hash index
       // does not prevent inspection of a retained block and receipt.
-      if (!initialLiveBatch.current) void load("debug", "l1", initialBatch, "", true);
+      if (!initialLiveBatch.current) void load("transaction", "l1", initialBatch, "", true);
     } else if (initialBlock) {
       const side = initialChain === "l2" ? "l2" : "l1";
-      setMode("explorer"); setQuery(initialBlock); setChain(side); void load("explorer", side, initialBlock);
+      setMode("inspect"); setQuery(initialBlock); setChain(side); void load("block", side, initialBlock, initialCounterpart ?? "");
     }
   }, [initialDebugHash, initialBlock, initialChain, initialCounterpart, initialBatch, load]);
   useEffect(() => {
@@ -230,10 +230,10 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
         } setUpdated(new Date()); setLiveError(null);
         if (initialLiveBatch.current) {
           const hash = initialLiveBatch.current; initialLiveBatch.current = null;
-          void load("debug", "l1", hash, "", true);
+          void load("transaction", "l1", hash, "", true);
         } else if (!liveSelection.current && result.batches.length) {
           liveSelection.current = result.batches[0]!.transactionHash;
-          void load("debug", "l1", liveSelection.current, "", true);
+          void load("transaction", "l1", liveSelection.current, "", true);
         }
       } catch (err) { if (!stopped) setLiveError((err as Error).message); }
       finally { if (!stopped) setLiveLoading(false); }
@@ -245,7 +245,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   useEffect(() => { alive.current = true; return () => { alive.current = false; request.current++; entryLoader.current.enabled = false; }; }, []);
   useEffect(() => {
     if (loading || !context) return;
-    window.history.replaceState(null, "", inspectionHash({ mode, chain: source.chain, source: source.value, counterpart: source.counterpart, batch: liveSelection.current, selected, event: step, tab, call: focused }));
+    window.history.replaceState(null, "", inspectionHash({ mode, kind: source.kind, chain: source.chain, source: source.value, counterpart: source.counterpart, batch: liveSelection.current, selected, event: step, tab, call: focused }));
   }, [mode, source, selected, step, tab, focused, loading, context]);
   const share = async () => {
     try { await navigator.clipboard.writeText(window.location.href); setShareStatus("Link copied"); }
@@ -255,8 +255,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
   const switchMode = (next: Mode) => {
     if (next === mode) return;
     initialLiveBatch.current = null;
-    liveSelection.current = null; request.current++; entryLoader.current.enabled = false; setSource({ chain: "auto", value: "", counterpart: "" }); setFocused(null); setStep(0); setMode(next); setError(null); setLoading(false); setContext(null); setSelected(null); setQuery(""); setCounterpart("");
-    if (next === "explorer" && chain === "auto") setChain("l1");
+    liveSelection.current = null; request.current++; entryLoader.current.enabled = false; setSource({ chain: "auto", value: "", counterpart: "", kind: "transaction" }); setFocused(null); setStep(0); setMode(next); setChain("auto"); setError(null); setLoading(false); setContext(null); setSelected(null); setQuery(""); setCounterpart("");
     window.history.replaceState(null, "", `#/visualizer?mode=${next}`);
   };
   const exportData = () => {
@@ -289,14 +288,15 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
     <div className={styles.intro}><button className="btn btn-sm btn-outline" onClick={onBack}>← Dashboard</button>
       <p className="eez-eyebrow">[ EXECUTION VISUALIZER ]</p><h1 className="eez-page-heading"><strong>Follow execution.</strong> On both chains.</h1>
       <p className="eez-description">Inspect transactions, nested calls, and settlement with recorded L1 and L2 evidence.</p></div>
-    <nav className={styles.tabs} aria-label="Visualizer modes">{(["debug", "explorer", "live"] as const).map(item => <button key={item} className={`${styles.tab} ${mode === item ? styles.activeTab : ""}`} aria-current={mode === item ? "page" : undefined} onClick={() => switchMode(item)}>{item === "debug" ? "Debug TX" : item === "explorer" ? "Block Explorer" : "Live"}</button>)}</nav>
-    {mode !== "live" ? <form className={styles.search} onSubmit={event => { event.preventDefault(); void load(mode, chain, query, counterpart); }}>
+    <nav className={styles.tabs} aria-label="Visualizer modes">{(["live", "inspect"] as const).map(item => <button key={item} className={`${styles.tab} ${mode === item ? styles.activeTab : ""}`} aria-current={mode === item ? "page" : undefined} onClick={() => switchMode(item)}>{item === "live" ? "Live" : "Inspect"}</button>)}</nav>
+    {mode !== "live" ? <form className={styles.search} aria-label="Inspect execution" onSubmit={event => { event.preventDefault(); void load("auto", chain, query, counterpart); }}>
       <label>Chain<select aria-label="Chain" value={chain} onChange={event => setChain(event.target.value as DebugChain | "auto")}>
-        {mode === "debug" && <option value="auto">Auto detect</option>}<option value="l1">L1</option><option value="l2">L2</option></select></label>
-      <label className={styles.query}>{mode === "debug" ? "Transaction hash" : "Block number or hash"}<input value={query} onChange={event => setQuery(event.target.value)} placeholder={mode === "debug" ? "0x… on L1 or L2" : "Block number, hash, or latest"} spellCheck={false} required /></label>
+        <option value="auto">Auto detect</option><option value="l1">L1</option><option value="l2">L2</option></select></label>
+      <label className={styles.query}>Transaction hash or block<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Transaction hash, block number or hash, or latest" spellCheck={false} required /></label>
       <button className="btn btn-solid" type="submit" disabled={loading}>{loading ? "Inspecting…" : "Inspect"}</button>
-      {mode === "explorer" && <button className="btn btn-outline" type="button" disabled={loading} onClick={() => { setQuery("latest"); void load(mode, chain, "latest"); }}>Latest</button>}
-      {mode === "debug" && <label className={styles.compare}>Counterpart hash (optional)<input value={counterpart} onChange={event => setCounterpart(event.target.value)} placeholder="Inspect both sides before settlement" spellCheck={false} /></label>}
+      <button className="btn btn-outline" type="button" disabled={loading} onClick={() => { setQuery("latest"); void load("block", chain, "latest", counterpart); }}>Latest block</button>
+      <details className={styles.compare}><summary>Counterpart transaction (optional)</summary><label>Counterpart hash<input value={counterpart} onChange={event => setCounterpart(event.target.value)} placeholder="Inspect both sides before settlement" spellCheck={false} /></label></details>
+      <p className={styles.muted}>Hashes are detected on either chain. Block numbers and latest use L1 unless you select L2.</p>
     </form> : <div className={styles.liveBar}><span className={styles.liveDot} />Latest 50 posted batches<button className="btn btn-sm btn-outline" onClick={() => setLive(!live)}>{live ? "Pause" : "Resume"}</button><span className={styles.muted}>{updated ? `Updated ${updated.toLocaleTimeString()}` : "Connecting…"}</span></div>}
     {mode === "live" && <section className={styles.batchHistory} aria-label="Posted batch history">
       <div className={styles.cardHeader}><h2>Latest Posted Batches</h2><button className="btn btn-sm btn-outline" aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>{collapsed ? "Expand batches" : "Collapse batches"}</button><span className={styles.muted}>{history && `L1 #${quantity(history.l1Head)} · L2 #${quantity(history.l2Head)}`}</span></div>
@@ -322,7 +322,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
           className={`${styles.batchRow} ${liveSelection.current === batch.transactionHash ? styles.selectedTx : ""}`}>
           <button className={styles.batchSelect} aria-label={`Inspect batch ${batch.transactionHash}`} aria-pressed={liveSelection.current === batch.transactionHash} onClick={() => {
             if (liveSelection.current === batch.transactionHash && context) return;
-            liveSelection.current = batch.transactionHash; void load("debug", "l1", batch.transactionHash, "", true);
+            liveSelection.current = batch.transactionHash; void load("transaction", "l1", batch.transactionHash, "", true);
           }} />
           <div className={styles.batchSummary}>
             <ExplorerLink value={BigInt(batch.blockNumber).toString()} type="block" chain="l1" label={`L1 #${quantity(batch.blockNumber)}`} className={styles.batchBlock} />
@@ -379,6 +379,6 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
         <ExecutionInspector key={txKey(selected)} tx={selected} context={context} traces={traces} loadTrace={loadTrace} tab={tab} onTab={next => { setTab(next); setFlowDetailAction(null); }} flowDetailAction={flowDetailAction} onFlowDetailAction={setFlowDetailAction} step={step} focused={focused} onFocus={setFocused} onSelect={chooseTransaction} /></>}
       {!selected && <p className={styles.empty}>Select a transaction on either chain to inspect its execution.</p>}</div></div>
     </>}
-    {!context && !loading && !error && mode !== "live" && <div className={styles.empty}><h2>{mode === "debug" ? "Start with a transaction hash" : "Explore a block"}</h2><p>{mode === "debug" ? "Paste any L1 or L2 hash, including reverted transactions and contract deployments. No wallet is needed." : "Inspect all transactions in a block and follow exact settlement links to the other chain."}</p></div>}
+    {!context && !loading && !error && mode !== "live" && <div className={styles.empty}><h2>Start with a transaction or block</h2><p>Follow calls and settlement on both chains, including reverted transactions and contract deployments. No wallet is needed.</p></div>}
   </main>;
 }

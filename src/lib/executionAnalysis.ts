@@ -184,11 +184,11 @@ export function summarizeBatch(context: DebugContext): BatchExecutionSummary {
     entries: context.sourceBlock?.transactions.find(tx => txKey(tx) === (context.selected ? txKey(context.selected) : ""))?.payload?.entries.length ?? 0 };
 }
 
-export type InspectionRoute = { mode: "live" | "debug" | "explorer"; chain: string; source?: string; batch?: string | null; selected?: DebugTransaction | null; event?: number; tab?: string; call?: string | null; counterpart?: string };
+export type InspectionRoute = { mode: "live" | "inspect" | "debug" | "explorer"; kind?: "transaction" | "block"; chain: string; source?: string; batch?: string | null; selected?: DebugTransaction | null; event?: number; tab?: string; call?: string | null; counterpart?: string };
 export function inspectionHash(route: InspectionRoute): string {
   const params = new URLSearchParams({ mode: route.mode });
   if (route.mode === "live") { if (route.batch) params.set("batch", route.batch); }
-  else { params.set("chain", route.chain); if (route.source) params.set(route.mode === "debug" ? "tx" : "block", route.source); }
+  else { params.set("chain", route.chain); if (route.source) params.set(route.kind === "block" || route.mode === "explorer" ? "block" : "tx", route.source); }
   if (route.counterpart) params.set("counterpart", route.counterpart);
   if (route.selected) { params.set("selected", route.selected.tx.hash); params.set("selectedChain", route.selected.chain); }
   if (route.event !== undefined) params.set("event", String(route.event));

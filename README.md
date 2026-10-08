@@ -283,9 +283,11 @@ node tests/wallet-startup.cjs
 
 ## Execution visualizer
 
-Open **Visualizer** or `/dashboard/#/visualizer`. Debug TX accepts any L1 or L2
-transaction hash and auto-detects its chain. Transaction History's Debug action
-opens the same view. Failed transactions and contract creations are supported.
+Open **Visualizer** or `/dashboard/#/visualizer`. **Live** opens first by default.
+**Inspect** accepts a transaction hash, block number, block hash, or `latest` in
+one form. Hashes are detected on either chain; numeric blocks and `latest` use
+L1 unless L2 is selected. Transaction History's **View execution** action opens
+the source transaction in this same view. Failed transactions and contract creations are supported.
 
 The debugger uses mined receipts, EEZ events, posting/loading calldata, and an
 optional `debug_traceTransaction` call tracer. Expand execution/static entries
@@ -310,8 +312,8 @@ hashes appear as candidates; a repeated hash is not a unique execution occurrenc
 For work that has not settled, supply the optional counterpart transaction hash.
 Missing index or trace methods show a message while preserving available data.
 
-Block Explorer reads either chain by number or hash, including ordinary and
-protocol transactions. Live is the default view and retains the latest 50 posted
+Inspect reads either chain by number or hash using the same EEZ transaction
+filter as transaction inspection. Live retains the latest 50 posted
 batches from the connected rollup, newest first. The configured registry or
 a matching canonical L2 settlement identifies that deployment; unrelated L1
 registries are excluded. Rows show linked L1 blocks, L2 ranges, settlement
@@ -323,7 +325,8 @@ the loaded context and traces. Deep links support `tx`, `chain`, `mode`, `block`
 and `counterpart` parameters inside the hash fragment. **Copy inspection link**
 also includes the Live `batch`, `selected` transaction and `selectedChain`,
 protocol `event` index, inspector `tab`, and focused `call` hash. Live links
-restore the selected batch without switching to Debug TX.
+restore the selected batch without switching to Inspect. Existing `mode=debug`
+and `mode=explorer` links continue to open the combined Inspect view.
 
 The inspector opens **Flow** by default: entry groups containing aligned L1/L2
 call requests and reverse return arrows. Nested calls sit inside their parent's

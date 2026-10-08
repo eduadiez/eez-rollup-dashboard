@@ -9,8 +9,7 @@ import styles from "./TxHistoryPanel.module.css";
 interface Props {
   records: TxRecord[];
   onClear: () => void;
-  onDebug?: (txHash: string) => void;
-  onViewBlock?: (blockNumber: number) => void;
+  onInspect?: (txHash: string, chain: "l1" | "l2") => void;
 }
 
 
@@ -78,7 +77,7 @@ function expectsCounterpart(tx: TxRecord): boolean {
   return !!directionOf(tx) && (tx.type !== "cross-chain-proxy" || txChain(tx) === "l2");
 }
 
-export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props) {
+export function TxHistoryPanel({ records, onClear, onInspect }: Props) {
   const [filter, setFilter] = useState<"all" | "bridge" | "calls">("all");
   const [blockCache, setBlockCache] = useState<Map<string, HistoryTransactions>>(() => new Map());
   const cacheRef = useRef(blockCache);
@@ -169,10 +168,8 @@ export function TxHistoryPanel({ records, onClear, onDebug, onViewBlock }: Props
                 <div className={styles.statusCol}><StatusBadge status={tx.status} /></div>
                 <time className={styles.timeCol} dateTime={new Date(tx.timestamp).toISOString()} title={new Date(tx.timestamp).toLocaleString()}>{timeAgo(tx.timestamp)}</time>
                 <div className={styles.actionsCol}>
-                  {onViewBlock && info?.l1 != null && <button className={styles.explorerBtn}
-                    onClick={() => onViewBlock(info.l1!)} title="View in Crosschain Explorer">Explorer</button>}
-                  {onDebug && tx.hash && <button className={styles.explorerBtn}
-                    onClick={() => onDebug(tx.hash!)} title="Debug in Visualizer">Debug</button>}
+                  {onInspect && tx.hash && <button className={styles.inspectBtn}
+                    onClick={() => onInspect(tx.hash!, info?.chain ?? txChain(tx))} title="View execution on both chains">View execution</button>}
                 </div>
               </li>
             );

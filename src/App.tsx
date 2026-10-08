@@ -440,8 +440,7 @@ export function App() {
             <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
-              onDebug={(hash) => { window.location.hash = `#/visualizer?tx=${hash}`; }}
-              onViewBlock={(block) => { window.location.hash = `#/visualizer?mode=explorer&chain=l1&block=${block}`; }}
+              onInspect={(hash, chain) => { window.location.hash = `#/visualizer?mode=inspect&chain=${chain}&tx=${hash}`; }}
             />
 
 

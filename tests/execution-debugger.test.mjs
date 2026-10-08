@@ -10,7 +10,7 @@ globalThis.window = { location: { search: '', origin: 'http://test.invalid' } };
 const { setConfig } = await import('../src/config.ts');
 const { eezL1Abi, eezL2Abi } = await import('../src/abi/eez.ts');
 const { decodeDebugLog, decodeDebugPayload, decodeRevert, inspectDebugTransaction, inspectDebugBlock,
-  relatedTransactions, transactionHashes, fetchDebugTrace, loadMoreDebugBlocks, managerAddress, fetchLiveBatchHistory, inspectPostedBatch } = await import('../src/lib/executionDebugger.ts');
+  relatedTransactions, transactionHashes, fetchDebugTrace, loadMoreDebugBlocks, managerAddress, fetchLiveBatchHistory, inspectPostedBatch, inspectExecution } = await import('../src/lib/executionDebugger.ts');
 
 const hash = byte => '0x' + byte.repeat(32);
 const address = byte => '0x' + byte.repeat(20);
@@ -62,6 +62,35 @@ function node({ failL1 = false, indexUnavailable = false, noSettlement = false, 
   };
   return { rpc, calls };
 }
+
+test('unified lookup detects transactions and blocks and respects explicit chains', async () => {
+  const base = node();
+  const rpc = (url, method, params) => method === 'eth_getBlockByHash' && params[0] !== (url.includes('l1') ? l1Hash : l2Hash)
+    ? Promise.resolve(null) : base.rpc(url, method, params);
+  const transaction = await inspectExecution(l2TxHash, 'auto', 'auto', rpc);
+  assert.equal(transaction.kind, 'transaction'); assert.equal(transaction.context.selected.tx.hash, l2TxHash);
+  const byHash = await inspectExecution(l2Hash, 'auto', 'auto', rpc);
+  assert.equal(byHash.kind, 'block'); assert.equal(byHash.context.sourceChain, 'l2');
+  const byNumber = await inspectExecution('100', 'auto', 'auto', rpc);
+  assert.equal(byNumber.kind, 'block'); assert.equal(byNumber.context.sourceChain, 'l1');
+  assert.equal((await inspectExecution('7', 'l2', 'auto', rpc)).context.sourceChain, 'l2');
+  assert.equal((await inspectExecution('latest', 'l2', 'auto', rpc)).context.sourceChain, 'l2');
+  await assert.rejects(inspectExecution(hash('ff'), 'auto', 'auto', rpc), /Transaction not found.*Block lookup failed/);
+  await assert.rejects(inspectExecution('garbage', 'auto', 'auto', rpc), /transaction hash, block number/);
+});
+
+test('unified lookup preserves ambiguous hashes and transaction inspection failures', async () => {
+  const base = node();
+  const ambiguous = (url, method, params) => method === 'eth_getTransactionByHash' ? Promise.resolve(l1Tx) : base.rpc(url, method, params);
+  await assert.rejects(inspectExecution(l1TxHash, 'auto', 'auto', ambiguous), /exists on both chains/);
+  assert.equal(base.calls.length, 0, 'ambiguous transactions must not fall through to block inspection');
+  await assert.rejects(inspectExecution(l1Hash, 'auto', 'block', base.rpc), /block hash exists on both chains/);
+  assert.equal((await inspectExecution(l1Hash, 'l1', 'block', base.rpc)).context.sourceChain, 'l1');
+  const missing = (url, method, params) => method === 'eth_getBlockByHash' ? Promise.resolve(null) : base.rpc(url, method, params);
+  await assert.rejects(inspectExecution(l1TxHash, 'l1', 'auto', missing), /block .*not found/);
+  const offline = async () => { throw new Error('RPC offline'); };
+  await assert.rejects(inspectExecution(hash('ff'), 'auto', 'auto', offline), /RPC errors:.*RPC offline.*Block lookup failed/);
+});
 
 test('current and deployed L2 ABI selectors and packed L1 batch stay pinned', () => {
   const selectors = eezL2Abi.filter(item => item.type === 'function').map(toFunctionSelector);
@@ -500,6 +529,10 @@ test('inspection links restore a Live batch and separate L2 selection without fo
   const params = new URLSearchParams(route.split('?')[1]);
   assert.equal(params.get('mode'), 'live'); assert.equal(params.get('batch'), l1TxHash); assert.equal(params.get('selected'), l2TxHash); assert.equal(params.get('selectedChain'), 'l2'); assert.equal(params.get('event'), '4'); assert.equal(params.get('tab'), 'entries'); assert.equal(params.has('tx'), false);
   assert.equal(new URLSearchParams(inspectionHash({ mode: 'debug', chain: 'l1', source: l1TxHash, selected: tx }).split('?')[1]).get('tx'), l1TxHash);
+  const block = new URLSearchParams(inspectionHash({ mode: 'inspect', kind: 'block', chain: 'l2', source: l2Hash }).split('?')[1]);
+  assert.equal(block.get('mode'), 'inspect'); assert.equal(block.get('block'), l2Hash); assert.equal(block.has('tx'), false);
+  const transaction = new URLSearchParams(inspectionHash({ mode: 'inspect', kind: 'transaction', chain: 'l2', source: l2TxHash }).split('?')[1]);
+  assert.equal(transaction.get('tx'), l2TxHash); assert.equal(transaction.has('block'), false);
 });
 
 test('trace decoding uses local protocol ABI and preserves unknown contract data', async () => {
