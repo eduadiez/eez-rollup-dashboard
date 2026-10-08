@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 export interface TxRecord {
   id: string;
+  /** Includes historical faucet records; new actions no longer create them. */
   type: "deploy" | "increment" | "cross-chain-proxy" | "cross-chain-call" | "faucet";
   hash: string | null;
   status: "pending" | "confirmed" | "failed";
@@ -37,7 +38,7 @@ export function useTxHistory() {
 
   /** Add a new pending tx. Returns the record id for later updates. */
   const addTx = useCallback(
-    (type: TxRecord["type"], label: string, hash: string | null = null): string => {
+    (type: Exclude<TxRecord["type"], "faucet">, label: string, hash: string | null = null): string => {
       const id = `tx-${Date.now()}-${++idCounter}`;
       const record: TxRecord = {
         id,

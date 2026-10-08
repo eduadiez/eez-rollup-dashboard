@@ -10,7 +10,6 @@ import { useBridge } from "./hooks/useBridge";
 import { useTxHistory } from "./hooks/useTxHistory";
 import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
-import { useFaucet } from "./hooks/useFaucet";
 import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
 // NodeHealth merged into Header
@@ -19,7 +18,6 @@ import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
 import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
 import { BridgePanel } from "./components/BridgePanel";
-import { FaucetPanel } from "./components/FaucetPanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
 import styles from "./App.module.css";
 
@@ -74,7 +72,6 @@ export function App() {
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
-  const faucet = useFaucet(log, wallet.address, configLoaded);
 
   const txHistory = useTxHistory();
 
@@ -224,36 +221,6 @@ export function App() {
     prevBridgePhase.current = phase;
   }, [bridgeHook.state.phase, bridgeHook.state.txHash]);
 
-  // Track faucet transactions in history
-  const faucetTxRef = useRef<string | null>(null);
-  const prevFaucetPhase = useRef(faucet.state.phase);
-
-  useEffect(() => {
-    const { phase, txHash, chain } = faucet.state;
-
-    if (phase === "sending" && prevFaucetPhase.current !== "sending") {
-      const addr = wallet.address ? `${wallet.address.slice(0, 10)}...` : "?";
-      faucetTxRef.current = txHistory.addTx(
-        "faucet",
-        `Faucet 0.5 ETH to ${addr} (${chain.toUpperCase()})`,
-      );
-    }
-
-    if (txHash && faucetTxRef.current && phase === "tx-pending") {
-      txHistory.updateTx(faucetTxRef.current, { hash: txHash });
-    }
-
-    if ((phase === "confirmed" || phase === "failed") && faucetTxRef.current) {
-      txHistory.updateTx(faucetTxRef.current, {
-        status: phase === "confirmed" ? "confirmed" : "failed",
-        hash: txHash ?? undefined,
-      });
-      faucetTxRef.current = null;
-    }
-
-    prevFaucetPhase.current = phase;
-  }, [faucet.state.phase, faucet.state.txHash]);
-
   // Track auto-detected proxy from ProxyDeploySection (on-chain but not in localStorage)
   const [autoDetectedProxy, setAutoDetectedProxy] = useState<string | null>(null);
 
@@ -356,17 +323,6 @@ export function App() {
           <div className={styles.content}>
             {dashboardTab === "dashboard" && (
               <>
-                <FaucetPanel
-                  state={faucet.state}
-                  ready={faucet.ready}
-                  cooldownRemaining={faucet.cooldownRemaining}
-                  faucetBalance={faucet.faucetBalance}
-                  walletAddress={wallet.address}
-                  onSetChain={faucet.setChain}
-                  onRequestFunds={faucet.requestFunds}
-                  onDismiss={faucet.dismiss}
-                />
-
                 <ProxyDeploySection
                   state={crossChainGeneric.state}
                   targetAddress={genericTargetAddr}

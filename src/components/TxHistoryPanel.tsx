@@ -59,7 +59,6 @@ function StatusBadge({ status }: { status: TxRecord["status"] }) {
 function txChain(type: TxRecord["type"]): "l1" | "l2" {
   return type === "deploy" || type === "increment" ? "l2" : "l1";
 }
-// Note: faucet txs always go through L1 (direct transfer or bridge deposit), so "l1" is correct
 
 /** Resolve the receipt on either chain, then use the node's exact settlement index. */
 async function fetchBlockInfo(hash: string, preferred: "l1" | "l2"): Promise<BlockInfo | null> {

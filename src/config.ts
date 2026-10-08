@@ -37,10 +37,6 @@ export const config = {
   reverseExecutorL2: params.get("reverseExecutorL2") || "",
   reverseNftL1: params.get("reverseNftL1") || "",
   reverseExecutorL1: params.get("reverseExecutorL1") || "",
-  /** Faucet address — loaded from runtime config or URL param */
-  faucetAddress: params.get("faucetAddress") || "",
-  /** Local-only Kurtosis faucet signer; never configured on public networks. */
-  demoPrivateKey: "",
   /** L2 CrossChainManager address — loaded from runtime config */
   ccmL2Address: params.get("ccmL2") || "",
   /** Aggregator contract addresses (loaded from runtime config) */

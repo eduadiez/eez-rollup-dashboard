@@ -15,7 +15,6 @@ The application preserves the original sync-rollups POC screens:
 - Bidirectional ETH/ERC-20 bridge
 - Nested flash loan
 - Aggregator
-- Faucet
 - Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
 
@@ -34,9 +33,9 @@ finality details reconcile separately without delaying live heads. Optional
 Beacon, Blobscan, and settlement-policy settings are in `.env.example`.
 
 Feature availability depends on the contracts deployed by the target network.
-The current defensive-checks devnet supports the counter, bridge, faucet, and
-forward flash-loan flows. Its reverse-flash and aggregator contracts are not yet
-deployed, so those screens are present but not operational.
+The counter and bridge require their configured contracts. Flash-loan and
+aggregator components remain in the source but are not enabled in navigation.
+Transactions require a connected browser wallet such as Rabby or MetaMask.
 
 ## Deployment architecture
 
@@ -68,10 +67,6 @@ configured upstreams, avoiding browser CORS and mixed-content problems.
 The Compose defaults target the public-forwarder ports used by the local EEZ
 development network. On Linux, `host.docker.internal` is mapped automatically to
 the Docker host.
-
-Never put a production or valuable private key in `.env`. The optional demo key
-is delivered to every browser through `config.json` and is intended only for a
-disposable private devnet.
 
 ## Independent deployment behind a gateway
 
@@ -148,7 +143,7 @@ All contract addresses can be supplied as environment variables listed in
 `.env.example`. The container also supports the Kurtosis artifact mounts
 `/out/deployments.env` and `/demo/demo.env`.
 
-The browser reads `config.json` for runtime addresses and local demo settings.
+The browser reads `config.json` for runtime addresses and optional demo contract addresses.
 It does not request the legacy `/shared/rollup.env` or `/shared/faucet.key` files.
 
 ## Kurtosis integration
@@ -216,6 +211,7 @@ node tests/gas-estimation-unfunded.test.mjs
 # Against a running UI, with Playwright installed:
 node tests/bridge-gas-fees.cjs
 node tests/bridge-readiness.cjs
+node tests/wallet-startup.cjs
 ```
 
 ## Execution visualizer

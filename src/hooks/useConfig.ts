@@ -17,14 +17,12 @@ type RuntimeConfig = {
   bridgeL2Address?: string;
   rollupId?: string;
   demoBridgeAddress?: string;
-  demoPrivateKey?: string;
   demoTokenAddress?: string;
   demoPoolAddress?: string;
   demoExecutorL1?: string;
   demoExecutorL2?: string;
   demoWrappedTokenL2?: string;
   demoNftL2?: string;
-  faucetAddress?: string;
   reverseExecutorL2?: string;
   reverseNftL1?: string;
   reverseExecutorL1?: string;
@@ -76,7 +74,6 @@ export function useConfigLoader() {
               l1Bridge: runtime.demoBridgeAddress,
               l2Bridge: runtime.demoBridgeAddress,
             } : {}),
-            ...(runtime.demoPrivateKey ? { demoPrivateKey: runtime.demoPrivateKey } : {}),
             ...(runtime.demoExecutorL1 ? { flashExecutorL1: runtime.demoExecutorL1 } : {}),
             ...(runtime.demoTokenAddress ? { flashTokenAddress: runtime.demoTokenAddress } : {}),
             ...(runtime.demoPoolAddress ? { flashPoolAddress: runtime.demoPoolAddress } : {}),
@@ -84,7 +81,6 @@ export function useConfigLoader() {
             ...(runtime.demoExecutorL2 ? { flashExecutorL2: runtime.demoExecutorL2 } : {}),
             ...(runtime.demoWrappedTokenL2 ? { flashWrappedTokenL2: runtime.demoWrappedTokenL2 } : {}),
             ...(runtime.l2ContractAddress ? { ccmL2Address: runtime.l2ContractAddress } : {}),
-            ...(runtime.faucetAddress ? { faucetAddress: runtime.faucetAddress } : {}),
             ...(runtime.reverseExecutorL2 ? { reverseExecutorL2: runtime.reverseExecutorL2 } : {}),
             ...(runtime.reverseNftL1 ? { reverseNftL1: runtime.reverseNftL1 } : {}),
             ...(runtime.reverseExecutorL1 ? { reverseExecutorL1: runtime.reverseExecutorL1 } : {}),
