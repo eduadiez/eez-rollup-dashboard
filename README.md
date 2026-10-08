@@ -29,10 +29,18 @@ including live WebSockets.
 Dashboard combines Bridge on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
 Bridge above the proxy workflow. Saved `#/bridge` links open this combined view;
-wallet RPC guidance and advanced gas settings stay expandable. Proxy selection
+advanced gas settings stay expandable. Proxy selection
 and call preparation share a panel, while bridge recipients default to the
 connected wallet with an optional address editor. Transaction history supports
 All, Bridge, and Calls filters, including previously saved bridge records.
+
+Set `EEZ_UI_NETWORK_NAME` in `.env` to the rollup's display name (for example,
+`EEZ-X Devnet`). Runtime `networkName` supplies the bridge's L2 labels and the
+network name used when adding L2 to a wallet. Bridge previews show the exact
+transfer amount; gas is paid separately. Saved wallet networks may retain their
+previous name and RPC; cross-chain transactions use `/composer/l1` or
+`/composer/l2` for their source network.
+
 One root `.env` and Compose project configure both services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head

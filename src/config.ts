@@ -5,6 +5,8 @@ const ORIGIN = window.location.origin;
 const absolute = (path: string) => new URL(path, ORIGIN).toString();
 
 export const config = {
+  /** Human-readable rollup name, supplied by runtime networkName. */
+  rollupName: "EEZ L2",
   /** L1 RPC endpoint */
   l1Rpc: params.get("l1") || absolute("/rpc/l1"),
   /** L2 RPC endpoint (builder) */
@@ -56,6 +58,7 @@ export function setConfig(updates: Partial<typeof config>) {
   Object.assign(config, updates);
   if (updates.l1ProxyRpc) L1_CHAIN.rpcUrls = [updates.l1ProxyRpc];
   if (updates.l2ProxyRpc) L2_CHAIN.rpcUrls = [updates.l2ProxyRpc];
+  if (updates.rollupName) L2_CHAIN.chainName = updates.rollupName;
 }
 
 /** L1 chain definition for wallet_addEthereumChain — populated at runtime */
@@ -71,7 +74,7 @@ export const L1_CHAIN = {
  * mempool and holding only L2→L1 cross-chain calls. */
 export const L2_CHAIN = {
   chainId: "0xa455", // default 42069, auto-detected on init
-  chainName: "EEZ L2",
+  chainName: config.rollupName,
   rpcUrls: [config.l2ProxyRpc],
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
 };

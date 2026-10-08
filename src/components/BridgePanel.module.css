@@ -20,23 +20,6 @@
 .card.card.card::before { display: none; }
 .card :global(.btn-block) { min-height: 44px; font-size: 13px; }
 
-.rpcSettings {
-  margin-bottom: 12px;
-  border-top: 1px solid var(--border);
-}
-.rpcSettings summary {
-  padding: 10px 0;
-  font: 500 12px/1.5 var(--sans);
-  color: var(--text-dim);
-  cursor: pointer;
-}
-.rpcSettings summary:hover { color: var(--text); }
-.rpcSettings summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.rpcSettings .section { margin-bottom: 0; }
-
 .cardHeader {
   display: flex;
   align-items: center;
@@ -61,10 +44,11 @@
 /* --- DIRECTION BAR --- */
 
 .directionBar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 12px;
   margin-bottom: 20px;
   background: var(--bg-inset);
   border: 1px solid var(--border);
@@ -72,40 +56,39 @@
 }
 
 .chainBadge {
-  flex: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
   align-items: center;
-  gap: 10px;
+  column-gap: 8px;
+  row-gap: 2px;
+  min-width: 0;
 }
 
 .chainIcon {
-  width: 36px;
+  grid-column: 1;
+  grid-row: 1 / -1;
+  width: 28px;
   height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--accent-dim);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent-light);
-  border: 1px solid var(--green-border);
-  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .chainName {
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  font: 600 13px/1.35 var(--sans);
   color: var(--text-bright);
+  overflow-wrap: anywhere;
 }
 
 .chainRole {
-  font-size: 12px;
+  grid-column: 2;
+  grid-row: 2;
+  font: 400 11px/1.5 var(--mono);
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: .02em;
 }
 
 .swapBtn {
@@ -120,7 +103,7 @@
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.2s;
-  flex-shrink: 0;
+  align-self: center;
 }
 
 .swapBtn:hover {
@@ -356,10 +339,17 @@
 
 @media (max-width: 640px) {
   .card { padding: 20px; }
-  .directionBar { padding: 12px 10px; gap: 6px; }
-  .chainBadge { gap: 6px; }
-  .chainIcon { width: 30px; height: 30px; }
+  .directionBar { padding: 12px 10px; gap: 8px; }
+  .chainBadge { grid-template-columns: 24px minmax(0, 1fr); column-gap: 6px; }
+  .chainIcon { width: 24px; height: 32px; }
   .amountSection { padding: 12px; }
+}
+
+@media (max-width: 360px) {
+  .chainBadge { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; row-gap: 4px; }
+  .chainIcon { grid-column: 1; grid-row: 1; }
+  .chainName { grid-column: 1; grid-row: 2; }
+  .chainRole { grid-column: 1; grid-row: 3; }
 }
 
 /* --- VALIDATION --- */

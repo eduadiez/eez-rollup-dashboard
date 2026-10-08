@@ -55,6 +55,7 @@ async function fixture(browser, options = {}) {
       configRequested = true;
       if (options.configGate) await options.configGate.promise;
       return route.fulfill({ json: {
+        networkName: 'EEZ-X Devnet',
         bridgeL1Address: bridge.l1, bridgeL2Address: bridge.l2,
         l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
         l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
@@ -133,9 +134,10 @@ async function fixture(browser, options = {}) {
     assert.equal(f.calls.length, inFlight, 'slow readiness checks must not overlap');
     readGate.release();
     await until(() => f.button.isEnabled(), 'ready bridge waited for the 10-second retry');
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l1', origin).href);
+    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('Ethereum L1').count(), 1);
     await f.page.getByTitle('Swap direction').click();
-    assert.equal(await f.page.getByLabel('Bridge wallet RPC').inputValue(), new URL('/composer/l2', origin).href);
+    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('EEZ-X Devnet').count(), 1);
+    assert.equal(await f.page.getByLabel('Bridge wallet RPC').count(), 0);
     assert.deepEqual(await f.page.evaluate(() => window.bridgeMissingMessages), [],
       'a false missing-deployment warning appeared during startup');
     results.push('Delayed config/readiness: no false warning; disabled until ready; immediate check; no overlapping reads; both RPC directions');

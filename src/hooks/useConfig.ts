@@ -4,6 +4,7 @@ import { rpcCall } from "../rpc";
 import { registerConfiguredContracts } from "../lib/addressBook";
 
 type RuntimeConfig = {
+  networkName?: string;
   l1RpcUrl?: string;
   l2RpcUrl?: string;
   l1FrontUrl?: string;
@@ -54,11 +55,13 @@ export function useConfigLoader() {
         if (response.ok) {
           const payload = (await response.json()) as RuntimeConfig & { browser?: RuntimeConfig };
           const runtime: RuntimeConfig = payload.browser ?? payload;
+          const rollupName = runtime.networkName?.trim() || payload.networkName?.trim();
           const l1Rpc = absoluteUrl(runtime.l1RpcUrl);
           const l2Rpc = absoluteUrl(runtime.l2RpcUrl);
           const l1ProxyRpc = absoluteUrl(runtime.l1FrontUrl);
           const l2ProxyRpc = absoluteUrl(runtime.l2FrontUrl);
           setConfig({
+            ...(rollupName ? { rollupName } : {}),
             ...(l1Rpc ? { l1Rpc } : {}),
             ...(l2Rpc ? { l2Rpc } : {}),
             ...(l1ProxyRpc ? { l1ProxyRpc } : {}),
@@ -120,8 +123,7 @@ export function useConfigLoader() {
           "eth_chainId",
         )) as string;
         L2_CHAIN.chainId = l2ChainId;
-        const dec = parseInt(l2ChainId, 16);
-        L2_CHAIN.chainName = `EEZ L2 (${dec})`;
+        L2_CHAIN.chainName = config.rollupName;
       } catch {
         /* keep defaults */
       }

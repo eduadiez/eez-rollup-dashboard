@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { formatUnits } from "viem";
 import type { BridgeState, BridgeDirection, BridgeAsset, TokenMeta } from "../hooks/useBridge";
 import { config } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
 import { TxLink } from "./TxLink";
 import styles from "./BridgePanel.module.css";
+import ethereumIcon from "../styles/brand/ethereum-icon.svg";
+import eezIcon from "../styles/brand/eez-icon.svg";
 
 interface Props {
   state: BridgeState;
@@ -21,6 +24,18 @@ interface Props {
   onGasOverride: (gasHex: string | null) => void;
 }
 
+function NetworkBadge({ chain, role }: { chain: "l1" | "l2"; role: "Source" | "Destination" }) {
+  const isL1 = chain === "l1";
+  const name = isL1 ? "Ethereum L1" : config.rollupName;
+  return (
+    <div className={styles.chainBadge} role="group" aria-label={`${role} network`}>
+      <img className={styles.chainIcon} src={isL1 ? ethereumIcon : eezIcon} alt={isL1 ? "Ethereum" : "EEZ"} />
+      <div className={styles.chainName} title={name}>{name}</div>
+      <div className={styles.chainRole}>{role}</div>
+    </div>
+  );
+}
+
 function DirectionSelector({
   direction,
   onSwap,
@@ -31,30 +46,14 @@ function DirectionSelector({
   const isL1Source = direction === "l1-to-l2";
   return (
     <div className={styles.directionBar}>
-      <div className={styles.chainBadge}>
-        <div className={styles.chainIcon}>{isL1Source ? "L1" : "L2"}</div>
-        <div>
-          <div className={styles.chainName}>
-            {isL1Source ? "Ethereum L1" : "Rollup L2"}
-          </div>
-          <div className={styles.chainRole}>Source</div>
-        </div>
-      </div>
+      <NetworkBadge chain={isL1Source ? "l1" : "l2"} role="Source" />
       <button className={styles.swapBtn} onClick={onSwap} title="Swap direction">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M7 16l-4-4 4-4" /><path d="M17 8l4 4-4 4" />
           <path d="M3 12h18" />
         </svg>
       </button>
-      <div className={styles.chainBadge} style={{ justifyContent: "flex-end", textAlign: "right" }}>
-        <div>
-          <div className={styles.chainName}>
-            {isL1Source ? "Rollup L2" : "Ethereum L1"}
-          </div>
-          <div className={styles.chainRole}>Destination</div>
-        </div>
-        <div className={styles.chainIcon}>{isL1Source ? "L2" : "L1"}</div>
-      </div>
+      <NetworkBadge chain={isL1Source ? "l2" : "l1"} role="Destination" />
     </div>
   );
 }
@@ -201,19 +200,21 @@ function AmountSection({
 }
 
 function ReceivePreview({
-  amount,
+  rawAmount,
+  decimals,
   asset,
   tokenMeta,
   direction,
 }: {
-  amount: string;
+  rawAmount: bigint;
+  decimals: number;
   asset: BridgeAsset;
   tokenMeta: TokenMeta | null;
   direction: BridgeDirection;
 }) {
-  if (!amount || amount === "0") return null;
+  if (rawAmount <= 0n) return null;
   const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
-  const destChain = direction === "l1-to-l2" ? "Rollup L2" : "Ethereum L1";
+  const destChain = direction === "l1-to-l2" ? config.rollupName : "Ethereum L1";
 
   return (
     <div className={styles.receivePreview}>
@@ -221,7 +222,7 @@ function ReceivePreview({
         <div className={styles.sectionTitle}>You receive</div>
         <div className={styles.receiveChain}>on {destChain}</div>
       </div>
-      <div className={styles.receiveAmount}>~{amount} {symbol}</div>
+      <div className={styles.receiveAmount}>{formatUnits(rawAmount, decimals)} {symbol}</div>
     </div>
   );
 }
@@ -271,7 +272,6 @@ export function BridgePanel({
   const busy = !["idle", "confirmed", "failed"].includes(phase);
   const sourceBridgeReady = direction === "l1-to-l2" ? l1BridgeReady : l2BridgeReady;
   const sourceBridgeError = direction === "l1-to-l2" ? state.l1BridgeError : state.l2BridgeError;
-  const sourceRpc = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
   const bridgeConfigured = direction === "l1-to-l2" ? !!config.l1Bridge : !!config.l2Bridge;
 
   // Determine if approval is needed
@@ -372,7 +372,8 @@ export function BridgePanel({
 
       {/* Receive preview */}
       <ReceivePreview
-        amount={amount}
+        rawAmount={rawAmount}
+        decimals={decimals}
         asset={asset}
         tokenMeta={tokenMeta}
         direction={direction}
@@ -433,19 +434,6 @@ export function BridgePanel({
           />
         </div>
       )}
-
-      <details className={styles.rpcSettings}>
-        <summary>Wallet RPC settings</summary>
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Source network RPC</div>
-          <input className={styles.input} aria-label="Bridge wallet RPC" readOnly
-            value={sourceRpc} onClick={(event) => event.currentTarget.select()} />
-          <div className={styles.validationHint}>
-            Set this RPC for the source network in your wallet before bridging.
-            An existing network may keep its previously selected RPC.
-          </div>
-        </div>
-      </details>
 
       {/* Gas settings are already collapsed; keep estimation errors visible. */}
       {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
