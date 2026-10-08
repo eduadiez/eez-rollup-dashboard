@@ -49,8 +49,9 @@ Detected proxies can be saved explicitly, or imported by entering their source
 address alongside the destination. Saving verifies the registry mapping and
 deployed code without sending a transaction. Removing a saved row only clears
 its browser entry; removing the selected proxy also clears the call form.
-The saved-proxy table lists the proxy first, then its origin-network logo,
-destination address, and destination-network logo, followed by row actions.
+The saved-proxy table pairs the origin-network logo with its proxy address,
+then an arrow separates the destination-network logo and destination address.
+Row actions follow; mobile rows stack the two pairs with a downward arrow.
 Prepare Call shows both network names and shortened source/destination addresses,
 with full addresses available in tooltips, explorer links, and clipboard copies.
 Recent addresses reflow within the form rather than overlapping call preparation.
