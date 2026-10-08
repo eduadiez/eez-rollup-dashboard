@@ -134,7 +134,7 @@ async function fixture(browser, options = {}) {
     assert.equal(f.calls.length, inFlight, 'slow readiness checks must not overlap');
     readGate.release();
     await until(() => f.button.isEnabled(), 'ready bridge waited for the 10-second retry');
-    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('Ethereum L1').count(), 1);
+    assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('Chiado').count(), 1);
     await f.page.getByTitle('Swap direction').click();
     assert.equal(await f.page.getByRole('group', { name: 'Source network' }).getByText('EEZ-X Devnet').count(), 1);
     assert.equal(await f.page.getByLabel('Bridge wallet RPC').count(), 0);

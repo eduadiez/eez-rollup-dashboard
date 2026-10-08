@@ -5,6 +5,8 @@ import { config } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
 import { TxLink } from "./TxLink";
 import styles from "./BridgePanel.module.css";
+import { BridgeTokenPicker } from "./BridgeTokenPicker";
+import gnosisIcon from "../styles/brand/gnosis-icon.svg";
 import ethereumIcon from "../styles/brand/ethereum-icon.svg";
 import eezIcon from "../styles/brand/eez-icon.svg";
 
@@ -26,10 +28,12 @@ interface Props {
 
 function NetworkBadge({ chain, role }: { chain: "l1" | "l2"; role: "Source" | "Destination" }) {
   const isL1 = chain === "l1";
-  const name = isL1 ? "Ethereum L1" : config.rollupName;
+  const name = isL1 ? config.l1NetworkName : config.rollupName;
+  const logo = isL1 ? (config.l1NetworkLogoUrl || (config.l1NetworkLogo === "ethereum" ? ethereumIcon : config.l1NetworkLogo === "gnosis" ? gnosisIcon : null)) : eezIcon;
   return (
     <div className={styles.chainBadge} role="group" aria-label={`${role} network`}>
-      <img className={styles.chainIcon} src={isL1 ? ethereumIcon : eezIcon} alt={isL1 ? "Ethereum" : "EEZ"} />
+      {logo ? <img className={`${styles.chainIcon} ${isL1 && !config.l1NetworkLogoUrl && config.l1NetworkLogo === "gnosis" ? styles.gnosisIcon : ""}`} src={logo} alt={isL1 ? name : "EEZ"} /> :
+        <svg className={styles.chainIcon} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2 22 7v10l-10 5-10-5V7zM2 7l10 5 10-5M12 12v10" /></svg>}
       <div className={styles.chainName} title={name}>{name}</div>
       <div className={styles.chainRole}>{role}</div>
     </div>
@@ -81,56 +85,6 @@ function AssetToggle({
       >
         ERC20
       </button>
-    </div>
-  );
-}
-
-function TokenInput({
-  tokenAddress,
-  tokenMeta,
-  recentTokens,
-  onAddressChange,
-}: {
-  tokenAddress: string;
-  tokenMeta: TokenMeta | null;
-  recentTokens: TokenMeta[];
-  onAddressChange: (addr: string) => void;
-}) {
-  const isValid = !tokenAddress || /^0x[0-9a-fA-F]{40}$/.test(tokenAddress);
-
-  return (
-    <div className={styles.section}>
-      <div className={styles.sectionTitle}>Token Address</div>
-      <input
-        type="text"
-        className={styles.input}
-        value={tokenAddress}
-        onChange={(e) => onAddressChange(e.target.value)}
-        placeholder="0x... (ERC20 token address)"
-      />
-      {!isValid && (
-        <div className={styles.validationHint}>Enter a valid contract address</div>
-      )}
-      {tokenMeta && (
-        <div className={styles.tokenMeta}>
-          <span className={styles.tokenMetaSymbol}>{tokenMeta.symbol}</span>
-          <span>{tokenMeta.name} ({tokenMeta.decimals} decimals)</span>
-        </div>
-      )}
-      {recentTokens.length > 0 && (
-        <div className={styles.recentTokens}>
-          {recentTokens.map((t) => (
-            <button
-              key={t.address}
-              className={styles.recentChip}
-              onClick={() => onAddressChange(t.address)}
-              title={`${t.name} (${t.symbol})`}
-            >
-              {t.symbol} {t.address.slice(0, 6)}...{t.address.slice(-4)}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -214,7 +168,7 @@ function ReceivePreview({
 }) {
   if (rawAmount <= 0n) return null;
   const symbol = asset === "eth" ? "ETH" : (tokenMeta?.symbol || "tokens");
-  const destChain = direction === "l1-to-l2" ? config.rollupName : "Ethereum L1";
+  const destChain = direction === "l1-to-l2" ? config.rollupName : config.l1NetworkName;
 
   return (
     <div className={styles.receivePreview}>
@@ -350,7 +304,10 @@ export function BridgePanel({
 
       {/* Token address input (ERC20 only) */}
       {asset === "erc20" && (
-        <TokenInput
+        <BridgeTokenPicker
+          direction={direction}
+          walletAddress={walletAddress}
+          disabled={busy}
           tokenAddress={tokenAddress}
           tokenMeta={tokenMeta}
           recentTokens={recentTokens}

@@ -14,6 +14,10 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       EEZ_UI_NETWORK_NAME: "${EEZ_UI_NETWORK_NAME:-EEZ development network}"
+      EEZ_UI_L1_NETWORK_NAME: "${EEZ_UI_L1_NETWORK_NAME:-}"
+      EEZ_UI_L1_NETWORK_LOGO_URL: "${EEZ_UI_L1_NETWORK_LOGO_URL:-}"
+      EEZ_UI_L1_EXPLORER_API_URL: "${EEZ_UI_L1_EXPLORER_API_URL:-}"
+      EEZ_UI_TOKEN_LIST_URL: "${EEZ_UI_TOKEN_LIST_URL:-}"
       EEZ_UI_ENCLAVE: "${EEZ_UI_ENCLAVE:-standalone}"
       EEZ_UI_LISTEN: "8080"
       EEZ_UI_MONITOR_UPSTREAM: "monitor:8080"

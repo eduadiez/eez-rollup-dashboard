@@ -208,7 +208,7 @@ export function CrossChainCallBuilder({
     return (
       <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
         <div className={styles.cardHeader}>
-          <span className={styles.cardTitle}>{embedded ? "Prepare call" : "Execute Cross-Chain Call"}</span>
+          <span className={styles.cardTitle}>{embedded ? "[ PREPARE CALL ]" : "Execute Cross-Chain Call"}</span>
         </div>
         <div className={styles.noProxy}>
           {validTarget
@@ -229,7 +229,7 @@ export function CrossChainCallBuilder({
   return (
     <div className={`${styles.card} ${embedded ? styles.embedded : ""}`} data-call-builder>
       <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>{embedded ? "Prepare call" : "Execute Cross-Chain Call"}</span>
+        <span className={styles.cardTitle}>{embedded ? "[ PREPARE CALL ]" : "Execute Cross-Chain Call"}</span>
         <span className={styles.subtitle}>L1 Proxy → L2</span>
       </div>
 

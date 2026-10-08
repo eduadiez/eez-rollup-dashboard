@@ -41,6 +41,31 @@ transfer amount; gas is paid separately. Saved wallet networks may retain their
 previous name and RPC; cross-chain transactions use `/composer/l1` or
 `/composer/l2` for their source network.
 
+L1 labels and logos are detected from `eth_chainId`: Ethereum, Gnosis, Chiado,
+or Sepolia. Labels do not append “L1.” Override the display name or logo with
+`EEZ_UI_L1_NETWORK_NAME` and `EEZ_UI_L1_NETWORK_LOGO_URL` (runtime
+`l1NetworkName` / `l1NetworkLogoUrl`). Unknown chains get a neutral icon and
+chain ID. These display settings do not change RPCs or transaction routing.
+
+ERC20 bridging supports a searchable token picker alongside manual address
+entry. “Known” includes a small Ethereum mainnet catalog of common contract
+metadata verified against the [Uniswap default token list](https://github.com/Uniswap/default-token-list).
+It is filtered by the source chain; those addresses are never offered on Chiado
+or an EEZ rollup. Configure `EEZ_UI_TOKEN_LIST_URL` (runtime `tokenListUrl`) with
+a CORS-enabled list in the standard `{ "tokens": [{ "chainId", "address",
+"name", "symbol", "decimals" }] }` format to supply deployment-specific tokens.
+Use the actual wrapped-token addresses for L2.
+
+“Your tokens” uses the source explorer's Blockscout v2 token-balances API when
+available. Set `EEZ_UI_L1_EXPLORER_API_URL` (runtime `l1ExplorerApiUrl`) for L1;
+L2 reuses `EEZ_UI_L2_EXPLORER_API_URL`. Without a working indexer, it checks
+balances of up to 24 known/recent tokens through the source read RPC, so it
+cannot discover every token. Discovery runs only when the picker opens; failures
+leave address entry available. “Recent” is stored per source chain; older records
+without a chain ID are not offered. Selection still runs the bridge's on-chain
+metadata, balance, approval, and gas checks. A token appearing in the list does
+not guarantee that the deployed bridge supports it.
+
 One root `.env` and Compose project configure both services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head

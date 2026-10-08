@@ -7,6 +7,12 @@ const absolute = (path: string) => new URL(path, ORIGIN).toString();
 export const config = {
   /** Human-readable rollup name, supplied by runtime networkName. */
   rollupName: "EEZ L2",
+  l1NetworkName: "L1 network",
+  l1NetworkLogo: "generic" as "ethereum" | "gnosis" | "generic",
+  l1NetworkLogoUrl: "",
+  /** Optional Blockscout API and chain-filtered public token list. */
+  l1ExplorerApi: "",
+  tokenListUrl: "",
   /** L1 RPC endpoint */
   l1Rpc: params.get("l1") || absolute("/rpc/l1"),
   /** L2 RPC endpoint (builder) */
@@ -59,6 +65,7 @@ export function setConfig(updates: Partial<typeof config>) {
   if (updates.l1ProxyRpc) L1_CHAIN.rpcUrls = [updates.l1ProxyRpc];
   if (updates.l2ProxyRpc) L2_CHAIN.rpcUrls = [updates.l2ProxyRpc];
   if (updates.rollupName) L2_CHAIN.chainName = updates.rollupName;
+  if (updates.l1NetworkName) L1_CHAIN.chainName = updates.l1NetworkName;
 }
 
 /** L1 chain definition for wallet_addEthereumChain — populated at runtime */

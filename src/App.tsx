@@ -298,13 +298,14 @@ export function App() {
         </Suspense>
       ) : (
         <main id="main" tabIndex={-1} className={styles.page} data-dashboard>
-          <section className={styles.intro} aria-labelledby="page-heading">
+          <section className={`${styles.intro} eez-intro`} aria-labelledby="page-heading">
             <div>
-              <h1 id="page-heading" className={styles.heading}>Dashboard</h1>
-              <p className={styles.description}>Transfer assets and interact with contracts across L1 and L2.</p>
+              <p className="eez-eyebrow">[ NETWORK DASHBOARD ]</p>
+              <h1 id="page-heading" className="eez-page-heading"><strong>Dashboard.</strong> With EEZ.</h1>
+              <p className="eez-description">Transfer assets and interact with contracts across L1 and L2.</p>
             </div>
-            <a className={styles.quickstarts} href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
-              Quickstarts <span aria-hidden="true">↗</span>
+            <a className="eez-pill" href="https://eez-demos.vercel.app/" target="_blank" rel="noopener noreferrer">
+              Quickstarts <span className="eez-arrow" aria-hidden="true">→</span>
             </a>
           </section>
 

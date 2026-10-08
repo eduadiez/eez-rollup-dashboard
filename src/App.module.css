@@ -9,23 +9,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 28px 0 22px;
 }
-.heading { color: var(--text-bright); font: 600 28px/1.2 var(--sans); letter-spacing: -.025em; }
-.description { margin-top: 8px; color: var(--text-dim); font-size: 14px; }
-.quickstarts {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text);
-  font: 500 13px/1.5 var(--sans);
-  white-space: nowrap;
-  text-decoration: none;
-}
-.quickstarts:hover { color: var(--text-bright); border-color: var(--border-hover); }
 
 .tabs {
   display: flex;
@@ -53,20 +37,21 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   align-items: start;
-  gap: 24px;
+  gap: 16px;
 }
 .bridgeColumn { min-width: 0; }
 .proxyColumn {
+  composes: eez-card from global;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 20px 24px;
+  padding: 28px 26px 26px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-card);
 }
 .workflowHeader { margin-bottom: 24px; }
-.workflowHeader h2 { color: var(--text-bright); font: 600 18px/1.4 var(--sans); letter-spacing: -.01em; }
+.workflowHeader h2 { color: var(--text-bright); font: 600 17.5px/1.35 var(--sans); letter-spacing: -.01em; }
 .workflowHeader p { margin-top: 6px; color: var(--text-dim); font-size: 13px; }
 .footer {
   display: flex;
@@ -92,9 +77,9 @@
 }
 @media (max-width: 640px) {
   .page { padding: 0 18px 100px; }
-  .intro { align-items: flex-start; gap: 16px; flex-wrap: wrap; padding: 24px 0 18px; }
-  .heading { font-size: 24px; }
-  .proxyColumn { padding: 20px; }
+  .intro { align-items: flex-start; gap: 16px; flex-wrap: wrap;  }
+  .proxyColumn {
+  composes: eez-card from global; padding: 20px; }
   .tabs { gap: 6px; }
   .tab { padding: 8px 12px; font-size: 11px; }
   .footer { margin: 0 18px; flex-wrap: wrap; }

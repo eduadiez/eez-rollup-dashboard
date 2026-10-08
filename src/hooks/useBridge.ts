@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { config, ESTIMATION_SENDER } from "../config";
+import { config, ESTIMATION_SENDER, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import { estimateGas, estimateBridgeGas, GasEstimateError, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
 
@@ -18,6 +18,7 @@ export type BridgePhase =
   | "failed";
 
 export interface TokenMeta {
+  chainId?: number;
   name: string;
   symbol: string;
   decimals: number;
@@ -198,7 +199,7 @@ function loadRecentTokens(): TokenMeta[] {
 function saveRecentToken(token: TokenMeta) {
   const existing = loadRecentTokens();
   const filtered = existing.filter(
-    (t) => t.address.toLowerCase() !== token.address.toLowerCase(),
+    (t) => t.chainId !== token.chainId || t.address.toLowerCase() !== token.address.toLowerCase(),
   );
   const updated = [token, ...filtered].slice(0, MAX_RECENT_TOKENS);
   localStorage.setItem(RECENT_TOKENS_KEY, JSON.stringify(updated));
@@ -394,7 +395,7 @@ export function useBridge(
   // Fetch token metadata on address change (debounced)
   useEffect(() => {
     const { tokenAddress, asset, direction } = state;
-    if (asset !== "erc20" || !tokenAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenAddress)) {
+    if (!configLoaded || asset !== "erc20" || !tokenAddress || !/^0x[0-9a-fA-F]{40}$/.test(tokenAddress)) {
       setState((s) => ({ ...s, tokenMeta: null }));
       return;
     }
@@ -432,7 +433,8 @@ export function useBridge(
       } catch { /* fallback */ }
 
       if (!cancelled) {
-        const meta: TokenMeta = { name, symbol, decimals, address: tokenAddress };
+        const chainId = Number(BigInt(direction === "l1-to-l2" ? L1_CHAIN.chainId : L2_CHAIN.chainId));
+        const meta: TokenMeta = { name, symbol, decimals, address: tokenAddress, chainId };
         setState((s) => ({ ...s, tokenMeta: meta }));
         saveRecentToken(meta);
         setRecentTokens(loadRecentTokens());
@@ -440,7 +442,7 @@ export function useBridge(
     }, 300);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [state.tokenAddress, state.asset, state.direction]);
+  }, [state.tokenAddress, state.asset, state.direction, configLoaded]);
 
   // Gas estimation effect — runs when bridge params change
   useEffect(() => {

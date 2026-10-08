@@ -1,5 +1,9 @@
 {
   "networkName": "${EEZ_UI_NETWORK_NAME}",
+  "l1NetworkName": "${EEZ_UI_L1_NETWORK_NAME}",
+  "l1NetworkLogoUrl": "${EEZ_UI_L1_NETWORK_LOGO_URL}",
+  "l1ExplorerApiUrl": "${EEZ_UI_L1_EXPLORER_API_URL}",
+  "tokenListUrl": "${EEZ_UI_TOKEN_LIST_URL}",
   "enclave": "${EEZ_UI_ENCLAVE}",
   "l1RpcUrl": "/rpc/l1",
   "l2RpcUrl": "/rpc/l2",

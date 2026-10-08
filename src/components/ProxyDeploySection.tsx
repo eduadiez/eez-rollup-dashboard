@@ -161,7 +161,7 @@ export function ProxyDeploySection({
       {/* Header */}
       <div className={styles.cardHeader}>
         <div className={styles.headerLeft}>
-          <span className={styles.cardTitle}>{embedded ? "Select a proxy" : "Cross-Chain Proxies"}</span>
+          <span className={styles.cardTitle}>{embedded ? "[ SELECT A PROXY ]" : "Cross-Chain Proxies"}</span>
           {proxyCount > 0 && (
             <span className={styles.countBadge}>{proxyCount}</span>
           )}

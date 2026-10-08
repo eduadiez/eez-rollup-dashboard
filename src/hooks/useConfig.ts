@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { config, setConfig, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import { registerConfiguredContracts } from "../lib/addressBook";
+import { l1Identity } from "../lib/networkIdentity";
 
 type RuntimeConfig = {
   networkName?: string;
+  l1NetworkName?: string;
+  l1NetworkLogoUrl?: string;
+  l1ExplorerApiUrl?: string;
+  tokenListUrl?: string;
   l1RpcUrl?: string;
   l2RpcUrl?: string;
   l1FrontUrl?: string;
@@ -48,6 +53,7 @@ export function useConfigLoader() {
 
   useEffect(() => {
     (async () => {
+      let l1NameOverride = "";
       // Current EEZ/Kurtosis runtime configuration. The mapping below is the
       // compatibility layer between the POC UI names and the current network.
       try {
@@ -56,11 +62,16 @@ export function useConfigLoader() {
           const payload = (await response.json()) as RuntimeConfig & { browser?: RuntimeConfig };
           const runtime: RuntimeConfig = payload.browser ?? payload;
           const rollupName = runtime.networkName?.trim() || payload.networkName?.trim();
+          l1NameOverride = runtime.l1NetworkName?.trim() || payload.l1NetworkName?.trim() || "";
           const l1Rpc = absoluteUrl(runtime.l1RpcUrl);
           const l2Rpc = absoluteUrl(runtime.l2RpcUrl);
           const l1ProxyRpc = absoluteUrl(runtime.l1FrontUrl);
           const l2ProxyRpc = absoluteUrl(runtime.l2FrontUrl);
           setConfig({
+            ...(l1NameOverride ? { l1NetworkName: l1NameOverride } : {}),
+            ...(runtime.l1NetworkLogoUrl ? { l1NetworkLogoUrl: absoluteUrl(runtime.l1NetworkLogoUrl)! } : {}),
+            ...(runtime.l1ExplorerApiUrl ? { l1ExplorerApi: absoluteUrl(runtime.l1ExplorerApiUrl)! } : {}),
+            ...(runtime.tokenListUrl ? { tokenListUrl: absoluteUrl(runtime.tokenListUrl)! } : {}),
             ...(rollupName ? { rollupName } : {}),
             ...(l1Rpc ? { l1Rpc } : {}),
             ...(l2Rpc ? { l2Rpc } : {}),
@@ -111,8 +122,8 @@ export function useConfigLoader() {
           "eth_chainId",
         )) as string;
         L1_CHAIN.chainId = l1ChainId;
-        const dec = parseInt(l1ChainId, 16);
-        L1_CHAIN.chainName = `EEZ L1 (${dec})`;
+        const identity = l1Identity(l1ChainId);
+        setConfig({ l1NetworkName: l1NameOverride || identity.name, l1NetworkLogo: identity.logo });
       } catch {
         /* keep defaults */
       }
