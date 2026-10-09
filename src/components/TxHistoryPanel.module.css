@@ -26,6 +26,7 @@
 .hash { font: 13px/1.5 var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hash:hover { color: var(--text-bright); }
 .noHash { font-size: 12px; color: var(--text-dim); }
+.lookupError { color: var(--red); overflow-wrap: anywhere; }
 .blockCol { font: 12px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
 .statusCol { display: flex; }
 .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 100px; font: 400 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }

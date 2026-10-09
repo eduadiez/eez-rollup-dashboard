@@ -32,6 +32,7 @@ async function fixture(browser, injected) {
         window.walletRequests.push(request);
         if (request.method === 'eth_accounts') return [account];
         if (request.method === 'eth_chainId') return '0x27d8';
+        if (request.method === 'eth_call') return '0x';
         throw new Error('Unexpected wallet operation: ' + request.method);
       },
     };
@@ -98,8 +99,9 @@ async function fixture(browser, injected) {
     savedWallet.releaseConfig();
     await savedWallet.page.getByRole('button', { name: /Rabby ·/ }).waitFor();
     assert.equal(await savedWallet.page.getByRole('button', { name: /Rabby ·/ }).locator('[data-wallet-logo="rabby"]').count(), 1);
+    await savedWallet.page.getByText('Composer not detected', { exact: true }).waitFor();
     assert.deepEqual(await savedWallet.page.evaluate(() => window.walletRequests.map(r => r.method)),
-      ['eth_accounts', 'eth_chainId']);
+      ['eth_accounts', 'eth_chainId', 'eth_chainId', 'eth_call', 'eth_chainId']);
     await savedWallet.page.clock.runFor(100);
     assert.equal(await savedWallet.page.evaluate(() => typeof window.walletListeners.accountsChanged), 'function');
     const nextAccount = '0x' + '33'.repeat(20);

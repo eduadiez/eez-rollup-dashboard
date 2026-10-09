@@ -216,7 +216,7 @@ export async function fetchDebugBlock(chain: DebugChain, selector: string, rpc: 
 async function withCounterpart(sourceBlock: DebugBlock, selected: DebugTransaction | null, rpc: Rpc, syncOnly = false): Promise<DebugContext> {
   const context: DebugContext = { sourceChain: sourceBlock.chain, sourceBlock, selected, blocks: [sourceBlock], settlements: [], warnings: [], syncOnly: syncOnly && sourceBlock.chain === "l1" };
   try {
-    const response = await rpc(config.l2Rpc, sourceBlock.chain === "l1" ? "eez_getSettledL2RangesByL1Block" : "eez_getSettlementByL2Block", [sourceBlock.hash]);
+    const response = await rpc(config.l2ProxyRpc, sourceBlock.chain === "l1" ? "eez_getSettledL2RangesByL1Block" : "eez_getSettlementByL2Block", [sourceBlock.hash]);
     context.settlements = (Array.isArray(response) ? response : response ? [response] : []) as Settlement[];
     if (selected?.payload?.method === "postAndVerifyBatch") context.settlements = context.settlements.filter(item => same(item.l1TransactionHash, selected.tx.hash));
   } catch (error) {
@@ -415,7 +415,7 @@ export async function fetchLiveBatchHistory(previous: LiveBatchHistory | null = 
           try {
             let lookup = lookups.get(hash);
             if (!lookup) {
-              lookup = rpc(debugRpc("l2"), "eez_getSettledL2RangesByL1Block", [hash]).then(value => (value ?? []) as Settlement[]);
+              lookup = rpc(config.l2ProxyRpc, "eez_getSettledL2RangesByL1Block", [hash]).then(value => (value ?? []) as Settlement[]);
               lookups.set(hash, lookup);
             }
             const settlements = await lookup;

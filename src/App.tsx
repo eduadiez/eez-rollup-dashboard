@@ -12,6 +12,7 @@ import { useBlockscoutAbi } from "./hooks/useBlockscoutAbi";
 import { useRecentAddresses } from "./hooks/useRecentAddresses";
 import { NetworkMonitorView } from "./monitor/NetworkMonitorView";
 import { Header } from "./components/Header";
+import { ComposerStatus } from "./components/ComposerStatus";
 import { CounterPanel } from "./components/CounterPanel";
 import { CrossChainPanel } from "./components/CrossChainPanel";
 import { ProxyDeploySection } from "./components/ProxyDeploySection";
@@ -306,7 +307,13 @@ export function App() {
         currentChainId={wallet.chainId}
         onSwitchL1={() => { void switchBridgeNetwork("l1"); }}
         onSwitchL2={() => { void switchBridgeNetwork("l2"); }}
+        composerConnection={wallet.composerConnection}
+        checkingComposer={wallet.checkingComposer}
+        onRecheckComposer={wallet.recheckComposer}
       />
+
+      {wallet.isConnected && <ComposerStatus connection={wallet.composerConnection}
+        checking={wallet.checkingComposer} onRecheck={wallet.recheckComposer} walletName={wallet.walletName} variant="notice" />}
 
       {view === "monitor" ? (
         <NetworkMonitorView />

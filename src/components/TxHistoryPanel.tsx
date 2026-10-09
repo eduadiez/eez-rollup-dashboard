@@ -89,13 +89,19 @@ export function TxHistoryPanel({ records, onClear, onInspect }: Props) {
       if (running) return;
       running = true;
       const queue = records.filter(tx => tx.status === "confirmed" && tx.hash &&
-        (!cacheRef.current.has(tx.hash) || expectsCounterpart(tx) &&
+        (!cacheRef.current.has(tx.hash) || cacheRef.current.get(tx.hash)?.lookupError || expectsCounterpart(tx) &&
           !(cacheRef.current.get(tx.hash)?.l1Hash && cacheRef.current.get(tx.hash)?.l2Hashes.length)));
       await Promise.all(Array.from({ length: Math.min(4, queue.length) }, async () => {
         while (!cancelled && queue.length) {
           const tx = queue.shift()!;
           const info = await fetchHistoryTransactions(tx.hash!, txChain(tx));
-          if (info && !cancelled) setBlockCache(prev => new Map(prev).set(tx.hash!, info));
+          if (!cancelled) setBlockCache(prev => {
+            if (info) return new Map(prev).set(tx.hash!, info);
+            if (!prev.has(tx.hash!)) return prev;
+            const next = new Map(prev);
+            next.delete(tx.hash!);
+            return next;
+          });
         }
       }));
       running = false;
@@ -155,8 +161,11 @@ export function TxHistoryPanel({ records, onClear, onInspect }: Props) {
                     </div>}
                     {(info?.l2Hashes.length ? info.l2Hashes : (info?.chain ?? txChain(tx)) === "l2" ? [tx.hash] : []).map(hash =>
                       <div className={styles.transactionLink} key={hash}><span className={styles.transactionLabel}>L2 tx:</span><TxLink hash={hash} chain="l2" className={styles.hash} /></div>)}
-                    {expectsCounterpart(tx) && !(info?.l1Hash && info.l2Hashes.length) && <span className={styles.noHash}>
-                      {tx.status === "failed" ? "Counterpart unavailable" : `${(info?.chain ?? txChain(tx)) === "l1" ? "L2 transaction" : "L1 settlement"} not indexed yet`}
+                    {(info?.lookupError || expectsCounterpart(tx) && !(info?.l1Hash && info.l2Hashes.length)) && <span
+                      className={`${styles.noHash} ${info?.lookupError ? styles.lookupError : ""}`} role="status">
+                      {tx.status === "failed" ? "Counterpart unavailable" : tx.status === "pending" ? "Waiting for source confirmation" :
+                        info?.lookupError ? `${info.l1 == null && info.l2 == null ? "Transaction" : "Counterpart"} lookup unavailable: ${info.lookupError}` : !info ? "Looking up counterpart…" :
+                        `${(info.chain ?? txChain(tx)) === "l1" ? "L2 transaction" : "L1 settlement"} not indexed yet`}
                     </span>}
                   </> : <span className={styles.noHash}>No transaction hash</span>}
                 </div>

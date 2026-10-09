@@ -16,7 +16,7 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
   const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
     const page = await browser.newPage({viewport:{width:1920,height:1080}});
-    const errors=[];let indexed=false;
+    const errors=[],requests=[];let indexed=false,indexError=true,receiptError=true,receiptMissing=false;
     page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
     await page.clock.install();
     await page.addInitScript(({l1Tx,l2Tx})=>localStorage.setItem('txHistory',JSON.stringify([
@@ -29,10 +29,13 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
         l1ExplorerUrl:'https://l1.invalid',l2ExplorerUrl:'https://l2.invalid'}});
       if(req.method()!=='POST')return route.continue();
       const {method,params=[],id}=req.postDataJSON();assert.ok(!/send|sign/i.test(method));const l1=path.endsWith('l1');let result=null;
+      requests.push({path,method});
+      if(method==='eth_getTransactionReceipt'&&receiptError)return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32000,message:'Receipt RPC offline'}}});
+      if(method.startsWith('eez_')&&(path!=='/composer/l2'||indexError))return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32601,message:'Method not found'}}});
       if(method==='eth_chainId')result=l1?'0x27d8':'0x1892';
       if(method==='eth_getBlockByNumber')result={number:l1?'0x64':'0x7',timestamp:'0x65000000',gasUsed:'0x0',gasLimit:'0x1c9c380',transactions:[]};
       if(method==='eth_getBalance')result='0x0';
-      if(method==='eth_getTransactionReceipt')result=params[0]===(l1?l1Tx:l2Tx)?{blockNumber:l1?'0x64':'0x7',blockHash:l1?l1Block:l2Block,logs:l1?[outgoing]:[incoming]}:null;
+      if(method==='eth_getTransactionReceipt')result=!receiptMissing&&params[0]===(l1?l1Tx:l2Tx)?{blockNumber:l1?'0x64':'0x7',blockHash:l1?l1Block:l2Block,logs:l1?[outgoing]:[incoming]}:null;
       if(method==='eez_getSettlementByL2Block')result=indexed?settlement:null;
       if(method==='eez_getSettledL2RangesByL1Block')result=indexed?[settlement]:[];
       if(method==='eth_getLogs')result=params[0]?.topics ? l1?[outgoing]:[incoming]:[];
@@ -41,11 +44,28 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
     await page.goto(origin+'/#/bridge');
     const header=page.getByRole('banner'),history=page.getByRole('region',{name:'Transaction history'});
     const forward=history.locator('li').filter({hasText:'1 xDAI'}),reverse=history.locator('li').filter({hasText:'2 xDAI'});
-    await forward.getByText('L2 transaction not indexed yet').waitFor();
+    await forward.getByText(/Transaction lookup unavailable: L1 receipt: Receipt RPC offline/).waitFor();
+    await reverse.getByText(/Transaction lookup unavailable: L2 receipt: Receipt RPC offline/).waitFor();
+    assert.equal(await history.getByText(/Looking up counterpart|not indexed yet/).count(),0,'receipt failures must not look like indexing delays');
+    assert.equal(await forward.locator(`a[href="https://l1.invalid/tx/${l1Tx}"]`).count(),1);
+    assert.equal(await reverse.locator(`a[href="https://l2.invalid/tx/${l2Tx}"]`).count(),1);
+    assert.equal(await history.locator('a[href*="/block/"]').count(),0,'failed receipt reads cannot invent blocks');
+    receiptError=false;receiptMissing=true;await page.clock.fastForward(16000);
+    await forward.getByText('Looking up counterpart…').waitFor();
+    await reverse.getByText('Looking up counterpart…').waitFor();
+    assert.equal(await history.getByText(/lookup unavailable/).count(),0,'valid null receipts clear stale errors');
+    receiptMissing=false;await page.clock.fastForward(16000);
+    await forward.getByText('Counterpart lookup unavailable: Method not found').waitFor();
+    await reverse.getByText('Counterpart lookup unavailable: Method not found').waitFor();
+    assert.equal(await history.getByText(/not indexed yet/).count(),0,'RPC failures must not look like indexing delays');
     assert.equal(await forward.locator(`a[href="https://l1.invalid/tx/${l1Tx}"]`).count(),1);
     assert.equal(await reverse.locator(`a[href="https://l2.invalid/tx/${l2Tx}"]`).count(),1);
     await forward.locator('a[href="https://l1.invalid/block/100"]').waitFor();
     await reverse.locator('a[href="https://l2.invalid/block/7"]').waitFor();
+    indexError=false;await page.clock.fastForward(16000);
+    await forward.getByText('L2 transaction not indexed yet').waitFor();
+    await reverse.getByText('L1 settlement not indexed yet').waitFor();
+    assert.equal(await history.getByText(/Counterpart lookup unavailable/).count(),0,'retries clear the lookup error');
     indexed=true;await page.clock.fastForward(16000);
     await forward.locator(`a[href="https://l2.invalid/tx/${l2Tx}"]`).waitFor();
     await reverse.locator(`a[href="https://l1.invalid/tx/${l1Tx}"]`).waitFor();
@@ -70,14 +90,13 @@ const settlement = { l1BlockNumber:'0x64',l1BlockHash:l1Block,l1TransactionHash:
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);
       assert.equal(await header.locator('[data-chain]').count(),0);
       assert.equal(await header.getByLabel('Latest network blocks').count(),0);
-      const balances=header.getByRole('group',{name:'Network balances'}).getByRole('button');
-      const left=await balances.nth(0).boundingBox(),right=await balances.nth(1).boundingBox();
-      assert.ok(Math.abs(left.y-right.y)<1);assert.ok(right.x>=left.x+left.width);
-      assert.equal(await balances.getByText('xDAI',{exact:true}).count(),2);
-      const wallet=await header.getByRole('button',{name:'Connect Wallet',exact:true}).boundingBox();
-      assert.ok(Math.abs((left.y+left.height/2)-(wallet.y+wallet.height/2))<1,'balances and wallet misaligned at '+width);
+      // Disconnected wallets intentionally hide balances rather than displaying unavailable values.
+      assert.equal(await header.getByRole('group',{name:'Network balances'}).count(),0);
+      assert.ok(await header.getByRole('button',{name:'Connect Wallet',exact:true}).isVisible());
     }
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,canonicalTransactionLinks:true,settlementLabel:true,indexRetry:true,historyNetworkLogos:true,labeledTransactionLinks:true,separateBlockColumn:true,blockLinks:true,responsiveWidths:10,horizontalBalances:true,consoleErrors:0,transactionsSent:0}));
+    assert.ok(requests.filter(r=>r.method.startsWith('eez_')).every(r=>r.path==='/composer/l2'),'settlement queries never use read RPCs');
+    assert.ok(requests.filter(r=>['eth_getTransactionReceipt','eth_getLogs'].includes(r.method)).every(r=>r.path.startsWith('/rpc/')),'receipt and event reads stay on read RPCs');
+    console.log(JSON.stringify({passed:true,canonicalTransactionLinks:true,settlementLabel:true,indexRetry:true,lookupErrorsShown:true,composerIndexRouting:true,historyNetworkLogos:true,labeledTransactionLinks:true,separateBlockColumn:true,blockLinks:true,responsiveWidths:10,walletEmptyState:true,consoleErrors:0,transactionsSent:0}));
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

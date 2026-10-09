@@ -188,6 +188,7 @@
   top: calc(100% + 8px);
   right: 0;
   width: 260px;
+  max-height: calc(100dvh - 160px);
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -195,7 +196,7 @@
     none;
   animation: fadeSlideUp 0.15s ease-out both;
   z-index: 300;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .ddHeader {

@@ -30,22 +30,23 @@ export async function fetchCallSettlement(hash: string, chain: DebugChain, cross
   let l2Target: Block | undefined;
   if (!localL1) {
     if (chain === "l2") {
-      const record = await rpc(config.l2Rpc, "eez_getSettlementByL2Block", [receipt.blockHash]) as Settlement | null;
+      const record = await rpc(config.l2ProxyRpc, "eez_getSettlementByL2Block", [receipt.blockHash]) as Settlement | null;
       if (record && !record.l2Blocks.some(block => same(block.hash, receipt.blockHash))) {
         return { ...base, state: "unavailable", message: "The settlement index does not reference this transaction's L2 block." };
       }
       settlement = record ?? undefined;
     } else {
-      const records = await rpc(config.l2Rpc, "eez_getSettledL2RangesByL1Block", [receipt.blockHash]) as Settlement[] | null;
+      const records = await rpc(config.l2ProxyRpc, "eez_getSettledL2RangesByL1Block", [receipt.blockHash]) as Settlement[] | null;
       settlement = records?.find(record => same(record.l1TransactionHash, hash) && same(record.l1BlockHash, receipt.blockHash));
       if (!settlement) {
         // Repeated call hashes remain unresolved: the history resolver requires unique protocol events.
         const counterparts = await fetchHistoryTransactions(hash, chain, (url, method, params) => rpc(url, method, params));
+        if (counterparts?.lookupError) throw new Error(counterparts.lookupError);
         base.counterpartHashes = counterparts?.l2Hashes ?? [];
         const records = await Promise.all(base.counterpartHashes.map(async counterpart => {
           const other = await rpc(config.l2Rpc, "eth_getTransactionReceipt", [counterpart]) as DebugReceipt | null;
           if (!other) return null;
-          const record = await rpc(config.l2Rpc, "eez_getSettlementByL2Block", [other.blockHash]) as Settlement | null;
+          const record = await rpc(config.l2ProxyRpc, "eez_getSettlementByL2Block", [other.blockHash]) as Settlement | null;
           return record?.l2Blocks.some(block => same(block.hash, other.blockHash)) ? record : null;
         }));
         const unique = new Map(records.filter((record): record is Settlement => !!record).map(record => [record.l1TransactionHash.toLowerCase(), record]));

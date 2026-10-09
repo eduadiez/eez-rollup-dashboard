@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:composer": "node tests/composer-discovery.test.mjs",
     "test:visualizer": "node tests/execution-debugger.test.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -19,11 +19,13 @@ export const config = {
   l2Rpc: params.get("l2") || absolute("/rpc/l2"),
   /** L1 Composer RPC — cross-chain estimates and transaction submission */
   l1ProxyRpc: params.get("l1proxy") || absolute("/composer/l1"),
-  /** L2 Composer RPC — cross-chain estimates and transaction submission */
+  /** L2 Composer RPC — cross-chain estimates, submission, and EEZ settlement queries */
   l2ProxyRpc: params.get("l2proxy") || absolute("/composer/l2"),
 
   /** BasedRollup contract address — loaded from runtime config or URL param */
   rollupsAddress: params.get("rollups") || "",
+  /** Optional deployment binding for wallet Composer discovery validation. */
+  rollupManagerAddress: "",
   /** Rollup ID for state root queries */
   rollupId: params.get("rollupId") || "1",
   /** Block explorer base URLs (Blockscout frontends) */

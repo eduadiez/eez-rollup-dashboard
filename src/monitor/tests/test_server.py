@@ -164,6 +164,7 @@ class DashboardUnitTests(unittest.TestCase):
         collector.blobscan = None
         collector.l1 = mock.Mock()
         collector.l2 = mock.Mock()
+        collector._l2_composer = None
         transaction_hash = "0x" + "11" * 32
         row = {
             "transactionHash": transaction_hash,
