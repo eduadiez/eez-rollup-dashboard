@@ -210,6 +210,8 @@ async function until(check,message){
    const f=await fixture(browser);await f.send.click({trial:true});
    for(const width of [1920,1440,1280,1100,1024,800,640,390,320]){
     await f.page.setViewportSize({width,height:1100});assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);
+    const tiny=await f.left.evaluate(root=>[...root.querySelectorAll('*')].filter(el=>!el.children.length&&el.textContent.trim()&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&parseFloat(getComputedStyle(el).fontSize)<12).map(el=>el.textContent));
+    assert.deepEqual(tiny,[], 'Counter demo labels below 12px at '+width);
     const l=await f.left.boundingBox(),r=await f.right.boundingBox();
     if(width>1000){assert(Math.abs(l.y-r.y)<1);assert(Math.abs(l.width/r.width-2/3)<.02);}
     else assert(r.y>=l.y+l.height);

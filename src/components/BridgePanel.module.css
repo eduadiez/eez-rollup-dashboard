@@ -19,7 +19,7 @@
   box-shadow: none;
 }
 
-.card :global(.btn-block) { min-height: 44px; font-size: 11.5px; }
+.card :global(.btn-block) { min-height: 44px; font-size: 12px; }
 
 .cardHeader {
   display: flex;
@@ -36,121 +36,7 @@
   letter-spacing: -0.01em;
 }
 
-/* --- DIRECTION BAR --- */
-
-.directionBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
-  align-items: stretch;
-  gap: 12px;
-  padding: 14px 12px;
-  margin-bottom: 0;
-  background: var(--bg-inset);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.chainBadge {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
-  align-items: center;
-  column-gap: 8px;
-  row-gap: 2px;
-  min-width: 0;
-}
-
-.chainIcon {
-  grid-column: 1;
-  grid-row: 1 / -1;
-  width: 28px;
-  height: 36px;
-  object-fit: contain;
-}
-
-.chainName {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: end;
-  font: 600 13px/1.35 var(--sans);
-  color: var(--text-bright);
-  overflow-wrap: anywhere;
-}
-
-.chainRole {
-  grid-column: 2;
-  grid-row: 2;
-  font: 400 11px/1.5 var(--mono);
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: .02em;
-}
-
-.swapBtn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.2s;
-  align-self: center;
-}
-
-.swapBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent-light);
-  transform: rotate(180deg);
-}
-
-/* --- ASSET TOGGLE --- */
-
-.assetToggle {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-}
-
-.assetBtn {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-dim);
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 100px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.assetActive {
-  color: var(--eez-pill-ink);
-  background: var(--eez-pill-bg);
-  border: 1px solid var(--eez-pill-bg);
-  box-shadow: none;
-}
-
 /* --- SECTIONS --- */
-
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 0;
-}
-
-.section:last-child {
-  margin-bottom: 0;
-}
 
 .sectionTitle {
   display: flex;
@@ -195,95 +81,19 @@
   color: var(--text-dim);
 }
 
-/* --- AMOUNT --- */
-
-.amountRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-left: -8px;
-  padding: 4px 0;
-}
-
-.amountSection .amountRow input.input.input {
-  flex: 1;
-  min-width: 0;
-  padding: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  font: 500 32px/1.4 var(--sans);
-  letter-spacing: -.025em;
-}
-.amountRow .input:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.amountSymbol { align-self: center; color: var(--text-dim); font: 500 16px/1.4 var(--sans); max-width: 90px; overflow-wrap: anywhere; }
-.amountSection { padding: 20px; margin-bottom: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-inset); }
-.amountHeader { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
-
-.maxBtn {
-  padding: 5px 10px;
-  background: var(--bg-inset);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.maxBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent-light);
-}
-
-.balanceRow {
-  font-size: 12px;
-  color: var(--text-dim);
-  font-family: var(--mono);
-  padding: 2px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.balanceValue {
-  color: var(--text);
-  font-weight: 500;
-}
-
 .recipientSection { margin-bottom: 0; }
-.recipientHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.recipientHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .recipientWallet { margin-top: 4px; font-size: 13px; color: var(--text); }
-.recipientWallet span { display: block; color: var(--text-dim); font: 12px/1.6 var(--mono); }
-.recipientToggle { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-xs); padding: 7px 10px; font: 500 11.5px/1.4 var(--mono); cursor: pointer; }
+.recipientWallet span { display: inline; color: var(--text-dim); font: 12px/1.6 var(--mono); }
+.recipientToggle { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-xs); padding: 7px 10px; font: 500 12px/1.4 var(--mono); cursor: pointer; }
 .recipientToggle:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text-bright); }
 .recipientToggle:disabled { opacity: .5; cursor: default; }
-
-@media (max-width: 640px) {
-  .directionBar { padding: 12px 10px; gap: 8px; }
-  .chainBadge { grid-template-columns: 24px minmax(0, 1fr); column-gap: 6px; }
-  .chainIcon { width: 24px; height: 32px; }
-  .amountSection { padding: 16px; }
-  .assetBtn { padding: 6px 10px; font-size: 11px; }
-}
-
-@media (max-width: 360px) {
-  .chainBadge { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; row-gap: 4px; }
-  .chainIcon { grid-column: 1; grid-row: 1; }
-  .chainName { grid-column: 1; grid-row: 2; }
-  .chainRole { grid-column: 1; grid-row: 3; }
-}
 
 /* --- VALIDATION --- */
 
 .validationHint {
   font-size: 12px;
-  color: var(--red);
+  color: var(--yellow);
   padding: 2px 0;
 }
 
@@ -345,4 +155,5 @@
 .gasSettings > summary { color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); padding: 4px 0; }
 .gasSettings > summary:hover { color: var(--text-bright); }
 .gasSettings[open] > summary { margin-bottom: 8px; }
-.assetBtn:disabled, .swapBtn:disabled, .maxBtn:disabled { cursor: default; opacity: .5; }
+.walletPicker { display: flex; flex-wrap: wrap; gap: 8px; }
+.walletIcon { width: 20px; height: 20px; object-fit: contain; }

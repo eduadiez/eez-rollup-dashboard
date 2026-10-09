@@ -6,7 +6,7 @@
 .estimatingText { display: flex; align-items: center; gap: 6px; color: var(--text-dim); font-family: var(--sans); }
 .spinner { width: 10px; height: 10px; border: 1.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: global(spin) .8s linear infinite; }
 .inputSection { display: flex; flex-direction: column; gap: 6px; }
-.inputLabel { color: var(--text-dim); font: 400 11px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+.inputLabel { color: var(--text-dim); font: 400 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
 .input { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 12px; font: 12px/1.5 var(--mono); transition: border-color .15s ease; }
 .input:focus { border-color: var(--accent); }
 .input::placeholder { color: var(--text-dim); }

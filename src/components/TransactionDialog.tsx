@@ -45,6 +45,7 @@ export function TransactionDialog({ open, complete, failed, title, description, 
       <h2 id={titleId} className={styles.title}>{title}</h2>
       <p id={descriptionId} className={styles.description} role={failed ? "alert" : "status"}>{description}</p>
       {hash && <TxLink hash={hash} chain={chain} className={styles.hash} />}
+      {hash && <a className="btn btn-outline" href={`#/visualizer?mode=inspect&chain=${chain}&tx=${hash}`} onClick={onClose}>Follow this call →</a>}
       <button className={`btn ${complete || failed ? "btn-solid" : "btn-outline"}`} onClick={onClose}>{complete || failed ? "Done" : "Close"}</button>
     </div>
   </dialog>, document.body);

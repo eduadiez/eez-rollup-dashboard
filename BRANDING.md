@@ -21,7 +21,9 @@ status tokens live in `src/styles/global.css`.
 - Live data and decoded payload panes are runtime output, not source excerpts.
   They do not display invented pinned-commit citations.
 - Success, warning, and error colors convey state. Network identity uses names
-  and logos; it does not change card surfaces or assign category gradients.
+  and logos, with DESIGN.md's L1 periwinkle and L2 violet semantic accents on
+  labels and diagram lanes. Card surfaces remain neutral. Explorer links use
+  neutral underlined text, and data labels and controls have a 12px floor.
 - Geist and Geist Mono use locally served WOFF2 files covered by the adjacent
   SIL Open Font License files. The interface is dark-only.
 - Reduced motion disables animation and transitions globally. Keyboard focus

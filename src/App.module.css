@@ -78,9 +78,13 @@
 @media (max-width: 640px) {
   .page { padding: 0 18px 100px; }
   .intro { align-items: flex-start; gap: 16px; flex-wrap: wrap;  }
+  .intro:global(.eez-intro) { padding: 24px 0; }
+  .intro :global(.eez-page-heading) { font-size: 28px; }
+  .intro :global(.eez-description) { font-size: 15px; line-height: 1.45; }
+  .intro :global(.eez-pill) { display: none; }
   .proxyColumn {
   composes: eez-card from global; padding: 20px; }
   .tabs { gap: 6px; }
-  .tab { padding: 8px 12px; font-size: 11px; }
+  .tab { padding: 8px 12px; font-size: 12px; }
   .footer { margin: 0 18px; flex-wrap: wrap; }
 }

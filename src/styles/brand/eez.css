@@ -78,7 +78,7 @@
   background-clip: padding-box;
   background-repeat: no-repeat;
   color: var(--eez-pill-ink);
-  font: 500 11.5px/1.5 var(--mono);
+  font: 500 12px/1.5 var(--mono);
   letter-spacing: .02em;
   text-transform: uppercase;
   text-decoration: none;

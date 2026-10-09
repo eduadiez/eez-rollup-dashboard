@@ -16,8 +16,8 @@ function RawData({ value, label = "Raw data", open = false }: { value: unknown; 
 function Payload({ payload, chain }: { payload: DebugPayload; chain: DebugChain }) {
   return <section className={styles.section}>
     <h3>{payload.method}</h3>
-    <p className={styles.muted}>{payload.entries.length} execution entries · {payload.staticEntries.length} static entries
-      {payload.method === "postAndVerifyBatch" && ` · ${payload.immediateEntryCount} immediate execution entries`}</p>
+    <p className={styles.muted}>{payload.entries.length} execution {payload.entries.length === 1 ? "entry" : "entries"} · {payload.staticEntries.length} static {payload.staticEntries.length === 1 ? "entry" : "entries"}
+      {payload.method === "postAndVerifyBatch" && ` · ${payload.immediateEntryCount} immediate execution ${payload.immediateEntryCount === 1 ? "entry" : "entries"}`}</p>
     {[...payload.entries.map((entry, i) => ({ entry, i, kind: "Execution" })), ...payload.staticEntries.map((entry, i) => ({ entry, i, kind: "Static" }))].map(({ entry, i, kind }) => {
       const calls = (entry.l2ToL1Calls ?? entry.incomingCalls ?? []) as Record<string, unknown>[];
       const nested = (entry.expectedL1ToL2Calls ?? entry.expectedOutgoingCalls ?? []) as Record<string, unknown>[];

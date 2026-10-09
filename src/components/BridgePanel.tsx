@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { formatUnits } from "viem";
 import type { BridgeState, BridgeDirection, BridgeAsset, TokenMeta } from "../hooks/useBridge";
 import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { GasLimitEditor } from "./GasLimitEditor";
 import { BridgeTransactionDialog } from "./BridgeTransactionDialog";
 import styles from "./BridgePanel.module.css";
 import { BridgeTokenPicker } from "./BridgeTokenPicker";
-import { NetworkIcon } from "./NetworkIcon";
+import { BridgeAssetSwap } from "./BridgeAssetSwap";
+import { WalletIcon } from "./WalletIcon";
 
 interface Props {
   state: BridgeState;
   recentTokens: TokenMeta[];
   walletAddress: string | null;
+  walletOptions: { id: string; name: string }[];
+  onConnect: (providerId?: string) => void;
   onSetDirection: (dir: BridgeDirection) => void;
   onSetAsset: (asset: BridgeAsset) => void;
   onSetAmount: (amt: string) => void;
@@ -23,148 +27,12 @@ interface Props {
   onGasOverride: (gasHex: string | null) => void;
 }
 
-function NetworkBadge({ chain, role }: { chain: "l1" | "l2"; role: "Source" | "Destination" }) {
-  const isL1 = chain === "l1";
-  const name = isL1 ? config.l1NetworkName : config.rollupName;
-  return (
-    <div className={styles.chainBadge} role="group" aria-label={`${role} network`}>
-      <NetworkIcon chain={chain} className={styles.chainIcon} />
-      <div className={styles.chainName} title={name}>{name}</div>
-      <div className={styles.chainRole}>{role}</div>
-    </div>
-  );
-}
-
-function DirectionSelector({
-  direction,
-  onSwap,
-  disabled,
-}: {
-  direction: BridgeDirection;
-  onSwap: () => void;
-  disabled: boolean;
-}) {
-  const isL1Source = direction === "l1-to-l2";
-  return (
-    <div className={styles.directionBar}>
-      <NetworkBadge chain={isL1Source ? "l1" : "l2"} role="Source" />
-      <button className={styles.swapBtn} disabled={disabled} onClick={onSwap} title="Swap direction">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7 16l-4-4 4-4" /><path d="M17 8l4 4-4 4" />
-          <path d="M3 12h18" />
-        </svg>
-      </button>
-      <NetworkBadge chain={isL1Source ? "l2" : "l1"} role="Destination" />
-    </div>
-  );
-}
-
-function AssetToggle({
-  asset,
-  onChange,
-  nativeSymbol,
-  disabled,
-}: {
-  disabled: boolean;
-  nativeSymbol: string;
-  asset: BridgeAsset;
-  onChange: (a: BridgeAsset) => void;
-}) {
-  return (
-    <div className={styles.assetToggle}>
-      <button
-        className={`${styles.assetBtn} ${asset === "eth" ? styles.assetActive : ""}`}
-        aria-pressed={asset === "eth"}
-        disabled={disabled}
-        onClick={() => onChange("eth")}
-      >
-        {nativeSymbol}
-      </button>
-      <button
-        className={`${styles.assetBtn} ${asset === "erc20" ? styles.assetActive : ""}`}
-        aria-pressed={asset === "erc20"}
-        disabled={disabled}
-        onClick={() => onChange("erc20")}
-      >
-        ERC20
-      </button>
-    </div>
-  );
-}
-
-function AmountSection({
-  amount,
-  sourceBalance,
-  asset,
-  tokenMeta,
-  sourceBalanceRaw,
-  nativeSymbol,
-  disabled,
-  onAmountChange,
-  onAssetChange,
-  onMax,
-}: {
-  disabled: boolean;
-  nativeSymbol: string;
-  amount: string;
-  sourceBalance: string | null;
-  asset: BridgeAsset;
-  tokenMeta: TokenMeta | null;
-  sourceBalanceRaw: bigint | null;
-  onAmountChange: (amt: string) => void;
-  onAssetChange: (asset: BridgeAsset) => void;
-  onMax: () => void;
-}) {
-  const symbol = asset === "eth" ? nativeSymbol : (tokenMeta?.symbol || "tokens");
-  const decimals = asset === "eth" ? 18 : (tokenMeta?.decimals ?? 18);
-
-  // Validate amount vs balance
-  let insufficientBalance = false;
-  if (amount && sourceBalanceRaw !== null) {
-    try {
-      const parts = amount.split(".");
-      const whole = parts[0] || "0";
-      const frac = (parts[1] || "").padEnd(decimals, "0").slice(0, decimals);
-      const rawAmount = BigInt(whole) * 10n ** BigInt(decimals) + BigInt(frac);
-      if (rawAmount > sourceBalanceRaw) insufficientBalance = true;
-    } catch { /* ignore */ }
-  }
-
-  return (
-    <div className={styles.amountSection}>
-      <div className={styles.amountHeader}>
-        <label htmlFor="bridge-amount" className={styles.sectionTitle}>You send</label>
-        <AssetToggle disabled={disabled} asset={asset} nativeSymbol={nativeSymbol} onChange={onAssetChange} />
-      </div>
-      <div className={styles.amountRow}>
-        <input
-          id="bridge-amount"
-          aria-label="Bridge amount"
-          inputMode="decimal"
-          type="text"
-          className={styles.input}
-          value={amount}
-          onChange={(e) => onAmountChange(e.target.value)}
-          placeholder="0.0"
-          disabled={disabled}
-        />
-        <span className={styles.amountSymbol}>{symbol}</span>
-      </div>
-      <div className={styles.balanceRow}>
-        <span>{sourceBalance !== null ? <>Balance: <span className={styles.balanceValue}>{sourceBalance} {symbol}</span></> : "Balance unavailable"}</span>
-        <button className={styles.maxBtn} onClick={onMax} disabled={disabled || !sourceBalance}>MAX</button>
-      </div>
-      {insufficientBalance && (
-        <div className={styles.validationHint}>Insufficient balance</div>
-      )}
-    </div>
-  );
-}
-
 export function BridgePanel({
   state,
   recentTokens,
   walletAddress,
+  walletOptions,
+  onConnect,
   onSetDirection,
   onSetAsset,
   onSetAmount,
@@ -177,6 +45,11 @@ export function BridgePanel({
   onGasOverride,
 }: Props) {
   const [editingRecipient, setEditingRecipient] = useState(false);
+  const [choosingWallet, setChoosingWallet] = useState(false);
+  const connectButton = useRef<HTMLButtonElement>(null);
+  const firstWallet = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (choosingWallet) firstWallet.current?.focus(); }, [choosingWallet]);
+  useEffect(() => { if (walletAddress) setChoosingWallet(false); }, [walletAddress]);
   const {
     phase, direction, asset, amount, tokenAddress, tokenMeta,
     sourceBalance, sourceBalanceRaw, allowance,
@@ -188,6 +61,7 @@ export function BridgePanel({
   const sourceBridgeReady = direction === "l1-to-l2" ? l1BridgeReady : l2BridgeReady;
   const sourceBridgeError = direction === "l1-to-l2" ? state.l1BridgeError : state.l2BridgeError;
   const bridgeConfigured = direction === "l1-to-l2" ? !!config.l1Bridge : !!config.l2Bridge;
+  const invalidRecipient = !!destinationAddress && !/^0x[0-9a-fA-F]{40}$/.test(destinationAddress);
 
   // Determine if approval is needed
   const decimals = asset === "eth" ? 18 : (tokenMeta?.decimals ?? 18);
@@ -209,16 +83,18 @@ export function BridgePanel({
   }
 
   const canBridge =
-    !busy &&
+    !!walletAddress &&
+    !busy && !state.maxPending && !state.maxError &&
     sourceBridgeReady &&
     (gas.status === "estimated" || gas.status === "unsupported" && !!state.gasOverrideHex) &&
     amount &&
     rawAmount > 0n &&
+    !invalidRecipient &&
     !insufficientBalance &&
     !needsApproval &&
     (asset === "eth" || tokenNeedsApproval !== null && sourceBalanceRaw !== null && /^0x[0-9a-fA-F]{40}$/.test(tokenAddress));
 
-  const disabledReason = !walletAddress ? "Connect your wallet to bridge." :
+  const disabledReason = !walletAddress ? null :
     !canBridge && !busy && sourceBridgeReady && rawAmount > 0n ?
       asset === "erc20" && tokenReadError ? `Unable to check the token: ${tokenReadError}. Retrying…` :
       asset === "erc20" && (tokenNeedsApproval === null || sourceBalanceRaw === null) ? "Checking token balance and approval…" :
@@ -253,66 +129,47 @@ export function BridgePanel({
         </div>
       )}
 
-      {/* Direction selector */}
-      <DirectionSelector
-        direction={direction}
-        disabled={busy}
-        onSwap={() =>
-          onSetDirection(direction === "l1-to-l2" ? "l2-to-l1" : "l1-to-l2")
-        }
+      <BridgeAssetSwap
+        direction={direction} asset={asset} amount={amount}
+        received={rawAmount > 0n ? formatUnits(rawAmount, decimals) : ""}
+        symbol={tokenMeta?.symbol || null} balance={sourceBalance} connected={!!walletAddress}
+        disabled={busy} maxPending={state.maxPending} maxError={state.maxError}
+        onDirectionChange={onSetDirection} onAssetChange={onSetAsset}
+        onAmountChange={onSetAmount} onMax={onSetMax}
+        recipient={<div className={styles.recipientSection}>
+          <div className={styles.recipientHeader}>
+            <div>
+              <div className={styles.sectionTitle}>Recipient</div>
+              {!editingRecipient && !destinationAddress && <div className={styles.recipientWallet}>
+                Your wallet <span title={walletAddress || undefined}>{walletAddress ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : "Connect a wallet"}</span>
+              </div>}
+            </div>
+            <button className={styles.recipientToggle} disabled={busy}
+              aria-expanded={editingRecipient || !!destinationAddress} aria-controls="bridge-recipient"
+              onClick={() => {
+                if (editingRecipient || destinationAddress) { onSetDestination(""); setEditingRecipient(false); }
+                else setEditingRecipient(true);
+              }}>
+              {editingRecipient || destinationAddress ? "Use my wallet" : "Change recipient"}
+            </button>
+          </div>
+          {(editingRecipient || destinationAddress) && <div id="bridge-recipient">
+            <input type="text" className={styles.input} aria-label="Recipient address"
+              value={destinationAddress} onChange={(e) => onSetDestination(e.target.value)}
+              placeholder={walletAddress || "0x... (defaults to your wallet)"} disabled={busy} />
+            <div className={styles.sectionHint}>Leave empty to use your connected wallet.</div>
+            {invalidRecipient && <div className={styles.validationHint} role="status">Enter a valid recipient address.</div>}
+          </div>}
+      </div>}
       />
 
-      {/* Token address input (ERC20 only) */}
       {asset === "erc20" && (
         <BridgeTokenPicker
-          direction={direction}
-          walletAddress={walletAddress}
-          disabled={busy}
-          tokenAddress={tokenAddress}
-          tokenMeta={tokenMeta}
-          recentTokens={recentTokens}
+          direction={direction} walletAddress={walletAddress} disabled={busy}
+          tokenAddress={tokenAddress} tokenMeta={tokenMeta} recentTokens={recentTokens}
           onAddressChange={onSetTokenAddress}
         />
       )}
-
-      {/* Amount */}
-      <AmountSection
-        disabled={busy}
-        nativeSymbol={nativeSymbol}
-        amount={amount}
-        sourceBalance={sourceBalance}
-        asset={asset}
-        tokenMeta={tokenMeta}
-        sourceBalanceRaw={sourceBalanceRaw}
-        onAmountChange={onSetAmount}
-        onAssetChange={onSetAsset}
-        onMax={onSetMax}
-      />
-
-      <div className={styles.recipientSection}>
-        <div className={styles.recipientHeader}>
-          <div>
-            <div className={styles.sectionTitle}>Recipient</div>
-            {!editingRecipient && !destinationAddress && <div className={styles.recipientWallet}>
-              Your wallet <span title={walletAddress || undefined}>{walletAddress ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : "Connect a wallet"}</span>
-            </div>}
-          </div>
-          <button className={styles.recipientToggle} disabled={busy}
-            aria-expanded={editingRecipient || !!destinationAddress} aria-controls="bridge-recipient"
-            onClick={() => {
-              if (editingRecipient || destinationAddress) { onSetDestination(""); setEditingRecipient(false); }
-              else setEditingRecipient(true);
-            }}>
-            {editingRecipient || destinationAddress ? "Use my wallet" : "Change recipient"}
-          </button>
-        </div>
-        {(editingRecipient || destinationAddress) && <div id="bridge-recipient">
-          <input type="text" className={styles.input} aria-label="Recipient address"
-            value={destinationAddress} onChange={(e) => onSetDestination(e.target.value)}
-            placeholder={walletAddress || "0x... (defaults to your wallet)"} disabled={busy} />
-          <div className={styles.sectionHint}>Leave empty to use your connected wallet.</div>
-        </div>}
-      </div>
 
       {/* Gas settings are already collapsed; keep estimation errors visible. */}
       {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
@@ -345,15 +202,26 @@ export function BridgePanel({
         </>
       )}
 
-      {disabledReason && <div className={styles.validationHint} role="status">{disabledReason}</div>}
+      {disabledReason && <div className={!walletAddress ? styles.sectionHint : styles.validationHint} role="status">{disabledReason}</div>}
+
+      {choosingWallet && <div className={styles.walletPicker} role="group" aria-label="Choose a wallet"
+        onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); setChoosingWallet(false); connectButton.current?.focus(); } }}>
+        {walletOptions.length ? walletOptions.map((option, index) => <button key={option.id}
+          ref={index === 0 ? firstWallet : undefined} className="btn btn-outline" type="button"
+          onClick={() => { onConnect(option.id); setChoosingWallet(false); connectButton.current?.focus(); }}>
+          <WalletIcon name={option.name} className={styles.walletIcon} />{option.name}
+        </button>) : <p className={styles.sectionHint}>Install or unlock Rabby or MetaMask to connect.</p>}
+      </div>}
 
       {/* Bridge button */}
       <button
         className="btn btn-solid btn-green btn-block"
-        onClick={onBridge}
-        disabled={!canBridge}
+        ref={connectButton}
+        onClick={walletAddress ? onBridge : () => setChoosingWallet(!choosingWallet)}
+        aria-expanded={!walletAddress ? choosingWallet : undefined}
+        disabled={!!walletAddress && !canBridge}
       >
-        {busy ? (
+        {!walletAddress ? "Connect wallet" : busy ? (
           <><span className="btn-spinner" /> Bridging...</>
         ) : (
           actionLabel

@@ -173,6 +173,37 @@ The 2px gradient top rail is the site's signature accent: cards show it on hover
 - **Nav / footer:** mono 12px links in #9a9a9a brightening to white on hover; footer separated by a #1a1a1a hairline with an uppercase letter-spaced label.
 - **Motion:** transitions are 0.2s ease across the board (0.15s for text color). Walkthroughs add `riseIn` (12px rise + fade, 0.4s), `dashMove` (marching-ants SVG connectors), and a blinking cursor; `prefers-reduced-motion: reduce` neutralizes all animation and transitions globally.
 
+## Dashboard data and accessibility
+
+The dashboard, monitor, and execution visualizer use a 12px minimum for control
+text, data labels, badges, and secondary values. Hashes and table cells use
+13–14px. Long decoder explanations are limited to approximately 75 characters
+per line. These rules take precedence over the smaller quickstart chrome sizes
+above on application data surfaces.
+
+L1 uses a periwinkle semantic accent (`#9ba6d6`); L2 uses a violet semantic accent
+(`#b5a3ee`). Use these colors on chain labels, thin row markers, and diagram
+lanes, always with a network name or logo. Keep card surfaces neutral. Links
+use neutral text with an underline; green communicates positive state and also
+retains its existing focus and interaction role. Chain color alone never
+conveys success, canonicality, safety, or finality.
+
+Transaction results link directly to execution inspection. Settlement progress
+is derived from canonical block hashes and node safety/finality evidence.
+Confirmation of source execution does not imply L1 settlement or finality.
+Disconnected wallets are an ordinary empty state, not an error. Mobile
+settlement summaries expose result and inspection actions without horizontal
+scrolling; supporting operator detail is expandable.
+
+The bridge groups each network, amount, and asset in a single From/To control.
+Network positions remain fixed when direction reverses; the editable amount,
+balance, and MAX belong to From, while the exact destination amount and
+recipient belong to To. Use 10px inset corners, a circular direction control,
+transparent asset pills, 32px Geist amounts, and 12px mono labels. Asset choices
+expand inline with visible focus and return focus when dismissed. The primary
+action connects a wallet when disconnected. Balance and recipient validation
+use amber; transaction and RPC failures retain error styling.
+
 ## Do's and Don'ts
 
 - **Do** reserve the gradient for hover states, thin accent rails, progress bars, and the primary button — never as per-category branding or large fills.

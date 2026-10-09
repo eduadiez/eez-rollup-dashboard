@@ -3,7 +3,7 @@
 .header h2 { color: var(--text-bright); font: 600 17.5px/1.35 var(--sans); letter-spacing: -.01em; }
 .header p, .hint { color: var(--text-dim); font: 13px/1.55 var(--sans); }
 .header p { margin-top: 6px; }
-.label { color: var(--text-dim); font: 500 11.5px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+.label { color: var(--text-dim); font: 500 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
 .networkFields { border: 0; min-width: 0; }
 .networkFields legend { margin-bottom: 8px; }
 .networkSelector { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -14,7 +14,7 @@
 .delta { color: var(--green); font: 12px/1.5 var(--mono); max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .input { width: 100%; min-width: 0; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text); font: 13px/1.5 var(--mono); }
 .input:focus { border-color: var(--accent); }
-.addressRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 12px/1.5 var(--mono); }
+.addressRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 13px/1.5 var(--mono); }
 .addressRow a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .error { color: var(--red); font: 13px/1.55 var(--sans); overflow-wrap: anywhere; }

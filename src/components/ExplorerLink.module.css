@@ -1,13 +1,15 @@
 .link {
-  text-decoration: none;
-  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--text-dim);
+  color: var(--text);
   transition: color var(--duration) var(--ease),
               opacity var(--duration) var(--ease);
   border-radius: var(--radius-xs);
 }
 
 .link:hover {
-  color: var(--accent-light);
+  color: var(--text-bright);
 }
 
 .link:active {

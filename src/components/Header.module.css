@@ -129,8 +129,8 @@
 .chainBtn:hover { color: var(--text-bright); border-color: var(--border-hover); background: var(--overlay-light); }
 .chainBtnActive { background: var(--bg-raised); border-color: var(--border); color: var(--text-bright); }
 .balanceIcon { width: 18px; height: 18px; }
-.chainBal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 11px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-.balanceUnit { color: var(--text-dim); font-size: 11px; }
+.chainBal { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 12px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.balanceUnit { color: var(--text-dim); font-size: 12px; }
 .chainBtnDot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
 
 /* ── Wallet area (pill + dropdown wrapper) ── */
@@ -153,7 +153,7 @@
   color: var(--text);
   font-family: var(--mono);
   max-width: 260px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -242,7 +242,7 @@
   align-items: center;
   gap: 6px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
 }
@@ -415,7 +415,7 @@
 
 .mobileSectionLabel {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -467,7 +467,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
   cursor: pointer;
@@ -534,7 +534,7 @@
 
 .mobileCommit {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   color: var(--text-dim);
   opacity: 0.4;
   text-align: right;
@@ -569,11 +569,11 @@
 @media (max-width: 640px) {
   .walletPill { width: 32px; height: 32px; padding: 6px; justify-content: center; }
   .walletLabel, .walletPillChevron { display: none; }
-  .walletArea > button:not(.walletPill) { padding: 7px 10px; font-size: 11px; }
+  .walletArea > button:not(.walletPill) { padding: 7px 10px; font-size: 12px; }
   .chainBtn { padding: 4px 6px; gap: 6px; }
-  .balanceUnit { font-size: 10px; }
+  .balanceUnit { font-size: 12px; }
 }
 @media (max-width: 420px) {
   .logoIcon { width: 60px; }
-  .productName { padding-left: 8px; max-width: 150px; font-size: 11px; }
+  .productName { padding-left: 8px; max-width: 150px; font-size: 12px; }
 }
