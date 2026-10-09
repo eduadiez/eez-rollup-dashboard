@@ -16,7 +16,7 @@ const hash = byte => '0x' + byte.repeat(32);
 const address = byte => '0x' + byte.repeat(20);
 const registry = address('11'), manager = address('22'), caller = address('33');
 const l1Hash = hash('a1'), l2Hash = hash('a2'), l1TxHash = hash('b1'), l2TxHash = hash('b2'), callHash = hash('cc');
-setConfig({ l1Rpc: 'http://l1.invalid', l2Rpc: 'http://l2.invalid', rollupsAddress: registry, ccmL2Address: manager });
+setConfig({ l1Rpc: 'http://l1.invalid', l2Rpc: 'http://l2.invalid', l2ProxyRpc: 'http://composer-l2.invalid', rollupsAddress: registry, ccmL2Address: manager });
 
 function event(chain, signature, indexed, types = [], values = [], emitter) {
   return { address: emitter ?? (chain === 'l1' ? registry : manager),
@@ -35,7 +35,8 @@ const settlement = { l1BlockNumber: '0x64', l1BlockHash: l1Hash, l1TransactionHa
 function node({ failL1 = false, indexUnavailable = false, noSettlement = false, noncanonical = false, failed = false, pending = false, receiptUnavailable = false, absentCounterpart = false } = {}) {
   const calls = [];
   const rpc = async (url, method, params) => {
-    const chain = url.includes('l1') ? 'l1' : 'l2'; calls.push({ chain, method, params });
+    const chain = url.includes('l1') ? 'l1' : 'l2'; calls.push({ chain, url, method, params });
+    if (method.startsWith('eez_get')) assert.equal(url, 'http://composer-l2.invalid');
     if (chain === 'l1' && failL1) throw new Error('L1 offline');
     if (method === 'eth_getTransactionByHash') {
       const tx = chain === 'l1' ? l1Tx : l2Tx;
@@ -254,6 +255,7 @@ function liveNode() {
       return state.logs.filter(log => BigInt(log.blockNumber) >= BigInt(filter.fromBlock) && BigInt(log.blockNumber) <= BigInt(filter.toBlock));
     }
     if (method === 'eez_getSettledL2RangesByL1Block') {
+      assert.equal(url, 'http://composer-l2.invalid', 'live batches query the Composer settlement index');
       if (state.failIndex) throw new Error('index offline');
       if (!state.indexed) return [];
       return state.logs.filter(log => log.blockHash === params[0] && log.address === registry).map(log => ({ l1TransactionHash: log.transactionHash, canonicalL2: true, l2Finalized: state.finalized,

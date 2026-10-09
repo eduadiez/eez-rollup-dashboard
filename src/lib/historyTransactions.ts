@@ -9,6 +9,7 @@ type Log = { address: string; topics: [`0x${string}`, ...`0x${string}`[]]; data:
 export type HistoryTransactions = {
   chain: Chain; l1?: number; l2?: number;
   l1Hash?: string; l2Hashes: string[]; settlement?: boolean;
+  lookupError?: string;
 };
 const outbound = keccak256(stringToHex("CrossChainCallExecuted(bytes32,address,address,bytes,uint256)"));
 const inbound = keccak256(stringToHex("IncomingCrossChainCallExecuted(bytes32,bool,address,uint64,address,uint256,uint64,bytes)"));
@@ -21,17 +22,21 @@ export async function fetchHistoryTransactions(
   preferred: Chain,
   rpc = (url: string, method: string, params: unknown[]) => rpcCall(url, method, params, AbortSignal.timeout(10000)),
 ): Promise<HistoryTransactions | null> {
+  const receiptErrors: string[] = [];
   for (const chain of [preferred, preferred === "l1" ? "l2" : "l1"] as const) {
     let receipt: { blockNumber: string; blockHash: string; logs?: Log[] } | null;
     try {
       receipt = await rpc(chain === "l1" ? config.l1Rpc : config.l2Rpc, "eth_getTransactionReceipt", [hash]) as typeof receipt;
-    } catch { continue; }
+    } catch (error) {
+      receiptErrors.push(`${chain.toUpperCase()} receipt: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
     if (!receipt?.blockNumber) continue;
     const info: HistoryTransactions = { chain, [chain]: Number(BigInt(receipt.blockNumber)),
       l1Hash: chain === "l1" ? hash : undefined, l2Hashes: chain === "l2" ? [hash] : [] };
     try {
       if (chain === "l2") {
-        const settlement = await rpc(config.l2Rpc, "eez_getSettlementByL2Block", [receipt.blockHash]) as Settlement | null;
+        const settlement = await rpc(config.l2ProxyRpc, "eez_getSettlementByL2Block", [receipt.blockHash]) as Settlement | null;
         if (settlement?.canonicalL2 !== false && settlement?.l2Blocks.some(block => block.hash.toLowerCase() === receipt!.blockHash.toLowerCase())
             && txHash(settlement.l1TransactionHash)) {
           info.l1 = Number(BigInt(settlement.l1BlockNumber));
@@ -39,7 +44,7 @@ export async function fetchHistoryTransactions(
           info.settlement = true;
         }
       } else {
-        const ranges = await rpc(config.l2Rpc, "eez_getSettledL2RangesByL1Block", [receipt.blockHash]) as Settlement[] | null;
+        const ranges = await rpc(config.l2ProxyRpc, "eez_getSettledL2RangesByL1Block", [receipt.blockHash]) as Settlement[] | null;
         const blocks = (ranges ?? []).filter(range => range.canonicalL2 !== false
           && range.l1BlockHash.toLowerCase() === receipt!.blockHash.toLowerCase()).flatMap(range => range.l2Blocks);
         if (!blocks.length) return info;
@@ -94,8 +99,16 @@ export async function fetchHistoryTransactions(
           info.l2 = Number(BigInt(log.blockNumber));
         }
       }
-    } catch { /* Preserve the source receipt while the settlement index catches up. */ }
+    } catch (error) {
+      // Keep the source link, but distinguish RPC failures from a valid empty index.
+      info.lookupError = (error instanceof Error ? error.message : String(error)).slice(0, 240) || "Unknown RPC error";
+    }
     return info;
   }
+  if (receiptErrors.length) return {
+    chain: preferred, l1Hash: preferred === "l1" ? hash : undefined,
+    l2Hashes: preferred === "l2" ? [hash] : [],
+    lookupError: receiptErrors.join("; ").slice(0, 240),
+  };
   return null;
 }

@@ -86,6 +86,12 @@ L2 source transactions link to their canonical L1 settlement batch (labeled
 “Settlement”). L1 source transactions link to matching L2 incoming call events
 within canonical settled blocks. Repeated call hashes with ambiguous origins or
 destinations stay unresolved; missing counterparts are retried every 15 seconds.
+Settlement index queries use the L2 Composer endpoint (`l2ProxyRpc`), while
+standard receipt, block, and event reads keep using the chain's read RPC.
+History shows receipt and counterpart lookup errors explicitly and preserves the
+source transaction link. Failures retry automatically; valid responses clear the
+error, and a valid empty index still shows “not indexed yet.” Execution
+inspection, live batches, and settlement progress use the same Composer routing.
 
 The top bar shows the deployment name and horizontal network balances beside
 the wallet control. Wallet controls and the provider picker use locally served
@@ -101,6 +107,41 @@ network name used when adding L2 to a wallet. The bridge shows the amount sent;
 gas is paid separately. Saved wallet networks may retain their
 previous name and RPC; cross-chain transactions use `/composer/l1` or
 `/composer/l2` for their source network.
+
+The wallet menu checks Composer discovery through the selected wallet's
+`eth_call` provider. It calls the virtual address
+`0x7Ae2c80116976915a0Ee9b7994e7Bb12026087f8` using
+`composerInfo(bytes32 nonce)` (`0x98da5085`) at `latest`. Every probe uses a fresh
+cryptographic nonce to avoid identical-parameter wallet caches. Responses must
+match the `keccak256("EEZ_COMPOSER_DISCOVERY")` marker, schema version `1`, the
+nonce, the wallet chain ID, the dashboard's L1/L2 pair, and configured contract
+addresses. The `info` bytes contain the existing `eez_composerInfo` JSON; optional
+contract bindings are compared when advertised. Chain IDs are checked before
+and after the call. Requests time out after eight seconds, and results from
+previous wallet/account/network selections cannot replace the current result.
+
+Detection runs after connection/reconnection and account/network changes,
+when the page becomes visible or regains focus, and every 30 seconds while
+visible. Successful detection shows only the status, network, and manual
+Recheck in the wallet menu. When setup is needed, an amber notice explains
+empty responses or deployment mismatches; failed verification uses error
+styling. These notices provide the source Composer URL to copy and manual
+wallet RPC configuration guidance. For
+Rabby, it lists the Settings → Modify RPC URL steps, the current network and
+chain ID, and how to save, enable, and recheck the Composer URL. Ethereum
+mainnet instructions explicitly select Integrated Network → Ethereum (chain
+ID 1); the URL always comes from this deployment's runtime configuration.
+MetaMask instructions follow its [official RPC setup guide](https://support.metamask.io/configure/networks/how-to-add-a-custom-network-rpc#adding-or-editing-rpc-urls):
+open Networks, edit the current network, add the Composer URL with a nickname,
+select it as the default RPC, save, and Recheck. Mobile navigation and the
+Ethereum Mainnet entry (chain ID 1) are identified explicitly.
+An empty `0x` means **Composer not detected**; request errors mean **Unable to verify RPC**.
+Wallets on other networks are asked to select a dashboard network.
+Detection is advisory: it does not change saved wallet RPCs, block transactions,
+or alter gas/fee/submission behavior. It observes only the wallet read route;
+it cannot authenticate an endpoint or guarantee the wallet's simulation or
+submission route. In particular, Rabby's mainnet simulation can use its own
+backend independently of the configured Composer RPC.
 
 L1 labels and logos are detected from `eth_chainId`: Ethereum, Gnosis, Chiado,
 or Sepolia. Labels do not append “L1.” Override the display name or logo with
@@ -381,7 +422,7 @@ entries do not imply successful execution. Traces include nested failures even w
 absent. Raw calldata, logs, and receipt JSON remain accessible without tracing.
 
 Cross-chain block links come from `eez_getSettlementByL2Block` and
-`eez_getSettledL2RangesByL1Block` on the L2 RPC. For an L1 batch, the L2 lane
+`eez_getSettledL2RangesByL1Block` on the L2 Composer RPC. For an L1 batch, the L2 lane
 loads only the terminal sync block by its indexed hash. Settlement links retain
 the complete L2 range. Chain lanes show only calls to known EEZ managers,
 decoded EEZ calls, and transactions emitting EEZ events, including calls through

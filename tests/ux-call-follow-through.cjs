@@ -44,7 +44,8 @@ const snapshot = {generatedAt:new Date().toISOString(),healthy:true,stale:false,
     if(req.method()!=='POST') return route.continue();
     const {method,params=[],id}=req.postDataJSON();
     assert(!/send|sign/i.test(method),'No transaction submission is allowed');
-    const l1=path.endsWith('/l1'); requests.push({method,params,l1});
+    const l1=path.endsWith('/l1'); requests.push({method,params,l1,path});
+    if(method.startsWith('eez_')&&path!=='/composer/l2')return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:-32601,message:'Method not found'}}});
     let result=null,error;
     if(method==='eth_chainId') result=l1?'0x27d8':'0x539';
     if(method==='eth_blockNumber') result=l1?'0x64':'0x7';

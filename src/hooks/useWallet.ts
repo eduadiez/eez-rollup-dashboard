@@ -3,6 +3,7 @@ import { config, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
 import { useWalletProviders } from "./useWalletProviders";
+import { useComposerDetection } from "./useComposerDetection";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 
@@ -19,8 +20,10 @@ export function useWallet(log: Logger, configLoaded = false) {
   stateRef.current = state;
   const selectedProviderRef = useRef<EthereumProvider | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<EthereumProvider | null>(null);
+  const [walletRevision, setWalletRevision] = useState(0);
   const [discoveryReady, setDiscoveryReady] = useState(false);
   const walletOptions = useWalletProviders();
+  const composer = useComposerDetection(selectedProvider, state.address, state.chainId, configLoaded && state.isConnected, walletRevision);
 
   const hasProvider = walletOptions.length > 0;
 
@@ -85,6 +88,7 @@ export function useWallet(log: Logger, configLoaded = false) {
       // Keep the current wallet connected if the new wallet rejects either request.
       selectedProviderRef.current = choice.provider;
       setSelectedProvider(choice.provider);
+      setWalletRevision(revision => revision + 1);
       setState({
         address: addr,
         chainId,
@@ -264,6 +268,7 @@ export function useWallet(log: Logger, configLoaded = false) {
       if (accounts.length === 0) {
         disconnect();
       } else {
+        setWalletRevision(revision => revision + 1);
         setState((s) => ({ ...s, address: accounts[0]! }));
         refreshBalance(accounts[0]!);
       }
@@ -271,6 +276,7 @@ export function useWallet(log: Logger, configLoaded = false) {
 
     const onChainChanged = ((...args: unknown[]) => {
       const chainId = args[0] as string;
+      setWalletRevision(revision => revision + 1);
       setState((s) => ({ ...s, chainId }));
     }) as (...args: unknown[]) => void;
 
@@ -291,6 +297,7 @@ export function useWallet(log: Logger, configLoaded = false) {
 
   return {
     ...state,
+    ...composer,
     hasProvider,
     walletName: walletOptions.find((option) => option.provider === selectedProvider)?.name
       ?? null,

@@ -7,7 +7,7 @@ registerHooks({ resolve(specifier, context, next) {
 globalThis.window = { location: { search: "", origin: "https://test.invalid" } };
 const { setConfig } = await import('../src/config.ts');
 const { fetchCallSettlement } = await import('../src/lib/callSettlement.ts');
-setConfig({ l1Rpc: 'https://l1.invalid', l2Rpc: 'https://l2.invalid' });
+setConfig({ l1Rpc: 'https://l1.invalid', l2Rpc: 'https://l2.invalid', l2ProxyRpc: 'https://composer-l2.invalid' });
 const hash = byte => '0x' + byte.repeat(32);
 const l1Hash = hash('11'), l2Hash = hash('22'), tx = hash('33'), post = hash('44');
 const record = { l1BlockNumber: '0x64', l1BlockHash: l1Hash, l1TransactionHash: post,
@@ -17,6 +17,7 @@ function fixture(options = {}) {
   const rpc = async (url, method, params) => {
     calls.push({ url, method, params });
     const l1 = url.includes('l1');
+    assert.equal(url, method.startsWith('eez_') ? 'https://composer-l2.invalid' : l1 ? 'https://l1.invalid' : 'https://l2.invalid', 'settlement index queries use Composer; canonical evidence uses read RPCs');
     if (method === 'eth_getTransactionReceipt') return options.pending ? null : {
       status: options.reverted ? '0x0' : '0x1', blockNumber: l1 ? '0x64' : '0x7', blockHash: l1 ? l1Hash : l2Hash, logs: [],
     };
@@ -92,6 +93,13 @@ test('a reverted L2 transaction can still settle without being called successful
 test('settlement lookup failures are surfaced instead of reporting finalized', async () => {
   const { rpc } = fixture({ indexError: true, finalized: true });
   await assert.rejects(fetchCallSettlement(tx, 'l2', true, rpc), /Settlement index unavailable/);
+});
+test('counterpart lookup failures do not masquerade as awaiting settlement', async () => {
+  const base = fixture({ record });
+  let queries = 0;
+  const rpc = (url, method, params) => method === 'eez_getSettledL2RangesByL1Block' && ++queries > 1
+    ? Promise.reject(new Error('Counterpart index offline')) : base.rpc(url, method, params);
+  await assert.rejects(fetchCallSettlement(tx, 'l1', true, rpc), /Counterpart index offline/);
 });
 test('L1 posting transactions follow their exact settlement record', async () => {
   const { rpc } = fixture({ safe: true });

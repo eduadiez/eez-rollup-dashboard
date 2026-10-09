@@ -380,6 +380,11 @@ class Collector:
         self.settings = settings
         self.l1 = JsonClient(settings.l1_rpc_url, settings.request_timeout_seconds)
         self.l2 = JsonClient(settings.l2_rpc_url, settings.request_timeout_seconds)
+        self._l2_composer = (
+            JsonClient(settings.l2_composer_rpc_url, settings.request_timeout_seconds)
+            if settings.l2_composer_rpc_url
+            else None
+        )
         self.beacon = (
             JsonClient(settings.beacon_url, settings.request_timeout_seconds)
             if settings.beacon_url
@@ -486,12 +491,18 @@ class Collector:
             raise RemoteCallError("live block details are not available yet")
         return summarize_block(block)
 
+    @property
+    def settlement_l2(self) -> JsonClient:
+        # Legacy combined RPCs can expose the index too. Never fall back after
+        # a configured Composer fails: that would hide a routing/index error.
+        return self._l2_composer if self._l2_composer is not None else self.l2
+
     def correlation(self, direction: str, selector: str) -> Any:
         normalized = validate_selector(selector)
         if direction == "l2-to-l1":
-            return self.l2.rpc("eez_getSettlementByL2Block", [normalized])
+            return self.settlement_l2.rpc("eez_getSettlementByL2Block", [normalized])
         if direction == "l1-to-l2":
-            return self.l2.rpc("eez_getSettledL2RangesByL1Block", [normalized])
+            return self.settlement_l2.rpc("eez_getSettledL2RangesByL1Block", [normalized])
         raise ValueError("direction must be l2-to-l1 or l1-to-l2")
 
     def settlement_search(self, query: str) -> dict[str, Any]:
@@ -507,7 +518,7 @@ class Collector:
             tasks["L1 block"] = (self.l1.rpc, (method, [normalized, True]))
         if scope in (None, "l2"):
             tasks["L2 block"] = (
-                self.l2.rpc,
+                self.settlement_l2.rpc,
                 ("eez_getSettlementByL2Block", [normalized]),
             )
         if scope is None and is_hash:
@@ -966,7 +977,7 @@ class Collector:
                 self.l1.rpc, "eth_getTransactionReceipt", [transaction_hash]
             )
             ranges_future = executor.submit(
-                self.l2.rpc, "eez_getSettledL2RangesByL1Block", [block_hash]
+                self.settlement_l2.rpc, "eez_getSettledL2RangesByL1Block", [block_hash]
             )
             try:
                 value = receipt_future.result()

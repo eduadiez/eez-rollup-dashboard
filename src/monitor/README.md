@@ -67,15 +67,18 @@ Optional services and links can be added independently:
 | `EEZ_BLOBSCAN_API_URL` | Optional Blobscan API root for blob decoding and historical lookup by versioned hash. |
 | `EEZ_REGISTRY_ADDRESS`, `EEZ_ROLLUP_ID` | Public contract metadata for EEZ commitment and settlement checks; the rollup ID defaults to `1`. |
 | `EEZ_UI_L1_EXPLORER_URL`, `EEZ_UI_L2_EXPLORER_URL`, `EEZ_BLOBSCAN_URL` | Optional explorer frontend roots used for links. |
-| `EEZ_L1_COMPOSER_RPC_URL`, `EEZ_L2_COMPOSER_RPC_URL` | Optional public transaction fronts displayed for copying. |
+| `EEZ_L1_COMPOSER_RPC_URL`, `EEZ_L2_COMPOSER_RPC_URL` | Optional public transaction fronts displayed for copying. The L2 Composer also handles settlement-index queries. |
 | `EEZ_SETTLEMENT_LOOKBACK_BLOCKS` | Registry log history window, default `512` L1 blocks, allowed `32`–`4096`. Independent of the block cards. |
 | `EEZ_RECENT_SETTLEMENTS` | Maximum displayed posts from that history, default `12`, allowed `2`–`64`. |
 | `EEZ_L1_NATIVE_CURRENCY` | Native 18-decimal receipt currency, default `ETH`; configure `XDAI` for Gnosis/Chiado. |
 
-Use ordinary read RPC endpoints for collection. Exact settlement correlations
-also need the L2 endpoint to expose `eez_getSettlementByL2Block` and
-`eez_getSettledL2RangesByL1Block`. Unavailable optional RPC methods do not prevent
-head and block monitoring.
+Use ordinary read RPC endpoints for collection. Set `EEZ_L2_COMPOSER_RPC_URL`
+to the L2 Composer endpoint (for example, `https://<host>/composer/l2`) for
+`eez_getSettlementByL2Block` and `eez_getSettledL2RangesByL1Block`. Correlation,
+settlement search, and blob rows all use this endpoint. If it is unset, the
+monitor uses the L2 read endpoint for legacy deployments with a combined RPC.
+Configured Composer failures are reported without retrying the read endpoint.
+Unavailable optional RPC methods do not prevent head and block monitoring.
 
 Recent settlement history additionally requires `eth_getLogs` for the configured
 registry. Its window and number of hydrated transactions are bounded. The API

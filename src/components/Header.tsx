@@ -5,6 +5,8 @@ import { ExplorerLink } from "./ExplorerLink";
 import styles from "./Header.module.css";
 import { NetworkIcon } from "./NetworkIcon";
 import { WalletIcon } from "./WalletIcon";
+import { ComposerStatus } from "./ComposerStatus";
+import type { ComposerDetection } from "../lib/composerDiscovery";
 import eezLogo from "../styles/brand/eez-logo.svg";
 import eezLogoLight from "../styles/brand/eez-logo-light.svg";
 
@@ -21,6 +23,9 @@ interface Props {
   currentChainId?: string | null;
   onSwitchL1?: () => void;
   onSwitchL2?: () => void;
+  composerConnection?: ComposerDetection;
+  checkingComposer?: boolean;
+  onRecheckComposer?: () => void;
 }
 
 const NAV_ITEMS = [
@@ -42,6 +47,9 @@ export function Header({
   currentChainId,
   onSwitchL1,
   onSwitchL2,
+  composerConnection,
+  checkingComposer = false,
+  onRecheckComposer,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -165,6 +173,9 @@ export function Header({
                         label={shortAddr}
                       />
                     </div>
+
+                    {composerConnection && onRecheckComposer && <ComposerStatus
+                      connection={composerConnection} checking={checkingComposer} onRecheck={onRecheckComposer} walletName={walletName} />}
 
                     {onToggleTheme && (
                       <div className={styles.ddSection}>

@@ -19,6 +19,7 @@ type RuntimeConfig = {
   l2ExplorerApiUrl?: string;
   l1ContractAddress?: string;
   l2ContractAddress?: string;
+  rollupManagerAddress?: string;
   bridgeL1Address?: string;
   bridgeL2Address?: string;
   rollupId?: string;
@@ -81,6 +82,7 @@ export function useConfigLoader() {
             ...(runtime.l2ExplorerUrl ? { l2Explorer: runtime.l2ExplorerUrl } : {}),
             ...(runtime.l2ExplorerApiUrl ? { l2ExplorerApi: runtime.l2ExplorerApiUrl } : {}),
             ...(runtime.l1ContractAddress ? { rollupsAddress: runtime.l1ContractAddress } : {}),
+            ...(runtime.rollupManagerAddress ? { rollupManagerAddress: runtime.rollupManagerAddress } : {}),
             ...(runtime.rollupId ? { rollupId: runtime.rollupId } : {}),
             ...(runtime.bridgeL1Address ? { l1Bridge: runtime.bridgeL1Address } : {}),
             ...(runtime.bridgeL2Address ? { l2Bridge: runtime.bridgeL2Address } : {}),
