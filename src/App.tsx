@@ -58,7 +58,7 @@ function getHashParam(key: string): string | null {
 }
 
 const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
-  { id: "dashboard", label: "Dashboard" },
+  { id: "dashboard", label: "Bridge & Calls" },
   { id: "counter-demo", label: "Counter Demo" },
 ];
 
@@ -104,6 +104,9 @@ export function App() {
   const [visualizerRoute, setVisualizerRoute] = useState(() => window.location.hash);
   const visualizerParams = new URLSearchParams(visualizerRoute.split("?")[1] ?? "");
   const [dashboardTab, setDashboardTab] = useState<DashboardTab>(getInitialTab);
+  useEffect(() => {
+    document.title = `${view === "visualizer" ? "Execution Visualizer" : view === "monitor" ? "Network Monitor" : dashboardTab === "counter-demo" ? "Counter Demo" : "Dashboard"} — ${config.rollupName}`;
+  }, [view, dashboardTab, configLoaded]);
 
   /** Switch dashboard sub-tab and update hash for deep linking */
   const switchTab = useCallback((tab: DashboardTab) => {
@@ -359,6 +362,8 @@ export function App() {
                     state={bridgeHook.state}
                     recentTokens={bridgeHook.recentTokens}
                     walletAddress={wallet.address}
+                    walletOptions={wallet.walletOptions}
+                    onConnect={wallet.connect}
                     onSetDirection={bridgeHook.setDirection}
                     onSetAsset={bridgeHook.setAsset}
                     onSetAmount={bridgeHook.setAmount}

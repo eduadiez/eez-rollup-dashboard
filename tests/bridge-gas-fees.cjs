@@ -65,7 +65,7 @@ async function fixture(browser, options = {}) {
       });
     }
   }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain });
-  await page.route('**/*', route => {
+  await page.route('**/*', async route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path.endsWith('/config.json')) return route.fulfill({ json: {
@@ -92,9 +92,10 @@ async function fixture(browser, options = {}) {
     rpcRequests.push({ path, method, params });
     if (method === 'eth_estimateGas') {
       if (!path.startsWith('/composer/')) return reject('Read RPC must not estimate bridge transactions');
+      if (estimation.delay) await new Promise(resolve => setTimeout(resolve, estimation.delay));
       if (estimation.unsupported) return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:3,message:'execution reverted',data:'0x096aa08200000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004f9d330ad00000000000000000000000000000000000000000000000000000000'}}});
       if (estimation.error) return reject(estimation.error);
-      return reply(estimation.result);
+      return reply(options.gasForValue ? options.gasForValue(BigInt(params[0].value)) : estimation.result);
     }
     if (method === 'eth_call' && params[0]?.to?.toLowerCase() === bridge && params[0]?.data.startsWith('0x3e38ac74')) {
       if (options.tokenInfoError) return reject('Token information unavailable');
@@ -108,7 +109,7 @@ async function fixture(browser, options = {}) {
       return reply('0x');
     }
     if (method === 'eth_call') return reject('execution reverted');
-    if (method === 'eth_getBalance') return reply('0x3635c9adc5dea00000');
+    if (method === 'eth_getBalance') return reply('0x' + BigInt(options.nativeBalance ?? '0x3635c9adc5dea00000').toString(16));
     if (method === 'eth_getBlockByNumber') return reply({
       number: '0x10', hash: '0x' + '55'.repeat(32),
       parentHash: '0x' + '66'.repeat(32), timestamp: '0x65000000',
@@ -123,7 +124,8 @@ async function fixture(browser, options = {}) {
     return reply('0x0');
   });
   await page.goto(origin + '/#/bridge');
-  await page.getByRole('button', { name: 'Connect Wallet' }).first().click();
+  if (options.disconnected) return {context,page,errors,rpcRequests,estimation,receipt};
+  await page.getByRole('button', { name: options.bridgeConnect ? 'Connect wallet' : 'Connect Wallet',exact:true }).first().click();
   if (options.multipleWallets) {
     for (const brand of ['rabby', 'metamask']) {
       const logo = page.locator('[data-wallet-logo="' + brand + '"]');
@@ -138,9 +140,10 @@ async function fixture(browser, options = {}) {
   await until(() => selectedLogo.evaluate(img => img.complete && img.naturalWidth > 0), 'selected wallet logo did not load');
   if (options.reverse) await page.getByTitle('Swap direction').click();
   if (options.erc20) {
+    await page.getByRole('button', { name: /^Choose bridge asset on/ }).first().click();
     await page.getByRole('button', { name: 'ERC20', exact: true }).click();
     await page.getByPlaceholder('0x... (ERC20 token address)', { exact: true }).fill(token);
-    await until(async () => (await page.getByLabel('Bridge amount', { exact: true }).locator('..').locator('span').textContent()) === (options.symbol || '???'), 'token metadata did not load');
+    await until(async () => (await page.getByLabel('Bridge amount', { exact: true }).locator('..').locator('span').first().textContent()) === (options.symbol || '???'), 'token metadata did not load');
   }
   if (options.destination) {
     await page.getByRole('button', { name: 'Change recipient', exact: true }).click();
@@ -159,7 +162,9 @@ async function fixture(browser, options = {}) {
   return { context, page, button, errors, rpcRequests, estimation, receipt };
 }
 
-(async () => {
+module.exports = { fixture, until, RAW_GAS, account, recipient, token };
+
+if (require.main === module) (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   try {
     let scenarios = 0;
@@ -176,6 +181,9 @@ async function fixture(browser, options = {}) {
       assert.ok(estimates.every(r => Object.keys(r.params[0]).sort().join(',') === 'data,from,to,value'), 'no gas cap or fee fields on estimates');
       await f.button.click();
       await until(async () => (await f.page.evaluate(() => window.walletRequests.length)) === 1, 'wallet did not receive bridge');
+      const follow = f.page.getByRole('dialog').getByRole('link', { name: 'Follow this call →', exact: true });
+      await follow.waitFor();
+      assert.match(await follow.getAttribute('href'), new RegExp('mode=inspect&chain=' + (reverse ? 'l2' : 'l1') + '&tx=0x'));
       const tx = await f.page.evaluate(() => window.walletRequests[0]);
       const record = await f.page.evaluate(() => JSON.parse(localStorage.getItem('txHistory'))[0]);
       assert.equal(record.type, 'bridge');

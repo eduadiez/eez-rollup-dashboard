@@ -78,6 +78,7 @@ async function fixture(browser, options = {}) {
   const panel = page.getByRole('region', {name:'Bridge transfers',exact:true});
   await panel.getByRole('group', {name:'Source network'}).getByText(options.name || (options.chain === '0x1' ? 'Ethereum' : options.chain === '0x539' ? 'L1 network (1337)' : 'Chiado'),{exact:true}).waitFor();
   if (!options.disconnected) await page.getByRole('button',{name:/Rabby ·/}).waitFor();
+  await panel.getByRole('button', {name:/^Choose bridge asset on/}).first().click();
   await panel.getByRole('button', {name:'ERC20',exact:true}).click();
   return {page, panel, context, calls, errors, writes, async close() {assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);await context.close();}};
 }
@@ -101,6 +102,8 @@ async function browse(f, filter) {
   for (const width of [320,390,1440]) {
     await f.page.setViewportSize({width,height:900});
     assert.ok(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth), 'picker overflow at '+width);
+    const tiny=await f.panel.evaluate(root=>[...root.querySelectorAll('*')].filter(el=>el.children.length===0&&el.textContent.trim()&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&parseFloat(getComputedStyle(el).fontSize)<12).map(el=>el.textContent));
+    assert.deepEqual(tiny,[], 'Expanded token picker text below 12px at '+width);
   }
   assert.ok(f.calls.some(c=>c.path==='/rpc/l1' && c.method==='eth_call' && c.params[0].data.startsWith('0x70a08231')));
   await f.close();

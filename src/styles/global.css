@@ -48,8 +48,8 @@
   --yellow: #fbbf24;
   --yellow-dim: rgba(251, 191, 36, .09);
   --yellow-border: rgba(251, 191, 36, .22);
-  --chain-l1: var(--eez-muted);
-  --chain-l2: var(--eez-muted);
+  --chain-l1: #9ba6d6;
+  --chain-l2: #b5a3ee;
   --cyan: var(--eez-label);
   --cyan-dim: rgba(150, 185, 232, .09);
   --cyan-border: rgba(150, 185, 232, .22);
@@ -230,15 +230,15 @@ body {
 .btn > svg { display: block; flex-shrink: 0; }
 
 /* ── Sizes ── */
-.btn-sm  { height: 28px; padding: 0 10px; font-size: 10px; }
-.btn-md  { height: 34px; padding: 0 16px; font-size: 11px; }
+.btn-sm  { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn-md  { height: 34px; padding: 0 16px; font-size: 12px; }
 .btn-lg  { height: 40px; padding: 0 22px; font-size: 12px; }
 
 /* Default to md when no size is specified */
 .btn:where(:not(.btn-sm):not(.btn-lg)) {
   height: 34px;
   padding: 0 16px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* ── Solid — filled background, high emphasis ── */

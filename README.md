@@ -297,6 +297,45 @@ With Playwright installed and a production preview running, run
 wallet/RPC coverage. They default to `http://127.0.0.1:8083/dashboard`; override
 that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
 
+Transaction result pop-ups include **Follow this call** links to the execution
+visualizer. Inspection refreshes every ten seconds and reports source execution
+separately from L1 posting, safety, and finality. Canonical hashes and both node
+finality tags support positive settlement stages; reorgs or unavailable evidence
+clear those stages. The Monitor link opens the matching posting record directly.
+Local L1 transactions show L1 confirmation without implying L2 settlement.
+
+Use **Latest EEZ batch**, or type `latest` into Inspect, to start with a recent
+posted EEZ batch. **Latest block** and saved `block=latest` links retain their
+source-chain meaning. Empty Live
+filters offer an inspection shortcut and a way to clear filters. Monitor keeps
+operator settings collapsed and initially shows five settlement summaries on
+mobile; remaining records and per-record details are expandable.
+
+The Bridge card uses two fixed network panels. Reversing direction moves the
+From/To roles, editable amount, balance, and MAX without moving the networks.
+The destination shows the exact amount and recipient; one asset selection
+applies to both panels. Disconnected users can connect a wallet directly from
+the primary action. The ERC20 token address and existing token catalog remain
+below the transfer control.
+
+Native MAX reads the source balance and EIP-1559 fee quote, reserves the chosen
+gas limit at the quoted fee cap, and re-estimates the resulting amount through
+Composer. A manual gas limit controls that reserve. Errors leave the amount
+unchanged and block submission until corrected; changing the form cancels
+stale MAX results. ERC20 MAX uses the full raw token balance, including precision
+omitted from the displayed balance. Wallets can independently change gas and
+fees before signing.
+
+Additional regressions:
+
+```bash
+node tests/call-settlement.test.mjs
+node tests/bridge-max.test.mjs
+# Against the production preview, with Playwright installed:
+node tests/ux-call-follow-through.cjs
+node tests/bridge-asset-swap.cjs
+```
+
 ## Bridge gas and approvals
 
 Bridge gas is estimated against the source chain's Composer (`/composer/l1`
@@ -326,8 +365,8 @@ node tests/wallet-startup.cjs
 
 Open **Visualizer** or `/dashboard/#/visualizer`. **Live** opens first by default.
 **Inspect** accepts a transaction hash, block number, block hash, or `latest` in
-one form. Hashes are detected on either chain; numeric blocks and `latest` use
-L1 unless L2 is selected. Transaction History's **View execution** action opens
+one form. `latest` opens the newest EEZ batch; hashes are detected on either
+chain. Numeric blocks and **Latest block** use L1 unless L2 is selected. Transaction History's **View execution** action opens
 the source transaction in this same view. Failed transactions and contract creations are supported.
 
 The debugger uses mined receipts, EEZ events, posting/loading calldata, and an

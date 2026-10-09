@@ -20,7 +20,9 @@ const state = {
   heads: {},
   headHistory: {},
   pendingChains: {},
-  blobQuery: "",
+  blobQuery: new URL(window.location.href).searchParams.get("settlement") || "",
+  expandedSettlements: new Set(),
+  showAllSettlements: false,
   settlementLookup: null,
   settlementSearchLoading: false,
   settlementSearchTimer: null,
@@ -44,6 +46,10 @@ function compactHash(value, front = 8, back = 6) {
 
 function number(value) {
   return value === null || value === undefined ? "—" : Number(value).toLocaleString();
+}
+
+function counted(value, singular, plural = `${singular}s`) {
+  return `${number(value)} ${Number(value) === 1 ? singular : plural}`;
 }
 
 function age(timestamp) {
@@ -86,11 +92,11 @@ function renderSettlementPolicy(snapshot) {
   if (!policy?.enabled) {
     setStatus(byId("policy-status"), "loading", policy ? "Legacy mode" : "Not supplied");
     setHtml("policy-rules", `<p class="muted">${policy ? "The configurable settlement policy is disabled." : "The monitor has not been supplied with the node’s settlement policy."}</p>`);
-    setHtml("policy-progress", `<p class="muted">Canonical posts and commitment checks remain available below.</p>`);
+    setHtml("policy-progress", `<p class="muted">Canonical posts and commitment checks remain available in the network summary and settlement records.</p>`);
   } else {
-    const cadence = policy.nominalGeneralIntervalMs === null ? `${number(policy.maxUnsettledL2Blocks)} blocks` : duration(policy.nominalGeneralIntervalMs);
+    const cadence = policy.nominalGeneralIntervalMs === null ? `${counted(policy.maxUnsettledL2Blocks, "block")}` : duration(policy.nominalGeneralIntervalMs);
     const pure = policy.pureL2Mode === "always" ? "Always" : duration(policy.pureL2IntervalMs);
-    setHtml("policy-rules", `<div><p>General consolidation</p><strong>${h(cadence)}</strong><small>${number(policy.maxUnsettledL2Blocks)} L2 blocks · including empty history</small></div>
+    setHtml("policy-rules", `<div><p>General consolidation</p><strong>${h(cadence)}</strong><small>${counted(policy.maxUnsettledL2Blocks, "L2 block")} · including empty history</small></div>
       <div><p>Pure L2 transactions</p><strong>${h(pure)}</strong><small>${policy.pureL2Mode === "always" ? "Next eligible L1 opportunity, including reverted transactions" : "If transactions are pending; the earlier general rule still applies"}</small></div>
       <div><p>Cross-chain transactions</p><strong>Always</strong><small>Valid cross-chain work triggers posting; empty Sync blocks do not</small></div>`);
     const usable = progress?.available && !snapshot.stale;
@@ -100,8 +106,8 @@ function renderSettlementPolicy(snapshot) {
       const limit = policy.maxUnsettledL2Blocks;
       const explanation = progress.generalThresholdReached
         ? "The general threshold is reached. Waiting for canonical L1 inclusion."
-        : `${number(progress.remainingL2Blocks)} L2 blocks to the general threshold${progress.estimatedGeneralRemainingMs !== null ? ` · approximately ${h(duration(progress.estimatedGeneralRemainingMs))}` : ""}.`;
-      setHtml("policy-progress", `<div class="progress-heading"><span>Unsettled history</span><strong>${number(progress.unsettledL2Blocks)} <span>/ ${number(limit)} L2 blocks</span></strong></div>
+        : `${counted(progress.remainingL2Blocks, "L2 block")} to the general threshold${progress.estimatedGeneralRemainingMs !== null ? ` · approximately ${h(duration(progress.estimatedGeneralRemainingMs))}` : ""}.`;
+      setHtml("policy-progress", `<div class="progress-heading"><span>Unsettled history</span><strong>${number(progress.unsettledL2Blocks)} <span>/ ${counted(limit, "L2 block")}</span></strong></div>
         <progress value="${Math.min(progress.unsettledL2Blocks, limit)}" max="${limit}" aria-label="L2 blocks toward the general settlement threshold"></progress>
         <p>${explanation} Transaction activity can settle earlier.</p>`);
     } else {
@@ -192,7 +198,7 @@ function renderComposerRpc(endpoints = {}, chains = {}) {
     <div class="composer-rpc-routes">${available.map((route) => `<div class="composer-rpc-route">
       <span class="composer-direction">${h(route.direction)}</span>
       <code title="${h(route.url)}">${h(route.url)}</code>
-      <span class="composer-chain">${h(route.source)} chain ${h(route.chainId ?? "—")}</span>
+      <span class="composer-chain" data-chain="${route.source.toLowerCase()}">${h(route.source)} chain ${h(route.chainId ?? "—")}</span>
       <button class="btn btn-sm btn-outline" type="button" data-copy-rpc="${h(route.url)}" aria-label="Copy ${h(route.direction)} Composer RPC URL">Copy</button>
     </div>`).join("")}</div>`;
 }
@@ -280,7 +286,8 @@ function rangeText(ranges) {
     const finality = item.l2Finalized ? "finalized" : item.canonicalL2 ? "canonical" : "non-canonical";
     const firstLink = blockLink(l2Explorer, first, `#${number(first)}`, "explorer-value");
     const lastLink = blockLink(l2Explorer, last, `#${number(last)}`, "explorer-value");
-    return `<span class="primary mono">${firstLink} → ${lastLink}</span><span class="secondary">${number(parseInt(range.blockCount || "0", 16))} blocks · ${finality}</span>`;
+    const count = parseInt(range.blockCount || "0", 16);
+    return `<span class="primary mono">${firstLink} → ${lastLink}</span><span class="secondary">${number(count)} ${count === 1 ? "block" : "blocks"} · ${finality}</span>`;
   }).join("");
 }
 
@@ -350,14 +357,14 @@ function blobRows(settlements, query = "", historical = false) {
           explorerLink(explorers.blobscan, `blob/${hash}`, `${index + 1}: ${compactHash(hash)}`, "secondary mono hash explorer-value", hash)
         ).join("")
       : `<span class="secondary">no versioned hash</span>`;
-    return `<tr>
-      <td>${blockLink(explorers.l1, item.l1BlockNumber, `#${number(item.l1BlockNumber)}`, "primary mono explorer-value")}${blockHashLink(explorers.l1, item.l1BlockHash, "secondary mono hash explorer-value")}<span class="secondary">${age(item.timestamp)} ago</span></td>
-      <td>${transactionLink(explorers.l1, item.transactionHash, "primary mono hash explorer-value")}<span class="secondary">${protocol}</span></td>
-      <td><span class="primary">${number(item.blobCount)}</span>${blobLinks}</td>
-      <td>${beaconText}</td><td>${rangeText(item.l2Ranges)}</td>
-      <td class="post-cost"><span class="primary" title="${h(item.totalCostWei === null || item.totalCostWei === undefined ? "Receipt cost unavailable" : `${item.totalCostWei} wei`)}">${h(formatEth(item.totalCostWei))}</span><span class="secondary">Execution ${h(formatEth(item.executionCostWei))}</span><span class="secondary">Blobs ${h(formatEth(item.blobCostWei))}</span></td>
-      <td><span class="badge ${resultClass}">${h(item.status || "unknown")}</span>${item.errors?.length ? `<span class="secondary" title="${h(item.errors.join("\n"))}">${item.errors.length} warning(s)</span>` : ""}</td>
-      <td>${item.isProtocolSettlement ? `<button class="btn btn-sm btn-outline small-action decode-trigger" type="button" data-transaction="${h(item.transactionHash)}">Decode</button>` : "—"}</td>
+    return `<tr data-settlement="${h(item.transactionHash)}"${state.expandedSettlements.has(item.transactionHash) ? ' class="expanded"' : ""}>
+      <td data-label="L1 block">${blockLink(explorers.l1, item.l1BlockNumber, `#${number(item.l1BlockNumber)}`, "primary mono explorer-value")}${blockHashLink(explorers.l1, item.l1BlockHash, "secondary mono hash explorer-value")}<span class="secondary">${age(item.timestamp)} ago</span></td>
+      <td data-label="Posting transaction">${transactionLink(explorers.l1, item.transactionHash, "primary mono hash explorer-value")}<span class="secondary">${protocol}</span></td>
+      <td data-label="Blobs"><span class="primary">${number(item.blobCount)}</span>${blobLinks}</td>
+      <td data-label="Beacon">${beaconText}</td><td data-label="L2 range">${rangeText(item.l2Ranges)}</td>
+      <td class="post-cost" data-label="Post tx cost"><span class="primary" title="${h(item.totalCostWei === null || item.totalCostWei === undefined ? "Receipt cost unavailable" : `${item.totalCostWei} wei`)}">${h(formatEth(item.totalCostWei))}</span><span class="secondary">Execution ${h(formatEth(item.executionCostWei))}</span><span class="secondary">Blobs ${h(formatEth(item.blobCostWei))}</span></td>
+      <td data-label="Result"><span class="badge ${resultClass}">${h(item.status || "unknown")}</span>${item.errors?.length ? `<span class="secondary" title="${h(item.errors.join("\n"))}">${item.errors.length} warning(s)</span>` : ""}</td>
+      <td data-label="Inspect"><button class="row-details btn btn-outline" type="button" aria-expanded="${state.expandedSettlements.has(item.transactionHash)}">${state.expandedSettlements.has(item.transactionHash) ? "Less" : "Details"}</button>${item.isProtocolSettlement ? `<button class="btn btn-sm btn-outline small-action decode-trigger" type="button" data-transaction="${h(item.transactionHash)}">Decode</button>` : "—"}</td>
     </tr>`;
   }).join("");
 }
@@ -374,6 +381,11 @@ function renderBlobSettlements() {
     : state.snapshot?.blobSettlements || [];
   const matching = settlements.filter((item) => settlementMatches(item, state.blobQuery));
   byId("blob-rows").innerHTML = blobRows(matching, state.blobQuery, historical);
+  byId("blob-rows").classList.toggle("show-all", state.showAllSettlements);
+  const more = byId("settlements-more");
+  more.hidden = matching.length <= 5;
+  more.textContent = state.showAllSettlements ? "Show latest 5 settlements" : `Show all ${matching.length} settlements`;
+  more.setAttribute?.("aria-expanded", String(state.showAllSettlements));
   const window = state.snapshot?.configuration?.recentBlockWindow || "—";
   const history = state.snapshot?.settlementHistory;
   if (historical) {
@@ -422,7 +434,7 @@ function decodedByteLayout(payload, operation) {
         <span><b>01</b><small>CloseBlobStream</small></span>
         <span><b>${number(payload.paddingBytes)} B</b><small>zero padding</small></span>
       </div>
-      ${direct ? `<p>The operation starts with version <code>0x00</code>, followed by the block count, transaction-count tokens, beneficiary runs, extra-data runs, transaction lengths, and exact signed transaction bytes. This batch covers ${number(operation.blockCount)} blocks and ${number(operation.transactionCount)} pure L2 transactions. Entries and cross-chain execution are reconstructed from the native semantic stream.</p>` : `<p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${number(operation.blockCount)} blocks, ${number(operation.transactionCount)} transactions, and ${number(operation.l2EntryCount)} reconstructed L2 entries.</p>`}
+      ${direct ? `<p>The operation starts with version <code>0x00</code>, followed by the block count, transaction-count tokens, beneficiary runs, extra-data runs, transaction lengths, and exact signed transaction bytes. This batch covers ${counted(operation.blockCount, "block")} and ${counted(operation.transactionCount, "pure L2 transaction")}. Entries and cross-chain execution are reconstructed from the native semantic stream.</p>` : `<p>The operation begins with tag <code>0x${tag.toString(16).padStart(2, "0")}</code>, followed by <code>${h(bodyShapes[tag] || "unknown payload")}</code>. This batch covers ${counted(operation.blockCount, "block")}, ${counted(operation.transactionCount, "transaction")}, and ${counted(operation.l2EntryCount, "reconstructed L2 entry", "reconstructed L2 entries")}.</p>`}
       <p><code>ChainOperation.operations</code> ends after ${direct ? "those columns" : "that RLP body"}. Each originating cross-chain transaction is encoded afterward as its own <code>InitiateCrossChainTransaction … FinishCrossChainTransaction</code> message bracket before the final close marker.</p>
       <p class="muted">This UI checks bounded parsing, ${direct ? "canonical count tokens and metadata coverage" : "canonical RLP lengths and shape"}, the expected rollup ID, and message order. Signed transaction bytes are displayed without validating their signatures or transaction schemas. The protocol verifier separately checks KZG commitments, beacon inclusion, block/hash linkage, and state-transition soundness.</p>
     </div>
@@ -531,7 +543,7 @@ function decodedSemantics(payload) {
   const operationDescription = payload.chainOperation?.operations?.format === "direct-v0"
     ? "the operation columns carry ordinary transaction prefixes and metadata. Cross-chain execution and entries require replay."
     : "the operation RLP separately carries the blocks and entries needed to synchronize this rollup.";
-  const intro = `<div class="semantic-heading"><div><p class="eyebrow">CROSS-CHAIN MESSAGE STREAM</p><h3>${number(transactions.length)} semantic transaction(s)</h3></div><p>These brackets follow <code>ChainOperation</code> in the same logical blob stream. They describe cross-chain authorization and effects; ${operationDescription}</p></div>${timeline}`;
+  const intro = `<div class="semantic-heading"><div><p class="eyebrow">CROSS-CHAIN MESSAGE STREAM</p><h3>${counted(transactions.length, "semantic transaction")}</h3></div><p>These brackets follow <code>ChainOperation</code> in the same logical blob stream. They describe cross-chain authorization and effects; ${operationDescription}</p></div>${timeline}`;
 
   if (!transactions.length) {
     return `<section class="semantic-section">${intro}<p class="semantic-empty">No <code>InitiateCrossChainTransaction</code> bracket is present. This is a chain-local synchronization batch, so there is no cross-chain call forest to display.</p></section>`;
@@ -584,8 +596,8 @@ function renderDecoded(payload) {
       <div><dt>Semantic txs / calls</dt><dd>${number(payload.semanticTransactions?.length || 0)} / ${number((payload.semanticTransactions || []).reduce((total, transaction) => total + (transaction.callCount || 0), 0))}</dd></div>
       <div><dt>Stream use</dt><dd>${number(payload.usedStreamBytes)} / ${number(payload.logicalCapacityBytes)} bytes</dd></div>
     </dl>
-    ${operation.tag === 3 ? `<p>Profile ${number(operation.profileId)} covers L2 #${number(operation.firstBlockNumber)}–#${number(operation.terminalBlockNumber)}: ${number(operation.derivedBlockCount)} derived ordinary blocks, including ${number(operation.implicitEmptyBlockCount)} implicit empty blocks. The table shows only full blocks carried in the payload. Derived state roots and block hashes require execution replay.</p>` : ""}
-    ${operation.format === "direct-v0" ? `<p>Direct V0 carries ${number(operation.implicitEmptyBlockCount)} empty ordinary prefixes in sparse count runs. Block headers, state roots, and cross-chain entries require execution replay.</p><div class="table-scroll compact-table"><table><thead><tr><th>Position</th><th>Blocks</th><th>Pure L2 transactions per block</th></tr></thead><tbody>${(operation.countRuns || []).map(run => `<tr><td>${number(run.position)}</td><td>${number(run.blocks)}</td><td>${number(run.transactionsPerBlock)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${operation.tag === 3 ? `<p>Profile ${number(operation.profileId)} covers L2 #${number(operation.firstBlockNumber)}–#${number(operation.terminalBlockNumber)}: ${counted(operation.derivedBlockCount, "derived ordinary block")}, including ${counted(operation.implicitEmptyBlockCount, "implicit empty block")}. The table shows only full blocks carried in the payload. Derived state roots and block hashes require execution replay.</p>` : ""}
+    ${operation.format === "direct-v0" ? `<p>Direct V0 carries ${counted(operation.implicitEmptyBlockCount, "empty ordinary prefix", "empty ordinary prefixes")} in sparse count runs. Block headers, state roots, and cross-chain entries require execution replay.</p><div class="table-scroll compact-table"><table><thead><tr><th>Position</th><th>Blocks</th><th>Pure L2 transactions per block</th></tr></thead><tbody>${(operation.countRuns || []).map(run => `<tr><td>${number(run.position)}</td><td>${number(run.blocks)}</td><td>${number(run.transactionsPerBlock)}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${decodedBlocks(operation.blocks)}
     ${decodedSemantics(payload)}
     ${decodedByteLayout(payload, operation)}
@@ -716,9 +728,9 @@ function correlationRecord(record, index) {
     <dl>
       <div><dt>L1 block</dt><dd>${blockLink(explorers.l1, l1Number, `#${number(l1Number)}`, "explorer-value")} · ${blockHashLink(explorers.l1, record.l1BlockHash)}</dd></div>
       <div><dt>L1 transaction</dt><dd>${transactionLink(explorers.l1, record.l1TransactionHash)}</dd></div>
-      <div><dt>L2 range</dt><dd>${blockLink(explorers.l2, firstNumber, `#${number(firstNumber)}`, "explorer-value")} → ${blockLink(explorers.l2, lastNumber, `#${number(lastNumber)}`, "explorer-value")} · ${number(decimalQuantity(range.blockCount))} blocks</dd></div>
+      <div><dt>L2 range</dt><dd>${blockLink(explorers.l2, firstNumber, `#${number(firstNumber)}`, "explorer-value")} → ${blockLink(explorers.l2, lastNumber, `#${number(lastNumber)}`, "explorer-value")} · ${counted(decimalQuantity(range.blockCount), "block")}</dd></div>
     </dl>
-    <details><summary>All ${number(l2Blocks.length)} L2 blocks and hashes</summary><ol class="correlation-block-list">${blockLinks}</ol></details>
+    <details><summary>${l2Blocks.length === 1 ? "L2 block and hash" : `All ${number(l2Blocks.length)} L2 blocks and hashes`}</summary><ol class="correlation-block-list">${blockLinks}</ol></details>
   </article>`;
 }
 
@@ -1145,12 +1157,27 @@ listen(byId("composer-rpc"), "click", async (event) => {
   setTimeout(() => { button.textContent = original; }, 1600);
 });
 listen(byId("blob-rows"), "click", (event) => {
+  const details = event.target.closest(".row-details");
+  if (details) {
+    const expanded = details.getAttribute("aria-expanded") !== "true";
+    details.setAttribute("aria-expanded", String(expanded));
+    const row = details.closest("tr");
+    row.classList.toggle("expanded", expanded);
+    if (expanded) state.expandedSettlements.add(row.dataset.settlement);
+    else state.expandedSettlements.delete(row.dataset.settlement);
+    details.textContent = expanded ? "Less" : "Details";
+    return;
+  }
   const button = event.target.closest(".decode-trigger");
   if (!button) return;
   const transactionHash = button.dataset.transaction;
   byId("decoder-transaction").value = transactionHash;
   decodeTransaction(transactionHash);
   byId("decoder-form").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+listen(byId("settlements-more"), "click", () => {
+  state.showAllSettlements = !state.showAllSettlements;
+  renderBlobSettlements();
 });
 listen(byId("decoder-form"), "submit", (event) => {
   event.preventDefault();
@@ -1203,6 +1230,11 @@ listen(window, "pageshow", () => {
   startAgeClock();
   connectLive();
 });
+byId("blob-search").value = state.blobQuery;
+if (isExactSettlementQuery(state.blobQuery)) {
+  void searchSettlements(state.blobQuery);
+  byId("settlement-record")?.scrollIntoView({ block: "start" });
+}
 startAgeClock();
 connectLive();
 return () => {

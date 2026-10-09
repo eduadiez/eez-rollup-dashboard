@@ -23,18 +23,18 @@
 .typeLabel { font-weight: 600; color: var(--text-bright); }
 .detail { color: var(--text-dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .routeCol { display: flex; align-items: center; gap: 8px; font: 12px/1.5 var(--mono); color: var(--text); white-space: nowrap; }
-.hash { font: 12px/1.5 var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hash:hover { color: var(--accent-light); }
+.hash { font: 13px/1.5 var(--mono); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hash:hover { color: var(--text-bright); }
 .noHash { font-size: 12px; color: var(--text-dim); }
-.blockCol { font: 11px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+.blockCol { font: 12px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
 .statusCol { display: flex; }
-.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 100px; font: 400 11px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 100px; font: 400 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
 .badge.pending { background: var(--accent-dim); color: var(--text); border: 1px solid var(--border); }
 .badge.confirmed { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
 .badge.failed { background: var(--red-dim); color: var(--red); border: 1px solid var(--red-border); }
 .timeCol { color: var(--text-dim); font-size: 12px; }
 .actionsCol { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 6px; }
-.inspectBtn { padding: 6px 8px; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text); font: 500 11.5px/1.5 var(--mono); cursor: pointer; }
+.inspectBtn { padding: 6px 8px; border: 1px solid var(--border); border-radius: 100px; background: transparent; color: var(--text); font: 500 12px/1.5 var(--mono); cursor: pointer; }
 .inspectBtn:hover { border-color: var(--border-hover); color: var(--text-bright); }
 .emptyState { padding: 20px 0; font-size: 13px; color: var(--text-dim); }
 .spinner { width: 10px; height: 10px; border: 1.5px solid var(--border); border-top-color: currentColor; border-radius: 50%; animation: global(spin) .8s linear infinite; }
@@ -61,5 +61,5 @@
 }
 
 .transactionLink { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.transactionLabel { flex-shrink: 0; font: 11px/1.5 var(--mono); color: var(--text-dim); }
-.transactionLink .noHash { font-size: 10px; }
+.transactionLabel { flex-shrink: 0; font: 12px/1.5 var(--mono); color: var(--text-dim); }
+.transactionLink .noHash { font-size: 12px; }

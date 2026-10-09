@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatUnits } from "viem";
 import { config, ESTIMATION_SENDER, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import { estimateGas, estimateBridgeGas, GasEstimateError, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
+import { prepareNativeBridgeMax } from "../lib/bridgeMax";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 type SendTx = (params: Record<string, string>) => Promise<string>;
@@ -56,6 +58,8 @@ export interface BridgeState {
   l2BridgeError: string | null;
   gas: BridgeGasState;
   gasOverrideHex: string | null;
+  maxPending: boolean;
+  maxError: string | null;
 }
 
 const RECENT_TOKENS_KEY = "bridgeRecentTokens";
@@ -150,7 +154,7 @@ function parseAmount(amount: string, decimals: number): bigint | null {
 function bridgeTransaction(state: BridgeState, from: string): { from: string; to: string; data: string; value: string } {
   const { direction, asset, amount, tokenAddress, tokenMeta, destinationAddress } = state;
   const rollupId = encodeUint256(direction === "l2-to-l1" ? 0n : BigInt(config.rollupId));
-  const destination = destinationAddress && /^0x[0-9a-fA-F]{40}$/.test(destinationAddress) ? destinationAddress : from;
+  const destination = destinationAddress || from;
   const rawAmount = parseAmount(amount, asset === "eth" ? 18 : tokenMeta?.decimals ?? 18)!;
   return {
     from,
@@ -240,6 +244,8 @@ export function useBridge(
     l2BridgeError: null,
     gas: defaultGas,
     gasOverrideHex: null,
+    maxPending: false,
+    maxError: null,
   });
 
   const [recentTokens, setRecentTokens] = useState<TokenMeta[]>(loadRecentTokens);
@@ -249,6 +255,13 @@ export function useBridge(
   const estimatedRequest = useRef<string | null>(null);
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
+  const maxOperation = useRef(0);
+  useEffect(() => {
+    maxOperation.current++;
+    setState(s => ({ ...s, maxPending: false, maxError: null }));
+    return () => { maxOperation.current++; };
+  }, [walletAddress, state.direction, state.asset, state.amount, state.tokenAddress,
+    state.tokenMeta?.decimals, state.destinationAddress, state.gasOverrideHex, configLoaded]);
 
   // Configuration loads asynchronously. Unknown or failed reads must not be
   // presented as a confirmed missing deployment.
@@ -454,6 +467,10 @@ export function useBridge(
       setState((s) => ({ ...s, gas: defaultGas }));
       return;
     }
+    if (state.destinationAddress && !/^0x[0-9a-fA-F]{40}$/.test(state.destinationAddress)) {
+      setState(s => ({ ...s, gas: defaultGas }));
+      return;
+    }
 
     const decimals = asset === "eth" ? 18 : (tokenMeta?.decimals ?? 18);
     const rawAmount = parseAmount(amount, decimals);
@@ -571,10 +588,47 @@ export function useBridge(
     }));
   }, []);
 
-  const setMax = useCallback(() => {
-    const { sourceBalance } = stateRef.current;
-    if (sourceBalance) {
-      setState((s) => ({ ...s, amount: sourceBalance }));
+  const setMax = useCallback(async () => {
+    const snapshot = stateRef.current;
+    const from = walletRef.current;
+    if (!from || snapshot.sourceBalanceRaw === null || !["idle", "confirmed", "failed"].includes(snapshot.phase)) return;
+    if (snapshot.destinationAddress && !/^0x[0-9a-fA-F]{40}$/.test(snapshot.destinationAddress)) {
+      setState(s => ({ ...s, maxError: "Enter a valid recipient address before using MAX." }));
+      return;
+    }
+    if (snapshot.asset === "erc20") {
+      // Display balances are rounded; MAX must use the complete raw token balance.
+      setState(s => ({ ...s, amount: formatUnits(snapshot.sourceBalanceRaw!, snapshot.tokenMeta?.decimals ?? 18), maxError: null }));
+      return;
+    }
+    const operation = ++maxOperation.current;
+    setState(s => ({ ...s, maxPending: true, maxError: null }));
+    const current = () => operation === maxOperation.current && from === walletRef.current &&
+      ["direction", "asset", "amount", "tokenAddress", "destinationAddress", "gasOverrideHex"].every(key =>
+        stateRef.current[key as keyof BridgeState] === snapshot[key as keyof BridgeState]);
+    try {
+      const sourceRpc = snapshot.direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
+      const composerRpc = snapshot.direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
+      const [balanceHex, fees] = await Promise.all([
+        rpcCall(sourceRpc, "eth_getBalance", [from, "latest"]), getEip1559Fees(sourceRpc),
+      ]);
+      const balance = BigInt(balanceHex as string);
+      const gasOverride = snapshot.gasOverrideHex ? BigInt(snapshot.gasOverrideHex) : null;
+      const result = await prepareNativeBridgeMax({ balance, feeCap: BigInt(fees.maxFeePerGas!), gasOverride,
+        estimate: async value => {
+          if (!current()) throw new Error("Bridge parameters changed.");
+          const transaction = bridgeTransaction({ ...snapshot, amount: formatUnits(value, 18) }, from);
+          try { return (await estimateBridgeGas({ rpcUrl: composerRpc, ...transaction })).rawEstimate; }
+          catch (error) {
+            if (gasOverride && error instanceof GasEstimateError && error.type === "unsupported") return gasOverride;
+            throw error;
+          }
+        },
+      });
+      if (current()) setState(s => ({ ...s, amount: formatUnits(result.amount, 18),
+        sourceBalance: formatBalance(balance, 18), sourceBalanceRaw: balance, maxPending: false, maxError: null }));
+    } catch (error) {
+      if (current()) setState(s => ({ ...s, maxPending: false, maxError: `Unable to set MAX: ${(error as Error).message}` }));
     }
   }, []);
 
@@ -670,6 +724,10 @@ export function useBridge(
     }
     const from = walletRef.current;
     if (!from) return;
+    if (stateRef.current.destinationAddress && !/^0x[0-9a-fA-F]{40}$/.test(stateRef.current.destinationAddress)) {
+      setState(s => ({ ...s, phase: "failed", error: "Enter a valid recipient address before bridging." }));
+      return;
+    }
     const transaction = bridgeTransaction(stateRef.current, from);
     const composerRpc = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
     const gasOverrideHex = stateRef.current.gasOverrideHex;

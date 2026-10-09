@@ -220,7 +220,12 @@ async function until(condition, message) {
   }
   {
    const f=await fixture(browser);await f.select(eoa,false);await f.send.click({trial:true});
-   for(const width of [1920,1440,1280,1024,800,640,390,320]){await f.page.setViewportSize({width,height:1080});assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);}
+   await f.panel.getByText('Gas settings',{exact:true}).click();
+   for(const width of [1920,1440,1280,1024,800,640,390,320]){
+    await f.page.setViewportSize({width,height:1080});assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+width);
+    const tiny=await f.panel.evaluate(root=>[...root.querySelectorAll('*')].filter(el=>!el.children.length&&el.textContent.trim()&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&parseFloat(getComputedStyle(el).fontSize)<12).map(el=>el.textContent));
+    assert.deepEqual(tiny,[], 'Cross-chain call data below 12px at '+width);
+   }
    await f.page.setViewportSize({width:1440,height:1080});await f.panel.hover();await f.panel.screenshot({path:'/tmp/eez-bidirectional-calls.png'});
    assert.deepEqual(f.errors,[]);await f.context.close();scenarios++;
   }

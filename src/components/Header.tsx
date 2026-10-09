@@ -119,7 +119,7 @@ export function Header({
 
         {/* ── Right: chain selector + wallet dropdown ── */}
         <div className={styles.right}>
-          {showChainSwitcher && (
+          {showChainSwitcher && wallet.isConnected && (
             <div className={styles.chainSwitcher} role="group" aria-label="Network balances">
               {(["l1", "l2"] as const).map(chain => {
                 const l1 = chain === "l1";

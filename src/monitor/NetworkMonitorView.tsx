@@ -15,17 +15,6 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
     <main id="main" tabIndex={-1} ref={root} className={`${pageStyles.page} eez-monitor`}>
 <div className="monitor-toolbar"><div><p className="eez-eyebrow">[ NETWORK MONITOR ]</p><h1 className="eez-page-heading"><strong>Two chains.</strong> One network.</h1><p className="eez-description">L1 and L2 activity, settlements, and cross-chain commitments.</p></div><div className="live-controls"><span id="network-status" className="status-pill loading" role="status">Connecting</span></div></div>
 <div className="monitor-meta"><span id="last-update" className="muted">Waiting for network data</span><nav id="resource-links" className="resource-links" aria-label="Network explorers"></nav></div>
-<aside id="composer-rpc" className="composer-rpc" aria-label="Composer RPC endpoints"></aside>
-
-        <section className="panel settlement-policy" aria-labelledby="settlement-heading">
-          <div className="panel-heading">
-            <div><p className="eyebrow">[ SETTLEMENT POLICY ]</p><h2 id="settlement-heading">Settlement policy</h2></div>
-            <span id="policy-status" className="status-pill loading"><i></i>Loading</span>
-          </div>
-          <div id="policy-rules" className="policy-rules"><p className="muted">Loading configured rules…</p></div>
-          <div id="policy-progress" className="policy-progress"><p className="muted">Waiting for canonical settlement data…</p></div>
-          <div id="latest-settlement" className="latest-settlement"></div>
-        </section>
         <section className="hero-grid" aria-label="Network summary">
           <article className="chain-card l1-card">
             <div className="card-heading">
@@ -77,10 +66,10 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
           <div><p>Last interval</p><strong id="settlement-interval" className="metric-duration">—</strong><small>between L1 posts</small></div>
           <div><p>Blobs posted</p><strong id="blob-count">—</strong><small>in the displayed history</small></div>
           <div className="cost-metric"><p>Last post cost</p><strong id="latest-post-cost">—</strong><small>execution + blob fee</small></div>
-          <div><p>Finality lag</p><strong id="finality-lag">—</strong><small>L2 blocks</small></div>
+          <div><p>Awaiting finality</p><strong id="finality-lag">—</strong><small>L2 blocks after the finalized head; not an alert threshold</small></div>
         </section>
 
-        <section className="panel blob-panel">
+        <section id="settlement-record" className="panel blob-panel" tabIndex={-1}>
           <div className="panel-heading">
             <div><p className="eyebrow">[ DATA AVAILABILITY ]</p><h2>Recent blob settlements</h2></div>
             <div className="blob-heading-actions">
@@ -99,8 +88,23 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
               <tbody id="blob-rows"><tr><td colSpan={8} className="empty">Loading settlement history…</td></tr></tbody>
             </table>
           </div>
+          <button id="settlements-more" className="btn btn-outline mobile-more" type="button" aria-expanded="false" hidden>Show all settlements</button>
           <p className="muted settlement-cost-note">Receipt costs include this posting transaction’s execution and blobs. Companion transactions and builder payments are separate.</p>
         </section>
+
+        <details className="panel operator-settings"><summary>Operator settings · Composer RPC and settlement policy</summary>
+<aside id="composer-rpc" className="composer-rpc" aria-label="Composer RPC endpoints"></aside>
+
+        <section className="settlement-policy" aria-labelledby="settlement-heading">
+          <div className="panel-heading">
+            <div><p className="eyebrow">[ SETTLEMENT POLICY ]</p><h2 id="settlement-heading">Settlement policy</h2></div>
+            <span id="policy-status" className="status-pill loading"><i></i>Loading</span>
+          </div>
+          <div id="policy-rules" className="policy-rules"><p className="muted">Loading configured rules…</p></div>
+          <div id="policy-progress" className="policy-progress"><p className="muted">Waiting for canonical settlement data…</p></div>
+          <div id="latest-settlement" className="latest-settlement"></div>
+        </section>
+        </details>
 
         <section className="panel decoder-panel">
           <div className="panel-heading">
@@ -159,6 +163,7 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
           <p className="decoder-boundary">The decoder validates the blob envelope and payload structure. Cryptographic KZG and state-transition verification remain protocol responsibilities.</p>
         </section>
 
+        <details className="panel supporting-data"><summary>Recent blocks and settlement lookup</summary>
         <section className="blocks-grid">
           <article className="panel">
             <div className="panel-heading"><div><p className="eyebrow">[ SETTLEMENT CHAIN ]</p><h2>Latest L1 blocks</h2></div></div>
@@ -187,6 +192,7 @@ export const NetworkMonitorView = memo(function NetworkMonitorView() {
           <div id="correlation-result" className="correlation-result"><p className="muted">Enter a canonical block number or hash.</p></div>
         </section>
 
+        </details>
         <section id="error-panel" className="panel error-panel hidden">
           <div className="panel-heading"><div><p className="eyebrow">[ PARTIAL DATA ]</p><h2>Collector warnings</h2></div></div>
           <ul id="errors"></ul>
