@@ -88,12 +88,14 @@ export function useConfigLoader() {
             ...(runtime.l1ContractAddress ? { rollupsAddress: runtime.l1ContractAddress } : {}),
             ...(runtime.rollupManagerAddress ? { rollupManagerAddress: runtime.rollupManagerAddress } : {}),
             ...(runtime.rollupId ? { rollupId: runtime.rollupId } : {}),
-            ...(runtime.bridgeL1Address ? { l1Bridge: runtime.bridgeL1Address } : {}),
-            ...(runtime.bridgeL2Address ? { l2Bridge: runtime.bridgeL2Address } : {}),
+            // The legacy demo address is only a fallback. Independently
+            // deployed L1 and L2 bridges can have different addresses.
             ...(runtime.demoBridgeAddress ? {
               l1Bridge: runtime.demoBridgeAddress,
               l2Bridge: runtime.demoBridgeAddress,
             } : {}),
+            ...(runtime.bridgeL1Address ? { l1Bridge: runtime.bridgeL1Address } : {}),
+            ...(runtime.bridgeL2Address ? { l2Bridge: runtime.bridgeL2Address } : {}),
             ...(runtime.demoExecutorL1 ? { flashExecutorL1: runtime.demoExecutorL1 } : {}),
             ...(runtime.demoTokenAddress ? { flashTokenAddress: runtime.demoTokenAddress } : {}),
             ...(runtime.demoPoolAddress ? { flashPoolAddress: runtime.demoPoolAddress } : {}),
