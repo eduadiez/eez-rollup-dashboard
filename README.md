@@ -320,6 +320,26 @@ Git.
 
 ## Checks
 
+For a Composer that enforces L2 settlement tariffs, set
+`EEZ_UI_L2_FEES_ENABLED=true`. Outbound bridge and cross-chain calls obtain
+an exact-intent quote before the wallet's one ordinary transaction signature.
+The selected wallet receives the exact quoted fees. Failed quotes stop
+submission; the wallet RPC must route broadcasts through the L2 Composer.
+`EEZ_UI_L2_FEE_MAX_TOTAL_WEI` caps `gas * maxFeePerGas` in L2 native wei and
+defaults to `100000000000000000` (0.1 native units), excluding transferred value.
+The application logs the quote and cap before opening the wallet. Quotes expire
+quickly; retry the action if the wallet or network context changes. Tariff
+enforcement and any L1/L2 conversion assumption belong to the Composer policy.
+With this mode enabled, native L2 bridge MAX conservatively reserves the app's
+full fee ceiling before estimating the transfer. Unspent reserve stays in the
+wallet; an amount can be entered manually when the balance is below that ceiling.
+
+The SDK in `src/lib/fees/l2-fees.mjs` is copied from the matching rollup
+repository's `sdk/l2-fees.mjs`. Keep it byte-identical when updating the quote
+schema. `payment.mjs` normalizes dashboard intents and binds that SDK to the
+selected wallet. Run its payment-boundary checks with
+`node --test src/lib/fees/payment.test.mjs`.
+
 ```bash
 npm ci
 npm run build

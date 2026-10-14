@@ -4,6 +4,7 @@ import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
 import { useWalletProviders } from "./useWalletProviders";
 import { useComposerDetection } from "./useComposerDetection";
+import { sendL2WithFees } from "../lib/fees/payment.mjs";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 
@@ -217,6 +218,21 @@ export function useWallet(log: Logger, configLoaded = false) {
   const sendTx = useCallback((params: Record<string, string>) => sendOnChain(L2_CHAIN, params), [sendOnChain]);
   const sendL1Tx = useCallback((params: Record<string, string>) => sendOnChain(L1_CHAIN, params), [sendOnChain]);
 
+  const sendL2ProxyTx = useCallback(async (tx: Record<string, string>): Promise<string> => {
+    if (!config.l2FeesEnabled) return sendOnChain(L2_CHAIN, tx);
+    if (!stateRef.current.isConnected) throw new Error("Connect wallet to send transactions");
+    await ensureChain(L2_CHAIN);
+    const wallet = selectedProviderRef.current;
+    const from = stateRef.current.address;
+    if (!wallet || !from) throw new Error("Connect wallet first");
+    return sendL2WithFees({
+      tx, from, chainId: L2_CHAIN.chainId, wallet,
+      rpc: (method: string, params: unknown[]) => rpcCall(config.l2ProxyRpc, method, params),
+      url: `${config.l2ProxyRpc.replace(/\/$/, "")}/eez/fees/l2-to-l1`,
+      maxTotalFee: BigInt(config.l2FeeMaxTotalWei), log,
+    });
+  }, [ensureChain, sendOnChain, log]);
+
   // Auto-reconnect on mount
   useEffect(() => {
     if (
@@ -307,7 +323,7 @@ export function useWallet(log: Logger, configLoaded = false) {
     switchToL1,
     switchToL2,
     sendTx,
-    sendL2ProxyTx: sendTx,
+    sendL2ProxyTx,
     sendL1Tx,
     sendL1ProxyTx: sendL1Tx,
   };

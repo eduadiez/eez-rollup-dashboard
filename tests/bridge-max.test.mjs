@@ -1,6 +1,20 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {prepareNativeBridgeMax} from '../src/lib/bridgeMax.ts';
+
+// The later settlement quote may use any fee up to the application ceiling.
+// Keep that entire ceiling available before simulating a maximum-value send.
+{
+ const values = [];
+ const result = await prepareNativeBridgeMax({balance:1000n,feeCap:2n,gasOverride:null,minimumReserve:300n,
+   estimate:async value=>{values.push(value);return 10n;}});
+ assert.deepEqual(values,[700n]);
+ assert.deepEqual(result,{amount:700n,reserve:300n});
+ await assert.rejects(prepareNativeBridgeMax({balance:300n,feeCap:2n,gasOverride:null,minimumReserve:300n,
+   estimate:async()=>{throw new Error('must not simulate an unfunded amount');}}),/cover gas/);
+ const largerGas = await prepareNativeBridgeMax({balance:1000n,feeCap:2n,gasOverride:200n,minimumReserve:300n,estimate:async()=>10n});
+ assert.deepEqual(largerGas,{amount:600n,reserve:400n});
+}
 const balance=1000000000000000001n, feeCap=1000000014n, raw=422319n;
 test('MAX reserves raw Composer gas at the quoted fee cap with full precision',async()=>{
  const values=[];

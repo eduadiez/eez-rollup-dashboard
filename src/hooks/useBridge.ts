@@ -614,7 +614,9 @@ export function useBridge(
       ]);
       const balance = BigInt(balanceHex as string);
       const gasOverride = snapshot.gasOverrideHex ? BigInt(snapshot.gasOverrideHex) : null;
-      const result = await prepareNativeBridgeMax({ balance, feeCap: BigInt(fees.maxFeePerGas!), gasOverride,
+      const minimumReserve = snapshot.direction === "l2-to-l1" && config.l2FeesEnabled
+        ? BigInt(config.l2FeeMaxTotalWei) : 0n;
+      const result = await prepareNativeBridgeMax({ balance, feeCap: BigInt(fees.maxFeePerGas!), gasOverride, minimumReserve,
         estimate: async value => {
           if (!current()) throw new Error("Bridge parameters changed.");
           const transaction = bridgeTransaction({ ...snapshot, amount: formatUnits(value, 18) }, from);
@@ -742,7 +744,8 @@ export function useBridge(
       // An explicit override can also unblock a Composer with known missing estimation support.
       const resolvedGas = gasOverrideHex ?? stateRef.current.gas.gasHex!;
       const sourceRpc = direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
-      const gasParam = { gas: resolvedGas, gasLimit: resolvedGas, ...await getEip1559Fees(sourceRpc) };
+      const fees = direction === "l2-to-l1" && config.l2FeesEnabled ? {} : await getEip1559Fees(sourceRpc);
+      const gasParam = { gas: resolvedGas, gasLimit: resolvedGas, ...fees };
       if (walletRef.current !== from || estimatedRequest.current !== composerRpc + JSON.stringify(transaction)) {
         throw new Error("Bridge transaction changed; wait for a new Composer gas estimate");
       }

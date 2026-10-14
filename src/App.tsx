@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { config, L1_CHAIN, L2_CHAIN } from "./config";
+import { formatUnits } from "viem";
 import { useConfigLoader } from "./hooks/useConfig";
 import { useLog } from "./hooks/useLog";
 import { useWallet } from "./hooks/useWallet";
@@ -314,6 +315,13 @@ export function App() {
 
       {wallet.isConnected && <ComposerStatus connection={wallet.composerConnection}
         checking={wallet.checkingComposer} onRecheck={wallet.recheckComposer} walletName={wallet.walletName} variant="notice" />}
+
+      {config.l2FeesEnabled && (
+        <p className={styles.feeNotice} role="status">
+          L2 → L1 transactions include settlement in their priority fee.
+          {" "}App fee cap: {formatUnits(BigInt(config.l2FeeMaxTotalWei), L2_CHAIN.nativeCurrency.decimals)} {L2_CHAIN.nativeCurrency.symbol}, excluding the amount sent.
+        </p>
+      )}
 
       {view === "monitor" ? (
         <NetworkMonitorView />
