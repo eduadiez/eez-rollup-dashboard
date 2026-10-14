@@ -109,14 +109,16 @@ async function until(label, check) {
     const quote = await quotes[0];
     for (const [field, value] of Object.entries(quote.transaction)) assert.equal(sends[0].transaction[field], value, field);
     const hash = sends[0].hash;
-    const receipt = await until('native receipt', () => rpc(l2, 'eth_getTransactionReceipt', [hash]));
+    const { receipt, settlement, block } = await until('canonical receipt and correlation', async () => {
+      const receipt = await rpc(l2, 'eth_getTransactionReceipt', [hash]);
+      if (!receipt) return null;
+      const block = await rpc(l2, 'eth_getBlockByNumber', [receipt.blockNumber, false]);
+      if (block?.hash !== receipt.blockHash) return null;
+      const result = await rpc(front, 'eez_getSettlementByL2Block', [receipt.blockHash]);
+      return result?.canonicalL2 ? { receipt, block, settlement: result } : null;
+    });
     assert.equal(receipt.status, '0x1');
     await until('L1 target update', async () => BigInt(await rpc(l1, 'eth_call', [{ to: fixture.target, data: cast('calldata', 'value()') }, 'latest'])) === 991n);
-    const settlement = await until('canonical correlation', async () => {
-      const result = await rpc(front, 'eez_getSettlementByL2Block', [receipt.blockHash]);
-      return result?.canonicalL2 ? result : null;
-    });
-    const block = await rpc(l2, 'eth_getBlockByHash', [receipt.blockHash, false]);
     const tip = BigInt(receipt.gasUsed) * (BigInt(receipt.effectiveGasPrice) - BigInt(block.baseFeePerGas));
     assert(tip >= BigInt(quote.estimate.requiredL2Tip));
     assert.equal(block.miner.toLowerCase(), quote.policy.assumptions.beneficiary.toLowerCase());
