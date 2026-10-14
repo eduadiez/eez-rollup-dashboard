@@ -340,6 +340,17 @@ schema. `payment.mjs` normalizes dashboard intents and binds that SDK to the
 selected wallet. Run its payment-boundary checks with
 `node --test src/lib/fees/payment.test.mjs`.
 
+`tests/l2-fees.cjs` exercises the compiled dashboard with Chromium and mocked
+wallet/RPC responses. `tests/l2-fees-kurtosis.cjs` instead broadcasts one actual
+quoted transaction through an injected fixture wallet and checks its canonical
+L1 target, blob posting and L2 priority payment. It requires Playwright on
+`NODE_PATH`, its Chromium installation, `cast`, `EEZ_UI_URL`,
+`EEZ_DEVNET_L1_RPC`, `EEZ_DEVNET_L2_RPC`, `EEZ_DEVNET_L2_FRONT`, a funded
+`EEZ_TEST_FEE_KEY`, the rollup repository's `verify-l2-fees.mjs` output in
+`EEZ_FEE_EVIDENCE_FILE`, and an output path in `EEZ_UI_FEE_EVIDENCE_FILE`.
+It refuses chains other than private Kurtosis IDs 7331 and 696990. This fixture
+adapter validates the application signing request, not a browser wallet extension.
+
 ```bash
 npm ci
 npm run build
