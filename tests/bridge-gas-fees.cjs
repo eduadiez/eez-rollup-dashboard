@@ -36,13 +36,16 @@ async function fixture(browser, options = {}) {
     window.walletChains = [];
     window.rejectSwitch = false;
     const provider = name => ({
+      chain: chain || '0x27d8',
       isRabby: name === 'Rabby', isMetaMask: name === 'MetaMask',
       on() {}, removeListener() {},
       async request({ method, params }) {
         if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [account];
-        if (method === 'eth_chainId') return chain || '0x27d8';
+        if (method === 'eth_chainId') return this.chain;
+        if (method === 'eth_getTransactionCount') return '0x0';
+        if (method === 'eth_getBlockByNumber') return { baseFeePerGas: '0x7' };
         if (method === 'wallet_addEthereumChain') { window.walletChains.push(params[0]); return null; }
-        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); return null; }
+        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); this.chain = params[0].chainId; return null; }
         if (method === 'eth_sendTransaction') {
           window.walletSenders.push(name);
           window.walletRequests.push(params[0]);
@@ -72,11 +75,28 @@ async function fixture(browser, options = {}) {
       l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
       l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
       demoBridgeAddress: bridge, rollupId: '1', networkName: 'EEZ-X Devnet',
+      l2FeesEnabled: options.feesEnabled ?? false,
+      l2FeeMaxTotalWei: options.feeCeiling || '100000000000000000',
     } });
     if (path === '/shared/rollup.env' || path === '/shared/faucet.key') {
       return route.fulfill({ status: 404, body: '' });
     }
     if (request.method() !== 'POST') return route.continue();
+    if (path === '/composer/l2/eez/fees/l2-to-l1') {
+      const intent = request.postDataJSON();
+      rpcRequests.push({ path, intent });
+      if (options.quoteFailure) return route.fulfill({ status: 503,
+        json: { error: { code: 'quote_unavailable', message: 'fixture unavailable' } } });
+      const tip = 9_000_000_000n;
+      return route.fulfill({ json: { version: 1, mode: 'advisory', intent,
+        transaction: { ...intent, maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) },
+        issuedAt: Math.floor(Date.now() / 1000), expiresAt: Math.floor(Date.now() / 1000) + 10,
+        context: { l2ChainId: 6290, rollupId: 1 },
+        policy: { id: '0x' + 'ab'.repeat(32), assumptions: { l2_chain_id: 6290, rollup_id: 1 } },
+        estimate: { basis: 'isolated_native_l2_replay_and_projected_l1_post', sourceGasUsed: 21000,
+          l2BaseFeePerGas: '7', grossL2Tip: String(tip * 21000n), requiredL2Tip: String(tip * 21000n) },
+      } });
+    }
     const { method, params = [], id } = request.postDataJSON();
     const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
     const reject = message => route.fulfill({ json: {
@@ -110,6 +130,7 @@ async function fixture(browser, options = {}) {
     }
     if (method === 'eth_call') return reject('execution reverted');
     if (method === 'eth_getBalance') return reply('0x' + BigInt(options.nativeBalance ?? '0x3635c9adc5dea00000').toString(16));
+    if (method === 'eth_getTransactionCount') return reply('0x0');
     if (method === 'eth_getBlockByNumber') return reply({
       number: '0x10', hash: '0x' + '55'.repeat(32),
       parentHash: '0x' + '66'.repeat(32), timestamp: '0x65000000',
