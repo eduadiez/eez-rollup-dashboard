@@ -334,7 +334,7 @@ export function ExecutionDebugger({ onBack, initialDebugHash, initialMode, initi
     <div className={styles.intro}><button className="btn btn-sm btn-outline" onClick={onBack}>← Dashboard</button>
       <p className="eez-eyebrow">[ EXECUTION VISUALIZER ]</p><h1 className="eez-page-heading"><strong>Follow execution.</strong> On both chains.</h1>
       <p className="eez-description">Inspect transactions, nested calls, and settlement with recorded L1 and L2 evidence.</p></div>
-    <nav className={styles.tabs} aria-label="Visualizer modes">{(["live", "inspect"] as const).map(item => <button key={item} className={`${styles.tab} ${mode === item ? styles.activeTab : ""}`} aria-current={mode === item ? "page" : undefined} onClick={() => switchMode(item)}>{item === "live" ? "Live" : "Inspect"}</button>)}</nav>
+    <nav className={styles.tabs} aria-label="Visualizer modes">{(["live", "inspect"] as const).map(item => <button key={item} className={`${styles.tab} ${mode === item ? styles.activeTab : ""}`} aria-current={mode === item ? "page" : undefined} onClick={() => switchMode(item)}>{item === "live" ? "Live" : "Inspect"}</button>)}<a className={styles.tab} href="#/visualizer?mode=trace">Trace a transaction →</a></nav>
     {mode !== "live" ? <form className={styles.search} aria-label="Inspect execution" onSubmit={event => { event.preventDefault(); if (query.trim().toLowerCase() === "latest") void loadLatestBatch(); else void load("auto", chain, query, counterpart); }}>
       <label>Chain<select aria-label="Chain" value={chain} onChange={event => setChain(event.target.value as DebugChain | "auto")}>
         <option value="auto">Auto detect</option><option value="l1">L1</option><option value="l2">L2</option></select></label>

@@ -6,6 +6,7 @@ services:
     environment:
       EEZ_UI_LISTEN: "127.0.0.1:8080"
       EEZ_UI_MONITOR_UPSTREAM: "127.0.0.1:18080"
+      EEZ_UI_TRACE_UPSTREAM: "127.0.0.1:18081"
   monitor:
     network_mode: host
     environment:
@@ -13,3 +14,8 @@ services:
       EEZ_DASHBOARD_PORT: "18080"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18080/api/health', timeout=2).read()"]
+  trace-decoder:
+    network_mode: host
+    environment:
+      EEZ_TRACE_HOST: "127.0.0.1"
+      EEZ_TRACE_PORT: "18081"

@@ -329,6 +329,7 @@ export function App() {
             onBack={() => navigate("dashboard")}
             initialDebugHash={visualizerParams.get("tx") ?? visualizerParams.get("debug")}
             initialMode={visualizerParams.get("mode")}
+            configReady={configLoaded}
             initialChain={visualizerParams.get("chain")}
             initialBlock={visualizerParams.get("block")}
             initialCounterpart={visualizerParams.get("counterpart")}
@@ -491,7 +492,7 @@ export function App() {
             <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
-              onInspect={(hash, chain) => { window.location.hash = `#/visualizer?mode=inspect&chain=${chain}&tx=${hash}`; }}
+              onInspect={(hash, chain) => { window.location.hash = `#/visualizer?mode=trace&chain=${chain}&tx=${hash}`; }}
             />
 
 
