@@ -52,6 +52,11 @@ export default defineConfig(() => {
       },
       "/rpc/l1": rpcProxy(proxy.l1Rpc),
       "/rpc/l2": rpcProxy(proxy.l2Rpc),
+      "/composer/l2/eez/fees/l2-to-l1": proxy.l2Front ? {
+        target: proxy.l2Front,
+        changeOrigin: true,
+        rewrite: () => "/eez/fees/l2-to-l1",
+      } : undefined,
       "/composer/l1": rpcProxy(proxy.l1Front),
       "/composer/l2": rpcProxy(proxy.l2Front),
     }).filter((entry): entry is [string, NonNullable<ReturnType<typeof rpcProxy>>] => Boolean(entry[1])),
