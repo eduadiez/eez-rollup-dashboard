@@ -328,10 +328,11 @@ Git.
 For a Composer that enforces L2 settlement tariffs, set
 `EEZ_UI_L2_FEES_ENABLED=true`. Outbound bridge and cross-chain calls obtain
 an exact-intent quote before the wallet's one ordinary transaction signature.
-The app calls `eez_quoteL2ToL1Fee([intent])` directly on the L2 Composer RPC;
-the injected wallet receives standard wallet methods only. Upgrade the Composer
-to support this method before upgrading the dashboard, and roll back the
-dashboard first if restoring an older Composer.
+The app calls `eez_quoteFee([intent, {transactionTypes}])` directly on the L2
+Composer RPC; omitted gas and nonce are resolved internally. The injected wallet
+receives standard wallet methods only. This replaces the old quote API without
+a compatibility fallback: upgrade or roll back the Composer and dashboard
+together while submissions are paused. Use `eez_debugQuoteFee` for diagnostics.
 The selected wallet receives the exact quoted fees. Failed quotes stop
 submission; the wallet RPC must route broadcasts through the L2 Composer.
 Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`),

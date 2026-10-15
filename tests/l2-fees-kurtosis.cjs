@@ -50,7 +50,7 @@ async function until(label, check) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('response', response => {
     const request = response.request();
-    if (request.method() === 'POST' && request.postDataJSON()?.method === 'eez_quoteL2ToL1Fee') {
+    if (request.method() === 'POST' && request.postDataJSON()?.method === 'eez_quoteFee') {
       quotes.push(response.json().then(value => value.result));
     }
   });
@@ -108,7 +108,13 @@ async function until(label, check) {
     });
     assert.equal(quotes.length, 1);
     const quote = await quotes[0];
-    for (const [field, value] of Object.entries(quote.transaction)) assert.equal(sends[0].transaction[field], value, field);
+    const option = quote.options.find(option => option.type === '0x2');
+    assert(option && !option.error, 'usable type-2 option');
+    const transaction = sends[0].transaction;
+    for (const field of ['type', 'gas', 'maxPriorityFeePerGas', 'maxFeePerGas']) assert.equal(transaction[field], option[field], field);
+    for (const field of ['chainId', 'nonce']) assert.equal(transaction[field], quote[field], field);
+    const binding = Object.fromEntries(['chainId', 'data', 'from', 'gas', 'nonce', 'to', 'type', 'value'].map(field => [field, transaction[field]]));
+    assert.equal(cast('keccak', JSON.stringify(binding)), option.intentHash);
     const hash = sends[0].hash;
     const { receipt, settlement, block } = await until('canonical receipt and correlation', async () => {
       const receipt = await rpc(l2, 'eth_getTransactionReceipt', [hash]);
@@ -121,17 +127,25 @@ async function until(label, check) {
     assert.equal(receipt.status, '0x1');
     await until('L1 target update', async () => BigInt(await rpc(l1, 'eth_call', [{ to: fixture.target, data: cast('calldata', 'value()') }, 'latest'])) === 991n);
     const tip = BigInt(receipt.gasUsed) * (BigInt(receipt.effectiveGasPrice) - BigInt(block.baseFeePerGas));
-    assert(tip >= BigInt(quote.estimate.requiredL2Tip));
-    assert.equal(block.miner.toLowerCase(), quote.policy.assumptions.beneficiary.toLowerCase());
+    assert.equal(BigInt(receipt.effectiveGasPrice), BigInt(block.baseFeePerGas) + BigInt(option.maxPriorityFeePerGas));
+    assert(BigInt(receipt.gasUsed) * BigInt(receipt.effectiveGasPrice) <= BigInt(option.estimatedFee));
+    const policy = fixture.quote.diagnostics.options[0].policy.assumptions;
+    assert.equal(block.miner.toLowerCase(), policy.beneficiary.toLowerCase());
     assert.equal((await rpc(l2, 'eth_getBlockByNumber', [receipt.blockNumber, false])).hash, receipt.blockHash);
     const post = await rpc(l1, 'eth_getTransactionReceipt', [settlement.l1TransactionHash]);
     assert.equal(post.status, '0x1'); assert.equal(post.type, '0x3'); assert(BigInt(post.blobGasUsed) > 0n);
+    const ceil = (value, denominator) => (value + denominator - 1n) / denominator;
+    const cost = BigInt(post.gasUsed) * BigInt(post.effectiveGasPrice) + BigInt(post.blobGasUsed) * BigInt(post.blobGasPrice);
+    const subtotal = cost + BigInt(policy.proving_cost_l1) + BigInt(policy.operations_cost_l1) + BigInt(policy.treasury_cost_l1);
+    const requiredL1 = subtotal + ceil(subtotal * BigInt(policy.risk_bps), 10_000n) + ceil(subtotal * BigInt(policy.profit_bps), 10_000n);
+    const requiredL2 = ceil(requiredL1 * BigInt(policy.l1_per_l2_denominator), BigInt(policy.l1_per_l2_numerator));
+    assert(tip >= requiredL2, 'receipt must cover canonical post/blob tariff');
     assert.equal((await rpc(l1, 'eth_getBlockByNumber', [post.blockNumber, false])).hash, post.blockHash);
     assert.deepEqual(errors, []);
     await page.getByRole('dialog').getByRole('heading', { name: 'Cross-chain call confirmed', exact: true }).waitFor();
     await page.screenshot({ path: `${output}.png`, fullPage: true });
     writeFileSync(output, JSON.stringify({ verified: true, wallet: 'injected fixture adapter', realTransactions: 1,
-      hash, quote, transaction: sends[0].transaction, receipt, settlement, post, grossL2Tip: String(tip), target: fixture.target, expected: 991 }, null, 2) + '\n');
+      hash, quote, transaction, receipt, settlement, post, grossL2Tip: String(tip), requiredL2: String(requiredL2), policy, target: fixture.target, expected: 991 }, null, 2) + '\n');
     console.log(JSON.stringify({ verified: true, hash, l1Posting: settlement.l1TransactionHash, grossL2Tip: String(tip) }));
   } catch (error) {
     await page.screenshot({ path: `${output}.failure.png`, fullPage: true });

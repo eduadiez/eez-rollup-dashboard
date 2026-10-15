@@ -1,27 +1,33 @@
+import { keccak256, toHex } from "viem";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { sendL2WithFees } from "./payment.mjs";
 
-for (const legacy of [false, true]) test(`dashboard ${legacy ? "Rabby legacy" : "EIP-1559"} quote preserves exact fees through one wallet request`, async () => {
+for (const legacy of [false, true]) for (const automatic of [false, true]) test(`dashboard ${legacy ? "Rabby legacy" : "EIP-1559"} ${automatic ? "automatic" : "explicit"} gas quote preserves exact fees through one wallet request`, async () => {
   const from = `0x${"11".repeat(20)}`;
-  const tx = { to: `0x${"22".repeat(20)}`, gasLimit: "0x186a0", value: "0x5", data: "0x1234" };
+  const tx = { to: `0x${"22".repeat(20)}`, ...(automatic ? {} : {gasLimit:"0x186a0"}), value: "0x5", data: "0x1234" };
   let sent = 0;
   let quoted;
   let quoteFailure = false;
   const rpc = async (method, params) => {
-    if (method !== "eez_quoteL2ToL1Fee") return ({ eth_getTransactionCount: "0x3", eth_chainId: "0x1", eth_accounts: [from], eth_getBlockByNumber: { baseFeePerGas: "0xa" } })[method];
+    assert.notEqual(method, "eth_estimateGas", "quote estimates gas internally");
+    if (method !== "eez_quoteFee") return ({ eth_getTransactionCount: "0x3", eth_chainId: "0x1", eth_accounts: [from], eth_getBlockByNumber: { baseFeePerGas: "0xa" } })[method];
     if (quoteFailure) throw new Error("quote_unavailable");
-    const [intent] = params;
-    assert.deepEqual(intent, { type: legacy ? "0x0" : "0x2", chainId: "0x1", from, to: tx.to, nonce: "0x3", gas: tx.gasLimit, value: tx.value, data: tx.data });
+    const [request, options] = params;
+    assert.deepEqual(options.transactionTypes, [legacy ? "0x0" : "0x2"]);
+    if (automatic) assert.equal(request.gas, undefined);
+    if (request.nonce && request.nonce !== "0x3") throw new Error("nonce mismatch");
+    const intent = { ...request, nonce:"0x3", gas:request.gas ?? "0x186a0" };
+    assert.deepEqual(intent, { type: legacy ? "0x0" : "0x2", chainId: "0x1", from, to: tx.to, nonce: "0x3", gas: "0x186a0", value: tx.value, data: tx.data });
     quoted = { ...intent, ...(legacy ? { gasPrice: "0xf" } : { maxPriorityFeePerGas: "0x5", maxFeePerGas: "0xf" }) };
-    const quote = { version: 1, mode: "advisory", intent, transaction: quoted,
-      issuedAt: Math.floor(Date.now() / 1000), expiresAt: Math.floor(Date.now() / 1000) + 10,
-      context: { l2ChainId: 1, rollupId: 1 }, policy: { id: `0x${"ab".repeat(32)}`, assumptions: { l2_chain_id: 1, rollup_id: 1 } },
-      estimate: { basis: "isolated_native_l2_replay_and_projected_l1_post", sourceGasUsed: 21000, l2BaseFeePerGas: "10", grossL2Tip: "105000", requiredL2Tip: "100001" } };
+    const canonical = JSON.stringify(Object.fromEntries(Object.keys(intent).sort().map(k => [k, intent[k]])));
+    const quote = { version:1, chainId:"0x1",nonce:"0x3",expiresAt:`0x${(Math.floor(Date.now()/1000)+10).toString(16)}`,
+      recoveryMode:"enforced_tariff", options:[{ type:intent.type,gas:intent.gas,intentHash:keccak256(toHex(canonical)), estimatedFee:"0x4ce78",
+        ...(legacy ? {gasPrice:"0xf"} : {maxPriorityFeePerGas:"0x5",maxFeePerGas:"0xf"}) }] };
     return quote;
   };
   const wallet = { isRabby: legacy, request: async ({ method, params }) => {
-    assert.notEqual(method, "eez_quoteL2ToL1Fee", "custom quotes use the Composer directly");
+    assert.notEqual(method, "eez_quoteFee", "custom quotes use the Composer directly");
     if (method !== "eth_sendTransaction") return rpc(method);
     sent++;
     assert.deepEqual(params, [quoted]);
@@ -31,7 +37,7 @@ for (const legacy of [false, true]) test(`dashboard ${legacy ? "Rabby legacy" : 
     assert.equal(await sendL2WithFees(args), "0xhash");
     assert.equal(sent, 1);
     await assert.rejects(sendL2WithFees({ ...args, maxTotalFee: 1n }), /app limit/);
-    for (const changed of [{ authorizationList: [] }, { from: tx.to }, { nonce: "0x4" }, { gas: "0x9999" }, { maxFeePerGas: "0x1" }]) {
+    for (const changed of [{ authorizationList: [] }, { from: tx.to }, { nonce: "0x4" }, ...(automatic ? [] : [{ gas: "0x9999" }]), { maxFeePerGas: "0x1" }]) {
       await assert.rejects(sendL2WithFees({ ...args, tx: { ...tx, ...changed } }));
     }
     quoteFailure = true;
