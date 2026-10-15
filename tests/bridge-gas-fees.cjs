@@ -96,7 +96,7 @@ async function fixture(browser, options = {}) {
         issuedAt: Math.floor(Date.now() / 1000), expiresAt: Math.floor(Date.now() / 1000) + 10,
         context: { l2ChainId: 6290, rollupId: 1 },
         policy: { id: '0x' + 'ab'.repeat(32), assumptions: { l2_chain_id: 6290, rollup_id: 1 } },
-        estimate: { basis: 'isolated_native_l2_replay_and_projected_l1_post', sourceGasUsed: 21000,
+        estimate: { basis: 'isolated_native_l2_and_l1_settlement', proof: 'metered_assumed_valid', sourceGasUsed: 21000,
           l2BaseFeePerGas: '7', grossL2Tip: String(tip * 21000n), requiredL2Tip: String(tip * 21000n) },
       });
     }
