@@ -316,13 +316,6 @@ export function App() {
       {wallet.isConnected && <ComposerStatus connection={wallet.composerConnection}
         checking={wallet.checkingComposer} onRecheck={wallet.recheckComposer} walletName={wallet.walletName} variant="notice" />}
 
-      {config.l2FeesEnabled && (
-        <p className={styles.feeNotice} role="status">
-          L2 → L1 transactions include settlement in their priority fee.
-          {" "}App fee cap: {formatUnits(BigInt(config.l2FeeMaxTotalWei), L2_CHAIN.nativeCurrency.decimals)} {L2_CHAIN.nativeCurrency.symbol}, excluding the amount sent.
-        </p>
-      )}
-
       {view === "monitor" ? (
         <NetworkMonitorView />
       ) : view === "visualizer" ? (
@@ -390,6 +383,12 @@ export function App() {
                     onDismiss={bridgeHook.dismiss}
                     onGasOverride={bridgeHook.setGasOverride}
                   />
+                  {config.l2FeesEnabled && (
+                    <p className={styles.feeNotice} role="status">
+                      L2 → L1 transactions include settlement in their priority fee.
+                      {" "}App fee cap: {formatUnits(BigInt(config.l2FeeMaxTotalWei), L2_CHAIN.nativeCurrency.decimals)} {L2_CHAIN.nativeCurrency.symbol}, excluding the amount sent.
+                    </p>
+                  )}
                 </section>
 
                 <section className={styles.proxyColumn} aria-label="Cross-chain contracts">

@@ -30,7 +30,7 @@ async function fixture(browser, options = {}) {
   const receipt = { result: null };
   const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af", transient: options.transientEstimates ?? 0 };
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(({ account, receiptHash, multipleWallets, chain }) => {
+  await page.addInitScript(({ account, receiptHash, multipleWallets, chain, walletNonce }) => {
     window.walletRequests = [];
     window.walletSenders = [];
     window.walletChains = [];
@@ -42,7 +42,7 @@ async function fixture(browser, options = {}) {
       async request({ method, params }) {
         if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [account];
         if (method === 'eth_chainId') return this.chain;
-        if (method === 'eth_getTransactionCount') return '0x0';
+        if (method === 'eth_getTransactionCount') return walletNonce ?? '0x0';
         if (method === 'eth_getBlockByNumber') return { baseFeePerGas: '0x7' };
         if (method === 'wallet_addEthereumChain') { window.walletChains.push(params[0]); return null; }
         if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); this.chain = params[0].chainId; return null; }
@@ -67,7 +67,7 @@ async function fixture(browser, options = {}) {
         announce('MetaMask', 'metamask-provider', 'io.metamask', metamask);
       });
     }
-  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain });
+  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain, walletNonce: options.walletNonce });
   await page.route('**/*', async route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;

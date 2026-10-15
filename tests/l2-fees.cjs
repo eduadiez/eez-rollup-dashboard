@@ -7,8 +7,8 @@ const { fixture, until, RAW_GAS } = require('./bridge-gas-fees.cjs');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   let scenarios = 0;
   try {
-    for (const multipleWallets of [false, true]) for (const erc20 of [false, true]) {
-      const f = await fixture(browser, { reverse: true, feesEnabled: true, multipleWallets, erc20 });
+    for (const multipleWallets of [false, true]) for (const erc20 of [false, true]) for (const walletNonce of ['0x0', '0x00', 0]) {
+      const f = await fixture(browser, { reverse: true, feesEnabled: true, multipleWallets, erc20, walletNonce });
       await f.page.getByRole('status').filter({ hasText: 'App fee cap:' }).waitFor();
       await f.button.click();
       await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'quoted transaction never reached selected wallet');
@@ -36,6 +36,14 @@ const { fixture, until, RAW_GAS } = require('./bridge-gas-fees.cjs');
       const f = await fixture(browser, { reverse: true, feesEnabled: true, ...options });
       await f.button.click();
       await f.page.getByRole('dialog').getByRole('alert').filter({ hasText: options.quoteFailure ? 'quote_unavailable' : 'app limit' }).waitFor();
+      assert.equal(await f.page.evaluate(() => window.walletRequests.length), 0);
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    for (const walletNonce of [1, '0x01']) {
+      const f = await fixture(browser, { reverse: true, feesEnabled: true, multipleWallets: true, walletNonce });
+      await f.button.click();
+      await f.page.getByRole('dialog').getByRole('alert').filter({ hasText: 'Wallet nonce changed' }).waitFor();
       assert.equal(await f.page.evaluate(() => window.walletRequests.length), 0);
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
