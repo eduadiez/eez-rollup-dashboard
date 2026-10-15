@@ -21,7 +21,7 @@ for (const legacy of [false, true]) for (const automatic of [false, true]) test(
     assert.deepEqual(transaction, { type: legacy ? "0x0" : "0x2", chainId: "0x1", from, to: tx.to, nonce: "0x3", gas: "0x186a0", value: tx.value, data: tx.data });
     quoted = { ...transaction, ...(legacy ? { gasPrice: "0xf" } : { maxPriorityFeePerGas: "0x5", maxFeePerGas: "0xf" }) };
     const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(k => [k, transaction[k]])));
-    const quote = { version:1, chainId:"0x1",nonce:"0x3",expiresAt:`0x${(Math.floor(Date.now()/1000)+10).toString(16)}`,
+    const quote = { version:1, chainId:"0x1",nonce:"0x3",expiresAt:`0x${(Math.floor(Date.now()/1000)+30).toString(16)}`,
       options:[{ type:transaction.type,gas:transaction.gas,requestHash:keccak256(toHex(canonical)), estimatedFee:"0x4ce78",
         ...(legacy ? {gasPrice:"0xf"} : {maxPriorityFeePerGas:"0x5",maxFeePerGas:"0xf"}) }] };
     return quote;

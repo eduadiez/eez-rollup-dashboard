@@ -96,7 +96,7 @@ async function fixture(browser, options = {}) {
       const tip = 9_000_000_000n;
       const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key => [key, transaction[key]])));
       return reply({ version: 1, chainId: transaction.chainId, nonce: transaction.nonce,
-        expiresAt: '0x' + (Math.floor(Date.now() / 1000) + 10).toString(16),
+        expiresAt: '0x' + (Math.floor(Date.now() / 1000) + 30).toString(16),
         options: [{ type: transaction.type, gas: transaction.gas, requestHash: keccak256(toHex(canonical)),
           estimatedFee: '0x' + ((tip + 7n) * 21000n).toString(16),
           ...(transaction.type === '0x0' ? { gasPrice: '0x' + (tip + 7n).toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) }) }],
