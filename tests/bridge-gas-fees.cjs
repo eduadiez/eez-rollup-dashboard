@@ -28,7 +28,7 @@ async function fixture(browser, options = {}) {
   const page = await context.newPage();
   const errors = [], rpcRequests = [];
   const receipt = { result: null };
-  const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af" };
+  const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af", transient: options.transientEstimates ?? 0 };
   page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(({ account, receiptHash, multipleWallets, chain }) => {
     window.walletRequests = [];
@@ -112,6 +112,12 @@ async function fixture(browser, options = {}) {
     }
     rpcRequests.push({ path, method, params });
     if (method === 'eth_estimateGas') {
+      if (estimation.transient > 0) {
+        estimation.transient--;
+        return route.fulfill({ json: { jsonrpc: '2.0', id, error: { code: -32000,
+          message: 'cross-chain estimation unavailable: settlement reconciliation pending',
+          data: { code: 'settlement_reconciliation_pending', retryable: true } } } });
+      }
       if (!path.startsWith('/composer/')) return reject('Read RPC must not estimate bridge transactions');
       if (estimation.delay) await new Promise(resolve => setTimeout(resolve, estimation.delay));
       if (estimation.unsupported) return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:3,message:'execution reverted',data:'0x096aa08200000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004f9d330ad00000000000000000000000000000000000000000000000000000000'}}});
@@ -224,6 +230,19 @@ if (require.main === module) (async () => {
       const destinationRollup = (reverse ? '0' : '1').padStart(64, '0');
       assert.equal(tx.data.slice(erc20 ? 138 : 10, erc20 ? 202 : 74), destinationRollup);
       assert.equal(tx.value, erc20 ? '0x0' : '0x38d7ea4c68000');
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    for (const reverse of [false, true]) {
+      const f = await fixture(browser, { reverse, transientEstimates: 1 });
+      const estimates = f.rpcRequests.filter(r => r.method === 'eth_estimateGas');
+      assert.equal(estimates.length, 2, 'one transient response is retried automatically');
+      assert.deepEqual(estimates[0].params, estimates[1].params);
+      assert.ok(estimates.every(r => r.path === (reverse ? '/composer/l2' : '/composer/l1')));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), [], 'retrying an estimate never submits');
+      const row = f.page.getByText('Estimated gas', { exact: true }).locator('..');
+      assert.equal((await row.locator('span').last().textContent()).replace(/,/g, ''), String(RAW_GAS));
+      assert.equal(await f.page.getByRole('alert').filter({ hasText: 'Gas estimation failed:' }).count(), 0);
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }

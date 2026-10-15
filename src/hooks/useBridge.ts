@@ -485,6 +485,7 @@ export function useBridge(
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     setState((s) => ({
       ...s,
       gas: { ...defaultGas, status: "estimating" },
@@ -496,7 +497,7 @@ export function useBridge(
         const transaction = bridgeTransaction(state, walletAddress);
         const rpcUrl = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
         requestKey = rpcUrl + JSON.stringify(transaction);
-        const result = await estimateBridgeGas({ rpcUrl, ...transaction });
+        const result = await estimateBridgeGas({ rpcUrl, ...transaction, signal: controller.signal });
         if (!cancelled) {
           estimatedRequest.current = requestKey;
           setState((s) => ({
@@ -527,7 +528,7 @@ export function useBridge(
       }
     }, 400);
 
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
   }, [state.direction, state.asset, state.amount, state.tokenAddress, state.tokenMeta?.decimals, state.destinationAddress, state.allowance, walletAddress, configLoaded, config.l1Bridge, config.l2Bridge, config.rollupId, config.l1ProxyRpc, config.l2ProxyRpc]);
 
   const setGasOverride = useCallback((hex: string | null) => {

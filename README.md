@@ -120,6 +120,11 @@ contract bindings are compared when advertised. Chain IDs are checked before
 and after the call. Requests time out after eight seconds, and results from
 previous wallet/account/network selections cannot replace the current result.
 
+Discovery is current Composer process metadata, independent of chain state.
+Updated Composers accept valid block selectors even when the wallet resolves
+`latest` to a block number (as MetaMask does). Older latest-only Composers can
+reject that wallet rewrite; changing the fee format does not fix discovery.
+
 Detection runs after connection/reconnection and account/network changes,
 when the page becomes visible or regains focus, and every 30 seconds while
 visible. Successful detection shows only the status, network, and manual
@@ -427,6 +432,14 @@ errors block submission. Older Composers that report a missing estimation method
 or `ExecutionNotInCurrentBlock()` require an explicit manual limit before
 submission is enabled. Wrapped bridge tokens burn directly without approval;
 native ERC20 tokens still require allowance for the source bridge.
+
+Updated Composers attach structured retry hints for settlement reconciliation
+and a context change during estimation. The dashboard retries that same
+unsigned estimate at most four times, with 1/2/4-second backoff, and cancels
+obsolete bridge-input requests. Other failures are not retried. Persistent
+unavailability remains a blocking error; no gas limit is invented. Upgrade
+Composer before relying on these hints: older unstructured errors still surface
+immediately, and no submission or wallet signature is retried.
 
 Wallets may apply their own gas policy. Rabby's saved Chiado RPC must use
 `https://eez.asuscomm.com/composer/l1` for cross-chain estimation.

@@ -65,7 +65,7 @@ export interface GasEstimateResult {
     | "eth-call-simulation";
 }
 
-export type GasEstimateErrorType = "revert" | "rpc-error" | "unsupported";
+export type GasEstimateErrorType = "revert" | "rpc-error" | "unsupported" | "unavailable";
 
 export class GasEstimateError extends Error {
   type: GasEstimateErrorType;
@@ -153,16 +153,32 @@ function missingBridgeExecutionContext(data: unknown, depth = 0): boolean {
 }
 
 export async function estimateBridgeGas(params: {
-  rpcUrl: string; from: string; to: string; data: string; value: string;
+  rpcUrl: string; from: string; to: string; data: string; value: string; signal?: AbortSignal;
 }): Promise<GasEstimateResult> {
-  const { rpcUrl, from, to, data, value } = params;
+  const { rpcUrl, from, to, data, value, signal } = params;
   let result: unknown;
-  try { result = await rpcCall(rpcUrl, "eth_estimateGas", [{ from, to, data, value }]); }
-  catch (error) {
-    if (error instanceof RpcError && (error.code === -32601 || missingBridgeExecutionContext(error.data))) {
-      throw new GasEstimateError("unsupported", "This Composer cannot estimate cross-chain gas yet. Enter a manual gas limit to continue.");
+  for (let attempt = 0; attempt < 4; attempt++) {
+    signal?.throwIfAborted();
+    try {
+      result = await rpcCall(rpcUrl, "eth_estimateGas", [{ from, to, data, value }], signal);
+      break;
+    } catch (error) {
+      if (error instanceof RpcError && (error.code === -32601 || missingBridgeExecutionContext(error.data))) {
+        throw new GasEstimateError("unsupported", "This Composer cannot estimate cross-chain gas yet. Enter a manual gas limit to continue.");
+      }
+      const hint = error instanceof RpcError && error.code === -32000 && typeof error.data === "object" && error.data !== null
+        ? error.data as { code?: unknown; retryable?: unknown } : null;
+      if (hint?.retryable !== true || !["settlement_reconciliation_pending", "estimation_context_changed"].includes(String(hint.code))) throw error;
+      if (attempt === 3) throw new GasEstimateError("unavailable", "Composer is waiting for settlement or a stable chain state. Please retry shortly.");
+      // Retry only a fresh read on the same Composer. Never reuse a stale gas
+      // limit or retry a submission; a changed form cancels this backoff.
+      await new Promise<void>((resolve, reject) => {
+        const abort = () => { clearTimeout(timer); reject(signal?.reason); };
+        const timer = setTimeout(() => { signal?.removeEventListener("abort", abort); resolve(); }, 1000 * 2 ** attempt);
+        signal?.addEventListener("abort", abort, { once: true });
+        if (signal?.aborted) { signal.removeEventListener("abort", abort); abort(); }
+      });
     }
-    throw error;
   }
   if (typeof result !== "string" || !/^0x[0-9a-f]+$/i.test(result)) {
     throw new GasEstimateError("rpc-error", "Composer returned an invalid bridge gas estimate");
