@@ -327,12 +327,17 @@ Git.
 
 For a Composer that enforces L2 settlement tariffs, set
 `EEZ_UI_L2_FEES_ENABLED=true`. Outbound bridge and cross-chain calls obtain
-an exact-intent quote before the wallet's one ordinary transaction signature.
-The app calls `eez_quoteFee([intent, {transactionTypes}])` directly on the L2
+a quote bound to the exact transaction before the wallet's one ordinary
+transaction signature.
+The app calls `eez_quoteFee([transaction, {transactionTypes}])` directly on the L2
 Composer RPC; omitted gas and nonce are resolved internally. The injected wallet
 receives standard wallet methods only. This replaces the old quote API without
 a compatibility fallback: upgrade or roll back the Composer and dashboard
-together while submissions are paused. Use `eez_debugQuoteFee` for diagnostics.
+together while submissions are paused. The SDK takes `transaction`; each option
+uses `requestHash` to bind the normalized unsigned request. This is not a signed
+Ethereum transaction hash. `eez_quoteFee` omits enforcement metadata;
+`eez_debugQuoteFee` exposes it as `diagnostics.recoveryMode`. The wallet path
+does not depend on diagnostic fields. Old field/argument aliases are not retained.
 The selected wallet receives the exact quoted fees. Failed quotes stop
 submission; the wallet RPC must route broadcasts through the L2 Composer.
 Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`),
@@ -351,8 +356,8 @@ wallet; an amount can be entered manually when the balance is below that ceiling
 
 The SDK in `src/lib/fees/l2-fees.mjs` is copied from the matching rollup
 repository's `sdk/l2-fees.mjs`. Keep it byte-identical when updating the quote
-schema. `payment.mjs` normalizes dashboard intents and binds that SDK to the
-selected wallet. Run its payment-boundary checks with
+schema. `payment.mjs` normalizes dashboard transaction requests and binds that
+SDK to the selected wallet. Run its payment-boundary checks with
 `node --test src/lib/fees/payment.test.mjs`.
 
 `tests/l2-fees.cjs` exercises the compiled dashboard with Chromium and mocked

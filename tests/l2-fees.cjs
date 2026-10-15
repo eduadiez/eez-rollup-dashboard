@@ -26,9 +26,9 @@ const { fixture, until, RAW_GAS } = require('./bridge-gas-fees.cjs');
       }
       assert.equal(sent.tx.nonce, '0x0');
       assert.equal(sent.tx.type, multipleWallets ? '0x2' : '0x0');
-      const quotes = f.rpcRequests.filter(r => r.intent);
+      const quotes = f.rpcRequests.filter(r => r.transaction);
       assert.equal(quotes.length, 1);
-      for (const [field, value] of Object.entries(quotes[0].intent)) assert.equal(sent.tx[field], value);
+      for (const [field, value] of Object.entries(quotes[0].transaction)) assert.equal(sent.tx[field], value);
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }

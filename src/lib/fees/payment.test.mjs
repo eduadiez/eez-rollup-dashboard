@@ -17,12 +17,12 @@ for (const legacy of [false, true]) for (const automatic of [false, true]) test(
     assert.deepEqual(options.transactionTypes, [legacy ? "0x0" : "0x2"]);
     if (automatic) assert.equal(request.gas, undefined);
     if (request.nonce && request.nonce !== "0x3") throw new Error("nonce mismatch");
-    const intent = { ...request, nonce:"0x3", gas:request.gas ?? "0x186a0" };
-    assert.deepEqual(intent, { type: legacy ? "0x0" : "0x2", chainId: "0x1", from, to: tx.to, nonce: "0x3", gas: "0x186a0", value: tx.value, data: tx.data });
-    quoted = { ...intent, ...(legacy ? { gasPrice: "0xf" } : { maxPriorityFeePerGas: "0x5", maxFeePerGas: "0xf" }) };
-    const canonical = JSON.stringify(Object.fromEntries(Object.keys(intent).sort().map(k => [k, intent[k]])));
+    const transaction = { ...request, nonce:"0x3", gas:request.gas ?? "0x186a0" };
+    assert.deepEqual(transaction, { type: legacy ? "0x0" : "0x2", chainId: "0x1", from, to: tx.to, nonce: "0x3", gas: "0x186a0", value: tx.value, data: tx.data });
+    quoted = { ...transaction, ...(legacy ? { gasPrice: "0xf" } : { maxPriorityFeePerGas: "0x5", maxFeePerGas: "0xf" }) };
+    const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(k => [k, transaction[k]])));
     const quote = { version:1, chainId:"0x1",nonce:"0x3",expiresAt:`0x${(Math.floor(Date.now()/1000)+10).toString(16)}`,
-      recoveryMode:"enforced_tariff", options:[{ type:intent.type,gas:intent.gas,intentHash:keccak256(toHex(canonical)), estimatedFee:"0x4ce78",
+      options:[{ type:transaction.type,gas:transaction.gas,requestHash:keccak256(toHex(canonical)), estimatedFee:"0x4ce78",
         ...(legacy ? {gasPrice:"0xf"} : {maxPriorityFeePerGas:"0x5",maxFeePerGas:"0xf"}) }] };
     return quote;
   };
@@ -42,5 +42,5 @@ for (const legacy of [false, true]) for (const automatic of [false, true]) test(
     }
     quoteFailure = true;
     await assert.rejects(sendL2WithFees(args), /quote_unavailable/);
-    assert.equal(sent, 1, "quote and intent failures cannot fall back to wallet pricing");
+    assert.equal(sent, 1, "quote and transaction failures cannot fall back to wallet pricing");
 });

@@ -114,7 +114,7 @@ async function until(label, check) {
     for (const field of ['type', 'gas', 'maxPriorityFeePerGas', 'maxFeePerGas']) assert.equal(transaction[field], option[field], field);
     for (const field of ['chainId', 'nonce']) assert.equal(transaction[field], quote[field], field);
     const binding = Object.fromEntries(['chainId', 'data', 'from', 'gas', 'nonce', 'to', 'type', 'value'].map(field => [field, transaction[field]]));
-    assert.equal(cast('keccak', JSON.stringify(binding)), option.intentHash);
+    assert.equal(cast('keccak', JSON.stringify(binding)), option.requestHash);
     const hash = sends[0].hash;
     const { receipt, settlement, block } = await until('canonical receipt and correlation', async () => {
       const receipt = await rpc(l2, 'eth_getTransactionReceipt', [hash]);

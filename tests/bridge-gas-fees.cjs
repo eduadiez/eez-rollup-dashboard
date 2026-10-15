@@ -89,17 +89,17 @@ async function fixture(browser, options = {}) {
       assert.equal(path, '/composer/l2');
       const [request, selection] = params;
       assert.deepEqual(selection.transactionTypes, [request.type]);
-      const intent = { nonce: '0x0', gas: '0x' + RAW_GAS.toString(16), ...request };
-      rpcRequests.push({ path, intent });
+      const transaction = { nonce: '0x0', gas: '0x' + RAW_GAS.toString(16), ...request };
+      rpcRequests.push({ path, transaction });
       if (options.quoteFailure) return route.fulfill({ json: { jsonrpc: '2.0', id,
         error: { code: -32004, message: 'quote_unavailable: fixture unavailable', data: { code: 'quote_unavailable' } } } });
       const tip = 9_000_000_000n;
-      const canonical = JSON.stringify(Object.fromEntries(Object.keys(intent).sort().map(key => [key, intent[key]])));
-      return reply({ version: 1, recoveryMode: 'enforced_tariff', chainId: intent.chainId, nonce: intent.nonce,
+      const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key => [key, transaction[key]])));
+      return reply({ version: 1, chainId: transaction.chainId, nonce: transaction.nonce,
         expiresAt: '0x' + (Math.floor(Date.now() / 1000) + 10).toString(16),
-        options: [{ type: intent.type, gas: intent.gas, intentHash: keccak256(toHex(canonical)),
+        options: [{ type: transaction.type, gas: transaction.gas, requestHash: keccak256(toHex(canonical)),
           estimatedFee: '0x' + ((tip + 7n) * 21000n).toString(16),
-          ...(intent.type === '0x0' ? { gasPrice: '0x' + (tip + 7n).toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) }) }],
+          ...(transaction.type === '0x0' ? { gasPrice: '0x' + (tip + 7n).toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) }) }],
       });
     }
     const reject = message => route.fulfill({ json: {
