@@ -49,8 +49,9 @@ async function until(label, check) {
   const quotes = [], sends = [], errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('response', response => {
-    if (new URL(response.url()).pathname.endsWith('/eez/fees/l2-to-l1')) {
-      quotes.push(response.json());
+    const request = response.request();
+    if (request.method() === 'POST' && request.postDataJSON()?.method === 'eez_quoteL2ToL1Fee') {
+      quotes.push(response.json().then(value => value.result));
     }
   });
   let chain = '0xaa29e';

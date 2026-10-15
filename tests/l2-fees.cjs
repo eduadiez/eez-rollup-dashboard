@@ -15,10 +15,17 @@ const { fixture, until, RAW_GAS } = require('./bridge-gas-fees.cjs');
       const sent = await f.page.evaluate(() => ({ tx: window.walletRequests[0], wallets: window.walletSenders }));
       assert.deepEqual(sent.wallets, [multipleWallets ? 'MetaMask' : 'Rabby']);
       assert.equal(sent.tx.gas, '0x' + RAW_GAS.toString(16));
-      assert.equal(BigInt(sent.tx.maxPriorityFeePerGas), 9_000_000_000n);
-      assert.equal(BigInt(sent.tx.maxFeePerGas), 9_000_000_007n);
+      if (multipleWallets) {
+        assert.equal(BigInt(sent.tx.maxPriorityFeePerGas), 9_000_000_000n);
+        assert.equal(BigInt(sent.tx.maxFeePerGas), 9_000_000_007n);
+        assert.equal(sent.tx.gasPrice, undefined);
+      } else {
+        assert.equal(BigInt(sent.tx.gasPrice), 9_000_000_007n);
+        assert.equal(sent.tx.maxFeePerGas, undefined);
+        assert.equal(sent.tx.maxPriorityFeePerGas, undefined);
+      }
       assert.equal(sent.tx.nonce, '0x0');
-      assert.equal(sent.tx.type, '0x2');
+      assert.equal(sent.tx.type, multipleWallets ? '0x2' : '0x0');
       const quotes = f.rpcRequests.filter(r => r.intent);
       assert.equal(quotes.length, 1);
       for (const [field, value] of Object.entries(quotes[0].intent)) assert.equal(sent.tx[field], value);

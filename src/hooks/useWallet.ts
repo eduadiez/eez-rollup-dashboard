@@ -228,7 +228,6 @@ export function useWallet(log: Logger, configLoaded = false) {
     return sendL2WithFees({
       tx, from, chainId: L2_CHAIN.chainId, wallet,
       rpc: (method: string, params: unknown[]) => rpcCall(config.l2ProxyRpc, method, params),
-      url: `${config.l2ProxyRpc.replace(/\/$/, "")}/eez/fees/l2-to-l1`,
       maxTotalFee: BigInt(config.l2FeeMaxTotalWei), log,
     });
   }, [ensureChain, sendOnChain, log]);

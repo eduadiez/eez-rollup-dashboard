@@ -3,8 +3,7 @@ export function sendL2WithFees(options: {
   from: string;
   chainId: string;
   rpc: (method: string, params: unknown[]) => Promise<unknown>;
-  wallet: { request(args: { method: string; params?: unknown[] }): Promise<unknown> };
-  url: string;
+  wallet: { isRabby?: boolean; request(args: { method: string; params?: unknown[] }): Promise<unknown> };
   maxTotalFee: bigint;
   log?: (message: string) => void;
 }): Promise<string>;

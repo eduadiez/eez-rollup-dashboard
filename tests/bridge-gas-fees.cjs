@@ -82,23 +82,24 @@ async function fixture(browser, options = {}) {
       return route.fulfill({ status: 404, body: '' });
     }
     if (request.method() !== 'POST') return route.continue();
-    if (path === '/composer/l2/eez/fees/l2-to-l1') {
-      const intent = request.postDataJSON();
+    const { method, params = [], id } = request.postDataJSON();
+    const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
+    if (method === 'eez_quoteL2ToL1Fee') {
+      assert.equal(path, '/composer/l2');
+      const [intent] = params;
       rpcRequests.push({ path, intent });
-      if (options.quoteFailure) return route.fulfill({ status: 503,
-        json: { error: { code: 'quote_unavailable', message: 'fixture unavailable' } } });
+      if (options.quoteFailure) return route.fulfill({ json: { jsonrpc: '2.0', id,
+        error: { code: -32004, message: 'quote_unavailable: fixture unavailable', data: { code: 'quote_unavailable' } } } });
       const tip = 9_000_000_000n;
-      return route.fulfill({ json: { version: 1, mode: 'advisory', intent,
-        transaction: { ...intent, maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) },
+      return reply({ version: 1, mode: 'advisory', intent,
+        transaction: { ...intent, ...(intent.type === '0x0' ? { gasPrice: '0x' + (tip + 7n).toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) }) },
         issuedAt: Math.floor(Date.now() / 1000), expiresAt: Math.floor(Date.now() / 1000) + 10,
         context: { l2ChainId: 6290, rollupId: 1 },
         policy: { id: '0x' + 'ab'.repeat(32), assumptions: { l2_chain_id: 6290, rollup_id: 1 } },
         estimate: { basis: 'isolated_native_l2_replay_and_projected_l1_post', sourceGasUsed: 21000,
           l2BaseFeePerGas: '7', grossL2Tip: String(tip * 21000n), requiredL2Tip: String(tip * 21000n) },
-      } });
+      });
     }
-    const { method, params = [], id } = request.postDataJSON();
-    const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
     const reject = message => route.fulfill({ json: {
       jsonrpc: '2.0', id, error: { code: 3, message },
     } });

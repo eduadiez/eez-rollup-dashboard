@@ -323,9 +323,18 @@ Git.
 For a Composer that enforces L2 settlement tariffs, set
 `EEZ_UI_L2_FEES_ENABLED=true`. Outbound bridge and cross-chain calls obtain
 an exact-intent quote before the wallet's one ordinary transaction signature.
+The app calls `eez_quoteL2ToL1Fee([intent])` directly on the L2 Composer RPC;
+the injected wallet receives standard wallet methods only. Upgrade the Composer
+to support this method before upgrading the dashboard, and roll back the
+dashboard first if restoring an older Composer.
 The selected wallet receives the exact quoted fees. Failed quotes stop
 submission; the wallet RPC must route broadcasts through the L2 Composer.
-`EEZ_UI_L2_FEE_MAX_TOTAL_WEI` caps `gas * maxFeePerGas` in L2 native wei and
+Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`),
+matching Rabby's custom-network path. Other providers default to EIP-1559
+(`maxPriorityFeePerGas`, `maxFeePerGas`); explicit supported types are preserved.
+The Composer counts only the legacy `gasPrice` minus the actual base fee as
+priority revenue and rechecks the signed source before accepting it.
+`EEZ_UI_L2_FEE_MAX_TOTAL_WEI` caps `gas * maxFeePerGas` or legacy `gas * gasPrice` in L2 native wei and
 defaults to `100000000000000000` (0.1 native units), excluding transferred value.
 The application logs the quote and cap before opening the wallet. Quotes expire
 quickly; retry the action if the wallet or network context changes. Tariff
