@@ -4,7 +4,7 @@ export function traceRows(model, { transaction = "", protocol = false, search = 
   const txs = new Map(model.transactions.map(tx => [tx.chain + ":" + tx.hash, tx]));
   const roots = model.roots.filter(root => {
     const tx = txs.get(root.chain + ":" + root.tx);
-    return transaction || protocol || tx?.requested || tx?.inFlow !== false;
+    return transaction || protocol || tx?.requested || (root.inFlow ?? tx?.inFlow) !== false;
   });
   const stack = roots.slice().reverse().map(root => ({ id: root.node, depth: 0, parent: null }));
   const rows = [], visited = new Set(), query = search.trim().toLowerCase();

@@ -38,3 +38,13 @@ test("iterative traversal handles deep traces and guards against duplicate or cy
   }));
   assert.equal(traceRows(data).length, 10000);
 });
+
+test("a shared batch dependency does not add its unrelated roots to the connected flow", () => {
+  const data = model();
+  data.transactions[1].inFlow = true;
+  data.roots[0].inFlow = true;
+  data.roots[1].inFlow = false;
+  assert.deepEqual(traceRows(data).map(row => row.node.id), [0, 2, 3]);
+  assert.deepEqual(traceRows(data, { transaction: "L2:other" }).map(row => row.node.id), [4]);
+  assert.deepEqual(traceRows(data, { protocol: true }).map(row => row.node.id), [0, 1, 2, 3, 4]);
+});

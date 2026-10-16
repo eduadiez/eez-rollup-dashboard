@@ -177,3 +177,12 @@ test("the root example supplies configuration without publishing trace credentia
   const browserTemplate = fs.readFileSync(new URL("../../config.template.json", import.meta.url), "utf8");
   assert.ok(!/TRACE_RPC|EXPLORER_API_KEY|ETHERSCAN_API_KEY/.test(browserTemplate));
 });
+
+test("transaction link mode is shared by the API and CLI, with CLI precedence", t => {
+  files(t, { [DEFAULT_ENV_FILE]: "EEZ_TX_LINKS=required" });
+  assert.equal(loadEnvironmentConfig({ env: {} }).txLinks, "required");
+  assert.equal(loadEnvironmentConfig({ env: { EEZ_TX_LINKS: "off" } }).txLinks, "off");
+  assert.equal(loadConfig([hash, "--tx-links", "auto"], { ...rpcEnv, EEZ_TX_LINKS: "off" }).txLinks, "auto");
+  assert.throws(() => loadConfig([hash, "--tx-links", "invalid"], rpcEnv), /--tx-links must be/);
+  assert.throws(() => loadConfig([hash], { ...rpcEnv, EEZ_TX_LINKS: "invalid" }), /--tx-links must be/);
+});

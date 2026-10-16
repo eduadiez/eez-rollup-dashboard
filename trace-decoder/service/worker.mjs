@@ -3,6 +3,8 @@ import { decodeCrossChainTrace } from "../src/engine.mjs";
 import { buildFlowModel } from "../flow/model.mjs";
 
 const reasons = {
+  "transaction-links-pending": "Cross-chain transaction links are not complete yet. Retry after composer processing.",
+  "invalid-transaction-links": "Cross-chain transaction links could not be verified against the chains.",
   "trace-unavailable": "The configured endpoint could not provide a call trace.",
   "historical-state-unavailable": "Historical state needed for this trace is unavailable.",
   "transaction-unavailable": "A related transaction is not available.",

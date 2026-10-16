@@ -24,6 +24,7 @@ const SETTINGS = {
   managerL2: ["EEZL2_ADDRESS", "MANAGER_L2"],
   rollupManager: ["EEZ_ROLLUP_MANAGER_ADDRESS", "EEZ_ROLLUP_MANAGER"],
   correlationRpc: ["EEZ_CORR_RPC"],
+  txLinks: ["EEZ_TX_LINKS"],
   expectedL1ChainId: ["EXPECTED_L1_CHAIN_ID"],
   expectedL2ChainId: ["EXPECTED_L2_CHAIN_ID"],
   traceTimeoutMs: ["EEZ_TRACE_TIMEOUT_MS"],
@@ -35,7 +36,7 @@ const ENV_NAMES = new Set(Object.values(SETTINGS).flat());
 export const DEFAULT_ENV_FILE = fileURLToPath(new URL("../../.env", import.meta.url));
 
 const FLAGS = {
-  "--tx": "tx", "--env-file": "envFile", "--l1-rpc": "l1Rpc", "--l2-rpc": "l2Rpc",
+  "--tx-links": "txLinks", "--tx": "tx", "--env-file": "envFile", "--l1-rpc": "l1Rpc", "--l2-rpc": "l2Rpc",
   "--l1-front": "l1Front", "--l2-front": "l2Front", "--l1-explorer": "l1Explorer",
   "--l2-explorer": "l2Explorer", "--rollups": "rollups", "--manager-l2": "managerL2",
   "--l1-manager": "rollups", "--l2-manager": "managerL2", "--correlation-rpc": "correlationRpc",
@@ -130,6 +131,7 @@ export function loadConfig(argv = process.argv.slice(2), env = process.env, cwd 
     if ((config[chain + "From"] == null) !== (config[chain + "To"] == null)) throw new Error(`Provide both --${chain}-from and --${chain}-to`);
     if (config[chain + "From"] > config[chain + "To"]) throw new Error(`Inverted ${chain} search range`);
   }
+  if (config.txLinks && !["auto", "required", "off"].includes(config.txLinks)) throw new Error("--tx-links must be auto, required, or off");
   return config;
 }
 
@@ -137,7 +139,8 @@ export const HELP = `Usage: node trace-decoder/decode-trace.mjs <TX_HASH> [optio
   --tx HASH                       Compatibility alias for positional hash
   --env-file FILE                 Otherwise DEVNET_ENV, then the repository root .env
   --l1-rpc URL --l2-rpc URL        Override EEZ_UI_L1_RPC_UPSTREAM / EEZ_UI_L2_RPC_UPSTREAM
-  --l1-front URL --l2-front URL    Composer / settlement discovery
+  --l1-front URL --l2-front URL    Composer / exact transaction links
+  --tx-links MODE                 auto (default), required, off; also EEZ_TX_LINKS
   --correlation-rpc URL           First settlement capability candidate
   --l1-trace-rpc URL --l2-trace-rpc URL
   --l1-manager ADDRESS --l2-manager ADDRESS  Historical deployment overrides

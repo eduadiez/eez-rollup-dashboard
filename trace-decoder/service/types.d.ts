@@ -15,7 +15,7 @@ export interface TraceCrossing {
 }
 export interface TraceNode {
   id: number; kind: "call" | "ghost"; frameId: string | null; chain: TraceChain;
-  role: string; protocol: boolean; callType: string; contract: string;
+  role: string; protocol: boolean; inFlow?: boolean; callType: string; contract: string;
   address: string | null; from?: string | null; fn: string; signature?: string | null;
   args: TraceArgument[];
   ret: { status: string; reason?: string | null; raw?: string | null; items?: TraceArgument[]; alternatives?: number };
@@ -38,7 +38,7 @@ export interface TraceModel {
   origin: { chain: TraceChain; transactionId: string } | null;
   chains: Record<TraceChain, { chainId: string | null; rollupId: string | null; manager: string | null; name: string; explorer: string | null }>;
   nodes: TraceNode[]; transactions: TraceTransaction[];
-  roots: { node: number; chain: TraceChain; tx: string; block: number | null; isOrigin: boolean; role: string; relatedSettlement?: boolean; label: string }[];
+  roots: { node: number; chain: TraceChain; tx: string; block: number | null; isOrigin: boolean; inFlow?: boolean; role: string; relatedSettlement?: boolean; label: string }[];
   settlements: { id: string; l1Tx: string; l1Block: number | null; firstL2Block: number | null; lastL2Block: number | null }[];
   unresolved: { code: string; message: string; frameId: string | null }[];
   stats: { frames: number; crossings: number; matched: number; events: number };

@@ -443,6 +443,13 @@ contract, and explorer settings. Separate trace/archive endpoints are optional:
 matching read RPC. Provider keys and trace URLs stay server-side. Both chains
 must support call tracing; historical requests may need archive state.
 
+The decoder prefers exact source transaction links from the corresponding Composer
+frontend and verifies them against chain evidence. `EEZ_TX_LINKS=auto` (default)
+allows legacy settlement discovery when links are unsupported; `required` demands
+exact links and `off` disables them. Supported pending or invalid links remain
+partial instead of expanding the search. The default diagram follows the requested
+transaction without including unrelated triggers that share its settlement batch.
+
 The browser calls `BASE_URL + "trace/api"`; nginx forwards this to the internal
 service. A gateway that already strips `/dashboard/` needs no new public route.
 For local development, start `node trace-decoder/service/server.mjs` separately
