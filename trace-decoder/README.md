@@ -106,8 +106,9 @@ such as `$EEZ_UI_L1_RPC_UPSTREAM` are expanded. Shell expressions are rejected.
 | `EEZ_TRACE_L1_EXPLORER_API_KEY`, `EEZ_TRACE_L2_EXPLORER_API_KEY` | Per-chain explorer credentials | `L1_EXPLORER_API_KEY`, `L2_EXPLORER_API_KEY` |
 | `EEZ_TRACE_ETHERSCAN_API_KEY` | Shared Etherscan V2 fallback key | `ETHERSCAN_API_KEY` |
 
-`EEZ_TX_LINKS` selects `auto` (default), `required`, or `off` for both the API
-and CLI; the CLI also accepts `--tx-links`. Compose forwards the same setting.
+The dashboard uses `auto` by default, with no additional environment setup.
+For standalone use, the decoder retains `EEZ_TX_LINKS` and CLI `--tx-links`
+with the modes `auto`, `required`, and `off`.
 
 The existing decoder options `EEZ_CORR_RPC`, `L1_EXPLORER_TYPE`,
 `L2_EXPLORER_TYPE`, `EXPECTED_L1_CHAIN_ID`, and `EXPECTED_L2_CHAIN_ID` also remain
