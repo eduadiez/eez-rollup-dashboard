@@ -23,6 +23,8 @@ export interface TraceNode {
   gasUsed: string | null; tx: string | null; block: number | null; path: string | null;
   input: string; output: string | null; children: number[];
   outgoing?: TraceCrossing; crossing?: TraceCrossing;
+  preparedResult?: boolean; preparedResponse?: boolean;
+  remoteChain?: TraceChain; remoteAddress?: string;
   abiSource?: string | null; abiProvider?: string | null;
   impl?: { contract: string; address: string; frameId: string };
 }
@@ -34,14 +36,16 @@ export interface TraceTransaction {
   evidence: string[];
 }
 export interface TraceModel {
+  mode?: "combined" | "physical"; recordedView?: TraceModel | null; executionNotice?: string | null;
+  matchingNotes?: { code: string; message: string; frameId: string | null }[];
   version: 1; schemaVersion: string | null; label: string; txHash: string;
   origin: { chain: TraceChain; transactionId: string } | null;
   chains: Record<TraceChain, { chainId: string | null; rollupId: string | null; manager: string | null; name: string; explorer: string | null }>;
   nodes: TraceNode[]; transactions: TraceTransaction[];
-  roots: { node: number; chain: TraceChain; tx: string; block: number | null; isOrigin: boolean; inFlow?: boolean; role: string; relatedSettlement?: boolean; label: string }[];
+  roots: { node: number; chain: TraceChain; tx: string; block: number | null; isOrigin: boolean; inFlow?: boolean; preferred?: boolean; unisolatedEntry?: boolean; entryIndex?: number | null; role: string; relatedSettlement?: boolean; label: string }[];
   settlements: { id: string; l1Tx: string; l1Block: number | null; firstL2Block: number | null; lastL2Block: number | null }[];
   unresolved: { code: string; message: string; frameId: string | null }[];
-  stats: { frames: number; crossings: number; matched: number; events: number };
+  stats: { frames: number; crossings: number; matched: number; events: number; preparedResults?: number; preparedResponses?: number };
 }
 export interface TraceResult {
   apiVersion: 1; observedAt: string; partial: boolean; model: TraceModel;

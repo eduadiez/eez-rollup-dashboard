@@ -22,7 +22,6 @@ const SETTINGS = {
   etherscanApiKey: ["EEZ_TRACE_ETHERSCAN_API_KEY", "ETHERSCAN_API_KEY"],
   rollups: ["EEZ_REGISTRY_ADDRESS", "ROLLUPS"],
   managerL2: ["EEZL2_ADDRESS", "MANAGER_L2"],
-  rollupManager: ["EEZ_ROLLUP_MANAGER_ADDRESS", "EEZ_ROLLUP_MANAGER"],
   correlationRpc: ["EEZ_CORR_RPC"],
   txLinks: ["EEZ_TX_LINKS"],
   expectedL1ChainId: ["EXPECTED_L1_CHAIN_ID"],
@@ -94,6 +93,7 @@ export function loadEnvironmentConfig({ envFile, env = process.env, cwd = proces
       if (value !== undefined) config[option] = value;
     }
   }
+  config.explicitManagers = { L1: !!config.rollups, L2: !!config.managerL2 };
   // Empty trace overrides intentionally stay absent: ChainReader uses that
   // chain's read RPC, including a later --l1-rpc / --l2-rpc CLI override.
   return config;
@@ -115,7 +115,7 @@ export function loadConfig(argv = process.argv.slice(2), env = process.env, cwd 
   const { envFile, ...overrides } = cli;
   const config = loadEnvironmentConfig({ envFile, env, cwd });
   Object.assign(config, overrides, {
-    explicitManagers: { L1: !!cli.rollups, L2: !!cli.managerL2 },
+    explicitManagers: { L1: !!(cli.rollups || config.rollups), L2: !!(cli.managerL2 || config.managerL2) },
   });
   if (!/^0x[0-9a-f]{64}$/i.test(config.tx || "")) throw new Error("Provide a 32-byte transaction hash (positional or --tx)");
   for (const key of ["l1Rpc", "l2Rpc"]) if (!config[key]) throw new Error(`Missing ${key}; configure RPC URLs or use --env-file`);

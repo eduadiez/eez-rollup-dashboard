@@ -81,11 +81,16 @@ async function main() {
   // Provider error text may contain private URLs or credentials. The public
   // model carries stable diagnostic codes and curated messages, never config,
   // Composer responses, raw provider failures, or the full engine result.
-  model.unresolved = model.unresolved.map(item => ({
-    ...item, message: reasons[item.code] || "Some execution evidence could not be verified.",
-  }));
+  const sanitize = view => {
+    const issue = item => ({ code: item.code, frameId: item.frameId,
+      message: reasons[item.code] || "Some execution evidence could not be verified." });
+    view.unresolved = view.unresolved.map(issue);
+    view.matchingNotes = (view.matchingNotes || []).map(issue);
+    if (view.recordedView) sanitize(view.recordedView);
+  };
+  sanitize(model);
   const partial = model.unresolved.length > 0 || model.transactions.some(tx => !tx.traced) ||
-    model.stats.matched < model.stats.crossings;
+    model.stats.matched + (model.stats.preparedResults || 0) < model.stats.crossings;
   const result = { apiVersion: 1, observedAt: new Date().toISOString(), partial, model };
   const json = JSON.stringify(result, (_key, value) => typeof value === "bigint" ? value.toString() : value);
   if (Buffer.byteLength(json) > 8 * 1024 * 1024) throw Object.assign(new Error("Result limit exceeded"), { code: "result-limit" });

@@ -17,6 +17,16 @@ const model = {
     path: "0", input: "0x12345678", output: "0x", children: [] }],
   settlements: [], unresolved: [], stats: { frames: 1, crossings: 0, matched: 0, events: 0 },
 };
+// Independent recorded trees exercise the native view switch and chain numbering.
+model.mode = "combined";
+model.recordedView = { ...model, mode: "physical", recordedView: null,
+  roots: [{ node: 0, chain: "L2", tx: hash, role: "trigger", inFlow: true },
+    { node: 1, chain: "L1", tx: hash, role: "execution", inFlow: true }],
+  nodes: [{ ...model.nodes[0], preparedResponse: true },
+    { ...model.nodes[0], id: 1, chain: "L1", contract: "Remote counter" }],
+  stats: { ...model.stats, frames: 2, preparedResponses: 1 },
+  matchingNotes: [{ code: "ambiguous-remote-occurrence", message: "Repeated calls could not be paired." }],
+};
 (async () => {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -46,6 +56,17 @@ const model = {
     await page.getByLabel("Selected call details").getByText("amount", { exact: false }).waitFor();
     await page.getByRole("button", { name: "Sequence", exact: true }).click();
     await page.getByRole("columnheader", { name: "Return / status" }).waitFor();
+    await page.getByRole("button", { name: "Recorded traces", exact: true }).click();
+    await page.getByText("Recorded call order within each transaction.", { exact: false }).waitFor();
+    const recordedRows = page.locator("tbody tr");
+    await recordedRows.nth(1).waitFor();
+    assert.deepEqual(await recordedRows.locator("td:first-child").allTextContents(), ["1", "1"]);
+    await page.getByText("Call association notes (1)", { exact: true }).click();
+    await page.getByText("Repeated calls could not be paired.", { exact: false }).waitFor();
+    await page.getByRole("button", { name: "Call flow", exact: true }).click();
+    await page.getByText("Prepared table response", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Linked flow", exact: true }).click();
+    await page.getByText("Logical call order across both chains.", { exact: false }).waitFor();
     await page.getByRole("button", { name: "Refresh", exact: true }).click();
     await page.getByRole("heading", { name: "Counter.increment()" }).waitFor();
     assert.ok(creates >= 2);

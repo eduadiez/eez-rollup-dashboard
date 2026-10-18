@@ -20,6 +20,8 @@ function CallInspector({ node }: { node: TraceNode | undefined }) {
     <h2>{node.contract}</h2><code>{node.signature || node.fn}</code>
     {node.address && <p><ExplorerLink value={node.address} chain={chain} /></p>}
     {(node.failed || node.reverted) && <p className={styles.warning}>This call reverted or occurred in a reverted context.</p>}
+    {node.preparedResult && <p className={styles.muted}>Prepared result · no L2 delivery expected.</p>}
+    {node.preparedResponse && <p className={styles.muted}>This proxy returned the response from its prepared execution table.</p>}
     {node.kind === "ghost" && <p className={styles.warning}>The remote execution has not been observed. Any precomputed return value is not proof of execution.</p>}
     <dl className={styles.fields}><dt>Value</dt><dd>{node.value} wei</dd><dt>Gas used</dt><dd>{node.gasUsed ?? "Not observed"}</dd>
       <dt>Transaction</dt><dd>{node.tx ? <ExplorerLink value={node.tx} type="tx" chain={chain} /> : "Not observed"}</dd>
@@ -49,7 +51,10 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
   const [view, setView] = useState<"flow" | "sequence" | "raw">("flow");
   const [transaction, setTransaction] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
-  const model = trace.result?.model;
+  const [recorded, setRecorded] = useState(false);
+  const linkedModel = trace.result?.model;
+  const model = recorded && linkedModel?.recordedView ? linkedModel.recordedView : linkedModel;
+  useEffect(() => { setRecorded(false); }, [linkedModel]);
   useEffect(() => { setSelected(null); setTransaction(""); }, [model]);
   const busy = trace.phase === "queued" || trace.phase === "running";
   const inspect = (event: FormEvent) => {
@@ -85,7 +90,7 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
     {!hash && <p className={styles.empty}>Enter an L1 or L2 transaction hash to see its execution.</p>}
     {model && trace.result && <>
       <section className={styles.summary} aria-label="Trace summary">
-        <div><h2>{model.label}</h2><p className={styles.muted}>Observed {new Date(trace.result.observedAt).toLocaleString()} · {model.stats.frames} frames · {model.stats.matched}/{model.stats.crossings} crossings matched</p></div>
+        <div><h2>{model.label}</h2><p className={styles.muted}>Observed {new Date(trace.result.observedAt).toLocaleString()} · {model.stats.frames} frames · {model.mode === "physical" ? `${model.stats.preparedResponses || 0} L2 prepared responses` : `${model.stats.matched}/${model.stats.crossings} crossings matched`}{model.stats.preparedResults ? ` · ${model.stats.preparedResults} prepared results (no L2 delivery expected)` : ""}</p></div>
         <div className={styles.actions}><button className="btn btn-sm btn-outline" onClick={trace.refresh}>Refresh</button>
           <button className="btn btn-sm btn-outline" onClick={() => trace.result && download(trace.result)}>Download JSON</button></div>
       </section>
@@ -108,11 +113,19 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
         {model.settlements.map(item => <div key={item.id}><ExplorerLink value={item.l1Tx} type="tx" chain="l1" />
           <span>L2 blocks {item.firstL2Block}–{item.lastL2Block}</span></div>)}
       </section>}
+      {linkedModel?.recordedView && <nav className={styles.tabs} aria-label="Trace presentation">
+        <button className={"btn btn-sm " + (!recorded ? "btn-solid" : "btn-outline")} aria-pressed={!recorded} onClick={() => setRecorded(false)}>Linked flow</button>
+        <button className={"btn btn-sm " + (recorded ? "btn-solid" : "btn-outline")} aria-pressed={recorded} onClick={() => setRecorded(true)}>Recorded traces</button>
+      </nav>}
+      {model.executionNotice && <p className={styles.warning} role="status">{model.executionNotice}</p>}
+      {!!model.matchingNotes?.length && <details><summary>Call association notes ({model.matchingNotes.length})</summary>
+        <ul>{model.matchingNotes.map((item, index) => <li key={index}><code>{item.code}</code>: {item.message}</li>)}</ul>
+      </details>}
       <nav className={styles.tabs} aria-label="Trace views">{(["flow", "sequence", "raw"] as const).map(item =>
         <button key={item} className={"btn btn-sm " + (view === item ? "btn-solid" : "btn-outline")} aria-pressed={view === item} onClick={() => setView(item)}>
           {item === "flow" ? "Call flow" : item === "sequence" ? "Sequence" : "Decoded data"}</button>)}</nav>
       {view === "raw" ? <section className={styles.raw}><h2>Decoded flow model</h2><pre>{JSON.stringify(model, null, 2)}</pre></section>
-        : <div className={styles.workspace}><TraceDiagram model={model} view={view} transaction={transaction} selected={selected} onSelect={setSelected} />
+        : <div className={styles.workspace}><TraceDiagram key={model.mode || "combined"} model={model} view={view} transaction={transaction} selected={selected} onSelect={setSelected} />
           <CallInspector node={selected === null ? undefined : model.nodes[selected]} /></div>}
     </>}
   </main>;

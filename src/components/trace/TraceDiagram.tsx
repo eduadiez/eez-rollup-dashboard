@@ -23,6 +23,9 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
   const rows = useMemo(() => traceRows(model, { transaction, protocol, search, collapsed }),
     [model, transaction, protocol, search, collapsed]);
   useEffect(() => { setPage(0); }, [transaction, protocol, search, collapsed, model]);
+  const physical = model.mode === "physical";
+  const chainSteps = { L1: 0, L2: 0 };
+  const steps = rows.map(row => ++chainSteps[row.node.chain]);
   const pages = Math.max(1, Math.ceil(rows.length / 100)), currentPage = Math.min(page, pages - 1);
   const visible = rows.slice(currentPage * 100, (currentPage + 1) * 100);
   const toggle = (id: number) => setCollapsed(previous => {
@@ -41,6 +44,8 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
       {(node.crossing || node.outgoing) && <span className={styles.crossingBadge}>
         {(node.crossing || node.outgoing)?.from} → {(node.crossing || node.outgoing)?.to} · {(node.crossing || node.outgoing)?.status}
       </span>}
+      {node.preparedResult && <span className={styles.crossingBadge}>Prepared result · no L2 delivery expected</span>}
+      {node.preparedResponse && <span className={styles.crossingBadge}>Prepared table response</span>}
       <span className={node.failed || node.reverted ? styles.failure : styles.returnValue}>↩ {returnLabel(node)}</span>
       {node.reverted && <span className={styles.failure}>Reverted context</span>}
       {node.kind === "ghost" && <span className={styles.warningText}>Remote execution not observed</span>}
@@ -52,13 +57,15 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
       <label className={styles.checkbox}><input type="checkbox" checked={protocol} onChange={event => setProtocol(event.target.checked)} />Show protocol calls</label>
       <button className="btn btn-sm btn-outline" onClick={() => setCollapsed(new Set())}>Expand all</button>
     </div>
-    <p className={styles.muted}>Logical call order across both chains. Missing execution appears with a dashed border; settlement is shown separately.</p>
+    <p className={styles.muted}>{physical
+      ? "Recorded call order within each transaction. The chains have independent sequences; this is not a shared timeline."
+      : "Logical call order across both chains. Missing execution appears with a dashed border; settlement is shown separately."}</p>
     {view === "flow" ? <div className={styles.flowScroller}>
       <div className={styles.flowHead}><strong>{model.chains.L1.name} · L1</strong><span>Calls</span><strong>{model.chains.L2.name} · L2</strong></div>
       {visible.map(({ node, depth, parent }) => {
         const parentNode = parent === null ? undefined : model.nodes[parent];
         const crossing = node.crossing;
-        const crosses = !!crossing || !!parentNode && parentNode.chain !== node.chain;
+        const crosses = !physical && (!!crossing || !!parentNode && parentNode.chain !== node.chain);
         return <div className={styles.flowRow} key={node.id}>
           <div className={styles.lane}>{node.chain === "L1" && card(node, depth)}</div>
           <div className={styles.arrow} aria-label={crosses ? (crossing?.from || parentNode?.chain) + " to " + node.chain : undefined}>
@@ -70,7 +77,7 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
     </div> : <div className={styles.tableScroll}><table className={styles.sequence}>
       <thead><tr><th>Step</th><th>Chain</th><th>Call</th><th>Return / status</th></tr></thead>
       <tbody>{visible.map(({ node }, index) => <tr key={node.id} data-selected={selected === node.id}>
-        <td>{currentPage * 100 + index + 1}</td><td>{node.crossing ? node.crossing.from + " → " + node.chain : node.chain}</td>
+        <td>{physical ? steps[currentPage * 100 + index] : currentPage * 100 + index + 1}</td><td>{node.crossing ? node.crossing.from + " → " + node.chain : node.chain}</td>
         <td><button className={styles.textButton} onClick={() => onSelect(node.id)} aria-pressed={selected === node.id}>
           <strong>{node.contract}</strong><code>{node.fn}</code></button></td>
         <td className={node.failed || node.reverted ? styles.failure : undefined}>{returnLabel(node)}{node.kind === "ghost" && " · execution not observed"}</td>

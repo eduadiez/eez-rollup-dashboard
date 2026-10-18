@@ -40,11 +40,11 @@ test("repository settings map to the engine's configuration", t => {
   })) assert.equal(config[option], env[key]);
   assert.equal(config.rollups, "registry");
   assert.equal(config.managerL2, "l2-manager");
-  assert.equal(config.rollupManager, "rollup-manager");
+  assert.equal(config.rollupManager, undefined);
   assert.equal(config.l1ExplorerApiKey, "key1");
   assert.equal(config.l2ExplorerApiKey, "key2");
   assert.equal(config.etherscanApiKey, "shared");
-  assert.deepEqual(config.explicitManagers, { L1: false, L2: false });
+  assert.deepEqual(config.explicitManagers, { L1: true, L2: true });
   assert.ok(!JSON.stringify(config).includes("never-read"));
   assert.ok(!JSON.stringify(config).includes("display-only"));
 });
@@ -185,4 +185,15 @@ test("transaction link mode is shared by the API and CLI, with CLI precedence", 
   assert.equal(loadConfig([hash, "--tx-links", "auto"], { ...rpcEnv, EEZ_TX_LINKS: "off" }).txLinks, "auto");
   assert.throws(() => loadConfig([hash, "--tx-links", "invalid"], rpcEnv), /--tx-links must be/);
   assert.throws(() => loadConfig([hash], { ...rpcEnv, EEZ_TX_LINKS: "invalid" }), /--tx-links must be/);
+});
+
+test("file managers stay pinned for API and CLI when exported values are empty", t => {
+  files(t, { [DEFAULT_ENV_FILE]: "ROLLUPS=historical-l1\nMANAGER_L2=historical-l2\nL1_TRACE_RPC=archive-file" });
+  const env = { ...rpcEnv, ROLLUPS: "", MANAGER_L2: "", L1_TRACE_RPC: "" };
+  for (const config of [loadEnvironmentConfig({ env }), loadConfig([hash], env)]) {
+    assert.equal(config.rollups, "historical-l1");
+    assert.equal(config.managerL2, "historical-l2");
+    assert.equal(config.l1TraceRpc, "archive-file");
+    assert.deepEqual(config.explicitManagers, { L1: true, L2: true });
+  }
 });

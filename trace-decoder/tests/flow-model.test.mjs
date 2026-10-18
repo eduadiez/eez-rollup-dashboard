@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { renderTrace } from '../src/logical.mjs';
 import { decodeCrossChainTrace } from '../src/engine.mjs';
 import { buildFlowModel, explorerSite, standardRevert } from '../flow/model.mjs';
-import { renderFlowHtml } from '../flow/render-flow.mjs';
+import { preferSavedTrace, renderFlowHtml } from '../flow/render-flow.mjs';
 import { scenario, address } from './fixtures/scenarios.mjs';
 import { largeTrace } from './fixtures/large-trace.mjs';
 
@@ -151,4 +152,66 @@ test('shared L1 posting does not connect a second trigger to the requested call 
   assert.ok(!m.unresolved.some(u => u.frameId === out.frameId));
   assert.equal(m.stats.crossings, 1);
   assert.equal(m.stats.matched, 1);
+});
+
+
+function physicalLinks(trace) {
+  trace.transactionLinks = [{ state: 'complete', sourceChain: trace.origin.chain, sourceHash: trace.txHash,
+    references: trace.transactions.map(t => ({ chain: t.chain, hash: t.hash,
+      role: t.hash === trace.txHash ? 'source' : t.chain === 'L1' ? 'l1-post-batch' : 'l2-delivery' })) }];
+}
+
+test('physical views keep proxy inconsistencies and missing identity unresolved', async () => {
+  const { trace } = await decode(); physicalLinks(trace);
+  const frameId = trace.outgoing[0].managerFrameId;
+  const codes = ['proxy-forwarding-mismatch', 'proxy-identity-unavailable'];
+  trace.unresolved = codes.map(code => ({ code, message: 'Cannot validate proxy request', frameId }));
+  const model = buildFlowModel(trace, { mode: 'physical' });
+  assert.deepEqual(model.unresolved.map(u => u.code), codes);
+  assert.equal(model.matchingNotes.length, 0);
+});
+
+test('legacy prepared labels cannot hide rejected remote return values', async () => {
+  const { trace } = await decode({ isStatic: true }, f => {
+    f.txs.L2.get(f.deliveries[0]).trace.calls[0].calls[0].output = '0xdeadbeef';
+  });
+  const out = trace.outgoing[0];
+  assert.ok(out.rejectedCandidates.length);
+  out.resultKind = 'precomputed-result-only'; // Older decoder incorrectly used this for a mismatch.
+  physicalLinks(trace);
+  const model = buildFlowModel(trace, { mode: 'physical' });
+  assert.ok(!model.nodes.some(n => n.preparedResult));
+  assert.ok(model.unresolved.some(u => u.frameId === out.frameId));
+  assert.ok(!renderTrace(trace).includes('no L2 delivery expected'));
+});
+
+test('prepared status is shared by HTML and text; unrelated errors stay unresolved', async () => {
+  const { trace } = await decode({ isStatic: true }); physicalLinks(trace);
+  const out = trace.outgoing[0];
+  out.status = 'prepared-result'; delete out.resultKind;
+  trace.unresolved = [{ code: 'receipt-unavailable', message: 'Receipt missing', frameId: out.frameId }];
+  const model = buildFlowModel(trace, { mode: 'physical' });
+  assert.equal(model.stats.preparedResults, 1);
+  assert.equal(model.unresolved[0].code, 'receipt-unavailable');
+  assert.ok(renderTrace(trace).includes('no L2 delivery expected'));
+});
+
+
+test('verified links default to matched cross-chain arrows with an independent recorded alternative', async () => {
+  const { trace } = await decode({ deep:true }); physicalLinks(trace);
+  const model = buildFlowModel(trace);
+  assert.equal(model.mode,'combined'); assert.equal(model.recordedView.mode,'physical');
+  assert.equal(model.nodes.filter(n=>n.crossing?.status==='matched').length,3);
+  assert.ok(!model.recordedView.nodes.some(n=>n.crossing));
+});
+
+test('new complete decodes replace saved captures even when match counts drop', () => {
+  const transaction = {chain:'L1',hash:'tx',trace:{available:true}};
+  const previous = {schemaVersion:'1.0.0',transactions:[transaction],outgoing:[{status:'matched'}]};
+  const current = {...previous,outgoing:[{status:'unresolved'}]};
+  assert.equal(preferSavedTrace(previous,current),false);
+  const incomplete = {...current,transactions:[{...transaction,trace:{available:false}}]};
+  assert.equal(preferSavedTrace(previous,incomplete),true);
+  assert.equal(preferSavedTrace(previous,{...incomplete,schemaVersion:'2.0.0'}),false);
+  assert.equal(preferSavedTrace(previous,{...incomplete,transactions:[{...incomplete.transactions[0],hash:'other'}]}),false);
 });

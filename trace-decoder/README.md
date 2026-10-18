@@ -8,6 +8,11 @@ This folder originated in `sync-rollups/trace-decoder`. Its JSON engine and flow
 model now power the dashboard's native React transaction detail view through a
 read-only Node.js API. The API runs as the internal `trace-decoder` Compose service.
 The CLI and standalone HTML viewer remain available for offline inspection.
+The native dashboard defaults to **Linked flow** and offers **Recorded traces**
+when exact links are verified. Recorded sequence numbers are independent per
+chain. Prepared results without an expected L2 delivery are labeled separately
+and do not by themselves make the API result partial. Both models use curated
+public diagnostic messages; raw provider errors remain server-side.
 
 ## Dashboard API
 
@@ -76,7 +81,7 @@ node trace-decoder/flow/render-flow.mjs .runtime/trace-decoder/<hash>.json --env
   --views flow,layers,sequence,timeline|all
 ```
 
-The older text/JSON CLI is unchanged: `node trace-decoder/decode-trace.mjs <TX_HASH> [--json]`.
+The text/JSON CLI uses the same decoder engine: `node trace-decoder/decode-trace.mjs <TX_HASH> [--json]`.
 
 ## Configuration
 
@@ -100,7 +105,6 @@ such as `$EEZ_UI_L1_RPC_UPSTREAM` are expanded. Shell expressions are rejected.
 | `EEZ_UI_L1_FRONT_UPSTREAM`, `EEZ_UI_L2_FRONT_UPSTREAM` | Composer discovery, source transaction links and settlement correlation | `L1_FRONT`, `L2_FRONT` |
 | `EEZ_UI_L1_TRACE_RPC_UPSTREAM`, `EEZ_UI_L2_TRACE_RPC_UPSTREAM` | Optional separate trace/archive RPCs; blank uses the corresponding read RPC | `L1_TRACE_RPC`, `L2_TRACE_RPC` |
 | `EEZ_REGISTRY_ADDRESS`, `EEZL2_ADDRESS` | L1 and L2 managers, with Composer discovery when available | `ROLLUPS`, `MANAGER_L2` |
-| `EEZ_ROLLUP_MANAGER_ADDRESS` | Rollup manager configuration | `EEZ_ROLLUP_MANAGER` |
 | `EEZ_UI_L1_EXPLORER_API_URL`, `EEZ_UI_L2_EXPLORER_API_URL` | ABI/name APIs; fall back to the explorer website URLs | `EXPLORER_L1`, `EXPLORER_L2` |
 | `EEZ_UI_L1_EXPLORER_URL`, `EEZ_UI_L2_EXPLORER_URL` | Public explorer links, kept separate from API endpoints | `EXPLORER_L1`, `EXPLORER_L2` |
 | `EEZ_TRACE_L1_EXPLORER_API_KEY`, `EEZ_TRACE_L2_EXPLORER_API_KEY` | Per-chain explorer credentials | `L1_EXPLORER_API_KEY`, `L2_EXPLORER_API_KEY` |
@@ -112,8 +116,9 @@ with the modes `auto`, `required`, and `off`.
 
 The existing decoder options `EEZ_CORR_RPC`, `L1_EXPLORER_TYPE`,
 `L2_EXPLORER_TYPE`, `EXPECTED_L1_CHAIN_ID`, and `EXPECTED_L2_CHAIN_ID` also remain
-available. Composer discovery can update environment-supplied manager addresses;
-use `--l1-manager` / `--l2-manager` to pin historical deployments.
+available. Manager addresses supplied in the file or environment pin the deployment
+for the API and CLI; `--l1-manager` / `--l2-manager` override them. Composer discovery
+fills only manager addresses that were not configured.
 
 The API server imports `loadEnvironmentConfig()` from `src/config.mjs` and
 passes its result to `decodeCrossChainTrace(config, hash)`. This loader does not
@@ -142,7 +147,7 @@ lookup, `--no-explorer` both).
 
 1. Finds the transaction on L1 or L2 and queries `eez_getCrossChainTransaction`
    with its **transaction hash** on the source chain's frontend (`L1_FRONT` or
-   `L2_FRONT`; `EEZ_CORR_RPC` can substitute when that frontend is unset).
+   `L2_FRONT`; `EEZ_CORR_RPC` can substitute when that frontend is unset and its chain ID matches the source).
    Complete links name `transactions.l1`, `postBatch`, and `l2[]` directly.
    L1 sources link to committed L2 deliveries; L2 sources link to their system
    table loader and original user transaction. Empty L2 delivery lists are valid
@@ -171,11 +176,27 @@ lookup, `--no-explorer` both).
    without `transactions`, `auto` uses the previous block-hash settlement lookup
    and bounded scanning path. Missing frontend configuration and fully traced local transactions without EEZ
    calls also permit this compatibility path. A system transaction (batch, loader or delivery) with no
-   source record can still be opened through settlement discovery. Supported
+   source record can still be opened through settlement discovery. Batch postings
+   are recognized inside wrapper traces when a successful `postAndVerifyBatch`
+   executes in the configured L1 manager's context and no enclosing frame reverts.
+   A trace is required. Outgoing source calls from the poster’s meta hook or
+   surrounding wrapper block this fallback, including caught or reverted attempts.
+   Reentrant callbacks inside the manager’s immediate L2Tx execution are not sources.
+   Fully decoded setup/administration calls and views without outgoing source calls
+   also permit fallback; unknown manager calldata remains unresolved. A null
+   source record alone does not authorize broader discovery. Supported
    incomplete/null **source** records, transport failures and invalid links are
    unresolved; they never silently trigger a broader scan. Run again after a
    pending source completes. `required` disallows compatibility fallback;
    `off` disables exact links; `--no-correlation` disables both RPC linking paths.
+
+A correlation-only endpoint on the other chain is used for settlement discovery
+in `auto` mode, not as a source frontend; `required` still needs a matching source
+frontend. Legacy discovery queries the method for the source chain with the actual
+receipt block hash, trying the corresponding front first after any explicit
+correlation override. The two methods may live on different fronts. Only an
+unsupported method permits trying another endpoint; transport or malformed-response
+failures remain unresolved.
 
 Legacy discovery checks settlement block hashes in batches of up to 100 reads,
 then scans manager calls/events in the requested block, posting block and L2 range.
@@ -183,6 +204,44 @@ Without settlement support it searches ±2,000 blocks around the nearest timesta
 `--thorough` and explicit block ranges extend this compatibility search; they do
 not expand a supported exact transaction link set. Null historical block reads,
 including null batch slots, retry the configured archive trace RPC.
+
+## Standalone linked flow and recorded traces
+
+**Linked flow** is the default, including for verified transaction links. Confirmed
+cross-chain matches connect the local request to its remote execution with arrows.
+EEZ plumbing stays folded, including L2 ETH burn transfers to the manager’s
+`SYSTEM_ADDRESS` verified at the receipt block. Those observed calls remain
+inspectable with **EEZ plumbing** enabled. EEZ markers on cross-chain arrows also
+follow this checkbox in both directions; the default view shows direct application
+connections. Ambiguous matches do not become confirmed connections;
+unobserved remote calls are explicitly labeled as not observed. This is a logical
+call flow, not a shared timeline across chains.
+
+With verified links, **Trace view → Recorded traces** shows each transaction's
+physical call tree in its original order. **Both chains** displays the linked trees
+without cross-chain arrows; call numbering starts independently on each chain.
+The sequence view also gives each chain its own rows. For an L2 source, the
+identified L1 entry is shown separately from other entries in its settlement batch.
+If that entry cannot be isolated, a notice explains why and the full batch remains
+selectable. The complete physical trace is always retained in JSON.
+
+Recorded L2 proxy calls label their prepared table responses. State observations,
+when supplied, are values after a block, not per-transaction storage writes. Reads
+start visible in recorded mode; an explicit **Read calls** choice persists across
+trace and view changes. Optional association notes show their codes and messages.
+Proxy identity failures, forwarding inconsistencies and rejected return/revert
+matches remain unresolved. The text CLI renders verified traces in physical order.
+
+L1→L2 top-level reads, reverting calls, and calls erased by an enclosing revert
+use prepared return/revert data and have no L2 delivery. These are labeled
+**Prepared result · no L2 delivery expected** when no contradictory remote execution
+was observed. L2→L1 reads and reverting calls do execute inside the L1 entry.
+Missing traces still require an archive endpoint or explicit partial output.
+
+A fresh complete decode replaces older JSON even if its match count decreases.
+With `--allow-partial`, a run missing call traces may retain a complete saved capture
+only for the same schema and transaction set; the printed summary describes the
+capture actually rendered.
 
 ## How transactions are classified
 
@@ -201,7 +260,7 @@ from evidence (`classifyTransactions` in `flow/model.mjs`):
   the same batch only.
 
 Table loads and deliveries are shown with **EEZ plumbing** ticked; their inspector shows
-the decoded execution table. View (static) calls are hidden until **View calls** is ticked.
+the decoded execution table. Read (static) calls are hidden in the linked view until **Read calls** is ticked.
 For a requested L2 transaction without cross-chain calls, its correlated **L1 settlement**
 is available directly in the transaction selector. Selecting it reveals the batch's
 protocol calls; this settlement relationship does not create a cross-chain call edge.
@@ -212,6 +271,7 @@ protocol calls; this settlement relationship does not create a cross-chain call 
 show-tx.sh           one-command entry point
 decode-trace.mjs     text/JSON CLI and public API (decodeCrossChainTrace)
 src/                 decoder: config, engine, rpc, transaction-links, logical (call graph + matching),
+                     prepared-result (shared result classification),
                      protocol (+ protocol-abi.json), abi-decoder, explorer
 flow/                diagram: model.mjs (trace → call tree, roles), render-flow.mjs (CLI),
                      viewer/ (template.html, viewer.js)
