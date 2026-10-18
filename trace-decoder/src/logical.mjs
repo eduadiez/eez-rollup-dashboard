@@ -357,10 +357,10 @@ function sameIdentity(a, b) {
     && a.targetRollupId != null && b.targetRollupId != null && String(a.targetRollupId) === String(b.targetRollupId);
 }
 
-export function renderTrace(result, { full = false } = {}) {
+export function renderTrace(result, { full = false, recorded = false } = {}) {
   const link = (result.transactionLinks || []).find(l => l.state === 'complete' &&
     `${l.sourceChain}:${l.sourceHash}` === result.origin?.transactionId);
-  if (link) {
+  if (link && recorded) {
     const frames = new Map(result.frames.map(f => [f.id, f]));
     const outgoing = new Map(result.outgoing.map(o => [o.frameId, o]));
     const roots = [], seen = new Set(), lines = [];
@@ -388,6 +388,7 @@ export function renderTrace(result, { full = false } = {}) {
     return lines.join('\n');
   }
   const nodes = new Map(result.logicalNodes.map(n => [n.id, n]));
+  const boundaries = new Map((result.outgoing || []).map(o => [o.frameId, o]));
   const visited = new Set(), lines = [];
   function walk(id, depth) {
     const node = nodes.get(id);
@@ -396,10 +397,11 @@ export function renderTrace(result, { full = false } = {}) {
     visited.add(id);
     const hidden = !full && ['manager','incoming-proxy','static-probe','system-value-transfer'].includes(node.role);
     if (!hidden) {
-      const boundary = node.boundary, call = boundary?.remoteCall || node.decoded;
-      const chain = boundary ? (node.chain === 'L1' ? 'L2' : 'L1') : node.chain;
+      const boundary = boundaries.get(id) || node.boundary, prepared = isPreparedResult(boundary);
+      const call = prepared ? boundary.localResponse || node.decoded : boundary?.remoteCall || node.decoded;
+      const chain = boundary && !prepared ? (node.chain === 'L1' ? 'L2' : 'L1') : node.chain;
       const fn = call.signature || (call.rawInput?.length >= 10 ? `${call.rawInput.slice(0,10)}(?)` : 'fallback()');
-      lines.push(`${'  '.repeat(depth)}${boundary ? '⇢ ' : ''}${chain}  ${call.contractName} · ${call.displayAddress} · ${fn}${node.reverted ? ' [reverted context]' : ''}${boundary && boundary.status !== 'matched' ? ` [${boundary.resultKind || boundary.status}]` : ''}`);
+      lines.push(`${'  '.repeat(depth)}${boundary && !prepared ? '⇢ ' : ''}${chain}  ${call.contractName} · ${call.displayAddress} · ${fn}${node.reverted ? ' [reverted context]' : ''}${prepared ? ' [prepared result; no L2 delivery expected]' : boundary && boundary.status !== 'matched' ? ` [${boundary.resultKind || boundary.status}]` : ''}`);
       if (full) lines.push(`${'  '.repeat(depth+1)}${call.address || '(creation)'}  [${node.id}]`);
     }
     for (const child of node.children) {
@@ -413,7 +415,8 @@ export function renderTrace(result, { full = false } = {}) {
     if (!hidden && node.decoded.error) lines.push(`${'  '.repeat(depth + 1)}↳ ${node.decoded.error.name || node.decoded.error.message}`);
   }
   // Show trigger roots first; delivery plumbing disappears in the default view.
-  const roots = [...result.logicalRoots].sort((a,b) => {
+  const originRoot = `${result.origin?.transactionId}:0`;
+  const roots = (link ? [originRoot].filter(id => nodes.has(id)) : [...result.logicalRoots]).sort((a,b) => {
     const x = nodes.get(a), y = nodes.get(b);
     return Number(x?.role === 'manager') - Number(y?.role === 'manager');
   });

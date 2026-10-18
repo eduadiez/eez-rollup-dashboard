@@ -15,7 +15,7 @@
   const VIEWS = (config.views || ALL_VIEWS).filter(v => ALL_VIEWS.includes(v));
   let M = null, current = -1;
   // returns: 'auto' draws dashed return arrows only on small maps.
-  // staticCalls: read-only (STATICCALL-context) calls are hidden unless ticked.
+  // staticCalls controls additional local reads; cross-chain reads stay visible.
   let readVisibilityChosen = false, traceMode = 'combined';
   const opt = { protocol: false, voidReturns: false, returns: 'auto', staticCalls: false };
   let expanded = new Set(), selection = null, layout = null, step = -1, timer = null, matches = [], matchAt = -1;
@@ -26,11 +26,11 @@
   const crossesMemo = new Map();
   function crossesInside(id) {
     if (crossesMemo.has(id)) return crossesMemo.get(id);
-    const n = M.nodes[id], v = n.children.some(c => M.nodes[c].chain !== n.chain || crossesInside(c));
+    const n = M.nodes[id], v = n.children.some(c => M.nodes[c].crossChainRead || M.nodes[c].chain !== n.chain || crossesInside(c));
     crossesMemo.set(id, v);
     return v;
   }
-  const hiddenStatic = n => !opt.staticCalls && n.isStatic && !n.protocol;
+  const hiddenStatic = n => !opt.staticCalls && n.isStatic && !n.protocol && !n.crossChainRead && !n.crossing && !n.outgoing;
   function kids(id) {
     if (kidsMemo.has(id)) return kidsMemo.get(id);
     const out = [];
@@ -1149,7 +1149,7 @@
       n = total() - before;
       opt.staticCalls = false; kidsMemo = new Map();
     }
-    $('opt-static-label').textContent = n ? `Read calls (${n} hidden)` : 'Read calls';
+    $('opt-static-label').textContent = n ? `Local reads (${n} hidden)` : 'Local reads';
   }
   // Hovering a box lights up every box of the same contract.
   function hoverCid(cid) {

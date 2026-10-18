@@ -402,3 +402,38 @@ for (const variant of ['system', 'reverted', 'wrong destination', 'unavailable i
     }
   });
 }
+
+
+test('a conflicting pinned manager warns without replacing the pin',async()=>{
+  const f=scenario(),old=address(333);
+  const result=await decodeCrossChainTrace({...f.config,rollups:old,managerL2:old,explicitManagers:{L1:true,L2:true}},f.trigger);
+  assert.deepEqual(result.metadata.managers,{L1:old,L2:old});
+  assert.deepEqual(result.diagnostics.filter(d=>d.code==='pinned-manager-mismatch').map(d=>d.chain),['L1','L2']);
+});
+
+for(const failure of ['connection','timeout','http'])test(`correlation retries ${failure} failures without broad scanning`,async()=>{
+  const f=scenario({direction:'L2'}),rpc=f.config.rpc,attempts=[];
+  const result=await decodeCrossChainTrace({...f.config,rpc:async(url,method,params)=>{
+    if(method==='eez_getSettlementByL2Block'){
+      attempts.push(url);
+      if(url==='l2-front')throw Object.assign(new Error(failure),failure==='http'?{transport:true}:{code:failure==='connection'?'ECONNRESET':'ETIMEDOUT'});
+    }
+    return rpc(url,method,params);
+  }},f.trigger);
+  assert.deepEqual(attempts,['l2-front','l1-front']);
+  assert.equal(result.metadata.correlation,'L1_FRONT');
+  assert.equal(result.outgoing[0].status,'matched');
+  assert.ok(!result.metadata.search.some(s=>s.source==='timestamp-fallback'));
+  assert.ok(!result.unresolved.some(u=>u.code==='correlation-lookup-failed'));
+});
+
+test('malformed settlement answers stop endpoint failover and broad scanning',async()=>{
+  const f=scenario({direction:'L2'}),rpc=f.config.rpc,attempts=[];
+  const result=await decodeCrossChainTrace({...f.config,rpc:async(url,method,params)=>{
+    if(method==='eez_getSettlementByL2Block'){attempts.push(url);return 'not a settlement';}
+    return rpc(url,method,params);
+  }},f.trigger);
+  assert.deepEqual(attempts,['l2-front']);
+  assert.equal(result.metadata.search.length,0);
+  assert.ok(result.unresolved.some(u=>u.code==='correlation-lookup-failed'));
+});

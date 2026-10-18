@@ -3,7 +3,7 @@ import test from 'node:test';
 import { renderTrace } from '../src/logical.mjs';
 import { decodeCrossChainTrace } from '../src/engine.mjs';
 import { buildFlowModel, explorerSite, standardRevert } from '../flow/model.mjs';
-import { preferSavedTrace, renderFlowHtml } from '../flow/render-flow.mjs';
+import { inlineModelSource, preferSavedTrace, renderFlowHtml } from '../flow/render-flow.mjs';
 import { scenario, address } from './fixtures/scenarios.mjs';
 import { largeTrace } from './fixtures/large-trace.mjs';
 
@@ -206,7 +206,7 @@ test('verified links default to matched cross-chain arrows with an independent r
 });
 
 test('new complete decodes replace saved captures even when match counts drop', () => {
-  const transaction = {chain:'L1',hash:'tx',trace:{available:true}};
+  const transaction = {chain:'L1',hash:'tx',blockHash:'block',blockNumber:10,transactionIndex:0,receipt:{status:1},trace:{available:true}};
   const previous = {schemaVersion:'1.0.0',transactions:[transaction],outgoing:[{status:'matched'}]};
   const current = {...previous,outgoing:[{status:'unresolved'}]};
   assert.equal(preferSavedTrace(previous,current),false);
@@ -214,4 +214,32 @@ test('new complete decodes replace saved captures even when match counts drop', 
   assert.equal(preferSavedTrace(previous,incomplete),true);
   assert.equal(preferSavedTrace(previous,{...incomplete,schemaVersion:'2.0.0'}),false);
   assert.equal(preferSavedTrace(previous,{...incomplete,transactions:[{...incomplete.transactions[0],hash:'other'}]}),false);
+});
+
+
+test('saved captures never hide changed inclusion or fresh validation failures', () => {
+  const transaction={chain:'L1',hash:'tx',blockHash:'block',blockNumber:10,transactionIndex:0,receipt:{status:1},trace:{available:true}};
+  const previous={schemaVersion:'1',txHash:'tx',transactions:[transaction]};
+  const current={...previous,transactions:[{...transaction,trace:{available:false}}]};
+  for(const mutation of [
+    {transactions:[{...current.transactions[0],blockHash:'reorg'}]},
+    {transactions:[{...current.transactions[0],transactionIndex:1}]},
+    {transactions:[{...current.transactions[0],blockHash:null}]},
+    {metadata:{transactionLinks:{state:'invalid'}}},
+    {metadata:{transactionLinks:{state:'pending'}}},
+    {unresolved:[{code:'invalid-transaction-links'}]},
+    {unresolved:[{code:'correlation-lookup-failed'}]},
+    {outgoing:[{rejectedCandidates:[{reason:'return-or-revert-mismatch'}]}]},
+    {metadata:{chainIds:{L1:'different chain'}}},
+  ]) assert.equal(preferSavedTrace(previous,{...current,...mutation}),false);
+});
+
+for(const quote of ["'",'"'])for(const newline of ['\n','\r\n'])test(`model inlining tolerates quote ${quote} and newline ${JSON.stringify(newline)}`,()=>{
+  const code=`import { isPreparedResult } from ${quote}../src/prepared-result.mjs${quote};${newline}export const marker = 1;${newline}`;
+  const inline=inlineModelSource(code);
+  assert.doesNotMatch(inline,/^import/m);assert.doesNotMatch(inline,/^export/m);
+  assert.equal(new Function(`${inline}; return marker;`)(),1);
+});
+test('model inlining rejects unbundled imports explicitly',()=>{
+  assert.throws(()=>inlineModelSource('import x from "./unbundled.mjs";'),/Unbundled import/);
 });

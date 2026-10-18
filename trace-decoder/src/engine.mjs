@@ -55,6 +55,9 @@ export async function decodeCrossChainTrace(inputConfig, txHash) {
         if (!explicit) {
           if (config[key] && !same(config[key], value)) report('stale-manager-replaced', `${chain} environment manager replaced by composer discovery`);
           config[key] = value;
+        } else if (!same(config[key], value)) {
+          report('pinned-manager-mismatch', `${chain} pinned manager ${config[key]} differs from Composer ${value}; keeping the pin. Check it when decoding transactions after a redeployment.`,
+            { chain, pinnedManager: config[key], composerManager: value });
         }
       }
     }
@@ -146,6 +149,7 @@ export async function decodeCrossChainTrace(inputConfig, txHash) {
   }
   const legacyDiscovery = linkDiscovery.state === 'fallback';
   let correlation = null, correlationRaw = null, correlationAnswered = false;
+  const transportFailures = [];
   const method = origin.chain === 'L2' ? 'eez_getSettlementByL2Block' : 'eez_getSettledL2RangesByL1Block';
   const sourceFront = origin.chain === 'L1' ? ['L1_FRONT', config.l1Front] : ['L2_FRONT', config.l2Front];
   const otherFront = origin.chain === 'L1' ? ['L2_FRONT', config.l2Front] : ['L1_FRONT', config.l1Front];
@@ -155,16 +159,23 @@ export async function decodeCrossChainTrace(inputConfig, txHash) {
       // The two lookup methods may be served by different fronts.
       correlationRaw = await rpc(url, method, [{ blockHash: origin.blockHash }]);
       if (origin.chain === 'L1' ? !Array.isArray(correlationRaw) : correlationRaw !== null && (typeof correlationRaw !== 'object' || Array.isArray(correlationRaw))) {
-        throw new Error('Unrecognized settlement capability response');
+        throw Object.assign(new Error('Unrecognized settlement capability response'), { invalidResponse: true });
       }
       correlation = { name, url }; correlationAnswered = true; break;
     } catch (e) {
       if (e.code === -32601) { report('correlation-candidate-unavailable', `${name}: ${e.message}`); continue; }
-      // A configured endpoint timing out, rejecting a request, or returning bad
-      // data must not silently authorize a broader timestamp scan.
+      // Retry transport failures against another endpoint with the same block
+      // hash. They never authorize a timestamp scan if every endpoint fails.
       correlationAnswered = true;
+      if (!e.invalidResponse && (e.transport || e.code == null || ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT'].includes(e.code))) {
+        transportFailures.push(`${name}: ${e.message}`);
+        report('correlation-transport-retry', `${name}: ${e.message}; trying the next endpoint`); continue;
+      }
       unresolvedReason('correlation-lookup-failed', `${name}: ${e.message}`); break;
     }
+  }
+  if (!correlation && transportFailures.length && !unresolved.some(u => u.code === 'correlation-lookup-failed')) {
+    unresolvedReason('correlation-lookup-failed', transportFailures.join('; '));
   }
   const settlements = [];
   if (correlation) {

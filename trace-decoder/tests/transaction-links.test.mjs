@@ -403,7 +403,7 @@ test('physical entry rendering preserves every frame and its order without call 
   assert.equal(model.unresolved.length, 0);
   assert.equal(model.matchingNotes.length, 1);
   const { renderTrace } = await import('../src/logical.mjs');
-  const text = renderTrace(trace, { full: true });
+  const text = renderTrace(trace, { full: true, recorded: true });
   assert.ok(text.includes('L1 entry 3'));
   assert.ok(text.includes(host));
   assert.ok(!text.includes(`L1:${f.posting}:0.2.`));
@@ -456,4 +456,13 @@ test('correlation-only endpoint on the other chain is fallback in auto, not an i
   assert.equal(f.linkCalls.length,0);
   await assert.rejects(lookupTransactionLinks({...options,config:{...options.config,txLinks:'required'}}),/wrong chain ID/);
   await assert.rejects(lookupTransactionLinks({...options,config:{...options.config,l2Front:'l1-front'}}),/wrong chain ID/);
+});
+
+
+test('text CLI defaults to linked flow and offers recorded traces explicitly', async () => {
+  const f=linked({direction:'L2'}),trace=await decodeCrossChainTrace(f.config,f.trigger);
+  const {renderTrace}=await import('../src/logical.mjs');
+  assert.match(renderTrace(trace),/⇢ L1/);
+  assert.doesNotMatch(renderTrace(trace),/L1 l1-execution/);
+  assert.match(renderTrace(trace,{recorded:true}),/L1 l1-execution/);
 });

@@ -19,7 +19,7 @@ export interface TraceNode {
   address: string | null; from?: string | null; fn: string; signature?: string | null;
   args: TraceArgument[];
   ret: { status: string; reason?: string | null; raw?: string | null; items?: TraceArgument[]; alternatives?: number };
-  value: string; isStatic: boolean; failed: boolean; reverted: boolean;
+  value: string; isStatic: boolean; crossChainRead?: boolean; failed: boolean; reverted: boolean;
   gasUsed: string | null; tx: string | null; block: number | null; path: string | null;
   input: string; output: string | null; children: number[];
   outgoing?: TraceCrossing; crossing?: TraceCrossing;

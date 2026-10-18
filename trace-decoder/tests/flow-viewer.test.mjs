@@ -75,7 +75,7 @@ test('view calls are hidden by default and the checkbox adds exactly the announc
   const before = count();
   p.el('opt-static').checked = true; p.el('opt-static').onchange();
   assert.equal(count() - before, hidden);
-  assert.equal(p.el('opt-static-label').textContent, 'Read calls');
+  assert.equal(p.el('opt-static-label').textContent, 'Local reads');
 });
 
 test('table loads appear only with EEZ plumbing, with the decoded execution table', async () => {
@@ -317,12 +317,12 @@ test('system ETH transfers are folded with plumbing and remain inspectable', asy
   const model=buildFlowModel(trace),root=model.roots.find(r=>r.isOrigin);
   const id=model.nodes.length;
   model.nodes.push({...model.nodes[root.node],id,frameId:'system-transfer',role:'system-value-transfer',
-    contract:'L2 system',fn:'ETH burn transfer',protocol:true,children:[],address:address(700)});
+    contract:'L2 system',fn:'Value to L2 system',protocol:true,children:[],address:address(700)});
   model.nodes[root.node].children.push(id);
   const p=page(renderFlowHtml([{model}],{views:['flow']}));
-  assert.doesNotMatch(p.el('graph').innerHTML,/ETH burn transfer/);
+  assert.doesNotMatch(p.el('graph').innerHTML,/Value to L2 system/);
   p.el('opt-protocol').checked=true;p.el('opt-protocol').onchange();
-  assert.match(p.el('graph').innerHTML,/ETH burn transfer/);
+  assert.match(p.el('graph').innerHTML,/Value to L2 system/);
   assert.deepEqual(geometry(p.el('graph').innerHTML).problems,[]);
 });
 
@@ -339,4 +339,17 @@ for (const direction of ['L1','L2']) test(`${direction} linked arrows hide EEZ m
     p.el('opt-protocol').checked=false;p.el('opt-protocol').onchange();
     assert.doesNotMatch(p.el('graph').innerHTML,/class="eez(?: |")/);
   }
+});
+
+
+for(const direction of ['L1','L2'])test(`${direction} cross-chain reads and their details remain visible without plumbing`,async()=>{
+  const f=scenario({direction,isStatic:true}),trace=plain(await decodeCrossChainTrace(f.config,f.trigger));
+  const model=buildFlowModel(trace),p=page(renderFlowHtml([{model}],{views:['flow','sequence']}));
+  assert.equal(p.el('opt-static').checked,false);
+  assert.equal(p.el('opt-protocol').checked,false);
+  assert.match(p.el('graph').innerHTML,/class="edge cross/);
+  assert.doesNotMatch(p.el('graph').innerHTML,/class="eez(?: |")/);
+  for(let i=0;i<2;i++)p.el('next').onclick();
+  assert.match(p.el('inspector').innerHTML,/Crossing L[12] → L[12]/);
+  p.tab('sequence');assert.match(p.el('graph').innerHTML,/class="edge cross/);
 });

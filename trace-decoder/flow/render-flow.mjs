@@ -25,10 +25,19 @@ export const DEFAULT_VIEWS = ['flow', 'sequence'];
 
 const safeJson = value => JSON.stringify(value).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e').replaceAll('&', '\\u0026');
 
+// The prepared-result dependency is explicitly inlined before the model.
+// Accept formatting differences, and fail loudly if another import is added.
+export function inlineModelSource(source) {
+  const script = source.replace(/^[ \t]*import[ \t]+[^;\r\n]*[ \t]+from[ \t]+["'][^"'\r\n]*prepared-result\.mjs["'][ \t]*;?[ \t]*(?:\r?\n|$)/gm, '')
+    .replace(/^export /gm, '');
+  if (/^[ \t]*import\b/m.test(script)) throw new Error('Unbundled import in the flow model');
+  return script;
+}
+
 export function renderFlowHtml(traces, { fragment = false, views = ALL_VIEWS } = {}) {
   const data = safeJson(traces.map(t => ({ label: t.label || t.model.label, synthetic: !!t.synthetic, source: t.source || null, model: t.model })));
   const prepared = fs.readFileSync(path.join(here, '../src/prepared-result.mjs'), 'utf8').replace(/^export /gm, '');
-  const model = fs.readFileSync(path.join(here, 'model.mjs'), 'utf8').replace(/^import .*prepared-result.mjs';\n/m, '').replace(/^export /gm, '');
+  const model = inlineModelSource(fs.readFileSync(path.join(here, 'model.mjs'), 'utf8'));
   const viewer = fs.readFileSync(path.join(here, 'viewer/viewer.js'), 'utf8');
   const script = `${prepared}\n${model}\n${viewer}`.replace(/<\/script/gi, '<\\/script');
   const body = fs.readFileSync(path.join(here, 'viewer/template.html'), 'utf8')
@@ -42,11 +51,20 @@ export function renderFlowHtml(traces, { fragment = false, views = ALL_VIEWS } =
 // Keep a complete saved capture only when this run actually lost a trace from
 // the same linked transaction set. Match counts can change as decoding improves.
 export function preferSavedTrace(previous, current) {
-  const ids = trace => (trace.transactions || []).map(t => `${t.chain}:${t.hash}`).sort();
-  return !!previous && previous.schemaVersion === current.schemaVersion &&
-    JSON.stringify(ids(previous)) === JSON.stringify(ids(current)) &&
-    current.transactions.some(t => t.trace?.available === false) &&
-    previous.transactions.every(t => t.trace?.available === true);
+  if (!previous || previous.schemaVersion !== current.schemaVersion || previous.txHash !== current.txHash) return false;
+  const invalid = trace => ['invalid', 'pending'].includes(trace.metadata?.transactionLinks?.state) ||
+    (trace.unresolved || []).some(u => /invalid|reorg|canonical|receipt|identity|mismatch|correlation|settlement/.test(u.code)) ||
+    (trace.outgoing || []).some(o => o.rejectedCandidates?.length);
+  if (invalid(previous) || invalid(current)) return false;
+  const identity = trace => (trace.transactions || []).map(t => {
+    if (!t.blockHash || t.blockNumber == null || t.transactionIndex == null || t.receipt?.status == null) return null;
+    return [t.chain, t.hash, t.blockHash, Number(t.blockNumber), Number(t.transactionIndex), Number(t.receipt.status)];
+  }).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  const before = identity(previous), after = identity(current);
+  const scope = trace => [trace.metadata?.chainIds, trace.metadata?.managers];
+  return before.length > 0 && !before.includes(null) && !after.includes(null) &&
+    JSON.stringify(before) === JSON.stringify(after) && JSON.stringify(scope(previous)) === JSON.stringify(scope(current)) &&
+    current.transactions.some(t => t.trace?.available === false) && previous.transactions.every(t => t.trace?.available === true);
 }
 
 // What the decoder found, so the terminal says which transactions the page covers.

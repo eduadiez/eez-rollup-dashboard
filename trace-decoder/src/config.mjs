@@ -103,7 +103,7 @@ export function loadConfig(argv = process.argv.slice(2), env = process.env, cwd 
   const cli = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (["--json", "--full", "--no-explorer", "--no-4byte", "--help", "-h", "--no-correlation", "--thorough"].includes(arg)) {
+    if (["--json", "--full", "--recorded", "--no-explorer", "--no-4byte", "--help", "-h", "--no-correlation", "--thorough"].includes(arg)) {
       cli[({"--no-explorer": "noExplorer", "--no-4byte": "no4byte", "--no-correlation": "noCorrelation", "-h": "help"})[arg] || arg.slice(2)] = true;
     } else if (FLAGS[arg]) {
       if (!argv[i + 1] || argv[i + 1].startsWith("--")) throw new Error(`${arg} needs a value`);
@@ -149,6 +149,7 @@ export const HELP = `Usage: node trace-decoder/decode-trace.mjs <TX_HASH> [optio
   --l1-explorer-type TYPE --l2-explorer-type TYPE  auto, blockscout, etherscan
   --l1-explorer-api-key KEY --l2-explorer-api-key KEY
   --etherscan-api-key KEY         Also ETHERSCAN_API_KEY; enables V2 fallback
+  --recorded                     Text CLI: show separate recorded traces
   --json --full --no-explorer --no-4byte --no-correlation
   --thorough                      Trace every transaction in scanned blocks, not only manager calls/events
 Fallback search: nearest timestamp on the other chain, ±2,000 blocks, chunks of 500.
