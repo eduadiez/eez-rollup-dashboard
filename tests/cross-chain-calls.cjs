@@ -13,14 +13,14 @@ async function fixture(browser,options={}){
  const verification={codeError:options.codeError??false,missing:false,mismatch:false},deployed=new Set(),deploying=new Set();
  const proxyLookup={rollupId:null,malformed:false,delay:false,pending:[]};
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await page.addInitScript(({account,hash,forward,reverse,walletName})=>{
+ await page.addInitScript(({account,hash,forward,reverse,walletName,chain})=>{
   if(!localStorage.getItem('crossChainFixture')){
    localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
    const recent=Array.from({length:8},(_,i)=>'0x'+String(i+1).repeat(40));
    localStorage.setItem('recentL1Addresses',JSON.stringify(recent));localStorage.setItem('recentL2Addresses',JSON.stringify(recent));
    localStorage.setItem('crossChainFixture','seeded');
   }
-  window.walletRequests=[];window.switches=[];window.currentChain='0x27d8';window.rejectSwitch=false;window.holdSignature=false;
+  window.walletRequests=[];window.switches=[];window.currentChain=chain;window.rejectSwitch=false;window.holdSignature=false;
   window.ethereum={isRabby:walletName==='Rabby',isMetaMask:walletName==='MetaMask',on(){},removeListener(){},async request({method,params}){
    if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
    if(method==='eth_chainId')return window.currentChain;
@@ -30,7 +30,7 @@ async function fixture(browser,options={}){
    if(method==='eth_sendTransaction'){window.walletRequests.push({...params[0],walletChain:window.currentChain});if(window.holdSignature)await new Promise(resolve=>window.releaseSignature=resolve);return hash;}
    throw new Error('Unexpected wallet method '+method);
   }};
- },{account,hash,forward,reverse,walletName:options.walletName||'Rabby'});
+ },{account,hash,forward,reverse,walletName:options.walletName||'Rabby',chain:options.chain||'0x27d8'});
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname;
   if(path.endsWith('/config.json'))return route.fulfill({json:{l1FeesEnabled:!!options.feesEnabled,l2FeesEnabled:!!options.feesEnabled,l1FeeMaxTotalWei:options.feeCeiling||'100000000000000000',l2FeeMaxTotalWei:options.feeCeiling||'100000000000000000',networkName:'EEZ-X Devnet',l1RpcUrl:'/rpc/l1',l2RpcUrl:'/rpc/l2',l1FrontUrl:'/composer/l1',l2FrontUrl:'/composer/l2',l1ContractAddress:registry,l2ContractAddress:manager,rollupId:'1',l1ExplorerApiUrl:'/explorer/l1',l2ExplorerApiUrl:'/explorer/l2',l1ExplorerUrl:'https://l1.invalid',l2ExplorerUrl:'https://l2.invalid'}});
@@ -48,14 +48,14 @@ async function fixture(browser,options={}){
    assert(path.startsWith('/composer/'),'fee quotes must use the source Composer');
    const [request,selection]=params;
    assert.deepEqual(selection.transactionTypes,[request.type]);
-   assert.equal(request.chainId,l1?'0x27d8':'0x1892');
+   assert.equal(request.chainId,l1?(options.chain||'0x27d8'):(options.l2Chain||'0x1892'));
    const transaction={nonce:'0x0',gas:'0x671af',...request};
    const canonical=JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key=>[key,transaction[key]])));
    return reply({version:1,chainId:transaction.chainId,nonce:transaction.nonce,expiresAt:'0x'+(Math.floor(Date.now()/1000)+30).toString(16),
     options:[{type:transaction.type,gas:transaction.gas,requestHash:keccak256(toHex(canonical)),estimatedFee:'0x4ce78',
      ...(transaction.type==='0x0'?{gasPrice:'0xf'}:{maxPriorityFeePerGas:'0x5',maxFeePerGas:'0xf'})}]});
   }
-  if(method==='eth_chainId')result=l1?'0x27d8':'0x1892';
+  if(method==='eth_chainId')result=l1?(options.chain||'0x27d8'):(options.l2Chain||'0x1892');
   if(method==='eth_getBalance')result='0x3635c9adc5dea00000';
   if(method==='eth_getBlockByNumber')result={number:'0x10',timestamp:'0x65000000',gasUsed:'0x0',gasLimit:'0x1c9c380',baseFeePerGas:'0x7',transactions:[]};
   if(method==='eth_call'&&params[0].data.startsWith('0xeb20c0aa')){

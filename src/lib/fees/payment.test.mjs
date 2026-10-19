@@ -3,9 +3,22 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { sendCrossChainWithFees } from "./payment.mjs";
 
-for (const chainId of ["0x1", "0x27d8", "0xaa29e", "0x1892"]) for (const legacy of [false, true]) for (const automatic of [false, true]) test(`dashboard chain ${chainId} ${legacy ? "Rabby legacy" : "EIP-1559"} ${automatic ? "automatic" : "explicit"} gas quote preserves exact fees through one wallet request`, async () => {
+const cases = [
+  ["0x1", "0x2"], ["0x27d8", "0x0"], ["0xaa29e", "0x0"], ["0x1892", "0x0"],
+].flatMap(([chainId, rabbyType]) => [
+  { chainId, isRabby: true, type: rabbyType },
+  { chainId, isRabby: false, type: "0x2" },
+]);
+cases.push(
+  { chainId: "0x1", isRabby: true, type: "0x0", explicitType: true },
+  { chainId: "0xaa29e", isRabby: true, type: "0x2", explicitType: true },
+  { chainId: "0x1", isRabby: false, type: "0x0", explicitType: true },
+);
+
+for (const { chainId, isRabby, type, explicitType } of cases) for (const automatic of [false, true]) test(`dashboard chain ${chainId} ${isRabby ? "Rabby" : "MetaMask"} ${explicitType ? "explicit" : "default"} type ${type} ${automatic ? "automatic" : "explicit"} gas preserves exact quoted fees through one wallet request`, async () => {
+  const legacy = type === "0x0";
   const from = `0x${"11".repeat(20)}`;
-  const tx = { to: `0x${"22".repeat(20)}`, ...(automatic ? {} : {gasLimit:"0x186a0"}), value: "0x5", data: "0x1234" };
+  const tx = { to: `0x${"22".repeat(20)}`, ...(automatic ? {} : {gasLimit:"0x186a0"}), ...(explicitType ? {type} : {}), value: "0x5", data: "0x1234" };
   let sent = 0;
   let quoted;
   let quoteFailure = false;
@@ -26,7 +39,7 @@ for (const chainId of ["0x1", "0x27d8", "0xaa29e", "0x1892"]) for (const legacy 
         ...(legacy ? {gasPrice:"0xf"} : {maxPriorityFeePerGas:"0x5",maxFeePerGas:"0xf"}) }] };
     return quote;
   };
-  const wallet = { isRabby: legacy, request: async ({ method, params }) => {
+  const wallet = { isRabby, request: async ({ method, params }) => {
     assert.notEqual(method, "eez_quoteFee", "custom quotes use the Composer directly");
     if (method !== "eth_sendTransaction") return rpc(method);
     sent++;

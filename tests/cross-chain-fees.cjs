@@ -34,6 +34,31 @@ const { fixture, until, RAW_GAS, token } = require('./bridge-gas-fees.cjs');
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }
+    for (const reverse of [false, true]) for (const erc20 of [false, true]) {
+      const f = await fixture(browser, { chain: '0x1', l2Chain: '0xaa29e', reverse, erc20, feesEnabled: true });
+      await f.button.click();
+      await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'mainnet Rabby bridge did not reach wallet');
+      const sent = await f.page.evaluate(() => ({ tx: window.walletRequests[0], wallets: window.walletSenders }));
+      assert.deepEqual(sent.wallets, ['Rabby']);
+      assert.equal(sent.tx.chainId, reverse ? '0xaa29e' : '0x1');
+      assert.equal(sent.tx.type, reverse ? '0x0' : '0x2');
+      assert.equal(sent.tx.gas, '0x' + RAW_GAS.toString(16));
+      if (reverse) {
+        assert.equal(BigInt(sent.tx.gasPrice), 9_000_000_007n);
+        assert.equal(sent.tx.maxFeePerGas, undefined);
+        assert.equal(sent.tx.maxPriorityFeePerGas, undefined);
+      } else {
+        assert.equal(BigInt(sent.tx.maxPriorityFeePerGas), 9_000_000_000n);
+        assert.equal(BigInt(sent.tx.maxFeePerGas), 9_000_000_007n);
+        assert.equal(sent.tx.gasPrice, undefined);
+      }
+      const quotes = f.rpcRequests.filter(r => r.transaction);
+      assert.equal(quotes.length, 1);
+      assert.equal(quotes[0].path, reverse ? '/composer/l2' : '/composer/l1');
+      for (const [field, value] of Object.entries(quotes[0].transaction)) assert.equal(sent.tx[field], value);
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
     for (const reverse of [false, true]) for (const options of [{ quoteFailure: true }, { feeCeiling: '1' }]) {
       const f = await fixture(browser, { reverse, feesEnabled: true, ...options });
       await f.button.click();
