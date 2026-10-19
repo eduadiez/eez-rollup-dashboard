@@ -1,7 +1,7 @@
 import { keccak256, toHex } from "viem";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sendCrossChainWithFees } from "./payment.mjs";
+import { quoteCrossChainFees, sendCrossChainWithFees } from "./payment.mjs";
 
 const cases = [
   ["0x1", "0x2"], ["0x27d8", "0x0"], ["0xaa29e", "0x0"], ["0x1892", "0x0"],
@@ -20,6 +20,8 @@ for (const { chainId, isRabby, type, explicitType } of cases) for (const automat
   const from = `0x${"11".repeat(20)}`;
   const tx = { to: `0x${"22".repeat(20)}`, ...(automatic ? {} : {gasLimit:"0x186a0"}), ...(explicitType ? {type} : {}), value: "0x5", data: "0x1234" };
   let sent = 0;
+  let walletReads = 0;
+  let shown;
   let quoted;
   let quoteFailure = false;
   const rpc = async (method, params) => {
@@ -40,14 +42,20 @@ for (const { chainId, isRabby, type, explicitType } of cases) for (const automat
     return quote;
   };
   const wallet = { isRabby, request: async ({ method, params }) => {
+    walletReads++;
     assert.notEqual(method, "eez_quoteFee", "custom quotes use the Composer directly");
     if (method !== "eth_sendTransaction") return rpc(method);
     sent++;
     assert.deepEqual(params, [quoted]);
+    assert.deepEqual(shown.transaction, quoted, "display callback must receive the exact fees sent to the wallet");
     return "0xhash";
   } };
   const args = { tx, from, chainId, rpc, wallet, maxTotalFee: 1_500_000n };
-  assert.equal(await sendCrossChainWithFees(args), "0xhash");
+  const preview = await quoteCrossChainFees(args);
+  assert.deepEqual(preview.transaction, quoted);
+  assert.equal(walletReads, 0, "fee previews must not prompt or switch the wallet");
+  assert.equal(sent, 0);
+  assert.equal(await sendCrossChainWithFees({ ...args, onQuote: value => { shown = value; } }), "0xhash");
   assert.equal(sent, 1);
   await assert.rejects(sendCrossChainWithFees({ ...args, maxTotalFee: 1n }), /app limit/);
   for (const changed of [{ authorizationList: [] }, { from: tx.to }, { nonce: "0x4" }, ...(automatic ? [] : [{ gas: "0x9999" }]), { maxFeePerGas: "0x1" }]) {

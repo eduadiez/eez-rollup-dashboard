@@ -4,7 +4,7 @@ import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
 import { useWalletProviders } from "./useWalletProviders";
 import { useComposerDetection } from "./useComposerDetection";
-import { sendCrossChainWithFees } from "../lib/fees/payment.mjs";
+import { quoteCrossChainFees, sendCrossChainWithFees, type CrossChainFeeQuote } from "../lib/fees/payment.mjs";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 
@@ -218,23 +218,33 @@ export function useWallet(log: Logger, configLoaded = false) {
   const sendTx = useCallback((params: Record<string, string>) => sendOnChain(L2_CHAIN, params), [sendOnChain]);
   const sendL1Tx = useCallback((params: Record<string, string>) => sendOnChain(L1_CHAIN, params), [sendOnChain]);
 
-  const sendProxyTx = useCallback(async (source: "l1" | "l2", tx: Record<string, string>): Promise<string> => {
+  const proxyFeeOptions = useCallback((source: "l1" | "l2", tx: Record<string, string>, signal?: AbortSignal) => {
+    const isL1 = source === "l1";
+    const chain = isL1 ? L1_CHAIN : L2_CHAIN;
+    const wallet = selectedProviderRef.current;
+    const from = stateRef.current.address;
+    if (!wallet || !from) throw new Error("Connect wallet first");
+    return {
+      tx, from, chainId: chain.chainId, wallet,
+      rpc: (method: string, params: unknown[]) => rpcCall(isL1 ? config.l1ProxyRpc : config.l2ProxyRpc, method, params, signal),
+      maxTotalFee: BigInt(isL1 ? config.l1FeeMaxTotalWei : config.l2FeeMaxTotalWei), log,
+    };
+  }, [log]);
+
+  // Previewing the other source chain must not switch the wallet's network.
+  const quoteProxyFees = useCallback((source: "l1" | "l2", tx: Record<string, string>, signal?: AbortSignal) =>
+    quoteCrossChainFees(proxyFeeOptions(source, tx, signal)), [proxyFeeOptions, selectedProvider]);
+
+  const sendProxyTx = useCallback(async (source: "l1" | "l2", tx: Record<string, string>, onQuote?: (quote: CrossChainFeeQuote) => void): Promise<string> => {
     const isL1 = source === "l1";
     const chain = isL1 ? L1_CHAIN : L2_CHAIN;
     if (!(isL1 ? config.l1FeesEnabled : config.l2FeesEnabled)) return sendOnChain(chain, tx);
     if (!stateRef.current.isConnected) throw new Error("Connect wallet to send transactions");
     await ensureChain(chain);
-    const wallet = selectedProviderRef.current;
-    const from = stateRef.current.address;
-    if (!wallet || !from) throw new Error("Connect wallet first");
-    return sendCrossChainWithFees({
-      tx, from, chainId: chain.chainId, wallet,
-      rpc: (method: string, params: unknown[]) => rpcCall(isL1 ? config.l1ProxyRpc : config.l2ProxyRpc, method, params),
-      maxTotalFee: BigInt(isL1 ? config.l1FeeMaxTotalWei : config.l2FeeMaxTotalWei), log,
-    });
-  }, [ensureChain, sendOnChain, log]);
-  const sendL1ProxyTx = useCallback((tx: Record<string, string>) => sendProxyTx("l1", tx), [sendProxyTx]);
-  const sendL2ProxyTx = useCallback((tx: Record<string, string>) => sendProxyTx("l2", tx), [sendProxyTx]);
+    return sendCrossChainWithFees({ ...proxyFeeOptions(source, tx), onQuote });
+  }, [ensureChain, sendOnChain, proxyFeeOptions]);
+  const sendL1ProxyTx = useCallback((tx: Record<string, string>, onQuote?: (quote: CrossChainFeeQuote) => void) => sendProxyTx("l1", tx, onQuote), [sendProxyTx]);
+  const sendL2ProxyTx = useCallback((tx: Record<string, string>, onQuote?: (quote: CrossChainFeeQuote) => void) => sendProxyTx("l2", tx, onQuote), [sendProxyTx]);
 
   // Auto-reconnect on mount
   useEffect(() => {
@@ -329,5 +339,6 @@ export function useWallet(log: Logger, configLoaded = false) {
     sendL2ProxyTx,
     sendL1Tx,
     sendL1ProxyTx,
+    quoteProxyFees,
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { TxLink } from "./TxLink";
 import styles from "./BridgeTransactionDialog.module.css";
@@ -7,9 +7,10 @@ let openDialogs = 0;
 let previousBodyOverflow = "";
 
 /** Shared modal presentation; closing it never cancels the underlying transaction. */
-export function TransactionDialog({ open, complete, failed, title, description, hash, chain, onClose }: {
+export function TransactionDialog({ open, complete, failed, title, description, hash, chain, onClose, children }: {
   open: boolean; complete: boolean; failed: boolean; title: string; description: string;
   hash: string | null; chain: "l1" | "l2"; onClose: () => void;
+  children?: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId(), descriptionId = useId();
@@ -44,6 +45,7 @@ export function TransactionDialog({ open, complete, failed, title, description, 
         failed ? <span className={styles.failure} aria-hidden="true">!</span> : <span className={styles.spinner} aria-hidden="true" />}
       <h2 id={titleId} className={styles.title}>{title}</h2>
       <p id={descriptionId} className={styles.description} role={failed ? "alert" : "status"}>{description}</p>
+      {children}
       {hash && <TxLink hash={hash} chain={chain} className={styles.hash} />}
       {hash && <a className="btn btn-outline" href={`#/visualizer?mode=inspect&chain=${chain}&tx=${hash}`} onClick={onClose}>Follow this call →</a>}
       <button className={`btn ${complete || failed ? "btn-solid" : "btn-outline"}`} onClick={onClose}>{complete || failed ? "Done" : "Close"}</button>

@@ -6,7 +6,7 @@ import { requestFeeQuote, feeQuoteTransaction, sendFeeQuotedTransaction } from "
  * quoted fee fields without recomputing them locally. Wallets may still edit
  * fees before signing; Composer validates the signed transaction at admission.
  */
-export async function sendCrossChainWithFees({ tx, from, chainId, rpc, wallet, maxTotalFee, log }) {
+async function prepareCrossChainFees({ tx, from, chainId, rpc, wallet, maxTotalFee }) {
   const allowed = ["to", "data", "value", "gas", "gasLimit", "from", "chainId", "type", "nonce"];
   if (Object.keys(tx).some(key => !allowed.includes(key))) throw new Error("Unsupported fee-quoted transaction field");
   if (tx.from && tx.from.toLowerCase() !== from.toLowerCase()) throw new Error("Transaction sender changed");
@@ -25,6 +25,21 @@ export async function sendCrossChainWithFees({ tx, from, chainId, rpc, wallet, m
   const args = { quote, transaction, type: transaction.type, chainId: transaction.chainId, maxTotalFee,
     keccak256: text => keccak256(toHex(text)) };
   const quotedTransaction = feeQuoteTransaction(args);
+  return { args, quote, quotedTransaction };
+}
+
+/** Validate a preview through the same fee/type/binding checks used for sending.
+ * This only reads Composer and never opens a wallet confirmation.
+ */
+export async function quoteCrossChainFees(options) {
+  const { quote, quotedTransaction } = await prepareCrossChainFees(options);
+  return { transaction: quotedTransaction, expiresAt: quote.expiresAt };
+}
+
+export async function sendCrossChainWithFees(options) {
+  const { wallet, log, onQuote } = options;
+  const { args, quote, quotedTransaction } = await prepareCrossChainFees(options);
+  onQuote?.({ transaction: quotedTransaction, expiresAt: quote.expiresAt });
   const price = quotedTransaction.gasPrice ?? quotedTransaction.maxFeePerGas;
   log?.(`Estimated source-chain fee: ${BigInt(quote.options[0].estimatedFee)} wei; wallet fee cap ${BigInt(quotedTransaction.gas) * BigInt(price)} wei`);
   return sendFeeQuotedTransaction({ wallet, ...args });

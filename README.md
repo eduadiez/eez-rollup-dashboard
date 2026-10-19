@@ -369,6 +369,22 @@ Composer validates the signed transaction at admission. The wallet's broadcast
 RPC must use the source Composer; obtaining a quote does not change a wallet's
 saved RPC or guarantee its submission route.
 
+The bridge shows **Gas Price (Gwei)** and **Max Priority Fee (Gwei)** above the
+collapsed Gas settings. Values come from the current source Composer's
+`eez_quoteFee`, using the selected wallet's transaction format and the same SDK
+validation as submission. Gas Price maps to `maxFeePerGas` for EIP-1559 or
+`gasPrice` for legacy; legacy quotes have no separate priority-fee value. The
+read-only fields retain full wei-to-Gwei precision and select their contents on
+focus for copying into Rabby's Custom fee fields.
+
+Previews are requested after gas estimation and any required token approval.
+Changing the bridge inputs cancels obsolete previews. Expired previews clear
+their values; **Refresh fees** obtains another quote without prompting the wallet.
+Bridge submission obtains a fresh quote and displays those exact values in both
+the card and the wallet-confirmation dialog. They remain stable while the user
+reviews the wallet; background previews cannot overwrite them. This does not
+prevent the wallet from changing its own fee selection.
+
 The bridge's **Gas settings** explain the difference between gas limit and tip,
 and the need to submit through the source Composer. When the source is Ethereum
 mainnet and fee quotes are enabled, they also explain MetaMask's **Site suggested**
