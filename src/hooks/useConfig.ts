@@ -14,6 +14,10 @@ type RuntimeConfig = {
   l2RpcUrl?: string;
   l1FrontUrl?: string;
   l2FrontUrl?: string;
+  l1FeesEnabled?: boolean;
+  l2FeesEnabled?: boolean;
+  l1FeeMaxTotalWei?: string;
+  l2FeeMaxTotalWei?: string;
   l1ExplorerUrl?: string;
   l2ExplorerUrl?: string;
   l2ExplorerApiUrl?: string;
@@ -78,18 +82,24 @@ export function useConfigLoader() {
             ...(l2Rpc ? { l2Rpc } : {}),
             ...(l1ProxyRpc ? { l1ProxyRpc } : {}),
             ...(l2ProxyRpc ? { l2ProxyRpc } : {}),
+            l1FeesEnabled: runtime.l1FeesEnabled === true,
+            l2FeesEnabled: runtime.l2FeesEnabled === true,
+            ...(runtime.l1FeeMaxTotalWei ? { l1FeeMaxTotalWei: runtime.l1FeeMaxTotalWei } : {}),
+            ...(runtime.l2FeeMaxTotalWei ? { l2FeeMaxTotalWei: runtime.l2FeeMaxTotalWei } : {}),
             ...(runtime.l1ExplorerUrl ? { l1Explorer: runtime.l1ExplorerUrl } : {}),
             ...(runtime.l2ExplorerUrl ? { l2Explorer: runtime.l2ExplorerUrl } : {}),
             ...(runtime.l2ExplorerApiUrl ? { l2ExplorerApi: runtime.l2ExplorerApiUrl } : {}),
             ...(runtime.l1ContractAddress ? { rollupsAddress: runtime.l1ContractAddress } : {}),
             ...(runtime.rollupManagerAddress ? { rollupManagerAddress: runtime.rollupManagerAddress } : {}),
             ...(runtime.rollupId ? { rollupId: runtime.rollupId } : {}),
-            ...(runtime.bridgeL1Address ? { l1Bridge: runtime.bridgeL1Address } : {}),
-            ...(runtime.bridgeL2Address ? { l2Bridge: runtime.bridgeL2Address } : {}),
+            // The legacy demo address is only a fallback. Independently
+            // deployed L1 and L2 bridges can have different addresses.
             ...(runtime.demoBridgeAddress ? {
               l1Bridge: runtime.demoBridgeAddress,
               l2Bridge: runtime.demoBridgeAddress,
             } : {}),
+            ...(runtime.bridgeL1Address ? { l1Bridge: runtime.bridgeL1Address } : {}),
+            ...(runtime.bridgeL2Address ? { l2Bridge: runtime.bridgeL2Address } : {}),
             ...(runtime.demoExecutorL1 ? { flashExecutorL1: runtime.demoExecutorL1 } : {}),
             ...(runtime.demoTokenAddress ? { flashTokenAddress: runtime.demoTokenAddress } : {}),
             ...(runtime.demoPoolAddress ? { flashPoolAddress: runtime.demoPoolAddress } : {}),

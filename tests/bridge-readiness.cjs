@@ -57,6 +57,9 @@ async function fixture(browser, options = {}) {
       return route.fulfill({ json: {
         networkName: 'EEZ-X Devnet',
         bridgeL1Address: bridge.l1, bridgeL2Address: bridge.l2,
+        // Older demos used one address on both chains. Explicit per-chain
+        // bindings must win when the pinned deployment exports different ones.
+        demoBridgeAddress: bridge.l1,
         l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
         l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
         rollupId: '1',

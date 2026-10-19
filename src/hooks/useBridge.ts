@@ -485,6 +485,7 @@ export function useBridge(
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     setState((s) => ({
       ...s,
       gas: { ...defaultGas, status: "estimating" },
@@ -496,7 +497,7 @@ export function useBridge(
         const transaction = bridgeTransaction(state, walletAddress);
         const rpcUrl = direction === "l1-to-l2" ? config.l1ProxyRpc : config.l2ProxyRpc;
         requestKey = rpcUrl + JSON.stringify(transaction);
-        const result = await estimateBridgeGas({ rpcUrl, ...transaction });
+        const result = await estimateBridgeGas({ rpcUrl, ...transaction, signal: controller.signal });
         if (!cancelled) {
           estimatedRequest.current = requestKey;
           setState((s) => ({
@@ -527,7 +528,7 @@ export function useBridge(
       }
     }, 400);
 
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
   }, [state.direction, state.asset, state.amount, state.tokenAddress, state.tokenMeta?.decimals, state.destinationAddress, state.allowance, walletAddress, configLoaded, config.l1Bridge, config.l2Bridge, config.rollupId, config.l1ProxyRpc, config.l2ProxyRpc]);
 
   const setGasOverride = useCallback((hex: string | null) => {
@@ -614,7 +615,10 @@ export function useBridge(
       ]);
       const balance = BigInt(balanceHex as string);
       const gasOverride = snapshot.gasOverrideHex ? BigInt(snapshot.gasOverrideHex) : null;
-      const result = await prepareNativeBridgeMax({ balance, feeCap: BigInt(fees.maxFeePerGas!), gasOverride,
+      const minimumReserve = snapshot.direction === "l1-to-l2"
+        ? (config.l1FeesEnabled ? BigInt(config.l1FeeMaxTotalWei) : 0n)
+        : (config.l2FeesEnabled ? BigInt(config.l2FeeMaxTotalWei) : 0n);
+      const result = await prepareNativeBridgeMax({ balance, feeCap: BigInt(fees.maxFeePerGas!), gasOverride, minimumReserve,
         estimate: async value => {
           if (!current()) throw new Error("Bridge parameters changed.");
           const transaction = bridgeTransaction({ ...snapshot, amount: formatUnits(value, 18) }, from);
@@ -742,7 +746,9 @@ export function useBridge(
       // An explicit override can also unblock a Composer with known missing estimation support.
       const resolvedGas = gasOverrideHex ?? stateRef.current.gas.gasHex!;
       const sourceRpc = direction === "l1-to-l2" ? config.l1Rpc : config.l2Rpc;
-      const gasParam = { gas: resolvedGas, gasLimit: resolvedGas, ...await getEip1559Fees(sourceRpc) };
+      const feesEnabled = direction === "l1-to-l2" ? config.l1FeesEnabled : config.l2FeesEnabled;
+      const fees = feesEnabled ? {} : await getEip1559Fees(sourceRpc);
+      const gasParam = { gas: resolvedGas, gasLimit: resolvedGas, ...fees };
       if (walletRef.current !== from || estimatedRequest.current !== composerRpc + JSON.stringify(transaction)) {
         throw new Error("Bridge transaction changed; wait for a new Composer gas estimate");
       }

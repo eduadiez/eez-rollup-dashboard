@@ -1,6 +1,7 @@
 // All wallet submissions and RPC responses are mocked. Never broadcast a real transaction.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
+const { keccak256, toHex } = require('viem');
 const origin = (process.env.EEZ_UI_URL || 'http://127.0.0.1:8083/dashboard').replace(/\/$/, '');
 const addr = b => '0x'+b.repeat(20), hash = '0x'+'44'.repeat(32);
 const account=addr('22'), target=addr('77'), eoa=addr('88'), fresh=addr('99'), registry=addr('11'), manager=addr('33');
@@ -12,7 +13,7 @@ async function fixture(browser,options={}){
  const verification={codeError:options.codeError??false,missing:false,mismatch:false},deployed=new Set(),deploying=new Set();
  const proxyLookup={rollupId:null,malformed:false,delay:false,pending:[]};
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await page.addInitScript(({account,hash,forward,reverse})=>{
+ await page.addInitScript(({account,hash,forward,reverse,walletName})=>{
   if(!localStorage.getItem('crossChainFixture')){
    localStorage.setItem('crossChainProxies',JSON.stringify(forward));localStorage.setItem('crossChainProxiesL2',JSON.stringify(reverse));
    const recent=Array.from({length:8},(_,i)=>'0x'+String(i+1).repeat(40));
@@ -20,18 +21,19 @@ async function fixture(browser,options={}){
    localStorage.setItem('crossChainFixture','seeded');
   }
   window.walletRequests=[];window.switches=[];window.currentChain='0x27d8';window.rejectSwitch=false;window.holdSignature=false;
-  window.ethereum={isRabby:true,on(){},removeListener(){},async request({method,params}){
+  window.ethereum={isRabby:walletName==='Rabby',isMetaMask:walletName==='MetaMask',on(){},removeListener(){},async request({method,params}){
    if(method==='eth_accounts'||method==='eth_requestAccounts')return [account];
    if(method==='eth_chainId')return window.currentChain;
+   if(method==='eth_getTransactionCount')return '0x0';
    if(method==='wallet_addEthereumChain')return null;
    if(method==='wallet_switchEthereumChain'){if(window.rejectSwitch)throw new Error('User rejected switch');window.currentChain=params[0].chainId;window.switches.push(window.currentChain);return null;}
    if(method==='eth_sendTransaction'){window.walletRequests.push({...params[0],walletChain:window.currentChain});if(window.holdSignature)await new Promise(resolve=>window.releaseSignature=resolve);return hash;}
    throw new Error('Unexpected wallet method '+method);
   }};
- },{account,hash,forward,reverse});
+ },{account,hash,forward,reverse,walletName:options.walletName||'Rabby'});
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),path=url.pathname;
-  if(path.endsWith('/config.json'))return route.fulfill({json:{networkName:'EEZ-X Devnet',l1RpcUrl:'/rpc/l1',l2RpcUrl:'/rpc/l2',l1FrontUrl:'/composer/l1',l2FrontUrl:'/composer/l2',l1ContractAddress:registry,l2ContractAddress:manager,rollupId:'1',l1ExplorerApiUrl:'/explorer/l1',l2ExplorerApiUrl:'/explorer/l2',l1ExplorerUrl:'https://l1.invalid',l2ExplorerUrl:'https://l2.invalid'}});
+  if(path.endsWith('/config.json'))return route.fulfill({json:{l1FeesEnabled:!!options.feesEnabled,l2FeesEnabled:!!options.feesEnabled,l1FeeMaxTotalWei:options.feeCeiling||'100000000000000000',l2FeeMaxTotalWei:options.feeCeiling||'100000000000000000',networkName:'EEZ-X Devnet',l1RpcUrl:'/rpc/l1',l2RpcUrl:'/rpc/l2',l1FrontUrl:'/composer/l1',l2FrontUrl:'/composer/l2',l1ContractAddress:registry,l2ContractAddress:manager,rollupId:'1',l1ExplorerApiUrl:'/explorer/l1',l2ExplorerApiUrl:'/explorer/l2',l1ExplorerUrl:'https://l1.invalid',l2ExplorerUrl:'https://l2.invalid'}});
   if(path.startsWith('/explorer/')){
    requests.push({path,action:url.searchParams.get('action'),address:url.searchParams.get('address')});
    const contract=url.searchParams.get('address')===target, l1=path.startsWith('/explorer/l1');
@@ -42,6 +44,17 @@ async function fixture(browser,options={}){
   if(req.method()!=='POST')return route.continue();
   const {method,params=[],id}=req.postDataJSON();assert(!/send|sign/i.test(method),'RPC broadcast forbidden');requests.push({path,method,params});
   const l1=path.endsWith('l1'), reply=result=>route.fulfill({json:{jsonrpc:'2.0',id,result}});let result=null;
+  if(method==='eez_quoteFee'){
+   assert(path.startsWith('/composer/'),'fee quotes must use the source Composer');
+   const [request,selection]=params;
+   assert.deepEqual(selection.transactionTypes,[request.type]);
+   assert.equal(request.chainId,l1?'0x27d8':'0x1892');
+   const transaction={nonce:'0x0',gas:'0x671af',...request};
+   const canonical=JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key=>[key,transaction[key]])));
+   return reply({version:1,chainId:transaction.chainId,nonce:transaction.nonce,expiresAt:'0x'+(Math.floor(Date.now()/1000)+30).toString(16),
+    options:[{type:transaction.type,gas:transaction.gas,requestHash:keccak256(toHex(canonical)),estimatedFee:'0x4ce78',
+     ...(transaction.type==='0x0'?{gasPrice:'0xf'}:{maxPriorityFeePerGas:'0x5',maxFeePerGas:'0xf'})}]});
+  }
   if(method==='eth_chainId')result=l1?'0x27d8':'0x1892';
   if(method==='eth_getBalance')result='0x3635c9adc5dea00000';
   if(method==='eth_getBlockByNumber')result={number:'0x10',timestamp:'0x65000000',gasUsed:'0x0',gasLimit:'0x1c9c380',baseFeePerGas:'0x7',transactions:[]};
@@ -79,7 +92,7 @@ async function fixture(browser,options={}){
   if(method==='eth_getLogs'||method==='eez_getSettledL2RangesByL1Block')result=[];
   return reply(result);
  });
- await page.goto(origin+'/#/bridge');await page.getByRole('button',{name:'Connect Wallet',exact:true}).click();await page.getByRole('button',{name:'Rabby',exact:true}).click();
+ await page.goto(origin+'/#/bridge');await page.getByRole('button',{name:'Connect Wallet',exact:true}).click();await page.getByRole('button',{name:options.walletName||'Rabby',exact:true}).click();
  const panel=page.getByRole('region',{name:'Cross-chain contracts'});
  await panel.getByText('L2 Counter',{exact:false}).first().waitFor();await panel.getByText('L1 Vault',{exact:false}).first().waitFor();
  const select=async(address,back)=>panel.getByRole('button',{name:`Select proxy for ${address} on ${back?'L2':'L1'}`,exact:true}).click();
@@ -96,7 +109,9 @@ async function until(condition, message) {
  while(Date.now()<deadline){if(await condition())return;await new Promise(resolve=>setTimeout(resolve,20));}
  throw new Error(message);
 }
-(async()=>{
+module.exports={fixture,until,target,eoa,fresh,forward,reverse};
+
+if(require.main===module)(async()=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});let scenarios=0;
  try {
   for(const back of [false,true]){
