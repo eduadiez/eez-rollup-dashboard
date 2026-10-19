@@ -369,6 +369,20 @@ Composer validates the signed transaction at admission. The wallet's broadcast
 RPC must use the source Composer; obtaining a quote does not change a wallet's
 saved RPC or guarantee its submission route.
 
+The bridge's **Gas settings** explain the difference between gas limit and tip,
+and the need to submit through the source Composer. When the source is Ethereum
+mainnet and fee quotes are enabled, they also explain MetaMask's **Site suggested**
+selection and Rabby's potential fee override. These instructions do not imply
+that changing transaction type forces a wallet to preserve the quote.
+
+In confirmation-only checks with the real extensions, MetaMask 13.53.0 preserved
+the SDK's supplied gas, max fee and priority fee automatically. Rabby 0.94.12
+replaced the supplied fees with its own estimate; manual custom fees restored
+them. Those checks used controlled quotes and did not sign or broadcast a
+transaction. Browser integration tests also exercise the L1-to-L2 bridge with
+native value and ERC-20 calldata through both selected providers, but mock the
+wallets and RPCs; they do not establish mainnet bridge settlement.
+
 Each cap limits `gas * maxFeePerGas` or legacy `gas * gasPrice` in **source-chain
 native wei**, excluding transferred value. The default is 0.1 native units per
 transaction. Caps must be positive decimal integers; flags must be `true` or

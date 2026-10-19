@@ -57,6 +57,8 @@ export function BridgePanel({
   } = state;
 
   const nativeSymbol = (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol;
+  const feesEnabled = direction === "l1-to-l2" ? config.l1FeesEnabled : config.l2FeesEnabled;
+  const ethereumSource = BigInt((direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).chainId) === 1n;
   const busy = !["idle", "confirmed", "failed"].includes(phase);
   const sourceBridgeReady = direction === "l1-to-l2" ? l1BridgeReady : l2BridgeReady;
   const sourceBridgeError = direction === "l1-to-l2" ? state.l1BridgeError : state.l2BridgeError;
@@ -186,6 +188,14 @@ export function BridgePanel({
             onGasOverride={onGasOverride}
             disabled={busy}
           />
+          {feesEnabled && <div className={styles.feeGuidance} role="note" aria-label="Wallet fee guidance">
+            <p>The quoted network fee includes settlement on {direction === "l1-to-l2" ? "L2" : "L1"}. Changing the gas limit does not set the priority fee (tip).</p>
+            {ethereumSource && <>
+              <p><strong>MetaMask:</strong> Keep <strong>Site suggested</strong> fees and review the gas limit, max fee and priority fee before confirming.</p>
+              <p><strong>Rabby:</strong> It may replace the quoted fees with its own estimate. A lower tip can prevent the bridge from being accepted. If you cannot verify the quoted fees in Rabby, use MetaMask with Site suggested fees.</p>
+            </>}
+            <p>Your wallet must submit through this network’s Composer RPC. Receiving a fee quote does not change the wallet’s RPC.</p>
+          </div>}
         </details>
       )}
 
