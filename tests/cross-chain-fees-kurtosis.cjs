@@ -140,7 +140,7 @@ async function fixture(source, config) {
           const tx = params[0];
           assert.equal(tx.from.toLowerCase(), account.address.toLowerCase());
           assert.equal(Number(BigInt(tx.chainId)), chain.id);
-          assert.equal(tx.type, wallet === 'Rabby' ? '0x0' : '0x2');
+          assert.equal(tx.type, wallet === 'Rabby' && chain.id !== 1 ? '0x0' : '0x2');
           if (kind === 'call') { assert.equal(tx.to.toLowerCase(), target.proxy); assert.equal(tx.data, data); }
           const raw = await sign(tx);
           const entry = { transaction: tx, hash: keccak256(raw) };

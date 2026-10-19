@@ -108,7 +108,7 @@ async function fixture(browser, options = {}) {
       jsonrpc: '2.0', id, error: { code: 3, message },
     } });
     if (/send|sign/i.test(method)) throw new Error('Unexpected broadcast RPC: ' + method);
-    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : options.chain || '0x27d8');
+    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? options.l2Chain || '0x1892' : options.chain || '0x27d8');
     if (method === 'eth_getCode') return reply(params[0]?.toLowerCase() === bridge ? '0x6000' : '0x');
     if (method === 'eth_call' && params[0]?.to?.toLowerCase() === bridge
         && params[0]?.data === '0x481c6a75') {

@@ -346,7 +346,7 @@ contract or database migration.
 Bridge transfers and proxy calls use the **source** Composer: `/composer/l1`
 for L1 → L2, `/composer/l2` for L2 → L1. The app calls
 `eez_quoteFee([transaction, {transactionTypes}])` directly over JSON-RPC.
-The wallet signs one ordinary transaction with the quoted gas and fee fields;
+The app passes the quoted gas and fee fields in one ordinary wallet transaction;
 there is no separate payment or authorization. Ordinary transactions, including
 token approvals and proxy creation, keep their usual wallet path.
 
@@ -358,14 +358,16 @@ a signed Ethereum transaction hash. The wallet path uses only compact quote
 fields; diagnostics are available separately from `eez_debugQuoteFee`.
 There are no old quote API or response-format fallbacks.
 
-Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`).
-Other providers, including MetaMask, default to EIP-1559 (`maxPriorityFeePerGas`,
-`maxFeePerGas`). An explicit supported type is preserved. Only that format is
-requested. The selected wallet's account, chain and pending nonce are rechecked
-before sending. Failed, mismatched or expired quotes stop submission; retry the
-action to obtain a new quote. Composer still validates the signed transaction
-at admission. The wallet's broadcast RPC must use the source Composer; obtaining
-a quote does not change a wallet's saved RPC or guarantee its submission route.
+Rabby defaults to EIP-1559 (`maxPriorityFeePerGas`, `maxFeePerGas`) on Ethereum
+mainnet (chain ID 1). Other configured chains retain the EIP-155-protected legacy
+fallback (`gasPrice`) for Rabby's custom-network flow. Other providers, including
+MetaMask, default to EIP-1559. An explicit supported type is preserved. Only that
+format is requested. The selected wallet's account, chain and pending nonce are
+rechecked before sending. Failed, mismatched or expired quotes stop submission;
+retry the action to obtain a new quote. Wallets may edit fees before signing;
+Composer validates the signed transaction at admission. The wallet's broadcast
+RPC must use the source Composer; obtaining a quote does not change a wallet's
+saved RPC or guarantee its submission route.
 
 Each cap limits `gas * maxFeePerGas` or legacy `gas * gasPrice` in **source-chain
 native wei**, excluding transferred value. The default is 0.1 native units per
