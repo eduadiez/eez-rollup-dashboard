@@ -5,7 +5,7 @@ import { requestFeeQuote, feeQuoteTransaction, sendFeeQuotedTransaction } from "
  * The RPC must point to the Composer. All signers use this
  * path so neither wallet defaults nor local fee estimation replace the quote.
  */
-export async function sendL2WithFees({ tx, from, chainId, rpc, wallet, maxTotalFee, log }) {
+export async function sendCrossChainWithFees({ tx, from, chainId, rpc, wallet, maxTotalFee, log }) {
   const allowed = ["to", "data", "value", "gas", "gasLimit", "from", "chainId", "type", "nonce"];
   if (Object.keys(tx).some(key => !allowed.includes(key))) throw new Error("Unsupported fee-quoted transaction field");
   if (tx.from && tx.from.toLowerCase() !== from.toLowerCase()) throw new Error("Transaction sender changed");
@@ -23,6 +23,6 @@ export async function sendL2WithFees({ tx, from, chainId, rpc, wallet, maxTotalF
     keccak256: text => keccak256(toHex(text)) };
   const quotedTransaction = feeQuoteTransaction(args);
   const price = quotedTransaction.gasPrice ?? quotedTransaction.maxFeePerGas;
-  log?.(`Estimated L2 fee: ${BigInt(quote.options[0].estimatedFee)} wei; wallet fee cap ${BigInt(quotedTransaction.gas) * BigInt(price)} wei`);
+  log?.(`Estimated source-chain fee: ${BigInt(quote.options[0].estimatedFee)} wei; wallet fee cap ${BigInt(quotedTransaction.gas) * BigInt(price)} wei`);
   return sendFeeQuotedTransaction({ wallet, ...args });
 }

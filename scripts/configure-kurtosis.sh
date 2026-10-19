@@ -6,6 +6,15 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENCLAVE="${KURTOSIS_ENCLAVE:-eez-protocol-dev}"
 RUNTIME_DIR="$ROOT/.runtime"
 
+: "${EEZ_UI_L1_FEES_ENABLED:=false}"
+: "${EEZ_UI_L2_FEES_ENABLED:=false}"
+: "${EEZ_UI_L1_FEE_MAX_TOTAL_WEI:=100000000000000000}"
+: "${EEZ_UI_L2_FEE_MAX_TOTAL_WEI:=100000000000000000}"
+case "$EEZ_UI_L1_FEES_ENABLED" in true|false) ;; *) echo 'EEZ_UI_L1_FEES_ENABLED must be true or false' >&2; exit 1;; esac
+case "$EEZ_UI_L2_FEES_ENABLED" in true|false) ;; *) echo 'EEZ_UI_L2_FEES_ENABLED must be true or false' >&2; exit 1;; esac
+case "$EEZ_UI_L1_FEE_MAX_TOTAL_WEI" in ''|*[!0-9]*|0*) echo 'EEZ_UI_L1_FEE_MAX_TOTAL_WEI must be a positive decimal integer' >&2; exit 1;; esac
+case "$EEZ_UI_L2_FEE_MAX_TOTAL_WEI" in ''|*[!0-9]*|0*) echo 'EEZ_UI_L2_FEE_MAX_TOTAL_WEI must be a positive decimal integer' >&2; exit 1;; esac
+
 for tool in jq kurtosis; do
     command -v "$tool" >/dev/null || { echo "$tool not found in PATH" >&2; exit 1; }
 done
@@ -89,6 +98,10 @@ jq -n \
     --arg bridgeL1 "$EEZ_L1_BRIDGE_SENDER" \
     --arg bridgeL2 "$EEZ_L2_BRIDGE_RECEIVER" \
     --arg rollupId "$EEZ_ROLLUP_ID" \
+    --argjson l1FeesEnabled "$EEZ_UI_L1_FEES_ENABLED" \
+    --argjson l2FeesEnabled "$EEZ_UI_L2_FEES_ENABLED" \
+    --arg l1FeeMaxTotalWei "$EEZ_UI_L1_FEE_MAX_TOTAL_WEI" \
+    --arg l2FeeMaxTotalWei "$EEZ_UI_L2_FEE_MAX_TOTAL_WEI" \
     --arg demoBridge "$EEZ_UI_DEMO_BRIDGE_ADDRESS" \
     --arg demoToken "$EEZ_UI_DEMO_TOKEN_ADDRESS" \
     --arg demoPool "$EEZ_UI_DEMO_POOL_ADDRESS" \
@@ -126,6 +139,10 @@ jq -n \
         bridgeL1Address: $bridgeL1,
         bridgeL2Address: $bridgeL2,
         rollupId: $rollupId,
+        l1FeesEnabled: $l1FeesEnabled,
+        l2FeesEnabled: $l2FeesEnabled,
+        l1FeeMaxTotalWei: $l1FeeMaxTotalWei,
+        l2FeeMaxTotalWei: $l2FeeMaxTotalWei,
         protocolCommit: $protocolCommit,
         demoBridgeAddress: $demoBridge,
         demoTokenAddress: $demoToken,

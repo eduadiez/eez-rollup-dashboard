@@ -323,53 +323,124 @@ npm run dev
 Open <http://127.0.0.1:8080/dashboard/>. The generated `.runtime/config.json` is ignored by
 Git.
 
+## Cross-chain fee quotes
+
+Enable quoting separately for each source chain in the existing deployment `.env`:
+
+```dotenv
+EEZ_UI_L1_FEES_ENABLED=true
+EEZ_UI_L2_FEES_ENABLED=true
+EEZ_UI_L1_FEE_MAX_TOTAL_WEI=100000000000000000
+EEZ_UI_L2_FEE_MAX_TOTAL_WEI=100000000000000000
+```
+
+Both flags default to `false`. They select the dashboard's payment path; fee
+collection, pricing, conversion and builder refunds remain Composer policy.
+Enable a direction only when its Composer supports the compact `eez_quoteFee`
+API. An old dashboard does not obtain these quotes. During a fee-enforced
+rollout, pause new UI submissions, install the compatible Composer and dashboard,
+then enable the matching flags and reload clients. A rollback must keep the UI
+and Composer API and enforcement settings compatible. This UI change has no
+contract or database migration.
+
+Bridge transfers and proxy calls use the **source** Composer: `/composer/l1`
+for L1 → L2, `/composer/l2` for L2 → L1. The app calls
+`eez_quoteFee([transaction, {transactionTypes}])` directly over JSON-RPC.
+The wallet signs one ordinary transaction with the quoted gas and fee fields;
+there is no separate payment or authorization. Ordinary transactions, including
+token approvals and proxy creation, keep their usual wallet path.
+
+The shared SDK allows omitted gas and nonce, which Composer resolves internally.
+Bridge and call forms still preview gas and support manual gas limits; their
+final quote validates that submitted limit and exact calldata, sender, value,
+chain and nonce. Each option binds these fields with `requestHash`, which is not
+a signed Ethereum transaction hash. The wallet path uses only compact quote
+fields; diagnostics are available separately from `eez_debugQuoteFee`.
+There are no old quote API or response-format fallbacks.
+
+Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`).
+Other providers, including MetaMask, default to EIP-1559 (`maxPriorityFeePerGas`,
+`maxFeePerGas`). An explicit supported type is preserved. Only that format is
+requested. The selected wallet's account, chain and pending nonce are rechecked
+before sending. Failed, mismatched or expired quotes stop submission; retry the
+action to obtain a new quote. Composer still validates the signed transaction
+at admission. The wallet's broadcast RPC must use the source Composer; obtaining
+a quote does not change a wallet's saved RPC or guarantee its submission route.
+
+Each cap limits `gas * maxFeePerGas` or legacy `gas * gasPrice` in **source-chain
+native wei**, excluding transferred value. The default is 0.1 native units per
+transaction. Caps must be positive decimal integers; flags must be `true` or
+`false`. Absent or empty environment values use defaults. Compose shell values
+override `.env`. The bridge notice follows its selected source chain. Native
+bridge MAX reserves that source's full cap before estimating; unused reserve
+stays in the wallet. A smaller amount can be entered manually when the balance
+is below the cap. Disabling a direction restores its ordinary wallet path; it
+does not disable backend fee enforcement.
+
+The SDK and its tests in `src/lib/fees/l2-fees.*` are copied byte-for-byte from
+RollupX `51ef1ba08d5c506c8909bc8be2e16e8d25c0a7a8` (`sdk/l2-fees.*`);
+despite the file name, they support both directions. Keep these copies aligned
+with the backend contract. `payment.mjs` normalizes dashboard requests and binds
+the SDK to the selected wallet. The Kurtosis Vite configuration helper also
+accepts the same four fee environment variables:
+
+```bash
+export KURTOSIS_ENCLAVE=eez-engineer-dev
+EEZ_UI_L1_FEES_ENABLED=true EEZ_UI_L2_FEES_ENABLED=true \
+  bash scripts/configure-kurtosis.sh
+```
+
 ## Checks
 
-For a Composer that enforces L2 settlement tariffs, set
-`EEZ_UI_L2_FEES_ENABLED=true`. Outbound bridge and cross-chain calls obtain
-a quote bound to the exact transaction before the wallet's one ordinary
-transaction signature.
-The app calls `eez_quoteFee([transaction, {transactionTypes}])` directly on the L2
-Composer RPC; omitted gas and nonce are resolved internally. The injected wallet
-receives standard wallet methods only. This replaces the old quote API without
-a compatibility fallback: upgrade or roll back the Composer and dashboard
-together while submissions are paused. The SDK takes `transaction`; each option
-uses `requestHash` to bind the normalized unsigned request. This is not a signed
-Ethereum transaction hash. `eez_quoteFee` omits enforcement metadata;
-`eez_debugQuoteFee` exposes it as `diagnostics.recoveryMode`. The wallet path
-does not depend on diagnostic fields. Old field/argument aliases are not retained.
-The selected wallet receives the exact quoted fees. Failed quotes stop
-submission; the wallet RPC must route broadcasts through the L2 Composer.
-Rabby providers default to EIP-155-protected legacy transactions (`gasPrice`),
-matching Rabby's custom-network path. Other providers default to EIP-1559
-(`maxPriorityFeePerGas`, `maxFeePerGas`); explicit supported types are preserved.
-The Composer counts only the legacy `gasPrice` minus the actual base fee as
-priority revenue and rechecks the signed source before accepting it.
-`EEZ_UI_L2_FEE_MAX_TOTAL_WEI` caps `gas * maxFeePerGas` or legacy `gas * gasPrice` in L2 native wei and
-defaults to `100000000000000000` (0.1 native units), excluding transferred value.
-The application logs the quote and cap before opening the wallet. Quotes expire
-quickly; retry the action if the wallet or network context changes. Tariff
-enforcement and any L1/L2 conversion assumption belong to the Composer policy.
-With this mode enabled, native L2 bridge MAX conservatively reserves the app's
-full fee ceiling before estimating the transfer. Unspent reserve stays in the
-wallet; an amount can be entered manually when the balance is below that ceiling.
+Install the pinned Playwright dependency and Chromium once with `npm ci` and
+`npx playwright install chromium`. `npm test` covers the SDK/payment boundary and
+existing unit regressions. To test a built preview in two terminals:
 
-The SDK in `src/lib/fees/l2-fees.mjs` is copied from the matching rollup
-repository's `sdk/l2-fees.mjs`. Keep it byte-identical when updating the quote
-schema. `payment.mjs` normalizes dashboard transaction requests and binds that
-SDK to the selected wallet. Run its payment-boundary checks with
-`node --test src/lib/fees/payment.test.mjs`.
+```bash
+npm run build
+npm run preview -- --host 127.0.0.1 --port 8083
+```
 
-`tests/l2-fees.cjs` exercises the compiled dashboard with Chromium and mocked
-wallet/RPC responses. `tests/l2-fees-kurtosis.cjs` instead broadcasts one actual
-quoted transaction through an injected fixture wallet and checks its canonical
-L1 target, blob posting and L2 priority payment. It requires Playwright on
-`NODE_PATH`, its Chromium installation, `cast`, `EEZ_UI_URL`,
-`EEZ_DEVNET_L1_RPC`, `EEZ_DEVNET_L2_RPC`, `EEZ_DEVNET_L2_FRONT`, a funded
-`EEZ_TEST_FEE_KEY`, the rollup repository's `verify-l2-fees.mjs` output in
-`EEZ_FEE_EVIDENCE_FILE`, and an output path in `EEZ_UI_FEE_EVIDENCE_FILE`.
-It refuses chains other than private Kurtosis IDs 7331 and 696990. This fixture
-adapter validates the application signing request, not a browser wallet extension.
+```bash
+EEZ_UI_URL=http://127.0.0.1:8083/dashboard npm run test:fees:browser
+```
+
+The browser suite covers both directions, native/ERC-20 bridges, ABI/raw proxy
+calls, legacy and EIP-1559 wallet requests, independent flags/caps, native MAX,
+ordinary approvals, nonce changes and quote failures. It mocks RPC and wallet
+responses and broadcasts no transactions. To check Compose interpolation and
+the image's actual runtime config producer, including absent/empty/invalid inputs:
+
+```bash
+docker build -t eez-rollup-ui:local .
+EEZ_UI_TEST_IMAGE=eez-rollup-ui:local npm run test:fees:config
+```
+
+`npm run test:fees:kurtosis` is a separate live test against a disposable
+fee-enabled private Kurtosis network (IDs 7331/696990). It deploys small Value
+fixtures, then submits four quoted proxy calls (both directions and formats) and
+two native bridge transfers through the mounted dashboard. It checks canonical
+source ownership, destination effects, native blob posts, L1 builder refunds,
+L2 priority payments and recovery of posting costs under the private network's
+1:1 cost model. It uses an injected signing adapter, not a browser extension.
+
+Start the matching RollupX Kurtosis profile with both backend fee directions
+enabled; use its deployment/demo bindings and RPCs to serve this dashboard with
+both UI flags enabled. Export `KURTOSIS_ENCLAVE` in every shell that operates that
+network and source RollupX's `testing/kurtosis/ports.sh`. Then set:
+
+- `EEZ_UI_URL`: this dashboard's `/dashboard` URL.
+- `EEZ_DEVNET_L1_RPC`, `EEZ_DEVNET_L2_RPC`, `EEZ_DEVNET_L1_FRONT`,
+  `EEZ_DEVNET_L2_FRONT`: the selected private enclave's endpoints.
+- `EEZ_TEST_FEE_KEY`: a dedicated public fixture key funded on both private chains,
+  separate from the poster and proof signer. Do not use a production wallet.
+- `EEZ_VALUE_ARTIFACT`: the matching RollupX `contracts/out/Value.sol/Value.json`.
+- `EEZ_UI_FEE_EVIDENCE_FILE`: a writable JSON evidence path outside the checkout.
+
+The test expects the default private cost model (parity, zero off-chain costs),
+L1 refund recipient `0x5555555555555555555555555555555555555555`, and L2 fee
+recipient `0x4444444444444444444444444444444444444444`. It does not qualify public
+builders, browser extension simulation, Safe workloads, or load capacity.
 
 ```bash
 npm ci
@@ -412,8 +483,9 @@ below the transfer control.
 
 Native MAX reads the source balance and EIP-1559 fee quote, reserves the chosen
 gas limit at the quoted fee cap, and re-estimates the resulting amount through
-Composer. A manual gas limit controls that reserve. Errors leave the amount
-unchanged and block submission until corrected; changing the form cancels
+Composer. With cross-chain fees enabled, the reserve is at least the source's
+configured total fee cap. A manual gas limit also contributes to that reserve.
+Errors leave the amount unchanged and block submission until corrected; changing the form cancels
 stale MAX results. ERC20 MAX uses the full raw token balance, including precision
 omitted from the displayed balance. Wallets can independently change gas and
 fees before signing.

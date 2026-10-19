@@ -14,7 +14,9 @@ type RuntimeConfig = {
   l2RpcUrl?: string;
   l1FrontUrl?: string;
   l2FrontUrl?: string;
+  l1FeesEnabled?: boolean;
   l2FeesEnabled?: boolean;
+  l1FeeMaxTotalWei?: string;
   l2FeeMaxTotalWei?: string;
   l1ExplorerUrl?: string;
   l2ExplorerUrl?: string;
@@ -80,7 +82,9 @@ export function useConfigLoader() {
             ...(l2Rpc ? { l2Rpc } : {}),
             ...(l1ProxyRpc ? { l1ProxyRpc } : {}),
             ...(l2ProxyRpc ? { l2ProxyRpc } : {}),
+            l1FeesEnabled: runtime.l1FeesEnabled === true,
             l2FeesEnabled: runtime.l2FeesEnabled === true,
+            ...(runtime.l1FeeMaxTotalWei ? { l1FeeMaxTotalWei: runtime.l1FeeMaxTotalWei } : {}),
             ...(runtime.l2FeeMaxTotalWei ? { l2FeeMaxTotalWei: runtime.l2FeeMaxTotalWei } : {}),
             ...(runtime.l1ExplorerUrl ? { l1Explorer: runtime.l1ExplorerUrl } : {}),
             ...(runtime.l2ExplorerUrl ? { l2Explorer: runtime.l2ExplorerUrl } : {}),

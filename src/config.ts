@@ -21,9 +21,11 @@ export const config = {
   l1ProxyRpc: params.get("l1proxy") || absolute("/composer/l1"),
   /** L2 Composer RPC — cross-chain estimates, submission, and EEZ settlement queries */
   l2ProxyRpc: params.get("l2proxy") || absolute("/composer/l2"),
-  /** Runtime opt-in for networks enforcing settlement tariffs. */
+  /** Independent runtime opt-ins for source-chain settlement fee quotes. */
+  l1FeesEnabled: false,
   l2FeesEnabled: false,
-  /** Maximum execution fee accepted by the application, in L2 native wei. */
+  /** Maximum wallet fee reservation, in each source chain's native wei. */
+  l1FeeMaxTotalWei: "100000000000000000",
   l2FeeMaxTotalWei: "100000000000000000",
 
   /** BasedRollup contract address — loaded from runtime config or URL param */

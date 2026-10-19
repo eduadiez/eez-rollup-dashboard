@@ -78,6 +78,10 @@ export function App() {
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
+  const bridgeFromL1 = bridgeHook.state.direction === "l1-to-l2";
+  const bridgeFeesEnabled = bridgeFromL1 ? config.l1FeesEnabled : config.l2FeesEnabled;
+  const bridgeFeeCap = bridgeFromL1 ? config.l1FeeMaxTotalWei : config.l2FeeMaxTotalWei;
+  const bridgeSourceChain = bridgeFromL1 ? L1_CHAIN : L2_CHAIN;
 
   const txHistory = useTxHistory();
   const latestBridgeState = useRef(bridgeHook.state);
@@ -383,10 +387,10 @@ export function App() {
                     onDismiss={bridgeHook.dismiss}
                     onGasOverride={bridgeHook.setGasOverride}
                   />
-                  {config.l2FeesEnabled && (
+                  {bridgeFeesEnabled && (
                     <p className={styles.feeNotice} role="status">
-                      L2 → L1 transactions include settlement in their priority fee.
-                      {" "}App fee cap: {formatUnits(BigInt(config.l2FeeMaxTotalWei), L2_CHAIN.nativeCurrency.decimals)} {L2_CHAIN.nativeCurrency.symbol}, excluding the amount sent.
+                      {bridgeFromL1 ? "L1 → L2" : "L2 → L1"} transactions include settlement in their network fee.
+                      {" "}App fee cap: {formatUnits(BigInt(bridgeFeeCap), bridgeSourceChain.nativeCurrency.decimals)} {bridgeSourceChain.nativeCurrency.symbol}, excluding the amount sent.
                     </p>
                   )}
                 </section>

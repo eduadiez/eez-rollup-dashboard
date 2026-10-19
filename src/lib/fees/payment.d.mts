@@ -1,4 +1,4 @@
-export function sendL2WithFees(options: {
+export function sendCrossChainWithFees(options: {
   tx: Record<string, string>;
   from: string;
   chainId: string;

@@ -4,7 +4,7 @@ import { rpcCall } from "../rpc";
 import type { WalletState } from "../types";
 import { useWalletProviders } from "./useWalletProviders";
 import { useComposerDetection } from "./useComposerDetection";
-import { sendL2WithFees } from "../lib/fees/payment.mjs";
+import { sendCrossChainWithFees } from "../lib/fees/payment.mjs";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
 
@@ -218,19 +218,23 @@ export function useWallet(log: Logger, configLoaded = false) {
   const sendTx = useCallback((params: Record<string, string>) => sendOnChain(L2_CHAIN, params), [sendOnChain]);
   const sendL1Tx = useCallback((params: Record<string, string>) => sendOnChain(L1_CHAIN, params), [sendOnChain]);
 
-  const sendL2ProxyTx = useCallback(async (tx: Record<string, string>): Promise<string> => {
-    if (!config.l2FeesEnabled) return sendOnChain(L2_CHAIN, tx);
+  const sendProxyTx = useCallback(async (source: "l1" | "l2", tx: Record<string, string>): Promise<string> => {
+    const isL1 = source === "l1";
+    const chain = isL1 ? L1_CHAIN : L2_CHAIN;
+    if (!(isL1 ? config.l1FeesEnabled : config.l2FeesEnabled)) return sendOnChain(chain, tx);
     if (!stateRef.current.isConnected) throw new Error("Connect wallet to send transactions");
-    await ensureChain(L2_CHAIN);
+    await ensureChain(chain);
     const wallet = selectedProviderRef.current;
     const from = stateRef.current.address;
     if (!wallet || !from) throw new Error("Connect wallet first");
-    return sendL2WithFees({
-      tx, from, chainId: L2_CHAIN.chainId, wallet,
-      rpc: (method: string, params: unknown[]) => rpcCall(config.l2ProxyRpc, method, params),
-      maxTotalFee: BigInt(config.l2FeeMaxTotalWei), log,
+    return sendCrossChainWithFees({
+      tx, from, chainId: chain.chainId, wallet,
+      rpc: (method: string, params: unknown[]) => rpcCall(isL1 ? config.l1ProxyRpc : config.l2ProxyRpc, method, params),
+      maxTotalFee: BigInt(isL1 ? config.l1FeeMaxTotalWei : config.l2FeeMaxTotalWei), log,
     });
   }, [ensureChain, sendOnChain, log]);
+  const sendL1ProxyTx = useCallback((tx: Record<string, string>) => sendProxyTx("l1", tx), [sendProxyTx]);
+  const sendL2ProxyTx = useCallback((tx: Record<string, string>) => sendProxyTx("l2", tx), [sendProxyTx]);
 
   // Auto-reconnect on mount
   useEffect(() => {
@@ -324,6 +328,6 @@ export function useWallet(log: Logger, configLoaded = false) {
     sendTx,
     sendL2ProxyTx,
     sendL1Tx,
-    sendL1ProxyTx: sendL1Tx,
+    sendL1ProxyTx,
   };
 }

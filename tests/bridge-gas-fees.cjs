@@ -76,8 +76,10 @@ async function fixture(browser, options = {}) {
       l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
       l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
       demoBridgeAddress: bridge, rollupId: '1', networkName: 'EEZ-X Devnet',
-      l2FeesEnabled: options.feesEnabled ?? false,
-      l2FeeMaxTotalWei: options.feeCeiling || '100000000000000000',
+      l1FeesEnabled: options.l1FeesEnabled ?? (!options.reverse && !!options.feesEnabled),
+      l2FeesEnabled: options.l2FeesEnabled ?? (!!options.reverse && !!options.feesEnabled),
+      l1FeeMaxTotalWei: options.l1FeeCeiling ?? options.feeCeiling ?? '100000000000000000',
+      l2FeeMaxTotalWei: options.l2FeeCeiling ?? options.feeCeiling ?? '100000000000000000',
     } });
     if (path === '/shared/rollup.env' || path === '/shared/faucet.key') {
       return route.fulfill({ status: 404, body: '' });
@@ -86,7 +88,7 @@ async function fixture(browser, options = {}) {
     const { method, params = [], id } = request.postDataJSON();
     const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
     if (method === 'eez_quoteFee') {
-      assert.equal(path, '/composer/l2');
+      assert.equal(path, options.reverse ? '/composer/l2' : '/composer/l1');
       const [request, selection] = params;
       assert.deepEqual(selection.transactionTypes, [request.type]);
       const transaction = { nonce: '0x0', gas: '0x' + RAW_GAS.toString(16), ...request };
