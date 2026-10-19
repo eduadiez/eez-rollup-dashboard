@@ -1,4 +1,9 @@
-export function sendCrossChainWithFees(options: {
+export interface CrossChainFeeQuote {
+  transaction: Record<string, string>;
+  expiresAt: string;
+}
+
+interface FeeOptions {
   tx: Record<string, string>;
   from: string;
   chainId: string;
@@ -6,4 +11,8 @@ export function sendCrossChainWithFees(options: {
   wallet: { isRabby?: boolean; request(args: { method: string; params?: unknown[] }): Promise<unknown> };
   maxTotalFee: bigint;
   log?: (message: string) => void;
-}): Promise<string>;
+  onQuote?: (quote: CrossChainFeeQuote) => void;
+}
+
+export function quoteCrossChainFees(options: FeeOptions): Promise<CrossChainFeeQuote>;
+export function sendCrossChainWithFees(options: FeeOptions): Promise<string>;

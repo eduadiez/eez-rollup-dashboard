@@ -180,9 +180,9 @@ async function fixture(source, config) {
           assert(!failure.length, failure.join('\n'));
           return sends[0]?.hash;
         });
-        assert.equal(quotes.length, 1);
+        assert(quotes.length >= 1);
         record.quotes = await Promise.all(quotes);
-        const quote = record.quotes[0].result;
+        const quote = record.quotes.at(-1).result;
         assert(quote, JSON.stringify(record.quotes[0]));
         const tx = sends[0].transaction, option = quote.options.find(option => option.type === tx.type);
         for (const field of ['type', 'gas', 'gasPrice', 'maxFeePerGas', 'maxPriorityFeePerGas']) assert.equal(tx[field], option[field], field);

@@ -77,7 +77,7 @@ export function App() {
   const crossChainOptions = { sendL2Tx: wallet.sendTx, sendL2ProxyTx: wallet.sendL2ProxyTx, senderAddress: wallet.address, ready: configLoaded };
   const crossChain = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
   const crossChainGeneric = useCrossChain(log, wallet.sendL1Tx, wallet.sendL1ProxyTx, crossChainOptions);
-  const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded);
+  const bridgeHook = useBridge(log, wallet.sendTx, wallet.sendL2ProxyTx, wallet.sendL1Tx, wallet.sendL1ProxyTx, wallet.address, configLoaded, wallet.quoteProxyFees);
   const bridgeFromL1 = bridgeHook.state.direction === "l1-to-l2";
   const bridgeFeesEnabled = bridgeFromL1 ? config.l1FeesEnabled : config.l2FeesEnabled;
   const bridgeFeeCap = bridgeFromL1 ? config.l1FeeMaxTotalWei : config.l2FeeMaxTotalWei;
@@ -386,6 +386,7 @@ export function App() {
                     onBridge={bridgeHook.bridge}
                     onDismiss={bridgeHook.dismiss}
                     onGasOverride={bridgeHook.setGasOverride}
+                    onRefreshFees={bridgeHook.refreshFees}
                   />
                   {bridgeFeesEnabled && (
                     <p className={styles.feeNotice} role="status">

@@ -8,6 +8,7 @@ import styles from "./BridgePanel.module.css";
 import { BridgeTokenPicker } from "./BridgeTokenPicker";
 import { BridgeAssetSwap } from "./BridgeAssetSwap";
 import { WalletIcon } from "./WalletIcon";
+import { BridgeFeeQuote } from "./BridgeFeeQuote";
 
 interface Props {
   state: BridgeState;
@@ -25,6 +26,7 @@ interface Props {
   onBridge: () => void;
   onDismiss: () => void;
   onGasOverride: (gasHex: string | null) => void;
+  onRefreshFees: () => void;
 }
 
 export function BridgePanel({
@@ -43,6 +45,7 @@ export function BridgePanel({
   onBridge,
   onDismiss,
   onGasOverride,
+  onRefreshFees,
 }: Props) {
   const [editingRecipient, setEditingRecipient] = useState(false);
   const [choosingWallet, setChoosingWallet] = useState(false);
@@ -177,6 +180,11 @@ export function BridgePanel({
       {gas.status === "unsupported" && gas.errorMessage && <div className={styles.validationHint} role="status">{gas.errorMessage}</div>}
       {gas.status === "error" && gas.errorMessage && (
         <div className={styles.errorBar} role="alert">Gas estimation failed: {gas.errorMessage}</div>
+      )}
+      {feesEnabled && amount && rawAmount > 0n && sourceBridgeReady && (
+        <BridgeFeeQuote fees={state.fees} sentToWallet={phase === "sending" || phase === "tx-pending"}
+          disabled={busy || gas.status !== "estimated" && !state.gasOverrideHex || needsApproval}
+          onRefresh={onRefreshFees} />
       )}
       {amount && rawAmount > 0n && sourceBridgeReady && (
         <details className={styles.gasSettings}>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BridgeState, BridgePhase } from "../hooks/useBridge";
 import { config } from "../config";
 import { TransactionDialog } from "./TransactionDialog";
+import { BridgeFeeQuote } from "./BridgeFeeQuote";
 import styles from "./BridgeTransactionDialog.module.css";
 
 type Transaction = { phase: BridgePhase; hash: string | null; chain: "l1" | "l2"; approval: boolean; error: string | null };
@@ -51,6 +52,10 @@ export function BridgeTransactionDialog({ state, onDismiss }: { state: BridgeSta
   return <>
     {!open && !complete && !failed && phase !== "idle" && <button className={styles.reopen} onClick={() => setOpen(true)}>View transaction</button>}
     <TransactionDialog open={open} complete={complete} failed={failed} title={title} description={description}
-      hash={transaction.hash} chain={transaction.chain} onClose={close} />
+      hash={transaction.hash} chain={transaction.chain} onClose={close}>
+      {signing && !transaction.approval && state.fees.status !== "idle" && (
+        <BridgeFeeQuote fees={state.fees} sentToWallet />
+      )}
+    </TransactionDialog>
   </>;
 }

@@ -1,0 +1,12 @@
+.panel { width: 100%; min-width: 0; padding: 12px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; text-align: left; }
+.heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; color: var(--text); font: 500 12px/1.5 var(--sans); }
+.refresh { border: 0; padding: 2px 0; background: transparent; color: var(--text-dim); font: 12px/1.5 var(--sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.refresh:disabled { opacity: .5; cursor: default; }
+.field { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+.field label { color: var(--text-dim); font: 12px/1.5 var(--sans); }
+.field input { width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text-bright); font: 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+.field input:focus { outline: 1px solid var(--accent); }
+.field input::placeholder { color: var(--text-dim); font: 11px/1.5 var(--sans); }
+.hint, .error { margin-top: 10px; overflow-wrap: anywhere; font: 12px/1.5 var(--sans); }
+.hint { color: var(--text-dim); }
+.error { color: var(--red); }

@@ -27,11 +27,13 @@ async function fixture(browser, options = {}) {
   const nativeSymbol = options.chain === '0x1' ? 'ETH' : 'xDAI';
   const context = await browser.newContext();
   const page = await context.newPage();
+  if (options.clock) await page.clock.install();
   const errors = [], rpcRequests = [];
+  const feeQuote = { failure: !!options.quoteFailure, gasPrice: '9000000007', priorityFee: '9000000000', hold: null };
   const receipt = { result: null };
   const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af", transient: options.transientEstimates ?? 0 };
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(({ account, receiptHash, multipleWallets, chain, walletNonce }) => {
+  await page.addInitScript(({ account, receiptHash, multipleWallets, chain, walletNonce, holdWallet }) => {
     window.walletRequests = [];
     window.walletSenders = [];
     window.walletChains = [];
@@ -50,6 +52,7 @@ async function fixture(browser, options = {}) {
         if (method === 'eth_sendTransaction') {
           window.walletSenders.push(name);
           window.walletRequests.push(params[0]);
+          if (holdWallet) await new Promise(resolve => { window.finishWallet = resolve; });
           return receiptHash;
         }
         throw new Error('Unexpected wallet method: ' + method);
@@ -68,7 +71,7 @@ async function fixture(browser, options = {}) {
         announce('MetaMask', 'metamask-provider', 'io.metamask', metamask);
       });
     }
-  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain, walletNonce: options.walletNonce });
+  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain, walletNonce: options.walletNonce, holdWallet: options.holdWallet });
   await page.route('**/*', async route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -88,20 +91,22 @@ async function fixture(browser, options = {}) {
     const { method, params = [], id } = request.postDataJSON();
     const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
     if (method === 'eez_quoteFee') {
-      assert.equal(path, options.reverse ? '/composer/l2' : '/composer/l1');
+      assert.ok(['/composer/l1', '/composer/l2'].includes(path));
       const [request, selection] = params;
+      assert.equal(request.chainId, path === '/composer/l1' ? options.chain || '0x27d8' : options.l2Chain || '0x1892');
       assert.deepEqual(selection.transactionTypes, [request.type]);
       const transaction = { nonce: '0x0', gas: '0x' + RAW_GAS.toString(16), ...request };
       rpcRequests.push({ path, transaction });
-      if (options.quoteFailure) return route.fulfill({ json: { jsonrpc: '2.0', id,
+      if (feeQuote.failure) return route.fulfill({ json: { jsonrpc: '2.0', id,
         error: { code: -32004, message: 'quote_unavailable: fixture unavailable', data: { code: 'quote_unavailable' } } } });
-      const tip = 9_000_000_000n;
+      const tip = BigInt(feeQuote.priorityFee), price = BigInt(feeQuote.gasPrice);
+      if (feeQuote.hold) await feeQuote.hold;
       const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key => [key, transaction[key]])));
       return reply({ version: 1, chainId: transaction.chainId, nonce: transaction.nonce,
         expiresAt: '0x' + (Math.floor(Date.now() / 1000) + 30).toString(16),
         options: [{ type: transaction.type, gas: transaction.gas, requestHash: keccak256(toHex(canonical)),
-          estimatedFee: '0x' + ((tip + 7n) * 21000n).toString(16),
-          ...(transaction.type === '0x0' ? { gasPrice: '0x' + (tip + 7n).toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + (tip + 7n).toString(16) }) }],
+          estimatedFee: '0x' + (price * 21000n).toString(16),
+          ...(transaction.type === '0x0' ? { gasPrice: '0x' + price.toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + price.toString(16) }) }],
       });
     }
     const reject = message => route.fulfill({ json: {
@@ -191,7 +196,7 @@ async function fixture(browser, options = {}) {
   assert.equal(await page.getByText('You receive', { exact: true }).count(), 0);
   assert.equal(await page.getByLabel('Gas limit', { exact: true }).isVisible(), false, 'gas controls start collapsed');
   if (options.expandGas !== false) await page.getByText('Gas settings', { exact: true }).click();
-  return { context, page, button, errors, rpcRequests, estimation, receipt };
+  return { context, page, button, errors, rpcRequests, estimation, receipt, feeQuote };
 }
 
 module.exports = { fixture, until, RAW_GAS, account, recipient, token };

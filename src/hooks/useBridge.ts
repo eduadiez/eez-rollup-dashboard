@@ -4,9 +4,11 @@ import { config, ESTIMATION_SENDER, L1_CHAIN, L2_CHAIN } from "../config";
 import { rpcCall } from "../rpc";
 import { estimateGas, estimateBridgeGas, GasEstimateError, gasToHex, getEip1559Fees } from "../lib/gasEstimation";
 import { prepareNativeBridgeMax } from "../lib/bridgeMax";
+import type { CrossChainFeeQuote } from "../lib/fees/payment.mjs";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
-type SendTx = (params: Record<string, string>) => Promise<string>;
+type SendTx = (params: Record<string, string>, onQuote?: (quote: CrossChainFeeQuote) => void) => Promise<string>;
+type QuoteFees = (source: "l1" | "l2", tx: Record<string, string>, signal?: AbortSignal) => Promise<CrossChainFeeQuote>;
 
 export type BridgeDirection = "l1-to-l2" | "l2-to-l1";
 export type BridgeAsset = "eth" | "erc20";
@@ -57,10 +59,20 @@ export interface BridgeState {
   l1BridgeError: string | null;
   l2BridgeError: string | null;
   gas: BridgeGasState;
+  fees: BridgeFeeState;
   gasOverrideHex: string | null;
   maxPending: boolean;
   maxError: string | null;
 }
+
+export interface BridgeFeeState {
+  status: "idle" | "loading" | "ready" | "error" | "expired";
+  requestKey: string | null;
+  quote: CrossChainFeeQuote | null;
+  errorMessage: string | null;
+}
+
+const EMPTY_FEES: BridgeFeeState = { status: "idle", requestKey: null, quote: null, errorMessage: null };
 
 const RECENT_TOKENS_KEY = "bridgeRecentTokens";
 const MAX_RECENT_TOKENS = 8;
@@ -217,6 +229,7 @@ export function useBridge(
   sendL1ProxyTx: SendTx,
   walletAddress: string | null,
   configLoaded: boolean,
+  quoteFees: QuoteFees,
 ) {
   const defaultGas: BridgeGasState = {
     status: "idle", estimate: null, gasLimit: null,
@@ -243,6 +256,7 @@ export function useBridge(
     l1BridgeError: null,
     l2BridgeError: null,
     gas: defaultGas,
+    fees: EMPTY_FEES,
     gasOverrideHex: null,
     maxPending: false,
     maxError: null,
@@ -256,6 +270,8 @@ export function useBridge(
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
   const maxOperation = useRef(0);
+  const [feeRefresh, setFeeRefresh] = useState(0);
+  const refreshFees = useCallback(() => setFeeRefresh(value => value + 1), []);
   useEffect(() => {
     maxOperation.current++;
     setState(s => ({ ...s, maxPending: false, maxError: null }));
@@ -531,6 +547,55 @@ export function useBridge(
     return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
   }, [state.direction, state.asset, state.amount, state.tokenAddress, state.tokenMeta?.decimals, state.destinationAddress, state.allowance, walletAddress, configLoaded, config.l1Bridge, config.l2Bridge, config.rollupId, config.l1ProxyRpc, config.l2ProxyRpc]);
 
+  const feeSource = state.direction === "l1-to-l2" ? "l1" : "l2";
+  const feeRpc = feeSource === "l1" ? config.l1ProxyRpc : config.l2ProxyRpc;
+  const feeChain = feeSource === "l1" ? L1_CHAIN : L2_CHAIN;
+  const feesEnabled = feeSource === "l1" ? config.l1FeesEnabled : config.l2FeesEnabled;
+  let feeTransaction: Record<string, string> | null = null;
+  if (configLoaded && feesEnabled && walletAddress && state.amount &&
+      (state.gas.status === "estimated" || state.gas.status === "unsupported" && state.gasOverrideHex)) {
+    const amount = parseAmount(state.amount, state.asset === "eth" ? 18 : state.tokenMeta?.decimals ?? 18);
+    const approved = state.asset === "eth" || state.tokenNeedsApproval === false ||
+      state.tokenNeedsApproval === true && state.allowance !== null && amount !== null && state.allowance >= amount;
+    if (approved && amount && amount > 0n) {
+      const transaction = bridgeTransaction(state, walletAddress);
+      if (estimatedRequest.current === feeRpc + JSON.stringify(transaction)) {
+        feeTransaction = { ...transaction, gas: state.gasOverrideHex ?? state.gas.gasHex! };
+      }
+    }
+  }
+  const feeRequestKey = feeTransaction ? JSON.stringify([feeRpc, feeChain.chainId, feeTransaction]) : null;
+  const feeRequestRef = useRef(feeRequestKey);
+  feeRequestRef.current = feeRequestKey;
+
+  useEffect(() => {
+    if (!feeRequestKey || !feeTransaction) {
+      setState(s => ({ ...s, fees: EMPTY_FEES }));
+      return;
+    }
+    // Freeze the final quote while the user copies its values into the wallet.
+    // A background preview must never replace the quote being signed.
+    if (!["idle", "confirmed", "failed"].includes(state.phase)) return;
+    const controller = new AbortController();
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+    setState(s => ({ ...s, fees: { ...EMPTY_FEES, requestKey: feeRequestKey, status: "loading" } }));
+    const timer = setTimeout(async () => {
+      try {
+        const quote = await quoteFees(feeSource, feeTransaction!, controller.signal);
+        if (controller.signal.aborted) return;
+        setState(s => ({ ...s, fees: { status: "ready", requestKey: feeRequestKey, quote, errorMessage: null } }));
+        expiryTimer = setTimeout(() => {
+          setState(s => ({ ...s, fees: { ...EMPTY_FEES, requestKey: feeRequestKey, status: "expired" } }));
+        }, Math.max(0, Number(BigInt(quote.expiresAt) * 1000n) - Date.now()));
+      } catch (error) {
+        if (!controller.signal.aborted) setState(s => ({ ...s, fees: {
+          ...EMPTY_FEES, requestKey: feeRequestKey, status: "error", errorMessage: (error as Error).message,
+        } }));
+      }
+    }, 250);
+    return () => { controller.abort(); clearTimeout(timer); clearTimeout(expiryTimer); };
+  }, [feeRequestKey, feeRefresh, quoteFees, state.phase]);
+
   const setGasOverride = useCallback((hex: string | null) => {
     setState(s => ({ ...s, gasOverrideHex: hex }));
   }, []);
@@ -741,7 +806,9 @@ export function useBridge(
       setState((s) => ({ ...s, phase: "failed", error: s.gas.errorMessage || "Wait for a valid Composer gas estimate before bridging" }));
       return;
     }
-    setState((s) => ({ ...s, phase: "sending", error: null, txHash: null }));
+    const submittedFeeKey = feeRequestRef.current;
+    setState((s) => ({ ...s, phase: "sending", error: null, txHash: null,
+      fees: { ...EMPTY_FEES, requestKey: submittedFeeKey, status: "loading" } }));
     try {
       // An explicit override can also unblock a Composer with known missing estimation support.
       const resolvedGas = gasOverrideHex ?? stateRef.current.gas.gasHex!;
@@ -754,9 +821,14 @@ export function useBridge(
       }
       const symbol = asset === "eth" ? (direction === "l1-to-l2" ? L1_CHAIN : L2_CHAIN).nativeCurrency.symbol : tokenMeta?.symbol || "tokens";
       log(`Bridging ${amount} ${symbol} ${direction === "l1-to-l2" ? "L1 → L2" : "L2 → L1"}...`, "info");
+      const onQuote = (quote: CrossChainFeeQuote) => {
+        if (walletRef.current === from && feeRequestRef.current === submittedFeeKey) {
+          setState(s => ({ ...s, fees: { status: "ready", requestKey: submittedFeeKey, quote, errorMessage: null } }));
+        }
+      };
       const txHash = direction === "l1-to-l2"
-        ? await sendL1ProxyTx({ ...transaction, ...gasParam })
-        : await sendL2ProxyTx({ ...transaction, ...gasParam });
+        ? await sendL1ProxyTx({ ...transaction, ...gasParam }, onQuote)
+        : await sendL2ProxyTx({ ...transaction, ...gasParam }, onQuote);
 
       setState((s) => ({ ...s, phase: "tx-pending", txHash }));
       log(`Bridge tx: ${txHash.slice(0, 18)}...`);
@@ -849,7 +921,7 @@ export function useBridge(
   }, [log, sendL1ProxyTx, sendL2ProxyTx]);
 
   return {
-    state,
+    state: { ...state, fees: state.fees.requestKey === feeRequestKey ? state.fees : EMPTY_FEES },
     recentTokens,
     setDirection,
     setAsset,
@@ -861,5 +933,6 @@ export function useBridge(
     bridge,
     dismiss,
     setGasOverride,
+    refreshFees,
   };
 }
