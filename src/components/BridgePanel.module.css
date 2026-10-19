@@ -155,5 +155,8 @@
 .gasSettings > summary { color: var(--text-dim); cursor: pointer; font: 12px/1.5 var(--mono); padding: 4px 0; }
 .gasSettings > summary:hover { color: var(--text-bright); }
 .gasSettings[open] > summary { margin-bottom: 8px; }
+.feeGuidance { margin: 0 0 12px; color: var(--text-dim); font: 12px/1.6 var(--sans); }
+.feeGuidance p { margin: 8px 0; }
+.feeGuidance strong { color: var(--text); }
 .walletPicker { display: flex; flex-wrap: wrap; gap: 8px; }
 .walletIcon { width: 20px; height: 20px; object-fit: contain; }

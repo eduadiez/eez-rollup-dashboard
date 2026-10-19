@@ -1,7 +1,7 @@
 // Browser integration with mocked RPC and selected wallets. No real broadcasts.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
-const { fixture, until, RAW_GAS, token } = require('./bridge-gas-fees.cjs');
+const { fixture, until, RAW_GAS, token, recipient } = require('./bridge-gas-fees.cjs');
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -34,16 +34,24 @@ const { fixture, until, RAW_GAS, token } = require('./bridge-gas-fees.cjs');
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }
-    for (const reverse of [false, true]) for (const erc20 of [false, true]) {
-      const f = await fixture(browser, { chain: '0x1', l2Chain: '0xaa29e', reverse, erc20, feesEnabled: true });
+    for (const reverse of [false, true]) for (const erc20 of [false, true]) for (const multipleWallets of [false, true]) {
+      const f = await fixture(browser, { chain: '0x1', l2Chain: '0xaa29e', reverse, erc20, multipleWallets, feesEnabled: true, destination: recipient });
+      const guidance = f.page.getByRole('note', { name: 'Wallet fee guidance' });
+      assert.equal(await guidance.isVisible(), true);
+      assert.equal((await guidance.textContent()).includes('Site suggested'), !reverse);
       await f.button.click();
-      await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'mainnet Rabby bridge did not reach wallet');
+      await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'mainnet bridge did not reach selected wallet');
       const sent = await f.page.evaluate(() => ({ tx: window.walletRequests[0], wallets: window.walletSenders }));
-      assert.deepEqual(sent.wallets, ['Rabby']);
+      const legacy = reverse && !multipleWallets;
+      assert.deepEqual(sent.wallets, [multipleWallets ? 'MetaMask' : 'Rabby']);
       assert.equal(sent.tx.chainId, reverse ? '0xaa29e' : '0x1');
-      assert.equal(sent.tx.type, reverse ? '0x0' : '0x2');
+      assert.equal(sent.tx.type, legacy ? '0x0' : '0x2');
       assert.equal(sent.tx.gas, '0x' + RAW_GAS.toString(16));
-      if (reverse) {
+      assert.equal(sent.tx.to, '0x' + '11'.repeat(20));
+      assert.equal(BigInt(sent.tx.value), erc20 ? 0n : 1_000_000_000_000_000n);
+      assert.ok(sent.tx.data.startsWith(erc20 ? '0xd2c2fa0f' : '0x5d81310b'), 'must submit a bridge call');
+      assert.ok(sent.tx.data.endsWith(recipient.slice(2)), 'must preserve the requested bridge recipient');
+      if (legacy) {
         assert.equal(BigInt(sent.tx.gasPrice), 9_000_000_007n);
         assert.equal(sent.tx.maxFeePerGas, undefined);
         assert.equal(sent.tx.maxPriorityFeePerGas, undefined);
@@ -77,8 +85,9 @@ const { fixture, until, RAW_GAS, token } = require('./bridge-gas-fees.cjs');
     }
     for (const reverse of [false, true]) {
       // Enabling one direction must not enable fees on the other chain.
-      const f = await fixture(browser, { reverse, l1FeesEnabled: reverse, l2FeesEnabled: !reverse });
+      const f = await fixture(browser, { chain: '0x1', reverse, l1FeesEnabled: reverse, l2FeesEnabled: !reverse });
       assert.equal(await f.page.getByRole('status').filter({ hasText: 'App fee cap:' }).count(), 0);
+      assert.equal(await f.page.getByRole('note', { name: 'Wallet fee guidance' }).count(), 0);
       await f.button.click();
       await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'disabled direction did not submit');
       assert.equal(f.rpcRequests.filter(r => r.transaction).length, 0);
