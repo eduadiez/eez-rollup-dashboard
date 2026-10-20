@@ -40,6 +40,7 @@ function getInitialView(): string {
   const hash = raw.split("?")[0];
   if (hash === "monitor") return "monitor";
   if (hash === "visualizer") return "visualizer";
+  if (hash === "debug") return "debug";
   if (window.location.pathname === "/monitor" || window.location.pathname === "/monitor/") return "monitor";
   return "dashboard";
 }
@@ -111,7 +112,7 @@ export function App() {
   const visualizerParams = new URLSearchParams(visualizerRoute.split("?")[1] ?? "");
   const [dashboardTab, setDashboardTab] = useState<DashboardTab>(getInitialTab);
   useEffect(() => {
-    document.title = `${view === "visualizer" ? "Execution Visualizer" : view === "monitor" ? "Network Monitor" : dashboardTab === "counter-demo" ? "Counter Demo" : "Dashboard"} — ${config.rollupName}`;
+    document.title = `${view === "debug" ? "Quote Debugger" : view === "visualizer" ? "Execution Visualizer" : view === "monitor" ? "Network Monitor" : dashboardTab === "counter-demo" ? "Counter Demo" : "Dashboard"} — ${config.rollupName}`;
   }, [view, dashboardTab, configLoaded]);
 
   /** Switch dashboard sub-tab and update hash for deep linking */
@@ -123,7 +124,7 @@ export function App() {
   const navigate = useCallback((v: string) => {
     setView(v);
     const pathname = v === "monitor" ? "/monitor/" : import.meta.env.BASE_URL;
-    window.history.pushState(null, "", v === "visualizer" ? `${pathname}#/visualizer` : pathname);
+    window.history.pushState(null, "", v === "visualizer" || v === "debug" ? `${pathname}#/${v}` : pathname);
     if (v === "visualizer") setVisualizerRoute(window.location.hash);
     if (v === "dashboard") setDashboardTab("dashboard");
   }, []);
@@ -322,6 +323,16 @@ export function App() {
 
       {view === "monitor" ? (
         <NetworkMonitorView />
+      ) : view === "debug" ? (
+        <main id="main" tabIndex={-1} className={styles.debugPage} aria-label="Quote debugger">
+          {/* Reuse the versioned viewer while isolating imports from wallet/storage access. */}
+          <iframe
+            title="Cross-chain quote trace viewer"
+            src={`${import.meta.env.BASE_URL}quote-trace/index.html?embedded=1`}
+            sandbox="allow-scripts allow-downloads"
+            className={styles.debugFrame}
+          />
+        </main>
       ) : view === "visualizer" ? (
         <Suspense fallback={<main id="main" tabIndex={-1} className={styles.page}>Loading visualizer…</main>}>
           <VisualizerView
