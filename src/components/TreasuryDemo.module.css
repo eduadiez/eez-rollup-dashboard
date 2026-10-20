@@ -1,0 +1,44 @@
+.treasury { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.heading h2 { color: var(--text-bright); font: 600 28px/1.25 var(--sans); margin: 8px 0; }
+.heading p, .card p, .reset p { color: var(--text-dim); line-height: 1.6; }
+.badge { border: 1px solid var(--green-border); border-radius: 100px; padding: 5px 10px; color: var(--green); font: 500 11px/1.5 var(--mono); }
+.notice { border-left: 2px solid var(--yellow); background: var(--yellow-dim); border-radius: var(--radius-xs); padding: 12px 16px; color: var(--text); }
+.overview, .workflow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.workflow { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+.card { composes: eez-card from global; min-width: 0; padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); display: flex; flex-direction: column; gap: 12px; }
+.card h3 { color: var(--text-bright); font: 600 16px/1.4 var(--sans); }
+.amount { color: var(--text-bright); font: 600 32px/1.3 var(--mono); overflow-wrap: anywhere; }
+.card progress { width: 100%; height: 8px; accent-color: var(--green); }
+.figures { display: flex; flex-direction: column; gap: 8px; }
+.figures > div { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.figures dt { color: var(--text-dim); }
+.figures dd { color: var(--text-bright); font-family: var(--mono); overflow-wrap: anywhere; }
+.presets, .owners { display: flex; flex-wrap: wrap; gap: 8px; }
+.fields { border: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fields label { font: 500 12px/1.5 var(--mono); color: var(--text-dim); margin-top: 4px; }
+.fields input, .fields select { width: 100%; min-width: 0; background: var(--bg-inset); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; color: var(--text); font: 13px/1.5 var(--sans); }
+.fields input:focus, .fields select:focus { border-color: var(--accent); }
+.fields:disabled { opacity: .7; }
+.route { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; background: var(--bg-inset); overflow-wrap: anywhere; }
+.route h4 { color: var(--text-bright); }
+.route strong { color: var(--green); }
+.route .receives { padding-top: 8px; border-top: 1px solid var(--border); color: var(--text); }
+.route summary { cursor: pointer; color: var(--text); }
+.route details p { margin-top: 8px; font-size: 12px; }
+.quorum { color: var(--green); font: 600 18px/1.5 var(--sans); }
+.error { color: var(--red) !important; }
+.history { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.history li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+.history li > div { min-width: 0; }
+.history .badge { flex-shrink: 0; }
+.reset { display: flex; gap: 16px; justify-content: space-between; align-items: center; }
+.reset button { flex-shrink: 0; }
+@media (max-width: 800px) { .workflow { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .overview { grid-template-columns: minmax(0, 1fr); }
+  .card { padding: 20px; }
+  .heading h2 { font-size: 24px; }
+  .amount { font-size: 28px; }
+  .reset, .history li { align-items: flex-start; flex-direction: column; }
+}

@@ -80,6 +80,28 @@ the selected wallet, and the shared collapsed gas controls and transaction popup
 Missing source proxies can be created from the demo; existing proxies are
 verified before use. Cross-chain history records the actual call direction.
 
+An experimental **Treasury Demo** is hidden from the normal dashboard. Press
+**Ctrl+Alt+Shift+T** (or **Cmd+Option+Shift+T** on macOS), outside an editable field,
+to reveal its tab beside Counter Demo and open it. Press the same shortcut again
+to hide it; an open treasury view returns to Counter Demo. Visibility is kept in
+`sessionStorage` for this browser tab's session and survives reloads. A fresh
+session starts hidden, and `#/treasury-demo` alone does not enable it. This is a
+navigation preference, not access control: anyone who knows the shortcut can
+open the example, and its code ships with the application.
+
+The treasury page is an **interactive preview with simulated data**, not a live
+Safe integration. Try 40 USDC on EEZ-X, then a 110-USDC payment to Ethereum
+(100 from L1 plus 10 bridged from L2), then another 1 on EEZ-X. Each Safe's
+allowance is 100 and the shared budget is 150. The last payment is rejected even
+though EEZ-X still has 50 of allowance. Review each payment, simulate two owner
+approvals, and simulate settlement; editing a reviewed payment clears its
+approvals. The presets only fill the form. The explicit simulation reset, leaving
+the page or reloading clears sample balances/history. The illustrative ten-minute
+period does not advance automatically. This page does not request wallet
+signatures or broadcast transactions, and its history is separate from live
+transaction history. Live Safe owners, policy contracts and Composer settlement
+integration are subsequent milestones.
+
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
 L2 source transactions link to their canonical L1 settlement batch (labeled
@@ -334,9 +356,12 @@ Monitor regression checks and optional telemetry settings are documented in
 `src/monitor/README.md`.
 
 With Playwright installed and a production preview running, run
-`node tests/counter-demo.cjs` and `node tests/cross-chain-calls.cjs` for mocked
+`node tests/counter-demo.cjs`, `node tests/cross-chain-calls.cjs` and
+`node tests/treasury-demo.cjs` for mocked
 wallet/RPC coverage. They default to `http://127.0.0.1:8083/dashboard`; override
 that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
+The treasury check covers hidden navigation and direct URLs, shortcut/session
+behavior, simulated approvals and budget arithmetic, and responsive layout.
 
 Transaction result pop-ups include **Follow this call** links to the execution
 visualizer. Inspection refreshes every ten seconds and reports source execution
