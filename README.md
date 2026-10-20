@@ -1,8 +1,8 @@
 # EEZ Rollup UI
 
 Standalone Docker-first web interface for an EEZ rollup network. This repository
-contains the UI only; protocol contracts, the node, and Kurtosis topology remain
-in the rollup repository.
+contains the UI and demo documentation. Core protocol contracts, the node, and
+Kurtosis topology remain in the rollup repository.
 
 The source baseline is the earlier
 [`eez-association/sync-rollups-poc`](https://github.com/eez-association/sync-rollups-poc)
@@ -101,6 +101,12 @@ period does not advance automatically. This page does not request wallet
 signatures or broadcast transactions, and its history is separate from live
 transaction history. Live Safe owners, policy contracts and Composer settlement
 integration are subsequent milestones.
+
+The [One treasury, two Safes proposal](docs/proposals/one-treasury-two-safes.md)
+contains the full design, demo script and development plan. Treasury demo
+application contracts and tooling will live alongside the UI in this repository;
+the runtime and core protocol remain external dependencies at the revisions
+recorded in the proposal.
 
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
