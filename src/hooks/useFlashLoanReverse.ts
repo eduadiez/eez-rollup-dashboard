@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { config, ESTIMATION_SENDER } from "../config";
+import { config } from "../config";
 import { rpcCall } from "../rpc";
 
 type Logger = (msg: string, type?: "ok" | "err" | "info") => void;
@@ -367,7 +367,6 @@ export function useFlashLoanReverse(
         to: reverseExecutorL2,
         data: EXECUTE_SELECTOR,
         gas: REVERSE_FLASH_LOAN_GAS,
-        from: ESTIMATION_SENDER,
       });
     } catch (e) {
       const msg = (e as Error).message || "Transaction rejected";

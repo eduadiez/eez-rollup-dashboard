@@ -1,0 +1,125 @@
+{
+  "network": "disposable Kurtosis",
+  "l1ChainId": 7331,
+  "l2ChainId": 696990,
+  "verified": true,
+  "scenarios": [
+    {
+      "source": "l1",
+      "wallet": "Rabby",
+      "kind": "call",
+      "verified": true,
+      "userTip": "336348185144501",
+      "recovered": "302709525016050",
+      "postingCost": "234745935289674",
+      "surplus": "67963589726376",
+      "transactionHash": "0x158204285f037237d8c04d06f047cc066fb7b44e55c386d63c75484663d06ac7",
+      "transactionType": "0x0",
+      "sourceBlockHash": "0x681582898d287f0219e525cf63e2a078718f609416afe8fb7790edd976950ac7",
+      "postTransactionHash": "0x331a15bdb2731b9c9577133b3d44ead2d53b17a71eb438ef6b3b3fcca9ef9df8",
+      "postBlockHash": "0x681582898d287f0219e525cf63e2a078718f609416afe8fb7790edd976950ac7",
+      "destinationAssertion": {
+        "value": 991,
+        "target": "0x4f41b941940005ae25d5ecb0f01badbc7065e2dd"
+      },
+      "refundTransactionHash": "0x2bd0ea923513102698b58d718739d24e07b0959cd5d9c98df09c4eb82e635c57"
+    },
+    {
+      "source": "l1",
+      "wallet": "MetaMask",
+      "kind": "call",
+      "verified": true,
+      "userTip": "256726495086048",
+      "recovered": "231050478059443",
+      "postingCost": "175030063101788",
+      "surplus": "56020414957655",
+      "transactionHash": "0x53041c2bf7c72588c86f7991f1d550098532e0b3119722241e7ae4b8f4c6b093",
+      "transactionType": "0x2",
+      "sourceBlockHash": "0xa3a26baf3622a8ce0c380d822fd9edf13966412c038832feda8978c665e5e927",
+      "postTransactionHash": "0xf45259384a0f292f3ac1f97ef734cc3096f2d9dc3dc9aa49fd40095c410c4c50",
+      "postBlockHash": "0xa3a26baf3622a8ce0c380d822fd9edf13966412c038832feda8978c665e5e927",
+      "destinationAssertion": {
+        "value": 992,
+        "target": "0x4f41b941940005ae25d5ecb0f01badbc7065e2dd"
+      },
+      "refundTransactionHash": "0xd2918f26d32e6bdc1f632b3286ffff598fb30253b47b5052821b00403f0d5901"
+    },
+    {
+      "source": "l1",
+      "wallet": "MetaMask",
+      "kind": "bridge",
+      "verified": true,
+      "userTip": "248406902909859",
+      "recovered": "223563261572873",
+      "postingCost": "168814719655138",
+      "surplus": "54748541917735",
+      "transactionHash": "0xd1ff12f1a8af85bd40c95fa99876ebf8f936bb710f6f120b2c0259ab3c88639c",
+      "transactionType": "0x2",
+      "sourceBlockHash": "0x4447cfc0ff6a2ac903c4d5be7cb770d5323801e6fd08bf3607eaeaaf36d5af12",
+      "postTransactionHash": "0xdc77ac6c4ee1341038bea8e94b512ce56817fce55835503056997cd7bb2a8827",
+      "postBlockHash": "0x4447cfc0ff6a2ac903c4d5be7cb770d5323801e6fd08bf3607eaeaaf36d5af12",
+      "destinationAssertion": {
+        "recipient": "0x8888888888888888888888888888888888888888",
+        "balanceIncreaseWei": "1000000000000000"
+      },
+      "refundTransactionHash": "0x76a05305545f530ceb340317b218687c90b15911ef05d0c3588567c6971a03de"
+    },
+    {
+      "source": "l2",
+      "wallet": "Rabby",
+      "kind": "call",
+      "verified": true,
+      "userTip": "228969759014144",
+      "recovered": "228969759014144",
+      "postingCost": "190794494724348",
+      "surplus": "38175264289796",
+      "transactionHash": "0xcbf1ea5a8bcf61091ca5f3ce1d6efb9c7586c899ba5f94c2c7f06292e4795c67",
+      "transactionType": "0x0",
+      "sourceBlockHash": "0x4e63314443d3a79631c6caeb10dc28f2af835d0c62e8e0fbc59ce128d0af6fc6",
+      "postTransactionHash": "0xe7b9ab66c7d4bc154d69017288c2c74c2f61d1883875d8225388207ca8bd891c",
+      "postBlockHash": "0x4439648cd27155d11dde5169be586e531b4ad66282ce563e8ed54163476bf1d5",
+      "destinationAssertion": {
+        "value": 994,
+        "target": "0x558785b76e29e5b9f8bf428936480b49d71f3d76"
+      }
+    },
+    {
+      "source": "l2",
+      "wallet": "MetaMask",
+      "kind": "call",
+      "verified": true,
+      "userTip": "208442083441370",
+      "recovered": "208442083441370",
+      "postingCost": "173689734890197",
+      "surplus": "34752348551173",
+      "transactionHash": "0x063bebccfe517256942a16801ffbc82f360ba2bf5d4fbdf15fddb0bd5845906f",
+      "transactionType": "0x2",
+      "sourceBlockHash": "0xee1202d30eeadafd125025c589448b194a2abe6946ec4550ac9f530ef71e8ba6",
+      "postTransactionHash": "0xa306e5750529aa5242793dfb5f7ed54d027c3403dd23bbb2fdd9db6a0c99bbbf",
+      "postBlockHash": "0xced20e00b41c2ca53b9652ae155face2b350af0a5147880ae44b5214dbdaebe1",
+      "destinationAssertion": {
+        "value": 995,
+        "target": "0x558785b76e29e5b9f8bf428936480b49d71f3d76"
+      }
+    },
+    {
+      "source": "l2",
+      "wallet": "MetaMask",
+      "kind": "bridge",
+      "verified": true,
+      "userTip": "591429074374656",
+      "recovered": "591429074374656",
+      "postingCost": "492869563033758",
+      "surplus": "98559511340898",
+      "transactionHash": "0x8483b08d4e121a3626f8eac438c165254aff60baa94dfe103c1ce88338d6ce84",
+      "transactionType": "0x2",
+      "sourceBlockHash": "0xa46ddcec587ace1e612c2cf516d07c208ba9e125b4f86f68480f52687e62bff9",
+      "postTransactionHash": "0x88dcea279e808807e6c3a946588bf300748677d0c57a559161e2c7d6c2a2f4e5",
+      "postBlockHash": "0x5883b26286b7b3917ed61c544e154adb7f7d842b40ad0905502301ad5c7b5b8e",
+      "destinationAssertion": {
+        "recipient": "0x8888888888888888888888888888888888888888",
+        "balanceIncreaseWei": "1000000000000000"
+      }
+    }
+  ]
+}

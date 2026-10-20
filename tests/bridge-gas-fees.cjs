@@ -2,6 +2,7 @@
 // Mocked Rabby and RPCs: records the wallet request and never broadcasts it.
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
+const { keccak256, toHex } = require('viem');
 
 const origin = (process.env.EEZ_UI_URL || 'http://127.0.0.1:18777').replace(/\/$/, '');
 const RAW_GAS = 422319n;
@@ -26,26 +27,32 @@ async function fixture(browser, options = {}) {
   const nativeSymbol = options.chain === '0x1' ? 'ETH' : 'xDAI';
   const context = await browser.newContext();
   const page = await context.newPage();
+  if (options.clock) await page.clock.install();
   const errors = [], rpcRequests = [];
+  const feeQuote = { failure: !!options.quoteFailure, gasPrice: '9000000007', priorityFee: '9000000000', hold: null };
   const receipt = { result: null };
-  const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af" };
+  const estimation = { unsupported: options.unsupported ?? false, error: options.estimateError ?? null, result: options.estimateResult ?? "0x671af", transient: options.transientEstimates ?? 0 };
   page.on('pageerror', e => errors.push(e.message));
-  await page.addInitScript(({ account, receiptHash, multipleWallets, chain }) => {
+  await page.addInitScript(({ account, receiptHash, multipleWallets, chain, walletNonce, holdWallet }) => {
     window.walletRequests = [];
     window.walletSenders = [];
     window.walletChains = [];
     window.rejectSwitch = false;
     const provider = name => ({
+      chain: chain || '0x27d8',
       isRabby: name === 'Rabby', isMetaMask: name === 'MetaMask',
       on() {}, removeListener() {},
       async request({ method, params }) {
         if (method === 'eth_requestAccounts' || method === 'eth_accounts') return [account];
-        if (method === 'eth_chainId') return chain || '0x27d8';
+        if (method === 'eth_chainId') return this.chain;
+        if (method === 'eth_getTransactionCount') return walletNonce ?? '0x0';
+        if (method === 'eth_getBlockByNumber') return { baseFeePerGas: '0x7' };
         if (method === 'wallet_addEthereumChain') { window.walletChains.push(params[0]); return null; }
-        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); return null; }
+        if (method === 'wallet_switchEthereumChain') { if (window.rejectSwitch) throw new Error('User rejected switch'); this.chain = params[0].chainId; return null; }
         if (method === 'eth_sendTransaction') {
           window.walletSenders.push(name);
           window.walletRequests.push(params[0]);
+          if (holdWallet) await new Promise(resolve => { window.finishWallet = resolve; });
           return receiptHash;
         }
         throw new Error('Unexpected wallet method: ' + method);
@@ -64,7 +71,7 @@ async function fixture(browser, options = {}) {
         announce('MetaMask', 'metamask-provider', 'io.metamask', metamask);
       });
     }
-  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain });
+  }, { account, receiptHash, multipleWallets: options.multipleWallets, chain: options.chain, walletNonce: options.walletNonce, holdWallet: options.holdWallet });
   await page.route('**/*', async route => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -72,6 +79,10 @@ async function fixture(browser, options = {}) {
       l1RpcUrl: '/rpc/l1', l2RpcUrl: '/rpc/l2',
       l1FrontUrl: '/composer/l1', l2FrontUrl: '/composer/l2',
       demoBridgeAddress: bridge, rollupId: '1', networkName: 'EEZ-X Devnet',
+      l1FeesEnabled: options.l1FeesEnabled ?? (!options.reverse && !!options.feesEnabled),
+      l2FeesEnabled: options.l2FeesEnabled ?? (!!options.reverse && !!options.feesEnabled),
+      l1FeeMaxTotalWei: options.l1FeeCeiling ?? options.feeCeiling ?? '100000000000000000',
+      l2FeeMaxTotalWei: options.l2FeeCeiling ?? options.feeCeiling ?? '100000000000000000',
     } });
     if (path === '/shared/rollup.env' || path === '/shared/faucet.key') {
       return route.fulfill({ status: 404, body: '' });
@@ -79,11 +90,30 @@ async function fixture(browser, options = {}) {
     if (request.method() !== 'POST') return route.continue();
     const { method, params = [], id } = request.postDataJSON();
     const reply = result => route.fulfill({ json: { jsonrpc: '2.0', id, result } });
+    if (method === 'eez_quoteFee') {
+      assert.ok(['/composer/l1', '/composer/l2'].includes(path));
+      const [request, selection] = params;
+      assert.equal(request.chainId, path === '/composer/l1' ? options.chain || '0x27d8' : options.l2Chain || '0x1892');
+      assert.deepEqual(selection.transactionTypes, [request.type]);
+      const transaction = { nonce: '0x0', gas: '0x' + RAW_GAS.toString(16), ...request };
+      rpcRequests.push({ path, transaction });
+      if (feeQuote.failure) return route.fulfill({ json: { jsonrpc: '2.0', id,
+        error: { code: -32004, message: 'quote_unavailable: fixture unavailable', data: { code: 'quote_unavailable' } } } });
+      const tip = BigInt(feeQuote.priorityFee), price = BigInt(feeQuote.gasPrice);
+      if (feeQuote.hold) await feeQuote.hold;
+      const canonical = JSON.stringify(Object.fromEntries(Object.keys(transaction).sort().map(key => [key, transaction[key]])));
+      return reply({ version: 1, chainId: transaction.chainId, nonce: transaction.nonce,
+        expiresAt: '0x' + (Math.floor(Date.now() / 1000) + 30).toString(16),
+        options: [{ type: transaction.type, gas: transaction.gas, requestHash: keccak256(toHex(canonical)),
+          estimatedFee: '0x' + (price * 21000n).toString(16),
+          ...(transaction.type === '0x0' ? { gasPrice: '0x' + price.toString(16) } : { maxPriorityFeePerGas: '0x' + tip.toString(16), maxFeePerGas: '0x' + price.toString(16) }) }],
+      });
+    }
     const reject = message => route.fulfill({ json: {
       jsonrpc: '2.0', id, error: { code: 3, message },
     } });
     if (/send|sign/i.test(method)) throw new Error('Unexpected broadcast RPC: ' + method);
-    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? '0x1892' : options.chain || '0x27d8');
+    if (method === 'eth_chainId') return reply(path.endsWith('l2') ? options.l2Chain || '0x1892' : options.chain || '0x27d8');
     if (method === 'eth_getCode') return reply(params[0]?.toLowerCase() === bridge ? '0x6000' : '0x');
     if (method === 'eth_call' && params[0]?.to?.toLowerCase() === bridge
         && params[0]?.data === '0x481c6a75') {
@@ -91,6 +121,12 @@ async function fixture(browser, options = {}) {
     }
     rpcRequests.push({ path, method, params });
     if (method === 'eth_estimateGas') {
+      if (estimation.transient > 0) {
+        estimation.transient--;
+        return route.fulfill({ json: { jsonrpc: '2.0', id, error: { code: -32000,
+          message: 'cross-chain estimation unavailable: settlement reconciliation pending',
+          data: { code: 'settlement_reconciliation_pending', retryable: true } } } });
+      }
       if (!path.startsWith('/composer/')) return reject('Read RPC must not estimate bridge transactions');
       if (estimation.delay) await new Promise(resolve => setTimeout(resolve, estimation.delay));
       if (estimation.unsupported) return route.fulfill({json:{jsonrpc:'2.0',id,error:{code:3,message:'execution reverted',data:'0x096aa08200000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000004f9d330ad00000000000000000000000000000000000000000000000000000000'}}});
@@ -110,6 +146,7 @@ async function fixture(browser, options = {}) {
     }
     if (method === 'eth_call') return reject('execution reverted');
     if (method === 'eth_getBalance') return reply('0x' + BigInt(options.nativeBalance ?? '0x3635c9adc5dea00000').toString(16));
+    if (method === 'eth_getTransactionCount') return reply('0x0');
     if (method === 'eth_getBlockByNumber') return reply({
       number: '0x10', hash: '0x' + '55'.repeat(32),
       parentHash: '0x' + '66'.repeat(32), timestamp: '0x65000000',
@@ -159,7 +196,7 @@ async function fixture(browser, options = {}) {
   assert.equal(await page.getByText('You receive', { exact: true }).count(), 0);
   assert.equal(await page.getByLabel('Gas limit', { exact: true }).isVisible(), false, 'gas controls start collapsed');
   if (options.expandGas !== false) await page.getByText('Gas settings', { exact: true }).click();
-  return { context, page, button, errors, rpcRequests, estimation, receipt };
+  return { context, page, button, errors, rpcRequests, estimation, receipt, feeQuote };
 }
 
 module.exports = { fixture, until, RAW_GAS, account, recipient, token };
@@ -202,6 +239,19 @@ if (require.main === module) (async () => {
       const destinationRollup = (reverse ? '0' : '1').padStart(64, '0');
       assert.equal(tx.data.slice(erc20 ? 138 : 10, erc20 ? 202 : 74), destinationRollup);
       assert.equal(tx.value, erc20 ? '0x0' : '0x38d7ea4c68000');
+      assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
+    for (const reverse of [false, true]) {
+      const f = await fixture(browser, { reverse, transientEstimates: 1 });
+      const estimates = f.rpcRequests.filter(r => r.method === 'eth_estimateGas');
+      assert.equal(estimates.length, 2, 'one transient response is retried automatically');
+      assert.deepEqual(estimates[0].params, estimates[1].params);
+      assert.ok(estimates.every(r => r.path === (reverse ? '/composer/l2' : '/composer/l1')));
+      assert.deepEqual(await f.page.evaluate(() => window.walletRequests), [], 'retrying an estimate never submits');
+      const row = f.page.getByText('Estimated gas', { exact: true }).locator('..');
+      assert.equal((await row.locator('span').last().textContent()).replace(/,/g, ''), String(RAW_GAS));
+      assert.equal(await f.page.getByRole('alert').filter({ hasText: 'Gas estimation failed:' }).count(), 0);
       assert.deepEqual(f.errors, []);
       await f.context.close(); scenarios++;
     }
