@@ -21,6 +21,7 @@ import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
 import { CrossChainTransactionDialog } from "./components/CrossChainTransactionDialog";
 import { BridgePanel } from "./components/BridgePanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
+import { QuoteDebugger } from "./components/QuoteDebugger";
 import styles from "./App.module.css";
 
 const VisualizerView = lazy(() => import("./components/VisualizerView").then(module => ({ default: module.VisualizerView })));
@@ -324,15 +325,7 @@ export function App() {
       {view === "monitor" ? (
         <NetworkMonitorView />
       ) : view === "debug" ? (
-        <main id="main" tabIndex={-1} className={styles.debugPage} aria-label="Quote debugger">
-          {/* Reuse the versioned viewer while isolating imports from wallet/storage access. */}
-          <iframe
-            title="Cross-chain quote trace viewer"
-            src={`${import.meta.env.BASE_URL}quote-trace/index.html?embedded=1`}
-            sandbox="allow-scripts allow-downloads"
-            className={styles.debugFrame}
-          />
-        </main>
+        <QuoteDebugger ready={configLoaded} />
       ) : view === "visualizer" ? (
         <Suspense fallback={<main id="main" tabIndex={-1} className={styles.page}>Loading visualizer…</main>}>
           <VisualizerView
