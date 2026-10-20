@@ -32,6 +32,7 @@ const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard" },
   { id: "monitor", label: "Monitor" },
   { id: "visualizer", label: "Visualizer" },
+  { id: "debug", label: "Debug" },
 ];
 
 export function Header({

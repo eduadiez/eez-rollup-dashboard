@@ -17,14 +17,52 @@ The application preserves the original sync-rollups POC screens:
 - Aggregator
 - Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
+- Quote debugger for imported cross-chain simulation traces
 
-The top navigation is **Dashboard → Monitor → Visualizer**. The read-only
+The top navigation is **Dashboard → Monitor → Visualizer → Debug**. The read-only
 [network monitor](src/monitor/README.md) lives at `/monitor/` (legacy `#/monitor`
 links still open it) and shares
 the dashboard layout, header, footer, and theme. The monitor page mounts inside
 the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
+
+**Debug** opens at `/dashboard/#/debug` (or `#/debug` under a custom build base).
+Import or paste a JSON result from `eez_debugQuoteFee` with `{"trace":"calls"}`.
+It shows the nested L1/L2 call tree, captured input/output, errors and rollbacks,
+with separate runs for gas probes and validation. The import does not send a
+transaction, call a wallet, or upload its contents. It works without a wallet
+connection. A [recorded nested-revert example](public/quote-trace/examples/nested-revert.json)
+is included for trying the viewer.
+
+The dashboard embeds the same versioned viewer as RollupX in a sandbox without
+access to the parent page or its storage. Its content policy blocks network
+connections. Assets are bundled locally; there is no runtime CDN dependency.
+The [source record](public/quote-trace/SOURCE.md) pins their upstream revision.
+The small sync script prevents the two repositories' viewers from diverging.
+
+```bash
+COMPOSER_RPC='https://YOUR_HOST/composer/l2'
+TX='{"from":"0x1111111111111111111111111111111111111111","to":"0x2222222222222222222222222222222222222222","data":"0x","value":"0x0"}'
+cast rpc --rpc-url "$COMPOSER_RPC" eez_debugQuoteFee "$TX" \
+  '{"transactionTypes":["0x2"],"trace":"calls"}' > quote-trace.json
+```
+
+Use `/composer/l1` for an L1 source. Request `"0x0"` for legacy transactions,
+or omit `transactionTypes` to simulate both formats. Capture requires a
+Composer with RollupX PR #97; older versions reject the trace option.
+The dashboard can be upgraded before Composer and still import saved traces.
+No fee configuration or contract change is needed.
+
+Imports are limited to 8 MiB. Truncated execution is marked explicitly.
+Custom errors retain their raw selectors; source maps and ABI uploads are
+outside this version. Traces describe simulations, not mined transactions.
+Revisiting Debug starts a fresh import; trace contents are not persisted.
+
+Run `npm run test:debug` to build and test the actual dashboard assets in Chromium.
+Set `EEZ_UI_BASE_PATH=/` to also check a root deployment. The test mocks the
+dashboard's RPCs and never broadcasts; `EEZ_TEST_LOG_DIR` can point to a RollupX
+tracing process run to additionally import all its `quote-traces/*.json` exports.
 
 Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
