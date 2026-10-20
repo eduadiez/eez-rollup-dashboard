@@ -158,6 +158,22 @@ test("exported values win when expanding allowlisted file references", () => {
   });
 });
 
+test("file references use exported overrides, with empty exports falling back to the file", t => {
+  files(t, { [DEFAULT_ENV_FILE]: "L1_RPC=https://old.example\nL2_RPC=https://l2.example\nL1_FRONT=$L1_RPC\nL1_TRACE_RPC=${L1_FRONT}\n" });
+  const overridden = loadConfig([hash], { L1_RPC: "https://new.example" });
+  assert.equal(overridden.l1Rpc, "https://new.example");
+  assert.equal(overridden.l1Front, overridden.l1Rpc);
+  assert.equal(overridden.l1TraceRpc, overridden.l1Rpc);
+  const empty = loadConfig([hash], { L1_RPC: "", L1_FRONT: "" });
+  assert.equal(empty.l1Front, "https://old.example");
+  assert.equal(empty.l1TraceRpc, empty.l1Front);
+  const cli = loadConfig([hash, "--l1-front", "https://cli.example"], { L1_RPC: "https://new.example" });
+  assert.equal(cli.l1Front, "https://cli.example");
+  // Exported URLs are literal, even if their paths contain a dollar sign.
+  const literal = "https://new.example/$L2_RPC";
+  assert.equal(loadConfig([hash], { L1_RPC: literal }).l1Front, literal);
+});
+
 test("existing CLI validation still rejects incomplete ranges and unknown settings", t => {
   files(t);
   assert.throws(() => loadConfig([hash, "--l1-from", "5"], rpcEnv), /both/);

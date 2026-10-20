@@ -3,8 +3,9 @@ import { useDecodedTrace } from "../../hooks/useDecodedTrace";
 import { config } from "../../config";
 import { ExplorerLink } from "../ExplorerLink";
 import { TraceDiagram, textValue } from "./TraceDiagram";
-import type { TraceNode, TraceResult, TraceSource } from "../../../trace-decoder/service/types";
+import type { TraceChain, TraceGas, TraceNode, TraceResult, TraceSource } from "../../../trace-decoder/service/types";
 import styles from "./TraceDetailView.module.css";
+import visualizerStyles from "../visualizer/ExecutionDebugger.module.css";
 
 function download(result: TraceResult) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], { type: "application/json" }));
@@ -42,6 +43,37 @@ function CallInspector({ node }: { node: TraceNode | undefined }) {
     <details><summary>Calldata and raw return</summary><h3>Input</h3><pre>{node.input}</pre><h3>Output</h3><pre>{node.output ?? node.ret.raw ?? "Not observed"}</pre></details>
   </aside>;
 }
+const gasUnits = (value: string | null) => value === null ? "Unavailable" : BigInt(value).toLocaleString("en-US");
+const chains: TraceChain[] = ["L1", "L2"];
+// Totals describe the requested flow and stay fixed across views and visibility filters.
+function GasSummary({ gas }: { gas: Record<TraceChain, TraceGas> }) {
+  const rows = chains.flatMap(chain => gas[chain].contributions.map(row => ({ chain, ...row })));
+  return <details className={styles.gas} open aria-label="Gas used by this flow">
+    <summary><strong>Gas used by this flow</strong>
+      <span className={styles.muted}>{chains.map(chain => `${chain} ${gasUnits(gas[chain].gasUsed)}`).join(" · ")}</span></summary>
+    <div className={styles.gasTotals}>{chains.map(chain => <div key={chain} className={styles.gasTotal} data-chain={chain}>
+      <span>{chain} flow gas</span><strong>{gasUnits(gas[chain].gasUsed)}</strong>
+      {gas[chain].partial && <em>Partial</em>}
+    </div>)}</div>
+    <p className={styles.muted}>Gas units, not fees. Includes EEZ plumbing, nested calls and reverted calls, each counted once.
+      Totals cover the requested flow and do not change when calls are hidden.</p>
+    <details className={styles.gasBreakdown}><summary>Breakdown and whole transaction totals</summary>
+      <div className={styles.tableScroll}><table className={styles.sequence}>
+        <thead><tr><th>Chain</th><th>Contribution</th><th>Measured from</th><th>Gas used</th></tr></thead>
+        <tbody>{rows.map(row => <tr key={row.frameId}>
+          <td className={styles.chain} data-chain={row.chain}>{row.chain}</td>
+          <td>{row.label}{row.hash && <> · <ExplorerLink value={row.hash} type="tx" chain={row.chain === "L1" ? "l1" : "l2"} /></>}</td>
+          <td>{row.basis === "receipt" ? "Transaction receipt" : "Call frame, including children"}</td>
+          <td className={styles.gasValue}>{gasUnits(row.gasUsed)}</td>
+        </tr>)}</tbody>
+      </table></div>
+      <p className={styles.muted}>Whole related transactions: {chains.map(chain => `${chain} ${gasUnits(gas[chain].transactionGasUsed)}${gas[chain].transactionGasPartial ? " (partial)" : ""}`).join(" · ")}.
+        These receipt totals include the full settlement batch, which may contain other flows.</p>
+      <p className={styles.muted}>Whole transactions use receipt gas; isolated subtrees use call-trace gas. Shared settlement work,
+        transaction overhead and refunds cannot be allocated exactly to an isolated entry. Partial totals indicate missing gas or attribution.</p>
+    </details>
+  </details>;
+}
 export function TraceDetailView({ hash, source, ready, onBack }: {
   hash: string; source: TraceSource; ready: boolean; onBack: () => void;
 }) {
@@ -54,6 +86,7 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
   const [recorded, setRecorded] = useState(false);
   const linkedModel = trace.result?.model;
   const model = recorded && linkedModel?.recordedView ? linkedModel.recordedView : linkedModel;
+  const gas = model?.gas ?? linkedModel?.gas;
   useEffect(() => { setRecorded(false); }, [linkedModel]);
   useEffect(() => { setSelected(null); setTransaction(""); }, [model]);
   const busy = trace.phase === "queued" || trace.phase === "running";
@@ -68,10 +101,15 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
   return <main id="main" tabIndex={-1} className={styles.page}>
     <header className={styles.intro}>
       <button className="btn btn-sm btn-outline" onClick={onBack}>← Dashboard</button>
-      <p className="eez-eyebrow">[ {config.rollupName} · TRANSACTION DETAILS ]</p>
-      <h1 className="eez-page-heading">Follow the <strong>execution</strong></h1>
+      <p className="eez-eyebrow">[ {config.rollupName} · TRANSACTION TRACE ]</p>
+      <h1 className="eez-page-heading"><strong>Trace a transaction.</strong> Across both chains.</h1>
       <p className="eez-description">Explore the calls, return values, and related transactions across both chains.</p>
     </header>
+    <nav className={visualizerStyles.tabs} aria-label="Visualizer modes">
+      <a className={visualizerStyles.tab} href="#/visualizer?mode=live">Live</a>
+      <a className={visualizerStyles.tab} href="#/visualizer?mode=inspect">Inspect</a>
+      <a className={`${visualizerStyles.tab} ${visualizerStyles.activeTab}`} href="#/visualizer?mode=trace" aria-current="page">Trace</a>
+    </nav>
     <form className={styles.searchBar} onSubmit={inspect}>
       <label>Source network<select value={chain} onChange={event => setChain(event.target.value as TraceSource)}>
         <option value="auto">Detect automatically</option><option value="l1">{config.l1NetworkName} · L1</option><option value="l2">{config.rollupName} · L2</option>
@@ -127,6 +165,7 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
       {view === "raw" ? <section className={styles.raw}><h2>Decoded flow model</h2><pre>{JSON.stringify(model, null, 2)}</pre></section>
         : <div className={styles.workspace}><TraceDiagram key={model.mode || "combined"} model={model} view={view} transaction={transaction} selected={selected} onSelect={setSelected} />
           <CallInspector node={selected === null ? undefined : model.nodes[selected]} /></div>}
+      {gas && <GasSummary gas={gas} />}
     </>}
   </main>;
 }

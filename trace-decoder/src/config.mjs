@@ -64,10 +64,12 @@ export function parseEnv(text, exported = {}) {
     values[m[1]] = value;
   }
   function expand(key, seen = new Set(), useExport = false) {
+    // Exported values are already literal shell values. Use the same nonempty
+    // precedence for references as for top-level settings in loadEnvironmentConfig.
+    if (useExport && exported[key]) return exported[key];
     if (seen.has(key)) throw new Error(`Cyclic environment reference: ${key}`);
     seen.add(key);
-    const value = useExport ? exported[key] ?? values[key] ?? "" : values[key] ?? "";
-    return value.replace(/\$\{([A-Z][A-Z0-9_]*)\}|\$([A-Z][A-Z0-9_]*)/g, (_, a, b) => {
+    return (values[key] ?? "").replace(/\$\{([A-Z][A-Z0-9_]*)\}|\$([A-Z][A-Z0-9_]*)/g, (_, a, b) => {
       const ref = a || b;
       if (!ENV_NAMES.has(ref)) throw new Error(`Unsupported environment reference: ${ref}`);
       return expand(ref, new Set(seen), true);

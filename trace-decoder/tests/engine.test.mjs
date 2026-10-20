@@ -102,6 +102,27 @@ for(const direction of ['L1','L2'])test(`${direction} repeated identical calls u
   assert.ok(result.outgoing.every(o=>o.matchEvidence.includes('ordered consumed entries and complete delivery sequence')));
 });
 
+for (const direction of ['L1', 'L2']) for (const mismatch of ['return', 'revert']) {
+  test(`${direction} ordered repeated calls reject a later ${mismatch} mismatch`, async () => {
+    const f = scenario({ direction, repeat: 2 });
+    const second = f.txs[direction].get(f.trigger).trace.calls[1];
+    const manager = second.calls[1];
+    if (mismatch === 'return') {
+      second.output = app.encodeFunctionResult('increment', [2]);
+      manager.output = ethers.AbiCoder.defaultAbiCoder().encode(['bytes'], [second.output]);
+    } else {
+      // Equal bytes must still not match a successful remote return to a revert.
+      second.error = manager.error = 'execution reverted';
+    }
+    const result = await decodeCrossChainTrace(f.config, f.trigger);
+    assert.equal(result.outgoing.length, 2);
+    assert.ok(result.outgoing.every(o => o.status !== 'matched'));
+    assert.equal(result.edges.filter(e => e.type === 'cross-chain').length, 0);
+    assert.equal(result.outgoing[1].rejectedCandidates.length, 2);
+    assert.ok(result.outgoing[1].rejectedCandidates.every(c => c.reason === 'return-or-revert-mismatch'));
+  });
+}
+
 test('repeated hashes alone leave candidates ambiguous',async()=>{
   const f=scenario({repeat:2,ambiguous:true});const result=await decodeCrossChainTrace(f.config,f.trigger);
   assert.ok(result.outgoing.every(o=>o.status==='ambiguous'&&o.candidates.length===2));

@@ -46,6 +46,14 @@ export interface TraceModel {
   settlements: { id: string; l1Tx: string; l1Block: number | null; firstL2Block: number | null; lastL2Block: number | null }[];
   unresolved: { code: string; message: string; frameId: string | null }[];
   stats: { frames: number; crossings: number; matched: number; events: number; preparedResults?: number; preparedResponses?: number };
+  gas?: Record<TraceChain, TraceGas>;
+}
+/** Gas units for the requested flow; decimal strings preserve integer precision. */
+export interface TraceGas {
+  gasUsed: string | null; partial: boolean;
+  contributions: { frameId: string; hash: string | null; basis: "receipt" | "frame"; label: string; gasUsed: string | null }[];
+  transactionGasUsed: string | null; transactionGasPartial: boolean;
+  receipts: { hash: string; label: string; gasUsed: string | null }[];
 }
 export interface TraceResult {
   apiVersion: 1; observedAt: string; partial: boolean; model: TraceModel;

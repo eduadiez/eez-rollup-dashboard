@@ -98,6 +98,8 @@ Within one source, the repository names below take precedence over legacy aliase
 Blank values are unset. Unrelated settings and wallet private keys are ignored;
 the file is parsed, never sourced or executed. Only allowlisted variable references
 such as `$EEZ_UI_L1_RPC_UPSTREAM` are expanded. Shell expressions are rejected.
+File references also use nonempty exported values; exported values themselves are
+literal. CLI flags override individual options after file expansion.
 
 | Repository setting | Decoder use | Legacy alias |
 | --- | --- | --- |
@@ -165,6 +167,8 @@ lookup, `--no-explorer` both).
    using proxy identity, calldata, value, static context, return/revert data,
    execution tables and nested call structure. Identical occurrences remain
    ambiguous unless consumed-entry and delivery order establish their identity.
+   Every ordered pair must also agree on return/revert data and execution scope;
+   ordering alone never overrides a mismatch.
    For L2 sources executed through `_attemptExecuteImmediateL2Txs`, the decoder
    checks each attempt's calldata against its batch entry, excludes reverted
    attempts and native entries without L1 calls, and selects the matching L1
@@ -227,6 +231,19 @@ The sequence view also gives each chain its own rows. For an L2 source, the
 identified L1 entry is shown separately from other entries in its settlement batch.
 If that entry cannot be isolated, a notice explains why and the full batch remains
 selectable. The complete physical trace is always retained in JSON.
+
+The gas summary shows separate **L1 flow gas** and **L2 flow gas** totals,
+including EEZ plumbing, hidden reads and reverted calls. Physical parent/child
+relationships prevent nested calls from being counted twice. Totals stay fixed
+across view, transaction and visibility selections: they describe the requested
+flow. The breakdown includes the source, linked L2 table loading and deliveries,
+and the isolated L1 entry when available. Whole transactions use receipt gas;
+isolated subtrees use inclusive call-trace gas. Full related transaction receipt
+totals are shown separately because settlement batches can contain other flows.
+Shared settlement work, transaction overhead and refunds cannot be allocated
+exactly to an isolated entry. Missing gas or incomplete attribution is marked
+partial; these are gas units, not fees. The native dashboard shows the same
+totals in an open **Gas used by this flow** panel below the trace.
 
 Recorded L2 proxy calls label their prepared table responses. State observations,
 when supplied, are values after a block, not per-transaction storage writes.

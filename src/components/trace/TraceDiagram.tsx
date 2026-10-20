@@ -41,7 +41,7 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
       <span className={styles.callTitle}><strong>{node.contract}</strong><span>{node.callType}</span></span>
       <code>{node.fn}</code>
       <span className={styles.muted}>{short(node.address)}{node.gasUsed ? " · " + node.gasUsed + " gas" : ""}</span>
-      {(node.crossing || node.outgoing) && <span className={styles.crossingBadge}>
+      {(node.crossing || node.outgoing) && <span className={styles.crossingBadge} data-state={(node.crossing || node.outgoing)?.status}>
         {(node.crossing || node.outgoing)?.from} → {(node.crossing || node.outgoing)?.to} · {(node.crossing || node.outgoing)?.status}
       </span>}
       {node.preparedResult && <span className={styles.crossingBadge}>Prepared result · no L2 delivery expected</span>}
@@ -68,7 +68,7 @@ export function TraceDiagram({ model, view, transaction, onSelect, selected }: {
         const crosses = !physical && (!!crossing || !!parentNode && parentNode.chain !== node.chain);
         return <div className={styles.flowRow} key={node.id}>
           <div className={styles.lane}>{node.chain === "L1" && card(node, depth)}</div>
-          <div className={styles.arrow} aria-label={crosses ? (crossing?.from || parentNode?.chain) + " to " + node.chain : undefined}>
+          <div className={styles.arrow} data-chain={node.chain} aria-label={crosses ? (crossing?.from || parentNode?.chain) + " to " + node.chain : undefined}>
             {crosses && <><span>{node.chain === "L2" ? "→" : "←"}</span><small>{crossing?.status || "Call"}</small></>}
           </div>
           <div className={styles.lane}>{node.chain === "L2" && card(node, depth)}</div>
