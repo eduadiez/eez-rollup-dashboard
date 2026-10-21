@@ -89,6 +89,7 @@ test('dashboard Debug imports nested traces in an isolated frame under the build
     assert.deepEqual(JSON.parse(await fs.readFile(await exported.path(), 'utf8')), JSON.parse(example));
 
     // Import errors stay inside the viewer and do not blank the dashboard.
+    await frame.locator('#show-import').click();
     await frame.getByText('Paste JSON instead', { exact: true }).click();
     await frame.locator('#json').fill('{"result":{}}');
     await frame.locator('#load').click();
@@ -114,7 +115,6 @@ test('dashboard Debug imports nested traces in an isolated frame under the build
     }
     const artifacts = path.join(root, 'test-results/quote-trace', base === '/' ? 'root' : 'dashboard');
     await fs.mkdir(artifacts, { recursive: true });
-    await frame.getByText('Paste JSON instead', { exact: true }).click();
     await frame.locator('#tree').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(artifacts, 'desktop.png'), fullPage: true });
 

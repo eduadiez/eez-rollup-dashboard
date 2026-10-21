@@ -1,6 +1,6 @@
 # Quote trace viewer source
 
-Verbatim assets from [eez-association/eez-rollupX at 353be39dd369fe4da1935796dcc23cd729f81398](https://github.com/eez-association/eez-rollupX/tree/353be39dd369fe4da1935796dcc23cd729f81398/tools/quote-trace-viewer).
+Verbatim assets from [eez-association/eez-rollupX at e5e10f0d40588cc0a4f3e4d0fbfc8bec2486bc05](https://github.com/eez-association/eez-rollupX/tree/e5e10f0d40588cc0a4f3e4d0fbfc8bec2486bc05/tools/quote-trace-viewer).
 The example contains public fixture accounts and synthetic local state.
 
 Update through `node scripts/sync-quote-trace-viewer.mjs /path/to/rollupX`;

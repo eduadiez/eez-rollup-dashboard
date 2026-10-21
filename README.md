@@ -17,7 +17,7 @@ The application preserves the original sync-rollups POC screens:
 - Aggregator
 - Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
-- Quote debugger for imported cross-chain simulation traces
+- Quote debugger with direct simulation and verified contract decoding
 
 The top navigation is **Dashboard → Monitor → Visualizer → Debug**. The read-only
 [network monitor](src/monitor/README.md) lives at `/monitor/` (legacy `#/monitor`
@@ -28,16 +28,34 @@ as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
 
 **Debug** opens at `/dashboard/#/debug` (or `#/debug` under a custom build base).
-Import or paste a JSON result from `eez_debugQuoteFee` with `{"trace":"calls"}`.
-It shows the nested L1/L2 call tree, captured input/output, errors and rollbacks,
-with separate runs for gas probes and validation. The import does not send a
-transaction, call a wallet, or upload its contents. It works without a wallet
-connection. A [recorded nested-revert example](public/quote-trace/examples/nested-revert.json)
+Enter the source chain, sender, target, calldata and value in wei, then choose
+**Simulate fee quote**. Gas and nonce are optional; numeric fields accept decimal
+or hex. The dashboard sends one unsigned `eez_debugQuoteFee` request with
+`{"trace":"calls"}` to that chain's configured Composer front and opens the
+result directly. Legacy, EIP-1559 or both formats are available. This does not
+sign or broadcast a transaction and requires no wallet. Cancel stops the browser
+request; it does not guarantee an already-running Composer calculation stops.
+
+Saved JSON results can still be imported or pasted locally. The nested L1/L2 call
+tree has separate runs for gas probes and validation. A failure summary links
+recorded failed frames and the last child of a failed frame, without asserting
+that child caused the failure. Returned calls rolled back by ancestors are
+marked separately. Truncation identifies shortened fields and omitted calls/runs.
+A [recorded nested-revert example](public/quote-trace/examples/nested-revert.json)
 is included for trying the viewer.
 
 The dashboard embeds the same versioned viewer as RollupX in a sandbox without
 access to the parent page or its storage. Its content policy blocks network
-connections. Assets are bundled locally; there is no runtime CDN dependency.
+connections. A private MessageChannel connects it to the same-origin dashboard.
+The dashboard fetches verified ABIs from the configured L1/L2 Blockscout APIs
+using only chain and observed code address, then decodes names, arguments,
+return values and custom errors locally. Delegate calls use their captured code
+address, not an explorer's current proxy implementation. Imports are not uploaded;
+only metadata lookups send their contract addresses. Explorer failures, foreign
+chains, failed RPC chain-ID discovery, unverified contracts and incomplete bytes
+keep raw data visible. Wallet development defaults do not select an explorer.
+Explorer verification is not a historical bytecode match for this simulation.
+Assets are bundled locally; there is no runtime CDN dependency.
 The [source record](public/quote-trace/SOURCE.md) pins their upstream revision.
 The small sync script prevents the two repositories' viewers from diverging.
 
@@ -52,14 +70,23 @@ Use `/composer/l1` for an L1 source. Request `"0x0"` for legacy transactions,
 or omit `transactionTypes` to simulate both formats. Capture requires a
 Composer with RollupX PR #97; older versions reject the trace option.
 The dashboard can be upgraded before Composer and still import saved traces.
-No fee configuration or contract change is needed.
+No fee opt-in, contract, node or protocol change is needed for the form and ABI
+decoding. Publish the dashboard and bundled viewer assets together: older viewer
+assets do not support the private channel. Rolling back removes direct quoting
+and decoding without affecting chain state. Operational error-envelope traces
+also need the updated Composer support described in the pinned viewer README.
 
 Imports are limited to 8 MiB. Truncated execution is marked explicitly.
-Custom errors retain their raw selectors; source maps and ABI uploads are
-outside this version. Traces describe simulations, not mined transactions.
+Metadata reads are limited to four concurrent requests and 128 distinct code
+addresses per selected run, with an eight-second timeout and 1 MiB response cap.
+Changing runs/imports or leaving Debug cancels obsolete work. Quote responses
+are limited to 8 MiB with a two-minute browser timeout; form calldata to 128 KiB.
+Unknown custom errors retain their raw selectors. Source maps, executed source
+lines and ABI uploads are outside this version. Traces describe simulations, not mined transactions.
 Revisiting Debug starts a fresh import; trace contents are not persisted.
 
-Run `npm run test:debug` to build and test the actual dashboard assets in Chromium.
+Run `npm test` and `npm run test:debug` to validate decoding and the built dashboard
+in Chromium, including direct quotes, metadata, cancellation and local imports.
 Set `EEZ_UI_BASE_PATH=/` to also check a root deployment. The test mocks the
 dashboard's RPCs and never broadcasts; `EEZ_TEST_LOG_DIR` can point to a RollupX
 tracing process run to additionally import all its `quote-traces/*.json` exports.

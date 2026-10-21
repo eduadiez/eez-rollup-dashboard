@@ -67,6 +67,10 @@ export const config = {
   aggWrappedUsdcL2: params.get("aggWrappedUsdcL2") || "",
 };
 
+// The wallet definitions below have development defaults. ABI lookup must only
+// use a chain identity actually observed from that network's configured RPC.
+export const DISCOVERED_CHAIN_IDS: { l1: string | null; l2: string | null } = { l1: null, l2: null };
+
 /** Mutable — set after loading env files */
 export function setConfig(updates: Partial<typeof config>) {
   Object.assign(config, updates);
