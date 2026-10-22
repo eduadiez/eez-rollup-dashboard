@@ -120,3 +120,47 @@ Logs, comparison vectors and initial failures are local-only in
 `.runtime/treasury-deployment-batches/anvil-MziVzo/`. Contract, native process and
 service-image suites were not repeated for this application refactor. Running
 services, chain state and the outstanding publication checks are unchanged.
+
+
+## Final review
+
+Reviewed from `b9db5f6147e3218ddf305b80219c7fc7f92d7c2c`. A public HTTPS fetch
+confirmed that `origin/main` remains `fb6b798249464cea96f41703adeb0f28da262b20`,
+already integrated. Review covered the owner adapter, payment/delegate boundaries,
+setup and receipt recovery, mainnet bindings, retained source builds, browser
+verification delivery, worker admission and service/CI wiring.
+
+Two issues were corrected:
+
+- Browser verification delivery stopped at the first failed request. An unavailable
+  receipt could indefinitely prevent later deployments from reaching the worker.
+  The browser now retains that request and displays its retry status while
+  delivering later requests. The new browser regression failed on the baseline
+  with only the first request attempted, then passed all three cases: independent
+  delivery, automatic timed recovery and eventual completion without losing the
+  outbox. HTTP responses are controlled; this is not live explorer evidence.
+- The CI artifact step now explicitly includes hidden files so its `.runtime/`
+  evidence is retained. The [upload action's default](https://github.com/actions/upload-artifact/blob/v4/action.yml)
+  excludes hidden files. The upload remains scoped to the isolated CI output
+  directory; operator configuration is not included. The browser regression is
+  also part of the PR workflow.
+
+Current validation: 434 JavaScript tests and 204 Solidity tests pass with no
+failures or skips; Solidity formatting, three new browser cases, release integrity,
+TypeScript/Vite, both Node-22-based service image builds, Compose configuration,
+workflow parsing and whitespace checks pass. The deployment build identity and
+all nine recorded configuration/profile/artifact hashes remain unchanged.
+Existing Vite chunk-size warnings remain. The owned browser/server exited.
+
+Exact image identities are in [results](results.json). Initial failure
+and final logs are local-only under `.runtime/treasury-final-review-20261022/`.
+Native Composer/follower, real-USDC fork and public-chain acceptance runs were
+not repeated for this browser retry/CI fix; earlier evidence retains its original
+scope. Hosted CI still requires the user's push/PR. No services were restarted,
+no public-chain transactions were sent, and no push or PR was created.
+
+No remaining push/PR blocker was identified in the reviewed paths. The publication
+checks above remain open. In particular, the inherited Chiado factory metadata
+gap affects newly created aliases too; dropping historical backfill does not
+resolve it. Mainnet release still requires independent contract review and the
+real-wallet/Safe-app acceptance.

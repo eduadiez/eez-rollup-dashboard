@@ -13,13 +13,19 @@ export function TreasurySourceVerification() {
       running = true; clearTimeout(timer);
       try {
         const results = [];
+        let deliveryError = '';
         // Delivery is idempotent; the persistent worker continues when this
         // component unmounts. Reopening also retries undelivered journal intents.
         for (const request of sourceRequests(localStorage).filter(r => [Number(BigInt(L1_CHAIN.chainId)), Number(BigInt(L2_CHAIN.chainId))].includes(r.chainId))) {
           if (!alive) return;
-          results.push({ chainId: request.chainId, job: await deliverSourceRequest(request, `${import.meta.env.BASE_URL}treasury-verification/jobs`) });
+          try {
+            results.push({ chainId: request.chainId, job: await deliverSourceRequest(request, `${import.meta.env.BASE_URL}treasury-verification/jobs`) });
+          } catch (e) {
+            // A missing/reorganized receipt must not block unrelated deployments.
+            deliveryError = (e as Error).message;
+          }
         }
-        if (alive) { setJobs(results); setError(''); }
+        if (alive) { setJobs(results); setError(deliveryError); }
       } catch (e) { if (alive) setError((e as Error).message); }
       finally { running = false; if (alive) timer = setTimeout(poll, dirty ? 0 : 15_000); dirty = false; }
     };

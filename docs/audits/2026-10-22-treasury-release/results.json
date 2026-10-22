@@ -39,5 +39,42 @@
   "publicChainTransactions": 0,
   "hostedCI": "not run; manual push pending",
   "liveExplorerAcceptance": "not run",
-  "historicalBackfill": "excluded"
+  "historicalBackfill": "excluded",
+  "finalReview": {
+    "baseline": "b9db5f6147e3218ddf305b80219c7fc7f92d7c2c",
+    "base": "fb6b798249464cea96f41703adeb0f28da262b20",
+    "fixed": [
+      "A failed browser source-verification delivery blocked later requests",
+      "CI artifact collection excluded hidden runtime evidence"
+    ],
+    "javascript": {
+      "passed": 434,
+      "failed": 0,
+      "skipped": 0,
+      "runtime": "Node 26.7.0"
+    },
+    "solidity": {
+      "passed": 204,
+      "failed": 0,
+      "skipped": 0,
+      "foundry": "1.7.1"
+    },
+    "browser": {
+      "cases": 3,
+      "baselineFailureReproduced": true,
+      "transport": "controlled HTTP; no chain or wallet writes"
+    },
+    "releaseIdentityUnchanged": true,
+    "preservedInputs": 9,
+    "imagesBuilt": {
+      "eez-treasury-verification:final-review-20261022": "sha256:e039ec6cd3796d648cb98a0bf0596850363557fe054e0fcccf91aab2959bead4",
+      "eez-rollup-ui:final-review-20261022": "sha256:deaeb5e7737bd4ab009e84f3525170512a69fbed25763a068ec0c7f906a2240b"
+    },
+    "composeAndWorkflowValidated": true,
+    "servicesRestarted": false,
+    "publicChainTransactions": 0,
+    "hostedCI": "not run; manual push/PR pending",
+    "liveExplorerAcceptance": "not run",
+    "evidence": ".runtime/treasury-final-review-20261022/ (local-only)"
+  }
 }

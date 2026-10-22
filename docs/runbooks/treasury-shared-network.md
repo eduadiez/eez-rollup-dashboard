@@ -74,7 +74,8 @@ second terminal; local jobs stay in `.runtime/treasury-verification/jobs`.
 The browser saves verification intent with confirmation and retains an outbox
 before a setup can be replaced. Delivery is immediate, idempotent and retried;
 a handed-off job continues after the browser closes. An undelivered outbox is
-retried when the dashboard is opened again. Publication never adds a transaction
+retried when the dashboard is opened again. One failed delivery keeps its intent
+for retry while later requests continue independently. Publication never adds a transaction
 confirmation or blocks treasury use. The compact **Contract source verification**
 disclosure reports address-specific progress and explorer links.
 

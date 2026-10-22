@@ -43,6 +43,7 @@ jobs:
           node tests/treasury-setup-completion-browser.mjs
           node tests/treasury-mainnet-setup-browser.mjs
           node tests/treasury-faucet-browser.mjs
+          node tests/treasury-verification-browser.mjs
       - name: Frontend and both service images
         run: |
           npm run build
@@ -56,4 +57,5 @@ jobs:
         with:
           name: treasury-checks
           path: .runtime/
+          include-hidden-files: true
           retention-days: 7
