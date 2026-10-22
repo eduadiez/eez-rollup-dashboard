@@ -1,0 +1,12 @@
+{
+  "run": "20261020T130157-_pacc__z",
+  "ruleCapability": false,
+  "ruleControlsHidden": true,
+  "reverseControlAvailable": true,
+  "safeNonce": "3",
+  "balanceL1": "300000000",
+  "balanceL2": "150000000",
+  "spent": "0",
+  "submitted": false,
+  "pageErrors": []
+}

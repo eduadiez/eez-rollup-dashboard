@@ -1,0 +1,69 @@
+{
+  "before": {
+    "containers": [
+      {
+        "name": "/eez-rollup-ui-ui-1",
+        "id": "6ab764a4befc8682bd368484375921ec97588ba4cd2604ebf9fc89d19d51aeb4",
+        "image": "sha256:c346c9392e98f1984b3401d62cc5764da576f94e2b5471ab8ad0e8230fce3b4e",
+        "started": "2026-10-21T11:32:00.038624728Z"
+      },
+      {
+        "name": "/eez-rollup-ui-monitor-1",
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+        "started": "2026-10-18T14:32:01.399302934Z"
+      },
+      {
+        "name": "/eez-node-chiado",
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+        "started": "2026-10-20T17:01:51.373519938Z"
+      },
+      {
+        "name": "/eez-proof-signer-chiado",
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+        "started": "2026-10-20T17:01:45.288733799Z"
+      }
+    ],
+    "runtimeConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71"
+  },
+  "after": {
+    "containers": [
+      {
+        "name": "/eez-rollup-ui-ui-1",
+        "id": "12e9285d81ab6d010c4a00ecb7b2372e792d59fd8164ee8409d6644ab4c82912",
+        "image": "sha256:c234006be4683057679e57f286a62ecebe0d448ac5793868252f27ad3850af15",
+        "started": "2026-10-21T11:47:09.581405932Z"
+      },
+      {
+        "name": "/eez-rollup-ui-monitor-1",
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+        "started": "2026-10-18T14:32:01.399302934Z"
+      },
+      {
+        "name": "/eez-node-chiado",
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+        "started": "2026-10-20T17:01:51.373519938Z"
+      },
+      {
+        "name": "/eez-proof-signer-chiado",
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+        "started": "2026-10-20T17:01:45.288733799Z"
+      }
+    ],
+    "runtimeConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+    "servedAssetsMatch": [
+      "/dashboard/assets/eez-icon-Dd9c4N72.svg",
+      "/dashboard/assets/index-DTaPOkOV.js",
+      "/dashboard/assets/index-DspFixNr.css",
+      "/dashboard/assets/TreasuryDemo-CIGRjRhp.js"
+    ],
+    "uiHealth": "healthy"
+  },
+  "image": "eez-rollup-ui:treasury-inclusion-history-20261021",
+  "onlyUiImageChanged": true
+}

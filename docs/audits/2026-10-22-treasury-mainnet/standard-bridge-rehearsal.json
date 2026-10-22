@@ -1,0 +1,347 @@
+{
+  "run": "20261022T162532-6x12i0y9",
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "mainnetSnapshotSha256": "bdb885590bbee086263328a8ab02fdc196ade917616ff78660697e4b4f4ad253",
+  "cases": [
+    {
+      "amount": "40000000",
+      "block": "275",
+      "contributions": {
+        "fromL1": "0",
+        "fromL2": "40000000"
+      },
+      "destination": "l2",
+      "hash": "0xd3bf7607983b4698a15ac6ee0daa52d013f4378d69a59d0fdaba0989188e13b7",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0x9e8b162537f0db2053288386cd2ed93729aabc4cc6f2e8ead2d11481a8a25522",
+      "source": "l2",
+      "sourceBlock": "55"
+    },
+    {
+      "amount": "110000000",
+      "block": "285",
+      "contributions": {
+        "fromL1": "100000000",
+        "fromL2": "10000000"
+      },
+      "destination": "l1",
+      "hash": "0x70524db3635c3bd696bf1daa239b3213d0e734cc8891027d8593f0d03a83ba28",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0xf99bd97586e8ceb2dd8bd08d75ec1b3bf76b32b58b37a5a59f9bae7d48315c07",
+      "source": "l2",
+      "sourceBlock": "57"
+    },
+    {
+      "hash": "0xbb21f485dd46f643c7bebc85fded188e6f0e21bff260fe8b1c9e7107b6949897",
+      "label": "shared 150 limit rejects with 50 remaining on EEZ-X",
+      "stage": "preparation",
+      "unchanged": true
+    },
+    {
+      "amount": "10000000",
+      "block": "310",
+      "contributions": {
+        "fromL1": "5000000",
+        "fromL2": "5000000"
+      },
+      "destination": "l1",
+      "hash": "0x04df9ce64f17dc26729fd82f4804de2b8e99db101b86661c325359ac446468a7",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0xbfd97313ff1dbe81234f0c699ac029f8fb5c7c8bda2dd866da8576a25c62b377",
+      "source": "l1",
+      "sourceBlock": "62"
+    },
+    {
+      "amount": "10000000",
+      "block": "315",
+      "contributions": {
+        "fromL1": "5000000",
+        "fromL2": "5000000"
+      },
+      "destination": "l2",
+      "hash": "0x0fdac9ebfb2a419296659d579c341ff7b132641485ad522e885be51b5697ad76",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0xd45e85b8d869dc31a03f71e3cb1e1a10d5e613cb80fccaf47e030ae49be5ed7d",
+      "source": "l1",
+      "sourceBlock": "63"
+    },
+    {
+      "amount": "10000000",
+      "block": "320",
+      "contributions": {
+        "fromL1": "5000000",
+        "fromL2": "5000000"
+      },
+      "destination": "l1",
+      "hash": "0x2681986e256283a997cdbe56160b0edd73e856f040cff477e6dbe9772d4e4c02",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0x2c340b9a19a8fcf11c3666ac63afc3d807d0aa358ce7dad1f03e68d40dd4512f",
+      "source": "l2",
+      "sourceBlock": "64"
+    },
+    {
+      "amount": "10000000",
+      "block": "325",
+      "contributions": {
+        "fromL1": "5000000",
+        "fromL2": "5000000"
+      },
+      "destination": "l2",
+      "hash": "0x13d85ac4ce4f3c5be428cf15da100a5199c4daa7db277f3efbe6bb3d5cecd526",
+      "independentReplay": true,
+      "kind": "fixed",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0x2c7162eb349c997af8000278113e93f0b23c26b8fbbc19676d99d401ebbf3f67",
+      "source": "l2",
+      "sourceBlock": "65"
+    },
+    {
+      "amount": "26000000",
+      "block": "330",
+      "contributions": {
+        "fromL1": "0",
+        "fromL2": "26000000",
+        "rule": {
+          "amount": "26000000",
+          "balanceL1": "180000000",
+          "balanceL2": "80000000",
+          "bps": "1000"
+        }
+      },
+      "destination": "l2",
+      "hash": "0x44abef09aa29ad9d706c3df47374ad02a417144258dd139ffc46883ab5b718ab",
+      "independentReplay": true,
+      "kind": "rule",
+      "reloadAndLostHashRecovery": true,
+      "safeHash": "0xc36b4ff6a957fed57354bd8de2afd6099cac4468a52b2b203448fdcc1693dc17",
+      "source": "l2",
+      "sourceBlock": "66"
+    }
+  ],
+  "browser": {
+    "block": "350",
+    "contributions": {
+      "fromL1": "5000000",
+      "fromL2": "5000000"
+    },
+    "hash": "0x168b289a50f73fdd7681a74fdc4a627ea703357d7f890d630e2b10dbf5189ff4",
+    "reloadAndLostResponseRecovery": true,
+    "requests": [
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "wallet_switchEthereumChain"
+      },
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "eth_call"
+      },
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "eth_getBlockByNumber"
+      },
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "eth_signTypedData_v4"
+      },
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "eth_call"
+      },
+      {
+        "chain": "l2",
+        "label": "A",
+        "method": "eth_getBlockByNumber"
+      },
+      {
+        "chain": "l2",
+        "label": "B",
+        "method": "eth_call"
+      },
+      {
+        "chain": "l2",
+        "label": "B",
+        "method": "eth_getBlockByNumber"
+      },
+      {
+        "chain": "l2",
+        "label": "B",
+        "method": "eth_signTypedData_v4"
+      },
+      {
+        "chain": "l2",
+        "label": "B",
+        "method": "eth_call"
+      },
+      {
+        "chain": "l2",
+        "label": "B",
+        "method": "eth_getBlockByNumber"
+      },
+      {
+        "chain": "l1",
+        "label": "B",
+        "method": "wallet_switchEthereumChain"
+      },
+      {
+        "chain": "l1",
+        "label": "B",
+        "method": "eth_call"
+      },
+      {
+        "chain": "l1",
+        "label": "B",
+        "method": "eth_getBlockByNumber"
+      },
+      {
+        "chain": "l1",
+        "label": "B",
+        "method": "eth_sendTransaction"
+      }
+    ],
+    "signingChain": "l2",
+    "singleBroadcast": true,
+    "submissionChain": "l1",
+    "wallet": "Test EIP-1193 provider with genuine fixture signatures and real RPCs"
+  },
+  "rollback": {
+    "after": {
+      "aliasBalance": "0",
+      "allowanceL1": [
+        "100000000",
+        "25000000",
+        "10",
+        "29878110",
+        "6"
+      ],
+      "allowanceL2": [
+        "100000000",
+        "51000000",
+        "10",
+        "29878110",
+        "7"
+      ],
+      "approval": "0",
+      "bridgeApproval": "0",
+      "escrow": "145000000",
+      "executorBalance": "0",
+      "nonceL1": "6",
+      "nonceL2": "8",
+      "policyBalance": "0",
+      "recipientL1": "130000000",
+      "recipientL2": "96000000",
+      "safeL1": "175000000",
+      "safeL2": "49000000",
+      "spent": "76000000",
+      "supply": "145000000"
+    },
+    "before": {
+      "aliasBalance": "0",
+      "allowanceL1": [
+        "100000000",
+        "25000000",
+        "10",
+        "29878110",
+        "6"
+      ],
+      "allowanceL2": [
+        "100000000",
+        "51000000",
+        "10",
+        "29878110",
+        "7"
+      ],
+      "approval": "0",
+      "bridgeApproval": "0",
+      "escrow": "145000000",
+      "executorBalance": "0",
+      "nonceL1": "6",
+      "nonceL2": "8",
+      "policyBalance": "0",
+      "recipientL1": "130000000",
+      "recipientL2": "96000000",
+      "safeL1": "175000000",
+      "safeL2": "49000000",
+      "spent": "76000000",
+      "supply": "145000000"
+    },
+    "blacklistHash": "0x2fde1fad3344424dedbbc4cce827a9d3d5ac64a1d4c09f1fee03e6d3b125bd4c",
+    "block": "0x48",
+    "earlierSuccessfulRelease": true,
+    "hash": "0x008ce74b541c9b7bf746c131c92eb6da72e4083854f1d755e971d2d64dc1a287",
+    "laterBlacklistedTransfer": true,
+    "originalProofAndBlobCommitmentsUnchanged": true,
+    "postHash": "0x7d15deaac9c8eec1223f7d810b344f39d5200ad3c779395737a2c9c1a89ddbfd",
+    "postStatus": "0x1",
+    "sourceStatus": {
+      "blocking": null,
+      "direction": "inbound",
+      "hash": "0x008ce74b541c9b7bf746c131c92eb6da72e4083854f1d755e971d2d64dc1a287",
+      "lifecycle": "terminal",
+      "nonce": 41,
+      "ownerGeneration": 25,
+      "ownership": {
+        "canonical": {
+          "hash": "0x2119a23613744e46a7d422920deb30cda08a421fd8e92f47d74ac7d0a5b67668",
+          "number": 72
+        },
+        "reason": "SourceReverted",
+        "state": "terminal"
+      },
+      "sender": "0x976ea74026e726554db657fa54763abd0c3a0aa9"
+    },
+    "sourceStatusCode": "0x0",
+    "stage": "L1 inclusion"
+  },
+  "standardBridge": {
+    "freshFixtureState": true,
+    "liveBroadcasts": false,
+    "ownerAddRemove": true,
+    "realRuntime": true,
+    "snapshotBlocks": {
+      "l1": {
+        "chainId": 1,
+        "hash": "0x19b353d9daed7351715154c83c08081c760216379328e3c34fa014eee3f02f57",
+        "number": "0x1908697"
+      },
+      "l2": {
+        "chainId": 696990,
+        "hash": "0xcfc07e42aae7f31d77d0360eaa6a91e6df8e113737344704837efc419be17ff1",
+        "number": "0xb5d78"
+      }
+    }
+  },
+  "lastSuccessfulL2Block": 350,
+  "unitTests": 400,
+  "solidityTests": 204,
+  "realUSDCForkTests": 4,
+  "setupNetworkCheck": {
+    "checkedAt": "2026-10-22T16:22:43.458Z",
+    "networkValidation": true,
+    "readOnly": true,
+    "transactions": 0
+  },
+  "localRollout": {
+    "image": "eez-rollup-ui:treasury-standard-bridge-20261022",
+    "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+    "sameRuntimeConfig": true,
+    "otherServicesUnchanged": true
+  }
+}

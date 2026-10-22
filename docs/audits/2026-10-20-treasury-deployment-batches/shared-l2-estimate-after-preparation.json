@@ -1,0 +1,11 @@
+{
+  "scope": "read-only shared EEZ-X estimate with simulated wallet nonce after the two proxy setup calls and synthetic remote addresses; no nonce mutation, signing or broadcast",
+  "chain": 906969,
+  "inputBytes": 47361,
+  "preparation": {
+    "nonce": "0",
+    "calls": 2
+  },
+  "success": true,
+  "gas": "10031066"
+}

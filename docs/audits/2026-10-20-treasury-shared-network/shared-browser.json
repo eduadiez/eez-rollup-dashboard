@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-20T17:15:37.854Z",
+  "owner": "0xcEAF908C05B277E92e89b51B281Ec76305b9A141",
+  "url": "http://127.0.0.1:8080/dashboard",
+  "chains": [
+    10200,
+    906969
+  ],
+  "steps": 31,
+  "hiddenUntilShortcut": true,
+  "realNetworkChecks": true,
+  "wallet": "read-only injected provider; no extension or private key",
+  "zeroL1BalanceDisablesDeployment": true,
+  "noSubmission": true,
+  "reload": true,
+  "mobileWidth": [
+    390,
+    390
+  ],
+  "methods": [
+    "eth_chainId",
+    "eth_getCode",
+    "eth_call",
+    "eth_getBlockByNumber",
+    "eth_getStorageAt",
+    "eth_getBalance"
+  ],
+  "walletMethods": [
+    "eth_requestAccounts",
+    "eth_chainId",
+    "eth_call"
+  ]
+}

@@ -5,6 +5,7 @@ import { registerConfiguredContracts } from "../lib/addressBook";
 import { l1Identity, nativeCurrency } from "../lib/networkIdentity";
 
 type RuntimeConfig = {
+  treasury?: unknown;
   networkName?: string;
   l1NetworkName?: string;
   l1NetworkLogoUrl?: string;
@@ -73,6 +74,7 @@ export function useConfigLoader() {
           const l1ProxyRpc = absoluteUrl(runtime.l1FrontUrl);
           const l2ProxyRpc = absoluteUrl(runtime.l2FrontUrl);
           setConfig({
+            treasury: runtime.treasury ?? null,
             ...(l1NameOverride ? { l1NetworkName: l1NameOverride } : {}),
             ...(runtime.l1NetworkLogoUrl ? { l1NetworkLogoUrl: absoluteUrl(runtime.l1NetworkLogoUrl)! } : {}),
             ...(runtime.l1ExplorerApiUrl ? { l1ExplorerApi: absoluteUrl(runtime.l1ExplorerApiUrl)! } : {}),

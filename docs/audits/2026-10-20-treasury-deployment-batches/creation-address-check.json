@@ -1,0 +1,56 @@
+[
+  {
+    "name": "wallet CREATE nonce 0",
+    "address": "0x4C3D971b1079E58843D0E1af155A2e54b9E54dbA",
+    "bytes": 13932,
+    "codeHash": "0x099cbd1eed1f9186699347c240c56f051475ee3fca6797119ffab4aae3e03b22"
+  },
+  {
+    "name": "wallet CREATE nonce 1",
+    "address": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+    "bytes": 752,
+    "codeHash": "0x88068de4c46d94b72f5d39f17b5407c958ec6920376ff1dd366995f65564372a"
+  },
+  {
+    "name": "wallet CREATE nonce 2",
+    "address": "0x1Ac760d5c985c635C18a3e5D9C5685f1ef2a721E",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "wallet CREATE nonce 3",
+    "address": "0xf586091Dc6d4d1F91d7A70d02A8F0DE13681C14e",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "wallet CREATE nonce 4",
+    "address": "0xb3fb7a12f1CfaA51Fa39246cF17205872cA156d0",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "deterministic deployer",
+    "address": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "singleton factory",
+    "address": "0xce0042B868300000d44A59004Da54A005ffdcf9f",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "Safe singleton factory",
+    "address": "0x914d7Fec6aaC8cd542e72Bca78B30650d45643d7",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  },
+  {
+    "name": "CreateX",
+    "address": "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
+    "bytes": 0,
+    "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+  }
+]

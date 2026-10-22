@@ -1,0 +1,2756 @@
+{
+  "checkedAt": "2026-10-22T17:29:08.157490+00:00",
+  "scope": "Treasury deployments from the dashboard deployment wallet since the first treasury build, shared infrastructure, configured protocol dependencies and proxy implementations. Not every arbitrary contract on either chain.",
+  "dashboardRevision": "0d26cf24d2fa23de31021d1a508f137e24804efd (existing dirty feat/treasury-demo checkout)",
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "safeRevision": "bf943f80fec5ac647159d26161446ac5d716a294",
+  "safeModulesRevision": "c95f03900bff99be090dadb9de1c74b162365485",
+  "summary": {
+    "10200": {
+      "inventoried": 52,
+      "exact": 40,
+      "explorerFull": 11,
+      "explorerPartial": 23,
+      "exactSourcifyRuntime": 34,
+      "partialWithoutExactAlternative": 12,
+      "notVerifiedAnywhere": 0
+    },
+    "906969": {
+      "inventoried": 51,
+      "exact": 46,
+      "explorerFull": 46,
+      "explorerPartial": 0,
+      "exactSourcifyRuntime": 0,
+      "partialWithoutExactAlternative": 0,
+      "notVerifiedAnywhere": 5
+    }
+  },
+  "preserved": {
+    "chainTransactionsBroadcast": 0,
+    "serviceRestarts": 0,
+    "originalExplorerHttpAdapterRestored": true,
+    "operatorEnvUnchanged": true,
+    "browserDeploymentArtifactsUnchanged": true,
+    "sharedNetworkProfileUnchanged": true
+  },
+  "contracts": [
+    {
+      "chain": 10200,
+      "address": "0x95518955399720E275F25EFFd1E1a66AA4CAB5f5",
+      "name": "TestUSDCFaucet",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x95518955399720E275F25EFFd1E1a66AA4CAB5f5?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x217a9ebf60a4fda03eccf0166bc9d7cb702a699c2c78d15ba6154fc3c52b8ea3",
+        "0xec4a976d747dce73cc2490a1196df20320ca2db7eeb88d480997c877e541690d",
+        "0xfb1cfae2cd5f4edb9e8184ee7f0d5d66847173efc9f2991b02735349c6bb1056",
+        "0x921f5fcdea8a84c04937204ecdbf6f69c7a9140b9876da346af60d44432585e7",
+        "0xf59381952947a4b3fd231bb91f49ff398c6f8a10f97f1177f7e8f49682ec3c0a"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x95518955399720E275F25EFFd1E1a66AA4CAB5f5",
+        "verifiedAt": "2026-10-22T17:24:32Z",
+        "matchId": "56726688"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x95518955399720E275F25EFFd1E1a66AA4CAB5f5",
+      "sourcifyJob": "48bb9cf6-9181-4cd1-a68a-4691e51ee7f1",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "eb2da0f32596ed3ca96d2556171b76e3220831bb9eea791900564a6aa5cc4585",
+        "archivePath": "eb2da0f32596ed3ca96d2556171b76e3220831bb9eea791900564a6aa5cc4585.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TestUSDCFaucet.sol:TestUSDCFaucet"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x9A1Eb2d3947aae9F90822Fd272BC8BE3f4E586a3",
+      "name": "GnosisSafeProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x9A1Eb2d3947aae9F90822Fd272BC8BE3f4E586a3?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation"
+      ],
+      "transactions": [
+        "0xe08257ee9ae930dd1e192650eaacd215687b5d74319d6a82186f5b37721cbbd4",
+        "0x9a64f141e43fa3a61096dedf79143845a19a05f31e37cefdd270bc64e9ce47eb",
+        "0x63381ea07652f0881e70fec1871bb8afdba968aa73a3a77fe733b123963fad68"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x9A1Eb2d3947aae9F90822Fd272BC8BE3f4E586a3",
+        "verifiedAt": "2026-10-22T17:24:31Z",
+        "matchId": "56726687"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x9A1Eb2d3947aae9F90822Fd272BC8BE3f4E586a3",
+      "sourcifyJob": "307302ee-9468-4a24-a2a0-28e1e78238c4",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f",
+        "archivePath": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "contracts/proxies/GnosisSafeProxy.sol:GnosisSafeProxy"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x2D82a6e8c28683E8479cc6EeFD3a1A393717C023",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x2D82a6e8c28683E8479cc6EeFD3a1A393717C023?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x74b32701b0e14df1ecec4a6bd5c03e183261ffe7e5a61ecde47eae7757ade9a7",
+        "0x6954bf7d04b41c8c0b13e73a8f8baa455f28c8813afb0ef8c14b1098ab6db8d1"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x2D82a6e8c28683E8479cc6EeFD3a1A393717C023",
+        "verifiedAt": "2026-10-22T17:24:34Z",
+        "matchId": "56726691"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x2D82a6e8c28683E8479cc6EeFD3a1A393717C023",
+      "sourcifyJob": "f1e751c6-aef7-4069-a862-1e5a88f3a5d1",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x1a9925C1DA8d3754248844B84066824bC84306c1",
+      "name": "GnosisSafeProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x1a9925C1DA8d3754248844B84066824bC84306c1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation"
+      ],
+      "transactions": [
+        "0xe538390c01822bc0437c30d609d4bcf6304cdc2968c46132a9d9579a38968998",
+        "0x4c485bb86cf5561180066390512821f6cd8e974f2c42510888546f4f6bff90c5",
+        "0xabe143b16caa1fc4f0c8550e063bae7b742a88a80b98e0c250d93afaf123c449",
+        "0xe13075454aac6b4257a340e20150891a0a2bf8de8669a0673f362da41efe74ec",
+        "0xe7237637431e41657b5de0a90d74719a9a53dd65b801543c8fa2ff72c1e83951",
+        "0x2b30a47184af1398da9235633a41a9b4b8eda4959c067a493c77a4d665e766cf",
+        "0x9ef753881ced7f827a75a9e71fb1a7480052d23555d5b8d25f353d4c39bffe47",
+        "0x213c6078897a4b5575217d8987c09a195530bd07ff3651309b4ef1ad5d1b1a5c"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x1a9925C1DA8d3754248844B84066824bC84306c1",
+        "verifiedAt": "2026-10-22T17:24:33Z",
+        "matchId": "56726690"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x1a9925C1DA8d3754248844B84066824bC84306c1",
+      "sourcifyJob": "efb6eb38-b5fd-4be0-afe8-6227c4ebcef6",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f",
+        "archivePath": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "contracts/proxies/GnosisSafeProxy.sol:GnosisSafeProxy"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2",
+      "name": "GnosisSafeProxyFactory",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target"
+      ],
+      "transactions": [
+        "0x63381ea07652f0881e70fec1871bb8afdba968aa73a3a77fe733b123963fad68",
+        "0x213c6078897a4b5575217d8987c09a195530bd07ff3651309b4ef1ad5d1b1a5c"
+      ],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 10200,
+      "address": "0x5abCc0c3e7074Aa1D08fD0881B9051842d9f88E0",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x5abCc0c3e7074Aa1D08fD0881B9051842d9f88E0?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x69587531c5c9890765a49af21eb327d522101aab41c4baff5a5681ec9fc9403d",
+        "0x53a864860632dd414f410eb95f6f2590b965099b81eeb716663481acd8c8e77a"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x5abCc0c3e7074Aa1D08fD0881B9051842d9f88E0",
+        "verifiedAt": "2026-10-22T17:24:36Z",
+        "matchId": "56726696"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x5abCc0c3e7074Aa1D08fD0881B9051842d9f88E0",
+      "sourcifyJob": "0479def3-2813-4ff8-854e-48e4b602d215",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x8e72a152a34775CF62512aa159b81f63f2B3CE28",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x8e72a152a34775CF62512aa159b81f63f2B3CE28?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation"
+      ],
+      "transactions": [
+        "0xf28e08e421f58ff079478d0c94dfe2893bfecf4870759e1827dae4cadfffbf9a",
+        "0xc5096291b06afce41ca40d09fcd8e1bf0b047168054b6306babf69bf49126763"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x8e72a152a34775CF62512aa159b81f63f2B3CE28",
+        "verifiedAt": "2026-10-22T17:24:36Z",
+        "matchId": "56726695"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x8e72a152a34775CF62512aa159b81f63f2B3CE28",
+      "sourcifyJob": "6f488fde-9f63-4da7-918a-752c72892d67",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x0C059E8AC496ddb9B5a5960b937788189a7A65A1",
+      "name": "GnosisSafeProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x0C059E8AC496ddb9B5a5960b937788189a7A65A1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation"
+      ],
+      "transactions": [
+        "0xb3f74ef85803c8c67bcf0982428c67bab4082391a8ad1355b4e595d4c3b150d2",
+        "0x57a5b515b0253568526cc2c3c504e789696212911b54e9c7c5301796afed2033"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x0C059E8AC496ddb9B5a5960b937788189a7A65A1",
+        "verifiedAt": "2026-10-22T17:24:38Z",
+        "matchId": "56726697"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x0C059E8AC496ddb9B5a5960b937788189a7A65A1",
+      "sourcifyJob": "872679f0-04db-4020-9691-c1fc6243ef3c",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f",
+        "archivePath": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "contracts/proxies/GnosisSafeProxy.sol:GnosisSafeProxy"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x4C1896F31cEFbb8a8894304b610584eEd1685889",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x4C1896F31cEFbb8a8894304b610584eEd1685889?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x95324354d9beef156620a7331bc7d0d1390129b7ce3bd136e04686e057e61b55",
+        "0x57a5b515b0253568526cc2c3c504e789696212911b54e9c7c5301796afed2033"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x4C1896F31cEFbb8a8894304b610584eEd1685889",
+        "verifiedAt": "2026-10-22T17:24:38Z",
+        "matchId": "56726698"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x4C1896F31cEFbb8a8894304b610584eEd1685889",
+      "sourcifyJob": "bbb41af2-c79b-4139-99d7-92570612caf9",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "name": "SharedTestUSDC",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "shared infrastructure",
+        "internal creation"
+      ],
+      "transactions": [
+        "0x509f21971da995a95c610d21c3fd9d43f44022c8be87239090d85fd539fdfc04",
+        "0xecc4a6405b6136a2459506d51af0accb0207416fd526a51ca04693fa636662e6",
+        "0xa6af32d0db3a21e8531910b119164ad242abb6abbfdb0cd85351e387e883ce70"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "6721aead4ca1ac7b8c1d6bd88190f189a609379d5075d92647de16978cb3b1ea",
+        "archivePath": "6721aead4ca1ac7b8c1d6bd88190f189a609379d5075d92647de16978cb3b1ea.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SharedTestUSDC.sol:SharedTestUSDC"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xbA68B572FA651F0bdB1B76A8a5f71a03780B7601",
+      "name": "Safe",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xbA68B572FA651F0bdB1B76A8a5f71a03780B7601?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x25812c884adf25d087a526300cc72b844e61651f77d49504b9cbce0b55be9a40"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xbA68B572FA651F0bdB1B76A8a5f71a03780B7601",
+        "verifiedAt": "2026-10-22T17:24:41Z",
+        "matchId": "56726702"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xbA68B572FA651F0bdB1B76A8a5f71a03780B7601",
+      "sourcifyJob": "3118d4ac-e6cd-42cf-bc24-3bb34ea752f2",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x70B3de61Cf47C02531a762C61DEC874f75931F5f",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x70B3de61Cf47C02531a762C61DEC874f75931F5f?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x70B3de61Cf47C02531a762C61DEC874f75931F5f",
+        "verifiedAt": "2026-10-22T17:24:41Z",
+        "matchId": "56726704"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x70B3de61Cf47C02531a762C61DEC874f75931F5f",
+      "sourcifyJob": "e7227fd6-550a-4f5d-aa74-1535fe5c0b8a",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xcAAbddD19B75C55701A91D9B0C40b949E0F4b9D3",
+      "name": "Safe",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xcAAbddD19B75C55701A91D9B0C40b949E0F4b9D3?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0xa23f04b219055334018418755ec476b6340a1883e3f28cc8ae05a05f693a716c"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xcAAbddD19B75C55701A91D9B0C40b949E0F4b9D3",
+        "verifiedAt": "2026-10-22T17:24:43Z",
+        "matchId": "56726705"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xcAAbddD19B75C55701A91D9B0C40b949E0F4b9D3",
+      "sourcifyJob": "240e3da4-2c33-4b78-8046-e0369aff2ab4",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xAC1725aFa571E49707c51bea9A9b434a88D2C6c0",
+      "name": "Safe",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xAC1725aFa571E49707c51bea9A9b434a88D2C6c0?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x4e5572db6ce0ff8844edd4667434cdbada7d8e23c2c5c510cbcb6d4d8abeef71"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xAC1725aFa571E49707c51bea9A9b434a88D2C6c0",
+        "verifiedAt": "2026-10-22T17:24:43Z",
+        "matchId": "56726706"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xAC1725aFa571E49707c51bea9A9b434a88D2C6c0",
+      "sourcifyJob": "ab0fdcae-4ffb-42b0-83a4-30d3f59b1da8",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x1ceBA37724cD56516d3408830B1610958cF03BD4",
+      "name": "SafeProxyFactory",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x1ceBA37724cD56516d3408830B1610958cF03BD4?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0x928a55b395d5ae46567026a82a782ae8749f04d0ef1a864c18d61c396e42d813"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x1ceBA37724cD56516d3408830B1610958cF03BD4",
+        "verifiedAt": "2026-10-22T17:24:45Z",
+        "matchId": "56726708"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x1ceBA37724cD56516d3408830B1610958cF03BD4",
+      "sourcifyJob": "2ba33ecc-1a43-42ed-9f0b-4828061d74e8",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534",
+        "archivePath": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxyFactory.sol:SafeProxyFactory"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x83025e6B80e8ee793fe2754c9a7341dFb73e91b1",
+      "name": "Safe",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x83025e6B80e8ee793fe2754c9a7341dFb73e91b1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation"
+      ],
+      "transactions": [
+        "0xe06d5595d1ae82f472ce09c3c49249ed0fa680824d1095cd52a7c77e7bc22b2c"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x83025e6B80e8ee793fe2754c9a7341dFb73e91b1",
+        "verifiedAt": "2026-10-22T17:24:45Z",
+        "matchId": "56726709"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x83025e6B80e8ee793fe2754c9a7341dFb73e91b1",
+      "sourcifyJob": "0f48b1e2-b61a-4b03-8f68-6402554f3b28",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x6A7CEFC6202d7B7b3E59aB0e6F20e60e84b5Dd74",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x6A7CEFC6202d7B7b3E59aB0e6F20e60e84b5Dd74?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "shared infrastructure"
+      ],
+      "transactions": [],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x6A7CEFC6202d7B7b3E59aB0e6F20e60e84b5Dd74",
+        "verifiedAt": "2026-10-22T17:24:48Z",
+        "matchId": "56726713"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x6A7CEFC6202d7B7b3E59aB0e6F20e60e84b5Dd74",
+      "sourcifyJob": "87d2d72c-bda7-4a2a-8d3b-1f5add5c46cd",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+      "name": "SharedTreasuryBridge",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "shared infrastructure",
+        "internal creation"
+      ],
+      "transactions": [
+        "0xa6af32d0db3a21e8531910b119164ad242abb6abbfdb0cd85351e387e883ce70"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+        "verifiedAt": "2026-10-22T17:24:51Z",
+        "matchId": "56726715"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+      "sourcifyJob": "0269d9e7-23d9-433a-8e11-8cadd4cba86c",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1",
+        "archivePath": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SharedTreasuryBridge.sol:SharedTreasuryBridge"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x3d193344A22D63AAAB475F894667e4d597e7ABA5",
+      "name": "TestUSDCClaim",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x3d193344A22D63AAAB475F894667e4d597e7ABA5?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x217a9ebf60a4fda03eccf0166bc9d7cb702a699c2c78d15ba6154fc3c52b8ea3"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x3d193344A22D63AAAB475F894667e4d597e7ABA5",
+        "verifiedAt": "2026-10-22T17:24:50Z",
+        "matchId": "56726714"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x3d193344A22D63AAAB475F894667e4d597e7ABA5",
+      "sourcifyJob": "0423bf53-13b2-4a27-b6e6-a768a165e018",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f",
+        "archivePath": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TestUSDCClaim.sol:TestUSDCClaim"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x239B340909877Ff5c167C88E66A0ABE61f24CB90",
+      "name": "TestUSDCClaim",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x239B340909877Ff5c167C88E66A0ABE61f24CB90?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xec4a976d747dce73cc2490a1196df20320ca2db7eeb88d480997c877e541690d"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x239B340909877Ff5c167C88E66A0ABE61f24CB90",
+        "verifiedAt": "2026-10-22T17:24:52Z",
+        "matchId": "56726716"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x239B340909877Ff5c167C88E66A0ABE61f24CB90",
+      "sourcifyJob": "c265f606-877c-4ef2-86d2-b244537f516c",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f",
+        "archivePath": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TestUSDCClaim.sol:TestUSDCClaim"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xC7EA18aa7A4Ae0f57dDD763992B16fF7002913e6",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xC7EA18aa7A4Ae0f57dDD763992B16fF7002913e6?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9a64f141e43fa3a61096dedf79143845a19a05f31e37cefdd270bc64e9ce47eb"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x72D9Bc9Ec08eD793684F1908ab85b7828F9A7e96",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x72D9Bc9Ec08eD793684F1908ab85b7828F9A7e96?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x74b32701b0e14df1ecec4a6bd5c03e183261ffe7e5a61ecde47eae7757ade9a7"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0xd1360452D63c62BA3493646EEAED2C803df0F32A",
+      "name": "TreasuryAliasReader",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xd1360452D63c62BA3493646EEAED2C803df0F32A?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x6954bf7d04b41c8c0b13e73a8f8baa455f28c8813afb0ef8c14b1098ab6db8d1"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xd1360452D63c62BA3493646EEAED2C803df0F32A",
+        "verifiedAt": "2026-10-22T17:24:52Z",
+        "matchId": "56726717"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xd1360452D63c62BA3493646EEAED2C803df0F32A",
+      "sourcifyJob": "42e4f6dc-925a-4f9e-8838-a71d10647cd4",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849",
+        "archivePath": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryAliasReader.sol:TreasuryAliasReader"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xd1CE6610F449C8729b26882933183174B8b96eCb",
+      "name": "AllowanceModule",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xd1CE6610F449C8729b26882933183174B8b96eCb?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x6954bf7d04b41c8c0b13e73a8f8baa455f28c8813afb0ef8c14b1098ab6db8d1"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xd1CE6610F449C8729b26882933183174B8b96eCb",
+        "verifiedAt": "2026-10-22T17:24:54Z",
+        "matchId": "56726718"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xd1CE6610F449C8729b26882933183174B8b96eCb",
+      "sourcifyJob": "b30972f7-e95e-487d-819c-64a008c78e86",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xca99C967ca9724B9cd5d71E7fa73Df90D82239e7",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xca99C967ca9724B9cd5d71E7fa73Df90D82239e7?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xabe143b16caa1fc4f0c8550e063bae7b742a88a80b98e0c250d93afaf123c449"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x6d6ec3429F6C51E7208b1d734c6c66A232E8bDda",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x6d6ec3429F6C51E7208b1d734c6c66A232E8bDda?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x69587531c5c9890765a49af21eb327d522101aab41c4baff5a5681ec9fc9403d"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x3e0FcF2B770524734bc92149FB98FF3A10712bba",
+      "name": "TreasuryAliasReader",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x3e0FcF2B770524734bc92149FB98FF3A10712bba?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x53a864860632dd414f410eb95f6f2590b965099b81eeb716663481acd8c8e77a"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x3e0FcF2B770524734bc92149FB98FF3A10712bba",
+        "verifiedAt": "2026-10-22T17:24:54Z",
+        "matchId": "56726719"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x3e0FcF2B770524734bc92149FB98FF3A10712bba",
+      "sourcifyJob": "59371c40-493c-46b4-886f-2ee706523fd9",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849",
+        "archivePath": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryAliasReader.sol:TreasuryAliasReader"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x4e7a000C1D055f1D59925d557138bccB93eB734A",
+      "name": "AllowanceModule",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x4e7a000C1D055f1D59925d557138bccB93eB734A?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x53a864860632dd414f410eb95f6f2590b965099b81eeb716663481acd8c8e77a"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x4e7a000C1D055f1D59925d557138bccB93eB734A",
+        "verifiedAt": "2026-10-22T17:24:56Z",
+        "matchId": "56726724"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x4e7a000C1D055f1D59925d557138bccB93eB734A",
+      "sourcifyJob": "ca0e5f0f-c235-4766-95fb-eb0b5bb07e80",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x2631CDABDB5A11fbE673c6E53f5c7A19185aA174",
+      "name": "TestUSDCClaim",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x2631CDABDB5A11fbE673c6E53f5c7A19185aA174?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xfb1cfae2cd5f4edb9e8184ee7f0d5d66847173efc9f2991b02735349c6bb1056"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x2631CDABDB5A11fbE673c6E53f5c7A19185aA174",
+        "verifiedAt": "2026-10-22T17:24:57Z",
+        "matchId": "56726725"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x2631CDABDB5A11fbE673c6E53f5c7A19185aA174",
+      "sourcifyJob": "cecc0e96-b036-49fb-b1e8-178a1d9ee402",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f",
+        "archivePath": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TestUSDCClaim.sol:TestUSDCClaim"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x3933F6cBA9938cE7d4931E1eF5e610EBe0e5DA42",
+      "name": "TestUSDCClaim",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x3933F6cBA9938cE7d4931E1eF5e610EBe0e5DA42?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x921f5fcdea8a84c04937204ecdbf6f69c7a9140b9876da346af60d44432585e7"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x3933F6cBA9938cE7d4931E1eF5e610EBe0e5DA42",
+        "verifiedAt": "2026-10-22T17:24:58Z",
+        "matchId": "56726726"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x3933F6cBA9938cE7d4931E1eF5e610EBe0e5DA42",
+      "sourcifyJob": "245898b6-2f9f-495a-aa83-dcc3aab27b6c",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f",
+        "archivePath": "5dff6287b464a5f24551aad5035b34b420827d76cd250f04b6e96d74313ad40f.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TestUSDCClaim.sol:TestUSDCClaim"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x21cdC720110945Bba8A7D09A76bb99af07B5153d",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x21cdC720110945Bba8A7D09A76bb99af07B5153d?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xe13075454aac6b4257a340e20150891a0a2bf8de8669a0673f362da41efe74ec"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0xbEF0Cb8f576382e588c857743F33FF1CBE4d71c1",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xbEF0Cb8f576382e588c857743F33FF1CBE4d71c1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9ef753881ced7f827a75a9e71fb1a7480052d23555d5b8d25f353d4c39bffe47"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x81D9847c441ad76D927ddaBa8E3A03f147D12dcc",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x81D9847c441ad76D927ddaBa8E3A03f147D12dcc?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xf28e08e421f58ff079478d0c94dfe2893bfecf4870759e1827dae4cadfffbf9a"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x173F39AFE703DD25aD85788508AE339D82312D8C",
+      "name": "TreasuryAliasReader",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x173F39AFE703DD25aD85788508AE339D82312D8C?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc5096291b06afce41ca40d09fcd8e1bf0b047168054b6306babf69bf49126763"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x173F39AFE703DD25aD85788508AE339D82312D8C",
+        "verifiedAt": "2026-10-22T17:24:59Z",
+        "matchId": "56726727"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x173F39AFE703DD25aD85788508AE339D82312D8C",
+      "sourcifyJob": "2c162f86-7472-49c2-bc6f-8b5a0d9d630a",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849",
+        "archivePath": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryAliasReader.sol:TreasuryAliasReader"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xDf12AB6792f83f8234732302B198689F9c8fE9Ab",
+      "name": "AllowanceModule",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xDf12AB6792f83f8234732302B198689F9c8fE9Ab?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": true,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc5096291b06afce41ca40d09fcd8e1bf0b047168054b6306babf69bf49126763"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xDf12AB6792f83f8234732302B198689F9c8fE9Ab",
+        "verifiedAt": "2026-10-22T17:28:08Z",
+        "matchId": "56726856"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xDf12AB6792f83f8234732302B198689F9c8fE9Ab",
+      "sourcifyJob": "d093f768-c1c8-4dd9-8851-25e4f6037b9b",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x9Cbbe0E51042E1A5F8b2fA1D927d9D89c1560A31",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x9Cbbe0E51042E1A5F8b2fA1D927d9D89c1560A31?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xb3f74ef85803c8c67bcf0982428c67bab4082391a8ad1355b4e595d4c3b150d2"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x9CD100dBa4E06020CFD18eC60D8533288D96B1A4",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x9CD100dBa4E06020CFD18eC60D8533288D96B1A4?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x95324354d9beef156620a7331bc7d0d1390129b7ce3bd136e04686e057e61b55"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x56F519C477B9231111f0ad2857a8Ea3DEC30C41B",
+      "name": "TreasuryAliasReader",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x56F519C477B9231111f0ad2857a8Ea3DEC30C41B?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x57a5b515b0253568526cc2c3c504e789696212911b54e9c7c5301796afed2033"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x56F519C477B9231111f0ad2857a8Ea3DEC30C41B",
+        "verifiedAt": "2026-10-22T17:20:34Z",
+        "matchId": "56726528"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x56F519C477B9231111f0ad2857a8Ea3DEC30C41B",
+      "sourcifyJob": "ed98a1d3-3c40-406d-922b-62dac15d889a",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849",
+        "archivePath": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryAliasReader.sol:TreasuryAliasReader"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x95C174b78feA4fcc3cf2aD55BC6E147aa2Fb5e84",
+      "name": "AllowanceModule",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x95C174b78feA4fcc3cf2aD55BC6E147aa2Fb5e84?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x57a5b515b0253568526cc2c3c504e789696212911b54e9c7c5301796afed2033"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x95C174b78feA4fcc3cf2aD55BC6E147aa2Fb5e84",
+        "verifiedAt": "2026-10-22T17:25:01Z",
+        "matchId": "56726728"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x95C174b78feA4fcc3cf2aD55BC6E147aa2Fb5e84",
+      "sourcifyJob": "67731f1f-fdf8-4307-be65-ad6a7257f3d9",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x97233d3C7d40C2DFb4b87388533A61DBb0Fe7727",
+      "name": "GnosisSafeProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x97233d3C7d40C2DFb4b87388533A61DBb0Fe7727?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x97233d3C7d40C2DFb4b87388533A61DBb0Fe7727",
+        "verifiedAt": "2026-10-22T17:25:01Z",
+        "matchId": "56726729"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x97233d3C7d40C2DFb4b87388533A61DBb0Fe7727",
+      "sourcifyJob": "9f263708-aef5-4ab6-93c8-a1074b729b3f",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f",
+        "archivePath": "92c75fc674e74eb3cf4478ba9c1ae74c868c8f2ee96fe9e5f7d33aed1af1709f.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "contracts/proxies/GnosisSafeProxy.sol:GnosisSafeProxy"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xfB1290460dC71181305C2B5602c8163c5758660a",
+      "name": "SharedTestUSDC",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xfB1290460dC71181305C2B5602c8163c5758660a?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xfB1290460dC71181305C2B5602c8163c5758660a",
+        "verifiedAt": "2026-10-22T17:25:04Z",
+        "matchId": "56726731"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xfB1290460dC71181305C2B5602c8163c5758660a",
+      "sourcifyJob": "64ec05a0-4cb3-4fa7-bbe7-54ae30b50eb6",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "6721aead4ca1ac7b8c1d6bd88190f189a609379d5075d92647de16978cb3b1ea",
+        "archivePath": "6721aead4ca1ac7b8c1d6bd88190f189a609379d5075d92647de16978cb3b1ea.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SharedTestUSDC.sol:SharedTestUSDC"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x9CfD72aA923C93AfCB481837bA5A32397f808034",
+      "name": "TreasuryAliasReader",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x9CfD72aA923C93AfCB481837bA5A32397f808034?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x9CfD72aA923C93AfCB481837bA5A32397f808034",
+        "verifiedAt": "2026-10-22T17:25:04Z",
+        "matchId": "56726730"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x9CfD72aA923C93AfCB481837bA5A32397f808034",
+      "sourcifyJob": "4b6c517f-d030-455d-9e11-10b23cd3ed39",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849",
+        "archivePath": "3306ff8d0281d55557b8262f812c83d7d5a8ed7dd51ed14d5256c3a2d0324849.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryAliasReader.sol:TreasuryAliasReader"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xaEbc8A361D9927eC0cE211F927681FB942D6a43B",
+      "name": "SharedTreasuryBridge",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xaEbc8A361D9927eC0cE211F927681FB942D6a43B?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0xaEbc8A361D9927eC0cE211F927681FB942D6a43B",
+        "verifiedAt": "2026-10-22T17:25:12Z",
+        "matchId": "56726748"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0xaEbc8A361D9927eC0cE211F927681FB942D6a43B",
+      "sourcifyJob": "ce28db19-ff5c-4a68-9005-dffeb63ce6a3",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1",
+        "archivePath": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SharedTreasuryBridge.sol:SharedTreasuryBridge"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0x4952437485a6bB8D410456cc2B4A620dF6EbF22d",
+      "name": "AllowanceModule",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x4952437485a6bB8D410456cc2B4A620dF6EbF22d?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x04b0dc35cb418722b9bf25c8b4c460de141179ba6cde6ec7e1016b2bd675ce22"
+      ],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": null,
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x4952437485a6bB8D410456cc2B4A620dF6EbF22d",
+        "verifiedAt": "2026-10-22T17:25:06Z",
+        "matchId": "56726743"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x4952437485a6bB8D410456cc2B4A620dF6EbF22d",
+      "sourcifyJob": "e1866a7f-feff-4964-89b6-1147c89461e3",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xd058Bcb97bCE0f47a2715ed81F97ddD42fB046c8",
+      "name": "CrossChainProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xd058Bcb97bCE0f47a2715ed81F97ddD42fB046c8?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x62c5a9e34410c840f7e9ef1ffd6c1f83e53dcada7da4c50924a89ecf7fd3613f"
+      ],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x3c81284dae576d5152c9ca290668537618c44e5e",
+      "name": "EEZProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x3c81284dae576d5152c9ca290668537618c44e5e?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "dashboard protocol infrastructure",
+        "pinned protocol proxy"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 10200,
+      "address": "0xb689a06680e7a4ab689fb536b853a2685586a9b7",
+      "name": "ECDSAProofSystem",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xb689a06680e7a4ab689fb536b853a2685586a9b7?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "dashboard protocol infrastructure"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 10200,
+      "address": "0x049cc99c3875bd9b6eb997a9d551445c090a839c",
+      "name": "TransparentUpgradeableProxy",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x049cc99c3875bd9b6eb997a9d551445c090a839c?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": true,
+      "discovery": [
+        "dashboard protocol infrastructure"
+      ],
+      "transactions": [],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x334B80D36D2f4242d8C24D896C563D17f290155d",
+      "name": "Bridge",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x334B80D36D2f4242d8C24D896C563D17f290155d?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "dashboard protocol infrastructure"
+      ],
+      "transactions": [],
+      "sourcify": {
+        "match": "exact_match",
+        "creationMatch": "exact_match",
+        "runtimeMatch": "exact_match",
+        "chainId": "10200",
+        "address": "0x334B80D36D2f4242d8C24D896C563D17f290155d",
+        "verifiedAt": "2026-10-22T17:25:11Z",
+        "matchId": "56726747"
+      },
+      "sourcifyUrl": "https://repo.sourcify.dev/10200/0x334B80D36D2f4242d8C24D896C563D17f290155d",
+      "sourcifyJob": "635fa644-8677-483a-b9d2-1b4be1e0d391",
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "33714c8be6b3b965aa9782e5c5b5c3ac54c03a6a781ceb3b04352b049f2874b2",
+        "archivePath": "33714c8be6b3b965aa9782e5c5b5c3ac54c03a6a781ceb3b04352b049f2874b2.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/periphery/Bridge.sol:Bridge"
+      }
+    },
+    {
+      "chain": 10200,
+      "address": "0xCf0d5aD1f69441bCab46644100c02F76fc23Cd10",
+      "name": "EEZ",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0xCf0d5aD1f69441bCab46644100c02F76fc23Cd10?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": true,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": true,
+      "discovery": [
+        "pinned protocol implementation"
+      ],
+      "transactions": [],
+      "result": "explorer-partial",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 10200,
+      "address": "0x3E5c63644E683549055b9Be8653de26E0B4CD36E",
+      "name": "GnosisSafeL2",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x3E5c63644E683549055b9Be8653de26E0B4CD36E?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "proxy implementation of 0x9A1Eb2d3947aae9F90822Fd272BC8BE3f4E586a3"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 10200,
+      "address": "0x7bE8814Dc24d194844176E092cffED0976296c15",
+      "name": "Rollup",
+      "explorer": "https://gnosis-chiado.blockscout.com/address/0x7bE8814Dc24d194844176E092cffED0976296c15?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "proxy implementation of 0x049cc99c3875bd9b6eb997a9d551445c090a839c"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 906969,
+      "address": "0x68B338bF6EdCE9B8956F6A3e1A2a2935da1434E4",
+      "name": "SafeProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x68B338bF6EdCE9B8956F6A3e1A2a2935da1434E4?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae",
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632",
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce",
+        "archivePath": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxy.sol:SafeProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xe2C8Cc3f7ECCa10a1F2edEa343bA473e1CD8e02D",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xe2C8Cc3f7ECCa10a1F2edEa343bA473e1CD8e02D?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation",
+        "internal creation",
+        "transaction log",
+        "receipt creation"
+      ],
+      "transactions": [
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696",
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x52C6123c45aBD200C44b8067483CA9E0221C81fF",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x52C6123c45aBD200C44b8067483CA9E0221C81fF?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation",
+        "internal creation",
+        "transaction log",
+        "receipt creation"
+      ],
+      "transactions": [
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a",
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x24C2eE9e3292AC95517bf4851C7c4b17d8b33791",
+      "name": "SafeProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x24C2eE9e3292AC95517bf4851C7c4b17d8b33791?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x56a99f8dcc03d7ad6a30152a22941efb48a73d9186a9e5aabb22381f0719c073",
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586",
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce",
+        "archivePath": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxy.sol:SafeProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x152d95aFC22640AC25F2C780FCDdAf5e1a5c5ADe",
+      "name": "SplitTreasuryPolicyUpgrade",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x152d95aFC22640AC25F2C780FCDdAf5e1a5c5ADe?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet creation",
+        "internal creation",
+        "transaction log",
+        "receipt creation"
+      ],
+      "transactions": [
+        "0x5805b26c464f3d440f72bfd3ef9a20a9406bc88fe22796149e072bb151b98035",
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x56a99f8dcc03d7ad6a30152a22941efb48a73d9186a9e5aabb22381f0719c073"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "a982fef082a04ad9f855d22591af680f1c014d037b8b9528db0a52a5da3dc6c9",
+        "archivePath": "a982fef082a04ad9f855d22591af680f1c014d037b8b9528db0a52a5da3dc6c9.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SplitTreasuryPolicyUpgrade.sol:SplitTreasuryPolicyUpgrade"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x614C3ac3bc46B5e841428B57E6E507d48aa69C63",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x614C3ac3bc46B5e841428B57E6E507d48aa69C63?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation",
+        "internal creation",
+        "transaction log",
+        "receipt creation"
+      ],
+      "transactions": [
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db",
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xee25F15A73886C3B45D25Fe5bbc5e84E7B99D900",
+      "name": "SafeProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xee25F15A73886C3B45D25Fe5bbc5e84E7B99D900?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7",
+        "0xe10e3aa400453e5496424c398b99a570de08b3512d025edf94839c658703f7d7",
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c",
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce",
+        "archivePath": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxy.sol:SafeProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xc0764095971449a977B6C05fE4472aBE7283E9CE",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xc0764095971449a977B6C05fE4472aBE7283E9CE?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "wallet target",
+        "wallet creation",
+        "internal creation",
+        "transaction log",
+        "receipt creation"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af",
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x95499436f16c1f6BD42711168e43fE7584AE7Ed3",
+      "name": "TreasuryBootstrap",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x95499436f16c1f6BD42711168e43fE7584AE7Ed3?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "shared infrastructure",
+        "internal creation",
+        "receipt creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0xc5ffb4a76e1bb19c417fb38ddf2a88ed14933e177e8a541df093daf05c074e1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b",
+        "archivePath": "676bdf0164d7aa205bce7477a96f911d3f39cecdd8563658face7d827e7eb12b.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryBootstrap.sol:TreasuryBootstrap"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x976BF7AEB2b24291970965C8035687a1926a0B35",
+      "name": "SharedTreasuryBridge",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x976BF7AEB2b24291970965C8035687a1926a0B35?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "shared infrastructure",
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0xc5ffb4a76e1bb19c417fb38ddf2a88ed14933e177e8a541df093daf05c074e1a",
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae",
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1",
+        "archivePath": "5852e42f8dc9d3dc7f4ddea36f7e9333a89d279100723020b9f122b9961d25c1.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SharedTreasuryBridge.sol:SharedTreasuryBridge"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32",
+      "name": "WrappedToken",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "shared infrastructure",
+        "transaction log"
+      ],
+      "transactions": [
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae",
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "b805a3a396d0168c95e437a3dea4eeaa29cba4d00c8c073fbc1332dd0080fb26",
+        "archivePath": "b805a3a396d0168c95e437a3dea4eeaa29cba4d00c8c073fbc1332dd0080fb26.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "lib/eez-core-protocol/src/periphery/WrappedToken.sol:WrappedToken"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xA6648d685f7f71ECB9e1F936AdA3D4f45c092c58",
+      "name": "AllowanceModule",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xA6648d685f7f71ECB9e1F936AdA3D4f45c092c58?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696",
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x2bEed6DC9c639d4Fd823ddD007837f6263ecCEb6",
+      "name": "SplitTreasuryPolicy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x2bEed6DC9c639d4Fd823ddD007837f6263ecCEb6?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696",
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "cfeac3b09899dac17083c715b09b26053f74fb5e36b9acf18eff3a7775c4e9e2",
+        "archivePath": "cfeac3b09899dac17083c715b09b26053f74fb5e36b9acf18eff3a7775c4e9e2.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SplitTreasuryPolicy.sol:SplitTreasuryPolicy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x4d5ED61d7AB17C188e3E5AD6f1FcAF44B19550C9",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x4d5ED61d7AB17C188e3E5AD6f1FcAF44B19550C9?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x836fEB6f7202160173e286912E39Ff356E44d43B",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x836fEB6f7202160173e286912E39Ff356E44d43B?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xe49864B98889aB2F1f1B581B544167135ccFa1BF",
+      "name": "Safe",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xe49864B98889aB2F1f1B581B544167135ccFa1BF?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x086F22575b87ee2F62E9a1747882600eed734286",
+      "name": "SafeProxyFactory",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x086F22575b87ee2F62E9a1747882600eed734286?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534",
+        "archivePath": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxyFactory.sol:SafeProxyFactory"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x6E89319E845Bc4623e0E8312740E8037CA904cE2",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x6E89319E845Bc4623e0E8312740E8037CA904cE2?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xa1976bfd72aC7eb03E0AB3dF2382FE26ED836ea4",
+      "name": "L1Owners",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xa1976bfd72aC7eb03E0AB3dF2382FE26ED836ea4?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "not-verified",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 906969,
+      "address": "0x3BF85084570A19b052Bdde00D9F539832ee6135F",
+      "name": "MultiSendCallOnly",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x3BF85084570A19b052Bdde00D9F539832ee6135F?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675",
+        "archivePath": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/libraries/MultiSendCallOnly.sol:MultiSendCallOnly"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x8759eE6986BEf55F7d34b4A623fB7FBB2132e6c4",
+      "name": "AllowanceModule",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x8759eE6986BEf55F7d34b4A623fB7FBB2132e6c4?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x1e2c542703719787A06b6400D46041F37b592391",
+      "name": "SplitTreasuryPolicy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x1e2c542703719787A06b6400D46041F37b592391?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "cfeac3b09899dac17083c715b09b26053f74fb5e36b9acf18eff3a7775c4e9e2",
+        "archivePath": "cfeac3b09899dac17083c715b09b26053f74fb5e36b9acf18eff3a7775c4e9e2.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/SplitTreasuryPolicy.sol:SplitTreasuryPolicy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xbea17096b909C664Ff1bEe01446566d9f4426EE1",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xbea17096b909C664Ff1bEe01446566d9f4426EE1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x03f1f186FD15ed45BaB40d6c0952c797a9aC724c",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x03f1f186FD15ed45BaB40d6c0952c797a9aC724c?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x290456cF86c5A8F4FD78803505Ce1494C59b01ac",
+      "name": "Safe",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x290456cF86c5A8F4FD78803505Ce1494C59b01ac?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x784093bA6A929Cc32Ff3669Ede98b604e81e2728",
+      "name": "SafeProxyFactory",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x784093bA6A929Cc32Ff3669Ede98b604e81e2728?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534",
+        "archivePath": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxyFactory.sol:SafeProxyFactory"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x3D9723aEcBaC6f99a92FC2827f6161388C59A101",
+      "name": "L1Owners",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x3D9723aEcBaC6f99a92FC2827f6161388C59A101?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df"
+      ],
+      "result": "not-verified",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 906969,
+      "address": "0x46Ec46704cAB3979dA9e64f258c2B4AB907cC58E",
+      "name": "SafeProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x46Ec46704cAB3979dA9e64f258c2B4AB907cC58E?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df",
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce",
+        "archivePath": "95a14d644b6ea6ce8cee0e7eac5d44cd18465d7419453e020199dde02c5407ce.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxy.sol:SafeProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x2DF7480017939dfA796dE8647E1E5e58e84837D9",
+      "name": "MultiSendCallOnly",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x2DF7480017939dfA796dE8647E1E5e58e84837D9?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x66e5999720c1a1e879a90371cf6cd856fb39b08aecc893eaedb7605dcff8e1df"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675",
+        "archivePath": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/libraries/MultiSendCallOnly.sol:MultiSendCallOnly"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x91365F75C663ac4227BBa2b6039c8b0b5657522c",
+      "name": "AllowanceModule",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x91365F75C663ac4227BBa2b6039c8b0b5657522c?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db",
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x56a99f8dcc03d7ad6a30152a22941efb48a73d9186a9e5aabb22381f0719c073"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xb30D777f4E2276156f9b0Da162ac809827e0f1e3",
+      "name": "BidirectionalTreasuryPolicy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xb30D777f4E2276156f9b0Da162ac809827e0f1e3?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db"
+      ],
+      "result": "not-verified",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 906969,
+      "address": "0x2EE068080f277D335690DeB9db665Db0d2467164",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x2EE068080f277D335690DeB9db665Db0d2467164?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x671b42D4bFd3070A451dd55d2513cEec523e093E",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x671b42D4bFd3070A451dd55d2513cEec523e093E?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x1beBF5a676E6366B415875e45f9Ec542fB4b0Dc8",
+      "name": "Safe",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x1beBF5a676E6366B415875e45f9Ec542fB4b0Dc8?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x70551CF3f18D123AFF7929De23254cd290cb8fb1",
+      "name": "SafeProxyFactory",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x70551CF3f18D123AFF7929De23254cd290cb8fb1?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534",
+        "archivePath": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxyFactory.sol:SafeProxyFactory"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x1036f2E33c4e6D110f13FAd9E1fFD2D6c056B71d",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x1036f2E33c4e6D110f13FAd9E1fFD2D6c056B71d?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x565E188A2c0DDbB7C9810b891a0e141f7B78783b",
+      "name": "L1Owners",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x565E188A2c0DDbB7C9810b891a0e141f7B78783b?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "not-verified",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 906969,
+      "address": "0x0256d3D4cA39ab7DE3B14fd8474158CfcD28bdaD",
+      "name": "MultiSendCallOnly",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x0256d3D4cA39ab7DE3B14fd8474158CfcD28bdaD?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675",
+        "archivePath": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/libraries/MultiSendCallOnly.sol:MultiSendCallOnly"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x47deb98E9c523B6020B14B98febe7C9a3bA7c539",
+      "name": "AllowanceModule",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x47deb98E9c523B6020B14B98febe7C9a3bA7c539?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af",
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e",
+        "archivePath": "12701d3dc38ece71c516bdd8e52a06a2675a6ebc248c2b1878aabf2952aab16e.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe-modules/modules/allowances/contracts/AllowanceModule.sol:AllowanceModule"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x4e2761D87aa63d2ffd813c2BCa6FDFD46Ad82Adc",
+      "name": "TreasuryPolicy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x4e2761D87aa63d2ffd813c2BCa6FDFD46Ad82Adc?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af",
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7",
+        "0xe10e3aa400453e5496424c398b99a570de08b3512d025edf94839c658703f7d7"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "1267ffd56cd7c28cf40a04d3084e419e612bcda16587c7b96da8bc992c3db371",
+        "archivePath": "1267ffd56cd7c28cf40a04d3084e419e612bcda16587c7b96da8bc992c3db371.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/TreasuryPolicy.sol:TreasuryPolicy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x8Dc8c7279e5B63d68E6D2d74Cb239E0277CF599a",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x8Dc8c7279e5B63d68E6D2d74Cb239E0277CF599a?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xe29c762f2110a74d57395dfefdD50c012c98180f",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xe29c762f2110a74d57395dfefdD50c012c98180f?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x19Df23B5EAd6D4008F4C2A8Ea3b11c33d0952721",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x19Df23B5EAd6D4008F4C2A8Ea3b11c33d0952721?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xcCfCd8dA764d2AC1e7eb822C2aD7a36d94909FcB",
+      "name": "Safe",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xcCfCd8dA764d2AC1e7eb822C2aD7a36d94909FcB?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026",
+        "archivePath": "f3838dd7b65928fbb2b6a8b2dae8eb66e334179b76b983182783a088b8894026.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/Safe.sol:Safe"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xD959962c1D0A3C557Ea10A5969DF0c8f4C2F966f",
+      "name": "SafeProxyFactory",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xD959962c1D0A3C557Ea10A5969DF0c8f4C2F966f?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation",
+        "transaction log"
+      ],
+      "transactions": [
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534",
+        "archivePath": "081559312ef13b66781e467f0fb27740aa53ce357756287fc5de9ea16edcb534.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/proxies/SafeProxyFactory.sol:SafeProxyFactory"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0xA77628364fE0E370d0DE5C3F090718564Ed30E1F",
+      "name": "CrossChainProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xA77628364fE0E370d0DE5C3F090718564Ed30E1F?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce",
+        "archivePath": "42e24dbbb8b6ebf6ccbf6a87d675408499621f622b14f011069393dda29c97ce.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/base/CrossChainProxy.sol:CrossChainProxy"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x579BBaF443691C2E4c197E9688f05F7F350A8DaB",
+      "name": "L1Owners",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x579BBaF443691C2E4c197E9688f05F7F350A8DaB?tab=contract",
+      "explorerVerified": false,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "not-verified",
+      "remaining": "Original compiler metadata not reproduced from available sources; no approximate-source submission authorized."
+    },
+    {
+      "chain": 906969,
+      "address": "0xAc09D947447b771B3B1Fc47E4f91F5719bab8957",
+      "name": "MultiSendCallOnly",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0xAc09D947447b771B3B1Fc47E4f91F5719bab8957?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "internal creation"
+      ],
+      "transactions": [
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675",
+        "archivePath": "1c24b2e6d1e63ebdc68d432c3bbfbaccc4b737ffdd4b223af8cca050594d0675.json",
+        "compiler": "0.7.6+commit.7338295f",
+        "contract": "../lib/safe/contracts/libraries/MultiSendCallOnly.sol:MultiSendCallOnly"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x4b2760f84b83d6b3829e30a7573b0172b6d6402c",
+      "name": "EEZProxy",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x4b2760f84b83d6b3829e30a7573b0172b6d6402c?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "transaction log",
+        "dashboard protocol infrastructure",
+        "pinned protocol proxy"
+      ],
+      "transactions": [
+        "0xeb307bbbeb489533c0b65137a621309c1d77c0e9ed3723135c9f830dc2da6fae",
+        "0x404f2f5a39f5923d1d453be3ba0997d8aad1ef497d1581bf0e1a199385c62696",
+        "0xc99154928874ae212322f3ae195337e01e6b7c3e80ffff56740eb658aa1a5632",
+        "0x9462443ec97e6926b5e4360593b90f99befbffb55c8e2e53e063836deb7e9b1a",
+        "0x7bb00bb5b2b94ac36e1af5eb442bdf6c5a092790959612b25602a607570f83ba",
+        "0x36cf082d75b41b4ecf0b523302fce490a04c1237c32dffd8abf2e1b119b7e2db",
+        "0x9b45d44d22c4555057561dee5d6f5e1afc565575a75a7f2c6b82580185232586",
+        "0x620e8d888580d8c4f2a55e9e9fe1dc975c5e0c754d26b8e3fc32a62e1477f8f7",
+        "0xe10e3aa400453e5496424c398b99a570de08b3512d025edf94839c658703f7d7",
+        "0x59fb3d3cbeed1f4e6e4b4fd3000bb8cabafe5f8c62738e0388b82136f34ef2af",
+        "0x955ce1802da89b2586b1ea8d9c777c20bf9b66206c7fe15466757a4eac71723c"
+      ],
+      "result": "exact",
+      "remaining": null
+    },
+    {
+      "chain": 906969,
+      "address": "0x334B80D36D2f4242d8C24D896C563D17f290155d",
+      "name": "Bridge",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x334B80D36D2f4242d8C24D896C563D17f290155d?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": false,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "dashboard protocol infrastructure"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "verificationInput": {
+        "sha256": "33714c8be6b3b965aa9782e5c5b5c3ac54c03a6a781ceb3b04352b049f2874b2",
+        "archivePath": "33714c8be6b3b965aa9782e5c5b5c3ac54c03a6a781ceb3b04352b049f2874b2.json",
+        "compiler": "0.8.34+commit.80d5c536",
+        "contract": "src/periphery/Bridge.sol:Bridge"
+      }
+    },
+    {
+      "chain": 906969,
+      "address": "0x42Ba74B1247B2B8442CEB33727c18170d3e4cb5f",
+      "name": "EEZL2",
+      "explorer": "https://eez.asuscomm.com/explorer/address/0x42Ba74B1247B2B8442CEB33727c18170d3e4cb5f?tab=contract",
+      "explorerVerified": true,
+      "explorerPartial": false,
+      "explorerVerifiedBefore": true,
+      "explorerPartialBefore": false,
+      "discovery": [
+        "pinned protocol implementation"
+      ],
+      "transactions": [],
+      "result": "exact",
+      "remaining": null
+    }
+  ]
+}

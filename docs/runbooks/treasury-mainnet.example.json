@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "environment": "ethereum-mainnet",
+  "instance": "REPLACE_UNIQUE_32_BYTE_INSTANCE_HASH",
+  "l1": {
+    "chainId": 1,
+    "rpc": "https://YOUR_DASHBOARD/rpc/l1",
+    "front": "https://YOUR_DASHBOARD/composer/l1",
+    "checkpoint": {
+      "number": "REPLACE_ETHEREUM_CHECKPOINT_NUMBER",
+      "hash": "REPLACE_ETHEREUM_CHECKPOINT_HASH"
+    },
+    "explorer": "https://etherscan.io"
+  },
+  "l2": {
+    "chainId": "REPLACE_EEZ_MAINNET_CHAIN_ID",
+    "rpc": "https://YOUR_DASHBOARD/rpc/l2",
+    "front": "https://YOUR_DASHBOARD/composer/l2",
+    "checkpoint": {
+      "number": "REPLACE_EEZ_CHECKPOINT_NUMBER",
+      "hash": "REPLACE_EEZ_CHECKPOINT_HASH"
+    },
+    "explorer": "https://YOUR_EEZ_EXPLORER"
+  },
+  "fees": {
+    "maxTotalWei": "REPLACE_REVIEWED_EEZ_FEE_CAP_WEI",
+    "l1MaxTotalWei": "REPLACE_REVIEWED_ETHEREUM_FEE_CAP_WEI"
+  },
+  "safeImplementations": {
+    "l1": "REPLACE_ETHEREUM_SAFE_IMPLEMENTATION",
+    "l2": "REPLACE_EEZ_SAFE_IMPLEMENTATION"
+  },
+  "protocol": [
+    {
+      "chain": "l1",
+      "proxy": "REPLACE_REGISTRY",
+      "implementation": "REPLACE_L1_PROTOCOL_IMPLEMENTATION"
+    },
+    {
+      "chain": "l2",
+      "proxy": "REPLACE_MANAGER",
+      "implementation": "REPLACE_L2_PROTOCOL_IMPLEMENTATION"
+    }
+  ],
+  "mainnet": {
+    "rollupId": "REPLACE_EEZ_ROLLUP_ID",
+    "usdcImplementation": "REPLACE_REVIEWED_USDC_IMPLEMENTATION",
+    "bridgeImplementations": {
+      "l1": {
+        "kind": "immutable"
+      },
+      "l2": {
+        "kind": "immutable"
+      }
+    }
+  },
+  "registry": "REPLACE_REGISTRY",
+  "manager": "REPLACE_MANAGER",
+  "safeL1": "REPLACE_SAFEL1",
+  "safeL2": "REPLACE_SAFEL2",
+  "adapter": "REPLACE_ADAPTER",
+  "ownerLabels": {},
+  "safeAppUrl": "https://app.safe.global/home?safe=eth:REPLACE_SAFEL1",
+  "payments": {
+    "policy": "REPLACE_POLICY",
+    "alias": "REPLACE_ALIAS",
+    "tokenL2": "REPLACE_TOKENL2",
+    "moduleL1": "REPLACE_MODULEL1",
+    "moduleL2": "REPLACE_MODULEL2",
+    "bridgeL1": "REPLACE_BRIDGEL1",
+    "bridgeL2": "REPLACE_BRIDGEL2",
+    "aliasReaderL1": "REPLACE_ALIASREADERL1",
+    "recipient": "REPLACE_RECIPIENT",
+    "tokenL1": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "assetLabel": "USDC",
+    "decimals": 6,
+    "period": 600,
+    "globalLimit": "150000000",
+    "combinedL2": true,
+    "l1Initiation": true,
+    "exactSplits": true,
+    "percentageRules": true,
+    "bridgeKind": "standard",
+    "safeL2Alias": "REPLACE_MIRROR_SAFE_L1_ALIAS",
+    "bridgeExecutorL1": "REPLACE_STANDARD_BRIDGE_FUNDING_DELEGATE"
+  },
+  "code": [
+    {
+      "chain": "l1",
+      "address": "REPLACE_REGISTRY",
+      "hash": "REPLACE_REGISTRY_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_SAFEL1",
+      "hash": "REPLACE_SAFEL1_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_ETHEREUM_SAFE_IMPLEMENTATION",
+      "hash": "REPLACE_ETHEREUM_SAFE_IMPLEMENTATION_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_L1_PROTOCOL_IMPLEMENTATION",
+      "hash": "REPLACE_L1_PROTOCOL_IMPLEMENTATION_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_ALIAS",
+      "hash": "REPLACE_ALIAS_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_MODULEL1",
+      "hash": "REPLACE_MODULEL1_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_BRIDGEL1",
+      "hash": "REPLACE_BRIDGEL1_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_ALIASREADERL1",
+      "hash": "REPLACE_ALIASREADERL1_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_REVIEWED_USDC_IMPLEMENTATION",
+      "hash": "REPLACE_REVIEWED_USDC_IMPLEMENTATION_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_MANAGER",
+      "hash": "REPLACE_MANAGER_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_SAFEL2",
+      "hash": "REPLACE_SAFEL2_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_ADAPTER",
+      "hash": "REPLACE_ADAPTER_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_EEZ_SAFE_IMPLEMENTATION",
+      "hash": "REPLACE_EEZ_SAFE_IMPLEMENTATION_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_L2_PROTOCOL_IMPLEMENTATION",
+      "hash": "REPLACE_L2_PROTOCOL_IMPLEMENTATION_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_POLICY",
+      "hash": "REPLACE_POLICY_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_MODULEL2",
+      "hash": "REPLACE_MODULEL2_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_BRIDGEL2",
+      "hash": "REPLACE_BRIDGEL2_RUNTIME_HASH"
+    },
+    {
+      "chain": "l2",
+      "address": "REPLACE_TOKENL2",
+      "hash": "REPLACE_TOKENL2_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "hash": "REPLACE_USDC_PROXY_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_MIRROR_SAFE_L1_ALIAS",
+      "hash": "REPLACE_MIRROR_SAFE_ALIAS_RUNTIME_HASH"
+    },
+    {
+      "chain": "l1",
+      "address": "REPLACE_STANDARD_BRIDGE_FUNDING_DELEGATE",
+      "hash": "REPLACE_EXECUTOR_RUNTIME_HASH"
+    }
+  ]
+}

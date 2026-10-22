@@ -1,0 +1,137 @@
+{
+  "postHash": "0x496731bc4527b96b8c120deb5c82f4d37c852847df5680ad6acbae057c277b99",
+  "block": "39",
+  "postStatus": "0x1",
+  "sourceTransaction": "0xd7937722363fa5eddfe58bb13932d89b80c1308a3d245d8c4438417615a37f72",
+  "events": [
+    {
+      "event": "L2ExecutionPerformed",
+      "args": {
+        "rollupId": "1",
+        "newRoot": "0x19a9e39716590ecc78229637760b5d51380e659a9175533dbcd4ea9b52539f22",
+        "etherBalance": "0"
+      }
+    },
+    {
+      "event": "EntryExecuted",
+      "args": {
+        "entryIndex": "0",
+        "rollingHash": "0x3795ff9ab27788c4be8ccb6c8b5c395ce9b654bd4cab4a49d07188c4da1f1fb5"
+      }
+    },
+    {
+      "event": "L2TxSkipped",
+      "args": {
+        "entryIndex": "1",
+        "revertData": "0xf3a3b67c"
+      }
+    },
+    {
+      "event": "BatchPosted",
+      "args": {
+        "sharedPublicInput": "0x2a52650144e3dad3600c0ca32e6a21cd0b2c0055d483847a28c561c1d24786b8",
+        "rollupIds": [
+          "1"
+        ]
+      }
+    }
+  ],
+  "calls": [
+    {
+      "step": "transfer",
+      "depth": 6,
+      "from": "0x8476fc408b2df4d03e9705fc2768d9179b62800c",
+      "to": "0x591b594f01ae53bff6fb44c5da0a16a62c2f3f6c",
+      "input": "0xa9059cbb00000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000000989680",
+      "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "error": null
+    },
+    {
+      "step": "transfer",
+      "depth": 8,
+      "from": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+      "to": "0x591b594f01ae53bff6fb44c5da0a16a62c2f3f6c",
+      "input": "0xa9059cbb00000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000005f5e100",
+      "output": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "error": null
+    },
+    {
+      "step": "merchant rejection",
+      "depth": 5,
+      "from": "0xc1945ee003cfcedb5f284ac08111e94391c98cb3",
+      "to": "0x973adb9de34c974c3a421a870203c5be9059e9fa",
+      "error": {
+        "abiItem": {
+          "name": "InvoiceNotOpen",
+          "type": "error",
+          "inputs": [
+            {
+              "type": "bytes32",
+              "name": "id"
+            }
+          ]
+        },
+        "args": [
+          "0x263042e674951692484fe108bab96c92d9d5d78eb498f6f99658180671de4d2c"
+        ],
+        "errorName": "InvoiceNotOpen"
+      }
+    }
+  ],
+  "valuesBefore": {
+    "balanceL1": "300000000",
+    "balanceL2": "150000000",
+    "recipientL1": "0",
+    "recipientL2": "0",
+    "escrow": "150000000",
+    "aliasBalance": "0",
+    "policyBalance": "0",
+    "supply": "150000000",
+    "safeNonce": "5",
+    "safeL1Nonce": "5",
+    "spent": "0",
+    "aliasApproval": "0",
+    "allowanceL1": [
+      "100000000",
+      "0",
+      "10",
+      "29875110",
+      "1"
+    ],
+    "allowanceL2": [
+      "100000000",
+      "0",
+      "10",
+      "29875110",
+      "1"
+    ]
+  },
+  "valuesAfter": {
+    "balanceL1": "300000000",
+    "balanceL2": "150000000",
+    "recipientL1": "0",
+    "recipientL2": "0",
+    "escrow": "150000000",
+    "aliasBalance": "0",
+    "policyBalance": "0",
+    "supply": "150000000",
+    "safeNonce": "5",
+    "safeL1Nonce": "5",
+    "spent": "0",
+    "aliasApproval": "0",
+    "allowanceL1": [
+      "100000000",
+      "0",
+      "10",
+      "29875110",
+      "1"
+    ],
+    "allowanceL2": [
+      "100000000",
+      "0",
+      "10",
+      "29875110",
+      "1"
+    ]
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "ui": {
+    "image": "sha256:3fd0b746022a621e53f09ef6d00f1bc9b0692962fcb101630b4c1c1182f7474b",
+    "tag": "eez-rollup-ui:treasury-deployment-batches-wallet-20261020",
+    "overlay": "/home/edu/Development/eez-rollup-dashboard/.runtime/treasury-deployment-batches/ui.compose.yml"
+  },
+  "services": [
+    {
+      "name": "eez-rollup-ui-ui-1",
+      "id": "d5bd1ff47d405751c787df632e723dcf63e30fe05b37e3ea592b7415b7e419b2",
+      "image": "sha256:3fd0b746022a621e53f09ef6d00f1bc9b0692962fcb101630b4c1c1182f7474b",
+      "started": "2026-10-20T21:45:28.654423351Z",
+      "health": "healthy"
+    },
+    {
+      "name": "eez-node-chiado",
+      "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+      "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+      "started": "2026-10-20T17:01:51.373519938Z"
+    },
+    {
+      "name": "eez-proof-signer-chiado",
+      "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+      "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+      "started": "2026-10-20T17:01:45.288733799Z",
+      "health": "healthy"
+    },
+    {
+      "name": "eez-rollup-ui-monitor-1",
+      "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+      "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+      "started": "2026-10-18T14:32:01.399302934Z",
+      "health": "healthy"
+    }
+  ],
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "nonUiServicesUnchanged": true,
+  "servedAssetsMatch": [
+    {
+      "file": "TreasuryDemo-DwHt8YL4.js",
+      "sha256": "b650c0eab3d3ae2211a8f6e25769928a5d60ef27b0788c3ec569478e11caae3d"
+    },
+    {
+      "file": "deployment-artifacts-BD63PDLo.js",
+      "sha256": "e2a90186b025a30bf758bc48211c3ec2eb31c5f4ab2816edae9f6b91f888d5d3"
+    },
+    {
+      "file": "index-CE0J9aRi.js",
+      "sha256": "5af60f96d1bca01c808716b2fe7ee7be471d38a0e6fcb7f9562dbe518f3ac5ff"
+    }
+  ]
+}

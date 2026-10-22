@@ -10,6 +10,19 @@ RUN npm ci
 COPY . ./
 RUN npm run build
 
+FROM node:22-alpine AS verification
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY scripts/verification ./scripts/verification
+COPY src/lib/treasury/runtimeCode.ts ./src/lib/treasury/runtimeCode.ts
+COPY verification ./verification
+RUN mkdir /data && chown node:node /data
+USER node
+CMD ["node", "--experimental-strip-types", "scripts/verification/server.mjs"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:18081/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 FROM nginx:1.27-alpine
 ARG EEZ_UI_PROTOCOL_COMMIT=development
 ENV EEZ_UI_PROTOCOL_COMMIT=$EEZ_UI_PROTOCOL_COMMIT

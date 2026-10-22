@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-10-21T08:09:52.010Z",
+  "accounts": [
+    "0x000000000000000000000000000000000000a11c",
+    "0x000000000000000000000000000000000000b0b1"
+  ],
+  "url": "http://127.0.0.1:8080/dashboard",
+  "chains": [
+    10200,
+    906969
+  ],
+  "steps": 6,
+  "hiddenUntilShortcut": true,
+  "realNetworkChecks": true,
+  "wallet": "read-only injected provider; no extension or private key",
+  "selectedWallet": true,
+  "immutableSelectionAfterReview": true,
+  "choicesOnBothChains": true,
+  "invalidImportRejected": true,
+  "zeroGasStopsSubmission": true,
+  "noSubmission": true,
+  "reload": true,
+  "sameWalletRestart": true,
+  "restartOpensSafeChooser": true,
+  "noArchiveControls": true,
+  "selectionStorageFailurePreservedSetup": true,
+  "pendingRestartBlocked": true,
+  "crossTabLock": true,
+  "otherTabFollowedRestart": true,
+  "completedTreasuryRestart": true,
+  "paymentAndOwnerRestartBlocked": true,
+  "previousManifestIgnoredAfterReload": true,
+  "keyboardFocus": {
+    "tag": "SELECT",
+    "width": "2px",
+    "color": "rgb(59, 229, 126)",
+    "visible": true
+  },
+  "badgeStyle": {
+    "font": "12px",
+    "color": "rgb(154, 163, 179)"
+  },
+  "chainColors": [
+    "rgb(155, 166, 214)",
+    "rgb(181, 163, 238)"
+  ],
+  "reducedMotion": true,
+  "confirmedJournalPreserved": true,
+  "pendingJournalUnchanged": true,
+  "mobileWidth": [
+    390,
+    390
+  ],
+  "methods": [
+    "eth_chainId",
+    "eth_getCode",
+    "eth_call",
+    "eth_getBlockByNumber",
+    "eth_getStorageAt",
+    "eth_getBalance",
+    "eth_getTransactionCount"
+  ],
+  "walletMethods": [
+    "eth_requestAccounts",
+    "eth_chainId",
+    "eth_call",
+    "eth_accounts"
+  ]
+}

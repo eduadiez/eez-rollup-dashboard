@@ -1,0 +1,15 @@
+{
+  "run": "20261020T123631-oy5pi0rk",
+  "capability": "absent",
+  "connected": true,
+  "reversePresetVisible": false,
+  "reverseFundingOffered": false,
+  "safeNonce": "3",
+  "spending": [
+    "0",
+    "0",
+    "0"
+  ],
+  "pageErrors": [],
+  "submitted": false
+}

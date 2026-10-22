@@ -1,0 +1,8 @@
+{
+  "mode": "Reconstructed signed zero-tip fixture; not the original native envelope",
+  "beforeFix": "absent property",
+  "afterFix": "0",
+  "signedPayloadHash": "0x266a0c5adea54bc4c5f964b49101316ddf8978c484bfed81a5291487ec8ecb06",
+  "payloadHashUnchanged": true,
+  "nativeEnvelopeAvailability": "The failed controller never wrote its original-bundle artifact; the testkit removed its temporary relay-control directory during cleanup. Native metadata was inspected before cleanup; raw bytes were not retained."
+}

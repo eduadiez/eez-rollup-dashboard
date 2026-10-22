@@ -1,0 +1,71 @@
+{
+  "scope": "Explicit Ethereum configuration, read-only preflight and real-USDC fork compatibility; no production bridge deployment or mainnet broadcast",
+  "unit": {
+    "passed": 385,
+    "failed": 0,
+    "skipped": 0
+  },
+  "contracts": {
+    "passed": 191,
+    "failed": 0,
+    "skipped": 0
+  },
+  "fork": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "source": "Tenderly Ethereum replica",
+    "sourceChainId": 9991,
+    "localExecutionChainId": 1,
+    "block": 26082600,
+    "blockHash": "0x563344a123fccab81f91fc3d27419a21f90a34ed6f4dc186b30d5d7dbe6b679f",
+    "broadcast": false
+  },
+  "browser": {
+    "passed": [
+      "completion archives the identity, releases restart and unlocks editing without a new-payment action",
+      "Safe addresses are compact explorer links with icon copy, and owner management sits within Shared owners",
+      "settled diagram explains both funding legs and links actual execution transactions plus settlement evidence",
+      "collapsed history shows both execution chains, both blocks, and verified contributions",
+      "payment history uses transaction rows with expandable payment flow",
+      "desktop and 390/320px layouts fit without horizontal scrolling",
+      "reorg observations restore the pending lock; next review clears stale approvals and never auto-submits",
+      "RPC uncertainty restores the unresolved request and removes stale success labels",
+      "reverse route links the L1 Safe source transaction separately from L1 settlement and explains L2 delivery",
+      "index failure withholds settlement links without blocking verified payment; links recover automatically",
+      "an unused Safe shows zero contribution and no invented payment execution",
+      "failed pending-slot cleanup leaves the request locked and recoverable",
+      "completion cannot remove or overwrite a different request saved by another tab",
+      "Ethereum manifests use their own Safe, payment and block explorer links without Chiado labels"
+    ],
+    "mode": "controlled outcomes and RPCs; real React, history persistence and settlement-link checks; no blockchain writes"
+  },
+  "wallet": {
+    "passed": [
+      "both initiating Safes follow the connected network; matching-network approvals request no switch",
+      "late wallet connection picks a default without replacing an explicit Safe choice",
+      "approval and submission switch only to the reviewed Safe; rejected or ineffective switches never sign",
+      "an account change during the network prompt stops the pending approval",
+      "owner changes during the network prompt invalidate the review before signing",
+      "restored submissions retain their source and journal without network prompts",
+      "existing L2-only treasuries remain supported",
+      "slider replaces funding selector, locks at review and signs the exact chosen contributions",
+      "keyboard endpoints work; reduced capacity reports rejection without silently rebalancing",
+      "default allocation preserves exactly 100 plus 10 rather than rounding the 110-USDC demo split",
+      "restored custom contributions remain exact and locked; mobile layout has no overflow"
+    ],
+    "mode": "controlled chain reads, wallet switches, approvals and submission preparation; no real wallet writes"
+  },
+  "build": "TypeScript/Vite and Docker passed; existing large chunk advisory remains",
+  "artifactCheck": {
+    "passed": false,
+    "baselineReproduced": true,
+    "details": "Packaged artifact provenance hashes differ from fresh outputs; L1Owners and TreasuryOwnerAction differ only in compiler metadata, not executable code. Existing deployment bundle preserved."
+  },
+  "notRun": [
+    "Full Ethereum-anchored EEZ/production-bridge Composer, signer and follower rehearsal",
+    "Live mainnet Safe app/wallet submission",
+    "Independent security audit"
+  ],
+  "configuration": "No .env variables added; current Chiado setup retained"
+}

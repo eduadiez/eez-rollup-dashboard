@@ -1,0 +1,20 @@
+{
+  "ui": {
+    "id": "ce6e12724fbbc7140be967e294e9c4a0a38ef5e7d1bd6599f2dc7da4a5d8d3ee",
+    "image": "sha256:e2d723c09893a03f67695c3b481e37174461c7aae8a20c1a4dd15df411dfddec",
+    "started": "2026-10-21T08:09:44.349139374Z"
+  },
+  "imageOnlyConfigChange": true,
+  "otherServicesUnchanged": [
+    "eez-rollup-ui-monitor-1",
+    "eez-node-chiado",
+    "eez-proof-signer-chiado"
+  ],
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "assetsMatchBuild": {
+    "TreasuryDemo-BFN9_Y1d.js": "4e3b66820b81d9ffebed27513c1e0bff1cc1a39f0a90d7d8a9cf82f9d32b1bd4",
+    "TreasuryDemo-CundYjnH.css": "35fcc601caf75987a4254905c57703e67361f7e1f661da412fb7c5b12bb5b45e",
+    "deployment-artifacts-BD63PDLo.js": "e2a90186b025a30bf758bc48211c3ec2eb31c5f4ab2816edae9f6b91f888d5d3",
+    "index-bFMTtNk8.js": "9106c9b982a1ffccd93e041bec4f63c8fa21cd7290431251a6cb0a255c647eee"
+  }
+}

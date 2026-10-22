@@ -1,0 +1,95 @@
+{
+  "head": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "files": [
+    {
+      "path": "DESIGN.md",
+      "beforeSha256": "eee55426cb1ce5b76533fce56dd3fd3f17345f3d27692f4f47e2b96ecfeff6ff",
+      "afterSha256": "764680d7107e769e692db50c0fd208c60858a8490cbbbd230a7a210efc2e190a"
+    },
+    {
+      "path": "README.md",
+      "beforeSha256": "f59b481c15fea069547a08d2f625044daa4c596ee81b37bc008f1f1f55031206",
+      "afterSha256": "0da0daa85225b6457275900b1ae2e5e5051a1a58798d19676367879f27bf150f"
+    },
+    {
+      "path": "docs/proposals/one-treasury-two-safes.md",
+      "beforeSha256": "0d79048c2bdcf2b360811b91b9e87f1169bcd0007d01ac62733a090c4f9f2998",
+      "afterSha256": "47b3b072d6086984b7aa0551088813f3ff1f3a807563e23977533692cbf6d7c2"
+    },
+    {
+      "path": "docs/runbooks/treasury-shared-network.md",
+      "beforeSha256": "53acd4f6f38992567204509fea8e1aba9fe5cd3bedb1ab3cba2d3fd8e513747e",
+      "afterSha256": "e084c95d7492ae2e63c55ac441aad48d4a3226bfa8133391de2981d4b5d49416"
+    },
+    {
+      "path": "scripts/run-treasury-integration.py",
+      "beforeSha256": "b70a4b9e1b4ce6172b38b672c20c439b869f5a2fe9965902dc1ef2a5d9cbad12",
+      "afterSha256": "c8af53ac8ee0b1870f22f94a19946049a84e6c61364539f3bb24ae8c9b3198a6"
+    },
+    {
+      "path": "src/components/TreasuryConnected.tsx",
+      "beforeSha256": "76bcf0c21c07412806311e0c8ce7254e7ed64c862522d168e037e52ed6e667fd",
+      "afterSha256": "b68e6a1a8788b660bbbefad0610cebff6bb1f45e073cded603d6972360ceda62"
+    },
+    {
+      "path": "src/components/TreasuryDemo.module.css",
+      "beforeSha256": "e4adea5118e33930f89551fe656245c4ffae63789c0ea9506c8e25216652aff6",
+      "afterSha256": "9d30fbb620b4932ee74bc464aa558ee53f1a59309960d3887525579f607bfe5b"
+    },
+    {
+      "path": "src/components/TreasuryDemo.tsx",
+      "beforeSha256": "e5605823dfe4ac1e883729a0cf2d347943bf12cc48662ae60f257c1f2ce55453",
+      "afterSha256": "fe2f981f1450219fcbc0d4c6a126a1db93d780f237bb87f043c5b825ff092330"
+    },
+    {
+      "path": "src/components/TreasuryOutcomeDetails.tsx",
+      "beforeSha256": "700ebe5f5b882dcacca784e950f207754d559c53de67865e7519b274c1e09c35",
+      "afterSha256": "53539b89bb5b23fdcb2bc8c6294553fa3570c3f61d13943142419781d99a4938"
+    },
+    {
+      "path": "src/components/TreasuryOwners.tsx",
+      "beforeSha256": "b26ac816e1d8120b6bbc21bc834406f1c0fdcf47829b29379fe4f1e77c332674",
+      "afterSha256": "b280f22be18e80173596294751dd552cc3e1a6275e273985448380f89f413411"
+    },
+    {
+      "path": "src/components/TreasuryPaymentHistory.tsx",
+      "beforeSha256": "f242611b142106584f17722d82041166190602b76668919ee4ff767069303439",
+      "afterSha256": "2356549655e2d332ef5be48030452558d908a16c15cca42eccf3002cfad3c671"
+    },
+    {
+      "path": "src/components/TreasuryRestart.tsx",
+      "beforeSha256": "db42df2e569d176818cac7d6770727265157a74931ccaa80ee1e9c0f636dbdcf",
+      "afterSha256": "122ca3261134699c6cbbf53eb3112a1c8cf523ba40a55ee97bb200faceb0e9e5"
+    },
+    {
+      "path": "src/components/TreasurySetup.tsx",
+      "beforeSha256": "b1b786b99cd4cf10d4c16a988512f1e1ebdb94ba4e6adc2854d28ea0c2faaf1f",
+      "afterSha256": "6c2f1d7bfa7dcf60c49998e433a8e0304ec0faa8c548bbce6355526468651f65"
+    },
+    {
+      "path": "src/lib/treasury/setupArchive.ts",
+      "beforeSha256": "4404f280f650b18ba8fa3a073eb2291ae2c2d842f66fd2b14fe7ae0e4da5231a",
+      "afterSha256": null
+    },
+    {
+      "path": "src/lib/treasury/setupState.ts",
+      "beforeSha256": null,
+      "afterSha256": "3ac45e20c9190dad95bf7cffe4f5136ed2ee88afa196bc5aa23f9c26031cb903"
+    },
+    {
+      "path": "tests/treasury-setup-archive.test.mjs",
+      "beforeSha256": "fd7182c6a16f1c455f46babd5b3cf3dd8510a24e0f8870818dd8591ce89e2aa3",
+      "afterSha256": null
+    },
+    {
+      "path": "tests/treasury-setup-state.test.mjs",
+      "beforeSha256": null,
+      "afterSha256": "0bcd27f700f2a95a2ed4a6653238f6399c709e5293c6b7268d72b069ec7b2ac5"
+    },
+    {
+      "path": "tests/treasury-shared-browser.mjs",
+      "beforeSha256": "c6c77275c0f4a43c447052858b5df1540ae6af50f54211644deca002c8a278c6",
+      "afterSha256": "c59d0d20530101dd26dec94a6aaead0c005f4ea5659f32a60c89021bad3a2252"
+    }
+  ]
+}

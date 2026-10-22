@@ -1,0 +1,209 @@
+{
+  "verified": true,
+  "scope": "single owned EVM with real contracts and read-through EEZ managers; chain IDs switched per phase, no Composer/proofs",
+  "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:50:55.527285345Z (1778226655)\nBuild Profile: dist",
+  "cases": [
+    "confirmed singleton retained; five remaining transaction phases",
+    "contractsBatchL1 exact canonical receipt and outputs recovered after reload",
+    "contractsBatchL2 exact canonical receipt and outputs recovered after reload",
+    "fundingBatchL1 exact canonical receipt and outputs recovered after reload",
+    "budgetBatchL2 exact canonical receipt and outputs recovered after reload",
+    "configureL1 exact canonical receipt and outputs recovered after reload",
+    "existing 2-of-2 Safes retain addresses and L1 owners; old EEZ-X quorum approves adoption; L1 quorum approves both new allowance batches",
+    "300/150 balances, 100/100 allowances, wallet bridge admins, closed executors, no executor Safe authority or residual funds"
+  ],
+  "transactions": [
+    {
+      "chain": "l1",
+      "hash": "0xdf0485e79602bda5674d7e36725edac40bfb3bf7c5e92eaad0c08952c01a5706",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x080feca57be302787c12ef1c6b2e67542220d9e5369c15147035581754838e66",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xd3852de1c39359c1ac3491aa71adacc0082025b4d3670f71b4924b5042654c04",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xec25aed5d10706b23cfa4634b9e5a97075788120baf034fffe8954365e070eac",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x355bdec9b667e54610c35c50dabfc4e965522c893cef4b312fd18765fd4d39db",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x529748b03254b34646d37ee3565a9d901c584654911d104f06cec375c9a62aff",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xf461bc6235ec19c072845ef301cf28d4d6b71a12e352e787023c0ddbb005f510",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xfb7aa3ddef91237148cfb02e10740705449b9140d087a29e0eb1edcaac1e704c",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xcc2702b7bfd22a812f282f79a5cdb510fb570149ceff655d1e80f0a26fadfc80",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x891d7a56504b209d1b07b37b77b840a6044f674889b452b1be402ca8e474284d",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xe057165695b03f16cec7c144922a265a3ed531e1e89f267b4a038471f27922b8",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x56f1a6489837be942a9ec95c8493703e2d741bf69aa351cf27a4d8834e7a12bb",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x0d91d4e0af2db91a7729f7593a9c01e27cb9893ad2da7b42b73fcaa92389b441",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xe1d2b07e09da607c46fe98f0b298e7616451101f6d3ed9c4065c68fe44c07942",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x228712c0b78ebccae05e680f7fd8782f1abd4302aa39d17696714c4d47a1f505",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x4692b7352299644d113705da05496531cf6185adf7c0d97d63062bd432930ab3",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x72331940cb071017541513c01c65963378d9502c5a619d1767584b25b1c916db",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x51ef330290a4183d3da513091796c3f0912d0cc911d7bce2ad886acfc29f1adb",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x20b5b9fcaeb2f06722374339c6399aee612d53590e15991f685b3f984ce70232",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xcc76d67b4cf12178f4f7b3f2e5ba0c36cf1cbc3e955f861104d95e449e3e3183",
+      "success": true
+    }
+  ],
+  "phases": [
+    {
+      "id": "contractsBatchL1",
+      "chain": "l1",
+      "inputBytes": 36449,
+      "gasUsed": "7422571",
+      "hash": "0x529748b03254b34646d37ee3565a9d901c584654911d104f06cec375c9a62aff",
+      "outputs": [
+        "safeL1",
+        "tokenL1",
+        "aliasReaderL1",
+        "bridgeL1",
+        "moduleL1"
+      ]
+    },
+    {
+      "id": "contractsBatchL2",
+      "chain": "l2",
+      "inputBytes": 47361,
+      "gasUsed": "9934538",
+      "hash": "0xf461bc6235ec19c072845ef301cf28d4d6b71a12e352e787023c0ddbb005f510",
+      "outputs": [
+        "singletonL2",
+        "factoryL2",
+        "adapter",
+        "safeL2",
+        "bridgeL2",
+        "multiSendL2"
+      ]
+    },
+    {
+      "id": "fundingBatchL1",
+      "chain": "l1",
+      "inputBytes": 1572,
+      "gasUsed": "1953852",
+      "hash": "0xfb7aa3ddef91237148cfb02e10740705449b9140d087a29e0eb1edcaac1e704c",
+      "outputs": []
+    },
+    {
+      "id": "budgetBatchL2",
+      "chain": "l2",
+      "inputBytes": 32068,
+      "gasUsed": "7139476",
+      "hash": "0xcc2702b7bfd22a812f282f79a5cdb510fb570149ceff655d1e80f0a26fadfc80",
+      "outputs": [
+        "moduleL2",
+        "policy"
+      ]
+    },
+    {
+      "id": "configureL1",
+      "chain": "l1",
+      "inputBytes": 1252,
+      "gasUsed": "546408",
+      "hash": "0x891d7a56504b209d1b07b37b77b840a6044f674889b452b1be402ca8e474284d",
+      "outputs": []
+    }
+  ],
+  "existingSafePhases": [
+    {
+      "id": "contractsBatchL1",
+      "hash": "0x0d91d4e0af2db91a7729f7593a9c01e27cb9893ad2da7b42b73fcaa92389b441"
+    },
+    {
+      "id": "prepareWalletL2_0",
+      "hash": "0xe1d2b07e09da607c46fe98f0b298e7616451101f6d3ed9c4065c68fe44c07942"
+    },
+    {
+      "id": "prepareWalletL2_1",
+      "hash": "0x228712c0b78ebccae05e680f7fd8782f1abd4302aa39d17696714c4d47a1f505"
+    },
+    {
+      "id": "contractsBatchL2",
+      "hash": "0x4692b7352299644d113705da05496531cf6185adf7c0d97d63062bd432930ab3"
+    },
+    {
+      "id": "adoptL2",
+      "hash": "0x72331940cb071017541513c01c65963378d9502c5a619d1767584b25b1c916db"
+    },
+    {
+      "id": "fundingBatchL1",
+      "hash": "0x51ef330290a4183d3da513091796c3f0912d0cc911d7bce2ad886acfc29f1adb"
+    },
+    {
+      "id": "budgetBatchL2",
+      "hash": "0x20b5b9fcaeb2f06722374339c6399aee612d53590e15991f685b3f984ce70232"
+    },
+    {
+      "id": "configureL1",
+      "hash": "0xcc76d67b4cf12178f4f7b3f2e5ba0c36cf1cbc3e955f861104d95e449e3e3183"
+    }
+  ]
+}

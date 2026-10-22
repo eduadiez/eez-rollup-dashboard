@@ -1,0 +1,30 @@
+{
+  "containers": {
+    "eez-rollup-ui-ui-1": {
+      "id": "8fbd015595110fa004f75d647283902a0b9bb33f9d7e2a289073bd56682ef69a",
+      "image": "sha256:d9b19080b8279dec014c170dbdf9da2e6d09cb1ee658aa268742fd3aeb5af3b8",
+      "started": "2026-10-21T09:30:06.213284292Z"
+    },
+    "eez-rollup-ui-monitor-1": {
+      "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+      "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+      "started": "2026-10-18T14:32:01.399302934Z"
+    },
+    "eez-node-chiado": {
+      "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+      "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+      "started": "2026-10-20T17:01:51.373519938Z"
+    },
+    "eez-proof-signer-chiado": {
+      "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+      "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+      "started": "2026-10-20T17:01:45.288733799Z"
+    }
+  },
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "healthy": true,
+  "networkServicesUnchanged": true,
+  "runtimeConfigurationUnchanged": true,
+  "servedTreasuryAsset": "TreasuryDemo-DDPCLmB3.js",
+  "servedTreasurySha256": "d93c49349e2a6abee4e82d35f4566f34a24906a01db1f8ffb7ffa35046565d39"
+}

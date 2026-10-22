@@ -1,0 +1,50 @@
+{
+  "browserRun": "20261020T124338-sqpjukt1",
+  "nativeTests": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "durationSeconds": 193.08
+  },
+  "contracts": {
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0,
+    "fuzzCasesPerTest": 256,
+    "fuzzTests": 2,
+    "finalTestSourceSha256": "878ed66b886c0b1cbe240447e866c10c71135a458a10c7ab5bf624e90bc3521b",
+    "logSha256": "0156ce3f77eccf1dbf3228ae25b7fba11898ea19c0a2cb79fab4d7ed47945573"
+  },
+  "dashboardTests": {
+    "passed": 205,
+    "failed": 0,
+    "skipped": 0,
+    "logSha256": "07dc7a9bfc9233b3babc755806a9233f4fe37296db6c70937877941d85aa5810"
+  },
+  "productionBuild": {
+    "passed": true,
+    "logSha256": "aee4b45609b6579688e5dfe20fc005132d1208cd299d4fb2bd5abd4b3c94a99a"
+  },
+  "mockedBrowser": {
+    "simulatedTreasury": true,
+    "walletCases": 16,
+    "broadcasts": 0
+  },
+  "localArtifacts": {
+    "integration.log": "35d0ade6b64dde0f7278c009c853bec79881a9d4f75a9fafab565d6650fc29b2",
+    "treasury-payments-desktop.png": "f5ddb6c81f98c28ea77990bfc346e473fd095de5e6aa68746da8f51d036bdb07",
+    "treasury-connected-mobile.png": "c49ce579dd4567572c0c5c5b472a54d402702a0d4e972ae14cb4bd4d8fdad410"
+  },
+  "applicationSourcesMatchFinalNativeRun": true,
+  "idleRegression": {
+    "before": {
+      "passed": 5,
+      "failed": 1,
+      "logSha256": "d0845f93d8e24821ff9499d1424a32b9d3b2f5222537643b7e2acb3651ab5d70"
+    },
+    "after": {
+      "includedIn205PassingTests": true
+    },
+    "liveReadOnlyCheck": "manual-check.json"
+  }
+}

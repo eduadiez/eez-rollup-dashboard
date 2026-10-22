@@ -1,0 +1,34 @@
+{
+  "url": "http://127.0.0.1:34007/dashboard/#/treasury-demo",
+  "readOnly": true,
+  "hiddenByDefault": true,
+  "livePaymentDefault": true,
+  "safeBalances": [
+    "300",
+    "150"
+  ],
+  "allowances": [
+    "100",
+    "100"
+  ],
+  "spent": [
+    "0",
+    "0",
+    "0"
+  ],
+  "bridgeEscrow": "150",
+  "wrappedSupply": "150",
+  "regularDashboardUnchanged": true,
+  "l1BudgetEpoch": "2987500",
+  "idleL2Epoch": "2987499",
+  "idleL2Block": "150",
+  "reviewUsesCurrentL1Epoch": true,
+  "initialReadinessTimeout": true,
+  "diagnosticReloadPassed": true,
+  "run": "20261020T123631-oy5pi0rk",
+  "applicationSources": {
+    "src/lib/treasury/payments.ts": "040535bf7ed82f3e94c277de65306b1b68fa9f3f69748a7416392079bd6131ff",
+    "src/components/TreasuryConnected.tsx": "2659e20ab7dd3b16fff32c7b4ec519aace7dafb28d5dcc4abbbe097758a8bbf7",
+    "contracts/src/TreasuryPolicy.sol": "21a08846c9afd379559d3de0a72c4e41aa058a86c1b399276c67f4c513208d9a"
+  }
+}

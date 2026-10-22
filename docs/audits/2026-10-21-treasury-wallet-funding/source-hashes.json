@@ -1,0 +1,17 @@
+{
+  "src/lib/treasury/assetInfrastructure.ts": "e5fcd1961eb3642f0e0c4294fbb0934e5b258765d932a0fd3fae0bd2fcd330ce",
+  "src/lib/treasury/networkDeployment.ts": "053407bc07386aa8210fa6f04fc67d7fed3eb2c10b7f3d12a047302b5439f73c",
+  "src/lib/treasury/deployment.ts": "8dd266d592b3af8bd8f5c1cb7e735a70644bf2239ff9257a548fc01bbdfc00e1",
+  "src/lib/treasury/deploymentGroups.ts": "39cd504437a306b432444db658ecce37ff6f9e65212b19733ba264f85ebad2c4",
+  "src/components/TreasurySetup.tsx": "447c6ca4387f22da8245a3f467793fd688bc41d6203f92eeab5cd573826b0436",
+  "src/components/TreasuryDemo.tsx": "d18c3e9802fbb835a3370483e4c29e76f657c6636e70f6692fc72e925b185c03",
+  "src/components/TreasuryFaucet.tsx": "c98fc7085d4456cf0295d86dd1670db4c9618c6eeee4a6c6c03f4287c9acfcd8",
+  "scripts/treasury-infrastructure.mjs": "83591744bea2140cc4573ccdfc0ab50520e6bf8121aee3b2695b1946a58701ea",
+  "scripts/run-treasury-integration.py": "eb476e55d60dc56a8d440e66c5d080c749213ed9f8d8bfed6edc09c26b51b1dd",
+  "tests/treasury-wallet-funding.test.mjs": "0acfca309503b7f6a1d8efb13bd7cc5f433dcd119893f332a932218e921aca5d",
+  "tests/treasury-shared-browser.mjs": "c8d714482b6b7f7dfca07a43238093087de3f80aece6e463c666197dff51e725",
+  "tests/integration/treasury-payments.mjs": "a5ce26260e071028fe691ea23371a96f2c00152967ce6a61dbdf681e83491094",
+  "tests/integration/treasury-deployment-batches.mjs": "b3cee717d90eb584e863b19daae9209b0585cbb0c1ec05abd6fee9c821863725",
+  "src/lib/treasury/deployment-artifacts.json": "63e64af6063c0b6fe92f263e4610c5074b7f3390a4d01dea5fce36bd2fab1324",
+  "tests/integration/treasury-browser.mjs": "9d686ad577da806196c5fece3f45506252ea9f909cb06f3a07700be83118c2b3"
+}

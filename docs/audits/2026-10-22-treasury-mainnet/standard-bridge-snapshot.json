@@ -1,0 +1,47 @@
+{
+  "source": "https://mainnet.eez.dev/dashboard/config.json",
+  "capturedAt": "2026-10-22T14:48:39.527Z",
+  "protocolCommit": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "registry": "0x4b2760f84b83d6b3829e30a7573b0172b6d6402c",
+  "manager": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+  "rollupId": "1",
+  "chains": {
+    "l1": {
+      "chainId": 1,
+      "number": "0x1908697",
+      "hash": "0x19b353d9daed7351715154c83c08081c760216379328e3c34fa014eee3f02f57"
+    },
+    "l2": {
+      "chainId": 696990,
+      "number": "0xb5d78",
+      "hash": "0xcfc07e42aae7f31d77d0360eaa6a91e6df8e113737344704837efc419be17ff1"
+    }
+  },
+  "contracts": {
+    "bridgeL1": {
+      "chain": "l1",
+      "address": "0x1D6A3bFe0A302Bb2df5FDfDB8eAF5b78B91A5fBa",
+      "hash": "0xf1c7221a57ab87e4bcc478feae7ffddd84952880e8fea4574ab1218416b28dab"
+    },
+    "bridgeL2": {
+      "chain": "l2",
+      "address": "0xBEF1406984A3e7b2889376d29D6BbD9f6ed9695a",
+      "hash": "0xf1c7221a57ab87e4bcc478feae7ffddd84952880e8fea4574ab1218416b28dab"
+    },
+    "usdcProxy": {
+      "chain": "l1",
+      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "hash": "0xd80d4b7c890cb9d6a4893e6b52bc34b56b25335cb13716e0d1d31383e6b41505"
+    },
+    "usdcImplementation": {
+      "chain": "l1",
+      "address": "0x43506849D7C04F9138D1A2050bbF3A0c054402dd",
+      "hash": "0xcdfb7d322961af3acae7a8f7ee8b69c205b36f576cc5b077f170c7eb8ecbe3ea"
+    },
+    "wrappedUSDC": {
+      "chain": "l2",
+      "address": "0x787f00f5e0f0b9C8CC4e5E31d3c8a7Db83159dd9",
+      "hash": "0x81f5cf0072610885aba07218865d9b59ccb15ac8b384c9a4472b40a542d7879f"
+    }
+  }
+}

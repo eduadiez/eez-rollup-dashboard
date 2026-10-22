@@ -1,0 +1,76 @@
+import { useState } from "react";
+import type { useTreasuryHistory } from "../hooks/useTreasuryHistory";
+import type { TreasuryConfig } from "../lib/treasury/client";
+import { treasuryTransactions } from "../lib/treasury/settlement";
+import { historyLabels, historyStatus } from "../lib/treasury/history";
+import type { HistoryStatus } from "../lib/treasury/history";
+import { formatUSDC, formatPercentage } from "../lib/treasury/payments";
+import { TreasuryOutcomeDetails } from "./TreasuryOutcomeDetails";
+import { TreasuryChainLink } from "./TreasuryPaymentFlow";
+import { NetworkIcon } from "./NetworkIcon";
+import styles from "./TxHistoryPanel.module.css";
+import layout from "./TreasuryTransactionHistory.module.css";
+import treasury from "./TreasuryDemo.module.css";
+
+export function TreasuryPaymentHistory({ history, deployment }: { history: ReturnType<typeof useTreasuryHistory>; deployment: TreasuryConfig }) {
+  const [filter, setFilter] = useState<HistoryStatus | "all">("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const ordered = history.entries;
+  const entries = ordered.filter(e => filter === "all" || historyStatus(e, history.observations[e.id]) === filter);
+  const names = { l1: deployment.l1.chainId === 10200 ? "Chiado" : "Ethereum", l2: "EEZ-X" };
+  return <section className={styles.card} aria-label="Payment history">
+    <div className={styles.cardHeader}><div><h3 className={styles.cardTitle}>Payment history</h3><p className={styles.noHash}>Oldest first · Saved in this browser</p></div>
+      <div className={styles.headerRight}><span className={styles.count}>{ordered.length} {ordered.length === 1 ? "payment" : "payments"}</span>
+        {!!ordered.length && <button className="btn btn-sm btn-ghost" disabled={history.checking} onClick={() => void history.refresh()}>{history.checking ? "Checking history…" : "Refresh history"}</button>}</div></div>
+    {!!ordered.length && <div className={`${treasury.fields} ${layout.historyFilter}`}><label htmlFor="treasury-history-filter">Filter history</label>
+      <select id="treasury-history-filter" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
+        <option value="all">All outcomes ({ordered.length})</option>
+        {(Object.keys(historyLabels) as HistoryStatus[]).map(status => <option key={status} value={status}>{historyLabels[status]} ({ordered.filter(e => historyStatus(e, history.observations[e.id]) === status).length})</option>)}
+      </select></div>}
+    {history.error && <p className={styles.lookupError} role="alert">{history.error}</p>}
+    {!entries.length && <p className={styles.emptyState}>{ordered.length ? "No payments match this filter." : "Your payment attempts will appear here."}</p>}
+    {!!entries.length && <div className={`${styles.columns} ${layout.paymentColumns}`} aria-hidden="true"><span>Payment</span><span>Route</span><span>Transactions</span><span>Blocks</span><span>Status</span><span>Time</span><span /></div>}
+    <ol className={`${styles.list} ${layout.paymentList}`}>{entries.map(entry => {
+      const observation = history.observations[entry.id], outcome = observation?.outcome;
+      const status = historyStatus(entry, observation), intent = entry.kind === "submitted" ? entry.intent : undefined;
+      const payment = entry.kind === "submitted" ? entry.intent.payment! : entry.payment;
+      const actual = status === "settled" && outcome?.contributions;
+      const amount = actual ? formatUSDC(BigInt(actual.fromL1) + BigInt(actual.fromL2)) : payment.kind !== "rule" ? formatUSDC(BigInt(payment.amount)) : undefined;
+      const source = payment.source ?? "l2", hash = outcome?.hash ?? intent?.hash;
+      const settlement = history.settlementFor(outcome);
+      const transactions = treasuryTransactions(intent, outcome, settlement);
+      const blocks = transactions.filter((tx, i) => tx.block && !transactions.slice(0, i).some(previous => previous.chain === tx.chain && previous.block === tx.block));
+      const open = expanded.has(entry.id), detailsId = `payment-${entry.id}`;
+      const badge = status === "settled" ? styles.confirmed : status === "pending" ? styles.pending : styles.failed;
+      return <li key={entry.id} className={layout.paymentEntry} data-testid="history-entry" data-status={status} data-safe-hash={intent?.safeHash}>
+        <div className={`${styles.row} ${layout.paymentRow}`}>
+          <div className={styles.actionCol}><strong className={styles.typeLabel}>{amount ? `${amount} USDC` : `${formatPercentage(BigInt(payment.kind === "rule" ? payment.bps : 0))}% of holdings`} → {names[payment.destination]}</strong>
+            <span className={styles.detail}>{payment.kind === "invoice" ? "Invoice" : payment.kind === "transfer" ? "Transfer between Safes" : payment.kind === "rule" ? "Percentage rule" : "Fixed payment"}</span>
+            {actual && <div className={layout.paymentSplit} aria-label="Actual funding split"><span><span className={treasury.chainLabel} data-chain="l1">{names.l1}</span> {formatUSDC(BigInt(actual.fromL1))} USDC</span><span><span className={treasury.chainLabel} data-chain="l2">EEZ-X</span> {formatUSDC(BigInt(actual.fromL2))} USDC</span></div>}</div>
+          <div className={`${styles.routeCol} ${layout.paymentRoute}`}><NetworkIcon chain={source} decorative /><span>{names[source]} → {names[payment.destination]}</span></div>
+          <div className={styles.transactionCol} role="group" aria-label="Transaction links">{transactions.length ? transactions.map(tx =>
+            <div className={layout.paymentTransaction} key={`${tx.chain}:${tx.hash}`}>
+              <span className={treasury.chainLabel} data-chain={tx.chain}>{names[tx.chain]}{tx.role === "settlement" ? " · settlement" : ""}</span>
+              <TreasuryChainLink deployment={deployment} chain={tx.chain} value={tx.hash}>{tx.hash.slice(0, 8)}…{tx.hash.slice(-6)}</TreasuryChainLink>
+            </div>) : <span className={styles.noHash}>{entry.kind === "preparation" ? "Not submitted" : "Awaiting wallet"}</span>}
+            {status === "settled" && !settlement && <span className={styles.noHash}>{names.l1} settlement link {settlement === null ? "unavailable" : "loading…"}</span>}
+          </div>
+          <div className={styles.blockCol} role="group" aria-label="Blocks">{blocks.length ? blocks.map(tx =>
+            <TreasuryChainLink key={`${tx.chain}:${tx.block}`} deployment={deployment} chain={tx.chain} type="block" value={tx.block!}>{names[tx.chain]} #{BigInt(tx.block!).toLocaleString()}</TreasuryChainLink>) : <span className={styles.noHash}>—</span>}</div>
+          <div className={styles.statusCol}><span className={`${styles.badge} ${badge} ${layout.paymentBadge}`} data-outcome={status}>{historyLabels[status]}</span></div>
+          <time className={styles.timeCol} dateTime={entry.recordedAt} title={new Date(entry.recordedAt).toLocaleString()}>{new Date(entry.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
+          <div className={styles.actionsCol}><button className={styles.inspectBtn} aria-label={open ? "Hide payment details" : "Show payment details"} aria-expanded={open} aria-controls={detailsId} onClick={() => setExpanded(previous => { const next = new Set(previous); if (open) next.delete(entry.id); else next.add(entry.id); return next; })}>{open ? "−" : "+"}</button></div>
+        </div>
+        {open && <div id={detailsId} className={treasury.historyDetails}>
+          {entry.kind === "preparation" ? <><p>{entry.detail}</p><p>Stopped during preparation. Not signed or submitted; no transaction hash.</p></> : <>
+            {status !== "settled" && <p>{observation?.error ? `Verification unavailable: ${observation.error}` : observation?.checking ? "Checking this saved request…" : outcome?.detail ?? "Checking this saved request. Its outcome is not yet verified."}</p>}
+            <TreasuryOutcomeDetails outcome={outcome} prefix="history-" deployment={deployment} intent={intent} settlement={settlement} />
+            {status !== "settled" && <p>Recipient: <TreasuryChainLink deployment={deployment} chain={payment.destination} type="address" value={payment.recipient}>{payment.recipient.slice(0, 8)}…{payment.recipient.slice(-6)}</TreasuryChainLink> on {names[payment.destination]}.</p>}
+            {hash && status !== "settled" && <p><TreasuryChainLink deployment={deployment} chain={source} value={hash}>Submitted transaction</TreasuryChainLink></p>}
+            {status === "pending" && <p>This saved request is being verified. It will not be resubmitted automatically.</p>}
+          </>}
+        </div>}
+      </li>;
+    })}</ol>
+  </section>;
+}

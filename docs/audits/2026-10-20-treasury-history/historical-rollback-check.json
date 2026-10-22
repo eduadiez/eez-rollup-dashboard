@@ -1,0 +1,22 @@
+{
+  "run": "20261020T151314-jv8fnjqm",
+  "sourceTransaction": "0x09d40dc465878be818735097eaffca38eb5d1ec6ac56224b9f67758fa75b7764",
+  "queueObservation": {
+    "blocking": null,
+    "direction": "outbound",
+    "hash": "0x09d40dc465878be818735097eaffca38eb5d1ec6ac56224b9f67758fa75b7764",
+    "lifecycle": "terminal",
+    "nonce": 1,
+    "ownerGeneration": 19,
+    "ownership": {
+      "canonical": null,
+      "reason": "PoolDiscarded",
+      "state": "terminal"
+    },
+    "sender": "0x0376aac07ad725e01357b1725b5cec61ae10473c"
+  },
+  "canonicalNoncesAdvanced": true,
+  "outcome": "rejected",
+  "rollbackVerified": true,
+  "postHash": "0x96d77ecd7e470e2be3c408ec0bcca6b23a7182f38c8e8b57dd9817e7f4c2f11a"
+}

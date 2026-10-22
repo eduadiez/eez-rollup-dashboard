@@ -1,0 +1,64 @@
+{
+  "stoppedRun": "20261020T123631-oy5pi0rk",
+  "normalExit": true,
+  "listeners": [
+    {
+      "port": 34007,
+      "closed": true
+    },
+    {
+      "port": 39717,
+      "closed": true
+    },
+    {
+      "port": 42671,
+      "closed": true
+    },
+    {
+      "port": 43331,
+      "closed": true
+    },
+    {
+      "port": 45135,
+      "closed": true
+    },
+    {
+      "port": 45509,
+      "closed": true
+    }
+  ],
+  "normalDashboard": {
+    "port": 8080,
+    "treasuryConfigured": false,
+    "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71"
+  },
+  "completedIntegration": {
+    "run": "20261020T125820-wpm4yppo",
+    "listeners": [
+      {
+        "port": 34689,
+        "closed": true
+      },
+      {
+        "port": 37793,
+        "closed": true
+      },
+      {
+        "port": 37955,
+        "closed": true
+      },
+      {
+        "port": 42411,
+        "closed": true
+      },
+      {
+        "port": 44407,
+        "closed": true
+      },
+      {
+        "port": 45833,
+        "closed": true
+      }
+    ]
+  }
+}
