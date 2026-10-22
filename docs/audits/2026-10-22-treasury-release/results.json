@@ -1,0 +1,43 @@
+{
+  "branch": "codex/treasury-demo-release",
+  "base": "fb6b798249464cea96f41703adeb0f28da262b20",
+  "featureSnapshot": "d39b5a5",
+  "mainIntegration": "21e9272",
+  "build": "3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d",
+  "pins": {
+    "core": "855fe0602484750861b4c31502a1a91355d33ed6",
+    "safe": "bf943f80fec5ac647159d26161446ac5d716a294",
+    "modules": "c95f03900bff99be090dadb9de1c74b162365485"
+  },
+  "javascript": {
+    "passed": 433,
+    "failed": 0,
+    "skipped": 0,
+    "runtimes": [
+      "Node 26.7.0",
+      "Node 22 container"
+    ]
+  },
+  "verificationTests": 20,
+  "solidity": {
+    "passed": 204,
+    "failed": 0,
+    "skipped": 0
+  },
+  "imagesBuilt": {
+    "eez-rollup-ui:treasury-pr-20261022": "sha256:2fcc2d5dfff43a81c647909e316e865f7da4c97711195703d03751769296f3f5",
+    "eez-treasury-verification:pr-20261022": "sha256:6d8d5ffa5bf2914467c78c4d1fd467f4bc128f0f4107b332d7490689eac05a08"
+  },
+  "containerCheck": {
+    "isolatedUIHealthy": true,
+    "nginxConfigValid": true,
+    "verificationRateLimitObserved": true,
+    "dashboardHealthUnaffected": true,
+    "requests": 48,
+    "rateLimited": 27
+  },
+  "publicChainTransactions": 0,
+  "hostedCI": "not run; manual push pending",
+  "liveExplorerAcceptance": "not run",
+  "historicalBackfill": "excluded"
+}

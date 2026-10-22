@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, renameSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { decodeEventLog, parseAbi, isAddress, keccak256 } from 'viem';
@@ -33,8 +33,9 @@ export function creations(receipt) {
   return [...addresses].map(([address, required]) => ({ address, required }));
 }
 export class VerificationWorker {
-  constructor({ directory, builds, networks, fetcher = fetch, now = Date.now }) {
-    Object.assign(this, { directory, builds, networks, fetcher, now });
+  constructor({ directory, builds, networks, fetcher = fetch, now = Date.now, capacity = 10000 }) {
+    if (!Number.isSafeInteger(capacity) || capacity < 1 || capacity > 10000) throw new Error('Invalid verification capacity');
+    Object.assign(this, { directory, builds, networks, fetcher, now, capacity });
     mkdirSync(directory, { recursive: true }); this.jobs = new Map(); this.active = false;
     for (const name of readdirSync(directory).filter(n => /^[a-f\d]{64}\.json$/.test(n))) {
       const job = JSON.parse(readFileSync(join(directory, name), 'utf8'));
@@ -46,6 +47,7 @@ export class VerificationWorker {
       || !Number.isSafeInteger(r.chainId) || r.chainId <= 0 || configured && (!this.builds[r.build] || !this.networks[r.chainId])) throw new Error('Unknown build, network or transaction');
   }
   save(job) {
+    job.updatedAt = this.now();
     const path = join(this.directory, `${job.id}.json`);
     writeFileSync(`${path}.tmp`, JSON.stringify(job)); renameSync(`${path}.tmp`, path); this.jobs.set(job.id, job);
   }
@@ -53,7 +55,15 @@ export class VerificationWorker {
     this.validate(request);
     const r = { build: request.build, chainId: request.chainId, transactionHash: request.transactionHash.toLowerCase() };
     const id = hash(r); if (this.jobs.has(id)) return this.jobs.get(id);
-    if (this.jobs.size >= 10000) throw new Error('Verification queue is full');
+    // Completed results are a bounded cache, not unfinished work. A later
+    // delivery rechecks the canonical receipt and explorer if a result expired.
+    const completed = [...this.jobs.values()].filter(j => j.id !== this.processing && ['verified','reverted','not-applicable'].includes(j.status))
+      .sort((a,b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0));
+    while (this.jobs.size >= this.capacity && completed.length) {
+      const old = completed.shift();
+      rmSync(join(this.directory, `${old.id}.json`), { force: true }); this.jobs.delete(old.id);
+    }
+    if (this.jobs.size >= this.capacity) throw new Error('Verification queue is full');
     const job = { id, request: r, status: 'queued', attempts: 0, nextAttempt: 0, contracts: [] };
     this.save(job); return job;
   }
@@ -67,7 +77,35 @@ export class VerificationWorker {
     if (!receipt || receipt.status !== '0x1') throw new Error('Wait for a successful canonical receipt');
     const block = await this.rpc(network, 'eth_getBlockByNumber', [receipt.blockNumber, false]);
     if (block?.hash !== receipt.blockHash) throw new Error('Wait for a canonical receipt');
+    const contracts = await this.discover(network, receipt);
+    const manifest = this.builds[request.build];
+    const candidates = [...Object.values(manifest.contracts), ...Object.values(manifest.dependencies ?? {})];
+    const current = await this.rpc(network, 'eth_getBlockByNumber', [receipt.blockNumber, false]);
+    if (current?.hash !== receipt.blockHash) throw new Error('Wait for a canonical receipt');
+    // Configuration-only confirmations and unrelated creations must not use
+    // persistent capacity. Unknown factory metadata remains visible to the
+    // requesting browser, without granting arbitrary transactions queue access.
+    if (!contracts.some(c => candidates.some(a => matchesRuntime(c.runtime, a)))) {
+      return { id: hash(identity), request: identity, status: contracts.length ? 'source-unavailable' : 'not-applicable',
+        contracts: contracts.map(c => ({ ...c, status: 'source-unavailable', error: 'No exact compiler input for this deployed bytecode' })) };
+    }
     return this.enqueue(identity);
+  }
+  async discover(network, receipt) {
+    const number = BigInt(receipt.blockNumber);
+    if (number < 1n) throw new Error('Invalid deployment block');
+    const parent = `0x${(number - 1n).toString(16)}`;
+    const discovered = creations(receipt), contracts = [];
+    if (discovered.length > 128) throw new Error('Too many contract candidates in one transaction');
+    for (const c of discovered) {
+      const code = await this.rpc(network, 'eth_getCode', [c.address, receipt.blockNumber]);
+      if (code === '0x') { if (c.required) throw new Error('Deployed code is not available yet'); else continue; }
+      // Event signatures alone do not prove creation: arbitrary contracts can
+      // emit them naming an already deployed, otherwise matching Safe.
+      if (await this.rpc(network, 'eth_getCode', [c.address, parent]) !== '0x') continue;
+      contracts.push({ address: c.address, runtime: code, codeHash: keccak256(code), status: 'pending' });
+    }
+    return contracts;
   }
   async json(url, options = {}) {
     const response = await this.fetcher(url, { ...options, signal: AbortSignal.timeout(20_000) });
@@ -142,20 +180,14 @@ export class VerificationWorker {
     const block = await this.rpc(network, 'eth_getBlockByNumber', [receipt.blockNumber, false]);
     if (!block?.hash || block.hash !== receipt.blockHash) throw new Error('Waiting for canonical deployment block');
     if (receipt.status !== '0x1') { job.status = 'reverted'; job.contracts = []; return; }
-    const parent = `0x${(BigInt(receipt.blockNumber) - 1n).toString(16)}`;
-    const discovered = creations(receipt), next = [];
-    for (const c of discovered) {
-      const code = await this.rpc(network, 'eth_getCode', [c.address, receipt.blockNumber]);
-      if (code === '0x') { if (c.required) throw new Error('Deployed code is not available yet'); else continue; }
-      if (!c.required && await this.rpc(network, 'eth_getCode', [c.address, parent]) !== '0x') continue;
-      const old = job.blockHash === receipt.blockHash ? job.contracts.find(x => x.address === c.address && x.runtime === code) : null;
-      next.push(old ?? { address: c.address, runtime: code, codeHash: keccak256(code), status: 'pending' });
-    }
+    const discovered = await this.discover(network, receipt);
+    const next = discovered.map(c => (job.blockHash === receipt.blockHash
+      ? job.contracts.find(old => old.address === c.address && old.runtime === c.runtime) : null) ?? c);
     job.blockHash = receipt.blockHash; job.blockNumber = receipt.blockNumber; job.contracts = next;
     for (const contract of job.contracts) await this.verifyContract(job, contract, network, manifest, receipt);
     const current = await this.rpc(network, 'eth_getBlockByNumber', [receipt.blockNumber, false]);
     if (current?.hash !== receipt.blockHash) throw new Error('Deployment block changed; rechecking verification');
-    job.status = job.contracts.every(c => c.status === 'verified') ? 'verified'
+    job.status = !job.contracts.length ? 'not-applicable' : job.contracts.every(c => c.status === 'verified') ? 'verified'
       : job.contracts.some(c => c.status === 'source-unavailable') ? 'source-unavailable'
       : job.contracts.every(c => ['verified','sourcify-verified'].includes(c.status)) ? 'sourcify-verified' : 'pending';
     delete job.error;
@@ -165,14 +197,15 @@ export class VerificationWorker {
     try {
       const job = [...this.jobs.values()].filter(j => j.nextAttempt <= this.now() && this.builds[j.request.build] && this.networks[j.request.chainId]).sort((a,b) => a.nextAttempt - b.nextAttempt)[0];
       if (!job) return;
+      this.processing = job.id;
       job.attempts++;
       try { await this.process(job); } catch (e) { job.status = 'retrying'; job.error = e.message; }
       // One owner executes bounded work. Completed jobs are rechecked for reorgs;
       // provider outages never create more concurrent requests or lose a job.
-      job.nextAttempt = this.now() + (['verified','reverted','source-unavailable'].includes(job.status) ? 24 * 60 * 60_000
+      job.nextAttempt = this.now() + (['verified','reverted','not-applicable','source-unavailable'].includes(job.status) ? 24 * 60 * 60_000
         : Math.min(60 * 60_000, 15_000 * 2 ** Math.min(job.attempts - 1, 8)));
       this.save(job);
-    } finally { this.active = false; }
+    } finally { delete this.processing; this.active = false; }
   }
 }
 export function loadBuilds(root) {

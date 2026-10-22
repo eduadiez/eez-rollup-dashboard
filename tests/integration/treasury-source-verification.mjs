@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import { once } from 'node:events';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, openSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, openSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { encodeDeployData, encodeFunctionData, getContractAddress, toHex, zeroAddress } from 'viem';
@@ -39,7 +39,8 @@ try {
     if(options?.method==='POST'){
       const form=options.body;const input=await form.get('files[0]').text(),version=form.get('compiler_version').slice(1).split('+')[0],key=version+input;
       if(!compiled.has(key)){
-        const solc=resolve(homedir(),'.local/share/svm',version,`solc-${version}`);
+        const solc=['.local/share/svm','.svm'].map(p=>resolve(homedir(),p,version,`solc-${version}`)).find(existsSync);
+        assert(solc,`Install solc ${version} before running verification integration`);
         const output=JSON.parse(execFileSync(solc,['--standard-json'],{input,encoding:'utf8',maxBuffer:64*1024*1024}));
         assert(!(output.errors??[]).some(e=>e.severity==='error'));compiled.set(key,output);
       }
@@ -54,7 +55,7 @@ try {
   let now=Date.now();
   const options={directory:`${directory}/queue`,builds:loadBuilds('verification/builds'),networks:{906969:{rpc:rpcUrl,explorerApi:'https://fixture.invalid/api'}},fetcher,now:()=>now};
   let worker=new VerificationWorker(options);
-  for(const transactionHash of evidence.transactions)worker.enqueue({build:current,chainId:906969,transactionHash});
+  for(const transactionHash of evidence.transactions)await worker.admit({build:current,chainId:906969,transactionHash});
   for(let i=0;i<evidence.transactions.length;i++)await worker.tick();
   assert([...worker.jobs.values()].every(j=>j.status==='pending'));
   worker=new VerificationWorker(options);now+=60000;

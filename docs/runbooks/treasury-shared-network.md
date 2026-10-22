@@ -84,7 +84,21 @@ where the worker publishes, even when ordinary transaction links use Etherscan.
 Completed jobs are periodically rechecked
 against canonical chain state. Jobs for another configured network remain stored
 but cannot run through a mismatching RPC. Unknown build IDs and unconfirmed
-transaction hashes cannot enter the public queue.
+transaction hashes cannot enter the public queue. Admission requires at least
+one newly observed deployment with exact retained bytecode. Configuration-only
+confirmations return `not-applicable`; unknown code returns a visible
+`source-unavailable` result without allocating a persistent job. Events naming
+already existing contracts do not establish a new deployment. Candidate discovery
+is capped at 128 addresses, and nginx limits verification requests to two per
+second per peer with a burst of 20; excess requests retry with HTTP 429.
+
+At the 10,000-job limit, the oldest completed results can be removed to admit new
+work. Active, unresolved and partially published jobs are retained. Redelivery of
+an expired completed result checks the chain and explorer again. A completed job
+being rechecked cannot be evicted underneath its worker. Existing queue files
+remain compatible; older empty confirmations are reclassified as `not-applicable`
+instead of reported as verified. Roll back UI and worker together to preserve
+matching source catalogs; preserve the job volume throughout.
 
 New Chiado treasury plans use version 10 and Ethereum plans version 2 so old UIs
 reject them. Existing setup records keep their original artifact selection,

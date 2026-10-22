@@ -13,14 +13,14 @@ const request = { build, chainId: 906969, transactionHash: tx };
 function fixture(t, change = {}) {
   mkdirSync('.runtime/treasury-auto-verification-20261022', { recursive: true });
   const directory = mkdtempSync('.runtime/treasury-auto-verification-20261022/test-');
-  const state = { time: 1_000_000, code: runtime, receipt: { status:'0x1', blockNumber:'0x20', blockHash, contractAddress:address, logs:[] },
+  const state = { time: 1_000_000, code: runtime, parentCode: '0x', receipt: { status:'0x1', blockNumber:'0x20', blockHash, contractAddress:address, logs:[] },
     chainId: request.chainId, block: blockHash, explorer: { is_verified:false, is_partially_verified:false }, posts:[], calls:[], sourcify: null, fail:false, ...change };
   const fetcher = async (url, options={}) => {
     state.calls.push(url);
     if (url === 'https://rpc.invalid') {
       const {method,params} = JSON.parse(options.body);
       const results = { eth_chainId:'0x'+state.chainId.toString(16), eth_getTransactionReceipt: state.receipt,
-        eth_getBlockByNumber: {hash:state.block}, eth_getCode: params[1]==='0x1f'?'0x':state.code };
+        eth_getBlockByNumber: {hash:state.block}, eth_getCode: params[1]==='0x1f'?state.parentCode:state.code };
       return Response.json({result:results[method]});
     }
     if(state.fail) return new Response('',{status:503});
@@ -126,4 +126,63 @@ test('public admission does not store unknown or unmined transaction hashes', as
 test('already fully verified factory output is reused only when explorer and chain bytes agree', async t => {
   const {state,worker}=fixture(t,{code:'0x600000',explorer:{is_verified:true,is_partially_verified:false,name:'PreviouslyVerifiedFactoryChild'}});
   const job=worker.enqueue(request);await worker.tick();assert.equal(job.status,'verified');assert.equal(state.posts.length,0);
+});
+
+
+test('configuration-only confirmations do not create verification jobs or claim verification', async t => {
+  const {state,worker,config}=fixture(t);
+  state.receipt.contractAddress=null;
+  const result=await worker.admit(request);
+  assert.equal(result.status,'not-applicable');assert.equal(worker.jobs.size,0);
+  assert.equal(readdirSync(config.directory).filter(x=>x.endsWith('.json')).length,0);
+  assert.equal(state.posts.length,0);
+});
+test('unknown deployment bytes cannot consume the public queue', async t => {
+  const {state,worker,config}=fixture(t,{code:'0x600100'});
+  const result=await worker.admit(request);
+  assert.equal(result.status,'source-unavailable');assert.equal(worker.jobs.size,0);
+  assert.equal(readdirSync(config.directory).length,0);assert.equal(state.posts.length,0);
+});
+test('creation events naming an existing known contract cannot consume queue space', async t => {
+  const {state,worker}=fixture(t,{parentCode:runtime});
+  state.receipt.contractAddress=null;
+  state.receipt.logs=[{address,topics:encodeEventTopics({abi:parseAbi(['event Created(uint256 indexed index,address indexed target,bytes32 initHash)']),eventName:'Created',args:{index:0n,target:address}}),data:tx}];
+  const result=await worker.admit(request);assert.equal(result.status,'not-applicable');assert.equal(worker.jobs.size,0);
+});
+test('an exact new deployment is admitted and duplicate delivery does not repeat RPC work',async t=>{
+  const {state,worker}=fixture(t);const result=await worker.admit(request);
+  assert.equal(result.status,'queued');assert.equal(worker.jobs.size,1);
+  const calls=state.calls.length;assert.equal(await worker.admit(request),result);assert.equal(state.calls.length,calls);
+});
+test('completed jobs release bounded queue capacity while unresolved jobs survive restart',async t=>{
+  const {state,config}=fixture(t,{explorer:{is_verified:true,is_partially_verified:false}});
+  const worker=new VerificationWorker({...config,capacity:2});
+  const first=await worker.admit(request);await worker.tick();assert.equal(first.status,'verified');
+  const second=await worker.admit({...request,transactionHash:'0x'+'22'.repeat(32)});
+  state.time+=1000;
+  const third=await worker.admit({...request,transactionHash:'0x'+'33'.repeat(32)});
+  assert.equal(worker.jobs.size,2);assert(!worker.jobs.has(first.id));assert(worker.jobs.has(second.id));assert(worker.jobs.has(third.id));
+  assert.equal(readdirSync(config.directory).filter(x=>x.endsWith('.json')).length,2);
+  const resumed=new VerificationWorker({...config,capacity:2});assert.equal(resumed.jobs.size,2);
+  await assert.rejects(resumed.admit({...request,transactionHash:'0x'+'44'.repeat(32)}),/queue is full/);
+  assert.equal(resumed.jobs.get(second.id).status,'queued');
+});
+
+
+test('capacity pressure cannot evict a completed job while canonical rechecking owns it', async t => {
+  const {state,config}=fixture(t,{explorer:{is_verified:true,is_partially_verified:false}});
+  let hold=false, entered, release;
+  const waiting=new Promise(r=>entered=r), gate=new Promise(r=>release=r);
+  const fetcher=async(url,options)=>{
+    if(hold && url==='https://rpc.invalid' && JSON.parse(options.body).method==='eth_chainId'){
+      hold=false;entered();await gate;
+    }
+    return config.fetcher(url,options);
+  };
+  const worker=new VerificationWorker({...config,fetcher,capacity:1});
+  const job=await worker.admit(request);await worker.tick();assert.equal(job.status,'verified');
+  state.time+=24*60*60_000;hold=true;const running=worker.tick();await waiting;
+  try { await assert.rejects(worker.admit({...request,transactionHash:'0x'+'22'.repeat(32)}),/queue is full/); }
+  finally {release();await running;}
+  assert.equal(worker.jobs.size,1);assert(worker.jobs.has(job.id));
 });

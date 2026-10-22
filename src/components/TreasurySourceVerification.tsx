@@ -31,7 +31,8 @@ export function TreasurySourceVerification() {
   const entries = jobs.flatMap(({ chainId, job }) => job.contracts.map(c => ({ chainId, ...c })));
   const unique = [...new Map(entries.map(c => [`${c.chainId}:${c.address}`, c])).values()];
   const verified = unique.filter(c => ['verified','sourcify-verified'].includes(c.status)).length;
-  const pending = jobs.some(j => !['verified','reverted'].includes(j.job.status));
+  const pending = jobs.some(j => !['verified','reverted','not-applicable'].includes(j.job.status));
+  if (!unique.length && !error) return null;
   return <details className={styles.hint} aria-label="Contract source verification">
     <summary>{error ? 'Contract source verification will retry automatically' : pending ? `Publishing contract sources · ${verified} of ${unique.length} verified` : 'Contract sources verified'}</summary>
     {error && <p role="status">{error}</p>}

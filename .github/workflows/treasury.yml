@@ -1,0 +1,59 @@
+name: Treasury checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: treasury-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.7.1
+      - run: npm ci
+      - name: Verify pinned source release
+        run: npm run check:treasury-release
+      - name: Unit and contract checks
+        run: |
+          npm test
+          npm run test:contracts
+          forge fmt --check --root contracts
+          npm run build:treasury-release
+      - name: Isolated deployment and source verification
+        run: |
+          node tests/integration/treasury-source-verification.mjs
+          node tests/integration/treasury-deployment-batches.mjs --current-release
+      - name: Browser regressions
+        run: |
+          npx playwright install --with-deps chromium
+          node tests/treasury-setup-completion-browser.mjs
+          node tests/treasury-mainnet-setup-browser.mjs
+          node tests/treasury-faucet-browser.mjs
+      - name: Frontend and both service images
+        run: |
+          npm run build
+          docker compose --env-file /dev/null config --quiet
+          docker build --target verification -t treasury-verification:check .
+          docker build -t treasury-ui:check .
+          git diff --exit-code
+      - name: Preserve isolated test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: treasury-checks
+          path: .runtime/
+          retention-days: 7

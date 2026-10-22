@@ -360,16 +360,20 @@ Transactions require a connected browser wallet such as Rabby or MetaMask.
 
 ## Deployment architecture
 
-The application uses two containers in one Compose project:
+The application uses three containers in one Compose project:
 
 - `ui` serves the single React application and proxies requests through nginx.
 - `monitor` runs the Python telemetry collector and API on the internal network.
   It has no published port or separate frontend.
+- `verification` publishes exact treasury contract sources from retained builds.
+  It shares the UI's network namespace and uses a persistent job volume; nginx
+  exposes its bounded API without another public port. See the
+  [source-verification runbook](docs/runbooks/treasury-shared-network.md#automatic-contract-source-verification).
 
 Keep these services separate for production. Their dependencies, health checks,
 logs, and restart lifecycles remain independent. A collector restart temporarily
 interrupts monitoring while the dashboard and visualizer remain available.
-Both services use the root `.env` and deploy with one `docker compose up -d --build`
+The services reuse the root `.env` and runtime configuration and deploy with one `docker compose up -d --build`
 command. The existing gateway provides the public HTTPS endpoint.
 
 ## Docker Compose
