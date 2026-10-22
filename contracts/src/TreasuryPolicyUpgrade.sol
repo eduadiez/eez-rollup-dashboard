@@ -6,7 +6,8 @@ import {BidirectionalTreasuryPolicy} from "./BidirectionalTreasuryPolicy.sol";
 import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 import {IEEZProxyRegistry} from "./interfaces/IEEZProxyRegistry.sol";
 
-/// @notice Replace an existing policy without replacing its Safes or resetting its budget.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Replace an existing policy without replacing its Safes or resetting its budget.
 contract TreasuryPolicyUpgrade is BidirectionalTreasuryPolicy {
     TreasuryPolicy public immutable previousPolicy;
     bool public active;

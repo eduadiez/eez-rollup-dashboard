@@ -3,7 +3,8 @@ pragma solidity 0.8.34;
 
 import {ConfiguredTreasuryBridge} from "./ConfiguredTreasuryBridge.sol";
 
-/// @notice Treasury bridge whose peer is fixed before other treasuries reuse it.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Treasury bridge whose peer is fixed before other treasuries reuse it.
 contract SharedTreasuryBridge is ConfiguredTreasuryBridge {
     constructor(
         address token,

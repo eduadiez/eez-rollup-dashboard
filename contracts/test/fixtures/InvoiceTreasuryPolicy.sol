@@ -7,7 +7,8 @@ import {IEEZProxyRegistry} from "../../src/interfaces/IEEZProxyRegistry.sol";
 import {IAllowanceModule} from "../../src/interfaces/IAllowanceModule.sol";
 import {InvoiceMerchant} from "./InvoiceMerchant.sol";
 
-/// @notice Controlled post-payment failure hook for isolated tests only.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Controlled post-payment failure hook for isolated tests only.
 contract InvoiceTreasuryPolicy is BidirectionalTreasuryPolicy {
     address public immutable invoiceMerchant;
     InvoiceMerchant public immutable invoiceL1Proxy;

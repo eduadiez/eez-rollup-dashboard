@@ -7,7 +7,8 @@ import {IEEZProxyRegistry} from "./interfaces/IEEZProxyRegistry.sol";
 import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 import {ISafe} from "./interfaces/ISafe.sol";
 
-/// @notice One budget for payments initiated by either treasury Safe.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// One budget for payments initiated by either treasury Safe.
 contract BidirectionalTreasuryPolicy is TreasuryPolicy {
     address public immutable safeL1Proxy;
 

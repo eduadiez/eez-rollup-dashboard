@@ -8,7 +8,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {TreasuryAliasReader} from "./TreasuryAliasReader.sol";
 import {TreasuryBridge} from "./TreasuryBridge.sol";
 
-/// @notice A single canonical USDC budget over two Safe allowance delegates.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// A single canonical USDC budget over two Safe allowance delegates.
 /// @dev Demo policy: local and combined payments to either chain.
 ///      Only the official allowance module has Safe module power. Owners retain
 ///      direct spending and administration. Remote view calls require EEZ tables.

@@ -3,7 +3,8 @@ pragma solidity 0.8.34;
 
 import {ConfiguredTreasuryBridge} from "./ConfiguredTreasuryBridge.sol";
 
-/// @notice Setup variant whose temporary executor can hand administration to its wallet.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Setup variant whose temporary executor can hand administration to its wallet.
 /// @dev Keeps the previous bridge artifact unchanged for pending deployment recovery.
 contract BootstrapTreasuryBridge is ConfiguredTreasuryBridge {
     constructor(

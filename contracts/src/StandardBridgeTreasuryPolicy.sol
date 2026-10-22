@@ -9,7 +9,8 @@ import {IStandardBridge} from "./interfaces/IStandardBridge.sol";
 import {StandardBridgeDelegate} from "./StandardBridgeDelegate.sol";
 import {ISafe} from "./interfaces/ISafe.sol";
 
-/// @notice A single canonical USDC budget over two Safe allowance delegates.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// A single canonical USDC budget over two Safe allowance delegates.
 /// @dev Standard bridge integration. Submit the selected Safe through its L1
 ///      entry point so nested bridge callbacks remain within the signer profile.
 ///      Kept separate from the frozen Chiado deployment contract.

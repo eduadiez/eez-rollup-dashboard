@@ -1,5 +1,9 @@
 # Treasury on the dashboard networks
 
+**Warning: The custom treasury contracts are unaudited demo code and are not ready
+for production use, including the Ethereum mainnet integration.** Source
+verification and passing tests do not constitute a security audit.
+
 Target the existing Chiado **10200** and EEZ-X **906969**, rollup **1**. All code,
 checks and deployment records belong in this repository. The running protocol,
 operator wallets and chain data are not redeployed for this demo.

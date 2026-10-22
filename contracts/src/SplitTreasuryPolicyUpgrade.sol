@@ -3,7 +3,8 @@ pragma solidity 0.8.34;
 import {TreasuryPolicy} from "./TreasuryPolicy.sol";
 import {TreasuryPolicyUpgrade} from "./TreasuryPolicyUpgrade.sol";
 
-/// @notice Enable owner-selected contributions without replacing either Safe.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Enable owner-selected contributions without replacing either Safe.
 contract SplitTreasuryPolicyUpgrade is TreasuryPolicyUpgrade {
     bool public immutable previousIsUpgrade;
 

@@ -4,7 +4,8 @@ pragma solidity 0.8.34;
 import {IEEZProxyRegistry} from "./interfaces/IEEZProxyRegistry.sol";
 import {ISafe} from "./interfaces/ISafe.sol";
 
-/// @notice Safe v1.4.1 contract owner delegating verification to an L1 Safe.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Safe v1.4.1 contract owner delegating verification to an L1 Safe.
 /// @dev The full Safe transaction preimage retains its L2 chain, Safe and nonce domain.
 ///      Verification requires an authenticated EEZ static entry. An ordinary RPC eth_call
 ///      without those execution tables can fail even for otherwise valid signatures.

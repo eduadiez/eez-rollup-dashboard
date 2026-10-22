@@ -1,5 +1,9 @@
 # Preparing an Ethereum treasury
 
+**Warning: The custom treasury contracts are unaudited demo code and are not ready
+for production use, including the Ethereum mainnet integration.** Source
+verification and passing tests do not constitute a security audit.
+
 The dashboard asks the user to choose an **existing Ethereum Safe**. The selected
 wallet deploys or connects its EEZ-X mirror and approves configuration. Safe
 addresses belong in that form, not in `.env` or a fixed owner configuration.
@@ -73,7 +77,7 @@ local proxies in its constructor. Enable the official allowance module on both
 Safes and configure their respective delegates with 100 USDC, ten-minute resets
 and aligned base periods. There is no invoice merchant argument or entry point. The owners'
 normal Safe transaction can batch delegate binding and allowance configuration.
-No assets are created or funded by production setup.
+No assets are created or funded by dashboard setup.
 
 Both initiation choices use Ethereum for submission. An EEZ-X approval still
 signs the mirror Safe's chain ID, contract address and nonce. The wallet signs on

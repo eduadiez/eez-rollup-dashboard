@@ -1,5 +1,9 @@
 # One treasury, two Safes
 
+**Warning: The custom treasury contracts are unaudited demo code and are not ready
+for production use, including the Ethereum mainnet integration.** Source
+verification and passing tests do not constitute a security audit.
+
 *A Safe on Ethereum L1 and a Safe on EEZ-X, operated through one owner set and one payment policy using EEZ's synchronous cross-chain execution.*
 
 | Field | Value |
@@ -37,7 +41,7 @@ demo bridge policy still needs its reader to execute its existing bridge API.
 Remove the invoice merchant, invoice proxy, constructor argument and invoice
 entry point from new public mainnet **and testnet** policies. The controlled
 invoice demonstration belongs only to isolated test fixtures. Exercise real
-payment rollback after an earlier leg on both production policy variants.
+payment rollback after an earlier leg on both public-network policy variants.
 
 Publish a new immutable contract build. This simplification targets new deployments;
 old policy constructor layouts do not need a compatibility path. Keep historical
@@ -53,7 +57,7 @@ setups can create equivalent copies; reuse does not require global uniqueness.
 
 Acceptance: exact shared-code and canonical-block validation; new selections
 reuse infrastructure across wallets; module-enable changes invalidate approvals;
-new production ABIs exclude invoices; mainnet has no reader dependency; both
+new public-network ABIs exclude invoices; mainnet has no reader dependency; both
 initiation and destination chains, explicit splits, percentage rules, 100/150
 accounting and later-leg rollback pass contract and isolated native integration
 checks. Retained release inputs reproduce the new deployed bytes. No public chain

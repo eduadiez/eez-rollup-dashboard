@@ -5,7 +5,8 @@ import {TreasuryBridge} from "./TreasuryBridge.sol";
 import {IEEZProxyRegistry} from "./interfaces/IEEZProxyRegistry.sol";
 import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 
-/// @notice Versioned deployment for payments with exact Safe contributions.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Versioned deployment for payments with exact Safe contributions.
 contract SplitTreasuryPolicy is BidirectionalTreasuryPolicy {
     constructor(
         address safeL1_,

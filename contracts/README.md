@@ -1,5 +1,9 @@
 # Treasury demo contracts
 
+**Warning: The custom treasury contracts are unaudited demo code and are not ready
+for production use, including the Ethereum mainnet integration.** Source
+verification and passing tests do not constitute a security audit.
+
 The application uses `L1Owners` for live L1 owner verification and
 `SplitTreasuryPolicy` for payments through the shared Chiado test bridge.
 `StandardBridgeTreasuryPolicy` and its bounded Ethereum delegate use the existing

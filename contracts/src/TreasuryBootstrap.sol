@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
-/// @notice Wallet-owned executor used only to create and finish a test treasury.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Wallet-owned executor used only to create and finish a test treasury.
 /// @dev No delegatecall, Safe ownership, or module authority. Constructor calls
 ///      are atomic with deployment. Later calls require the original wallet and
 ///      exact sequence; closing permanently disables this executor. Do not send
