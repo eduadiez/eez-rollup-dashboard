@@ -103,7 +103,7 @@ def main():
                   'src/components/TreasuryMainnetSetup.tsx', 'tests/treasury-mainnet-setup.test.mjs',
                   'tests/treasury-mainnet-setup-browser.mjs', 'tests/fixtures/treasury-mainnet-setup.tsx', 'src/components/TreasuryDemo.tsx']
     release = json.loads((ROOT / 'src/lib/treasury/current-build.json').read_text())['build']
-    app_paths += ['scripts/build-treasury-release.mjs', 'scripts/check-treasury-release.mjs',
+    app_paths += ['scripts/build-treasury-release.mjs', 'scripts/check-treasury-release.mjs', 'src/lib/treasury/deploymentIO.ts',
                   'src/lib/treasury/release.ts', 'src/lib/treasury/current-build.json',
                   f'src/lib/treasury/builds/{release}.json', f'verification/builds/{release}/manifest.json']
     if args.standard_bridge_snapshot:

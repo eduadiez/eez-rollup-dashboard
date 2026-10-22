@@ -114,15 +114,26 @@ both chain IDs, manager/implementation identity, Safe code and threshold, proxy
 identities and resulting adapter address. The process test deployed these only
 on its disposable private devnet; the dashboard deployment is unchanged.
 
+## Setup implementation
+
+[DeploymentIO](../src/lib/treasury/deploymentIO.ts) owns contract reads, artifact
+checks and bounded discovery of missing or replacement transaction hashes.
+Chiado setup and Ethereum setup share it while retaining separate network
+validation, plans and journals. A discovered hash is only a tracking hint;
+each setup must verify canonical execution before advancing. Safe inspection
+and mirror-call lookup depend only on the read methods they need.
+
 ## Signing integration
 
 [safeTransactions.ts](../src/lib/treasury/safeTransactions.ts) provides immutable
 reviewed Safe typed data, exact JSON for `eth_signTypedData_v4`, owner recovery,
 quorum/duplicate checks, address ordering, the legacy contract-signature wrapper,
-and `execTransaction` calldata. The domain always uses the L2 Safe and chain,
-even when a later payment is destined for L1. It fixes native value, operation,
-`safeTxGas`, gas refunds and `gasPrice` to the agreed zero-value Call shape.
-Network gas remains payable by the submitter.
+and `execTransaction` calldata. The signing domain uses the initiating Safe and
+its chain, independently of the recipient chain. Payments use Call; setup and
+internal transfers use DelegateCall to the verified `MultiSendCallOnly` helper.
+They share one inner-call encoder: every inner operation is Call with zero native
+value. Safe native value, `safeTxGas`, `baseGas` and `gasPrice` remain zero, with no
+refund receiver. Network gas remains payable by the submitter.
 
 The observed L1 owners and Safe nonce must be refreshed before submission.
 Changing the reviewed fields invalidates prior approvals; runtime verification

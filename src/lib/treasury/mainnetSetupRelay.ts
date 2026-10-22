@@ -1,6 +1,7 @@
 import { decodeEventLog, encodeEventTopics, toHex } from "viem";
 import type { Address, Hex } from "viem";
-import type { DeploymentPending, TreasuryDeployment } from "./deployment.ts";
+import type { DeploymentPending } from "./deployment.ts";
+import type { DeploymentIO } from "./deploymentIO.ts";
 import { transferAbi } from "./transfers.ts";
 import network from "./mainnet-network.json" with { type: "json" };
 
@@ -12,7 +13,7 @@ function event(log: Pick<Log, "address" | "topics" | "data">, address: string, n
 }
 /** Setup completion requires the exact incoming call and canonical L1 inclusion.
  * The signature hash alone does not establish which source transaction consumed it. */
-export async function findIncomingCall(io: TreasuryDeployment, safe: Address, p: DeploymentPending,
+export async function findIncomingCall(io: Pick<DeploymentIO, "rpc">, safe: Address, p: DeploymentPending,
   source: { blockHash: Hex; blockNumber: Hex; logs: Pick<Log, "address" | "topics" | "data">[] }) {
   const calls = source.logs.flatMap(l => { const e = event(l, network.registry, "CrossChainCallExecuted");
     return e && same(e.proxy, p.to) && same(e.sourceAddress, p.sender) && same(e.callData, p.data) && e.value === 0n ? [e] : []; });

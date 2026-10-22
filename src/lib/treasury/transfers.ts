@@ -1,8 +1,9 @@
-import { concatHex, decodeEventLog, decodeFunctionData, decodeFunctionResult, encodeEventTopics, encodeFunctionData, encodePacked, keccak256, maxUint256, parseAbi, parseUnits, zeroAddress } from "viem";
+import { decodeEventLog, decodeFunctionData, decodeFunctionResult, encodeEventTopics, encodeFunctionData, keccak256, maxUint256, parseAbi, parseUnits, zeroAddress } from "viem";
 import type { Address, Hex } from "viem";
 import type { Intent, Outcome, TreasuryClient, TreasuryConfig } from "./client.ts";
 import type { Payment } from "./payments.ts";
 import { buildSafeTransaction } from "./safeTransactions.ts";
+import { packSafeCalls } from "./safeSetup.ts";
 import officialSafe from "./official-safe-deployments.json" with { type: "json" };
 
 // The call-only helper is independent of the Safe singleton version. Check its
@@ -33,8 +34,8 @@ export function transferTransaction(c: TreasuryConfig, p: Extract<Payment, { kin
   const approve = (amount: bigint) => ({ to: asset.tokenL1, data: encodeFunctionData({ abi: transferAbi, functionName: "approve", args: [asset.bridgeL1, amount] }) });
   const calls = [approve(0n), approve(BigInt(p.amount)), { to: asset.bridgeL1,
     data: encodeFunctionData({ abi: transferAbi, functionName: "bridgeTokens", args: [asset.tokenL1, BigInt(p.amount), BigInt(p.rollupId), c.safeL2] }) }, approve(0n)];
-  const packed = concatHex(calls.map(call => encodePacked(["uint8", "address", "uint256", "uint256", "bytes"],
-    [0, call.to, 0n, BigInt((call.data.length - 2) / 2), call.data])));
+  // Pending transfer journals retain lowercase calldata, including inner targets.
+  const packed = packSafeCalls(calls).toLowerCase() as Hex;
   return buildSafeTransaction({ chainId: BigInt(c.l1.chainId), safe: c.safeL1, nonce, operation: 1,
     to: transferHelper.address as Address, data: encodeFunctionData({ abi: transferAbi, functionName: "multiSend", args: [packed] }) });
 }

@@ -2,7 +2,7 @@ import { appendSourceRequest } from "./sourceVerification.ts";
 import type { SourceRequest } from "./sourceVerification.ts";
 import { concatHex, decodeEventLog, encodeAbiParameters, encodeDeployData, encodeFunctionData, getAddress, getContractAddress, isAddress, keccak256, parseAbi, parseAbiParameters, toHex, zeroAddress, zeroHash } from "viem";
 import type { Abi, Address, Hex } from "viem";
-import { TreasuryDeployment } from "./deployment.ts";
+import { DeploymentIO } from "./deploymentIO.ts";
 import type { Chain, DeploymentArtifacts, DeploymentPending, DeploymentTarget } from "./deployment.ts";
 import { inspectSafe, matchingSafeCode, ownerFingerprint, packSafeCalls } from "./safeSetup.ts";
 import { buildSafeTransaction, encodeSafeExecution, packEOAApprovals, packOwnerApprovals, safeTransactionHash, safeTypedDataJSON } from "./safeTransactions.ts";
@@ -63,14 +63,13 @@ export function loadMainnetManifest(storage: Pick<Storage, "getItem">) {
   return manifest.instance === keccak256(toHex(`${state.salt}:${state.addresses.safeL1}:${state.addresses.safeL2}`)) ? manifest : null;
 }
 
-/** Separate network journal and artifact bundle: no Chiado state is migrated.
- * Only RPC/ABI/runtime inspection and nonce recovery are reused from the old
- * deployer; its Chiado planning, funding and mutation methods are never called. */
+/** Ethereum setup keeps its own journal and network validation. Shared contract
+ * reads and receipt discovery do not select or mutate a setup plan. */
 export class MainnetSetup {
-  readonly io: TreasuryDeployment;
+  readonly io: DeploymentIO;
   readonly target: MainnetTarget;
   readonly artifacts: DeploymentArtifacts;
-  constructor(target: MainnetTarget, artifacts: DeploymentArtifacts) { this.target = target; this.artifacts = artifacts; this.io = new TreasuryDeployment(target, artifacts); }
+  constructor(target: MainnetTarget, artifacts: DeploymentArtifacts) { this.target = target; this.artifacts = artifacts; this.io = new DeploymentIO(target, artifacts); }
   async validate() {
     for (const chain of ["l1", "l2"] as const) {
       const expected = network.chains[chain], protocol = network.protocol.find(x => x.chain === chain)!;

@@ -95,3 +95,28 @@ Logs and browser results are local-only in
 checks were not repeated for this CSS, inventory and documentation cleanup.
 The earlier results above retain their original scope. No running service or
 chain state was changed, and the publication checks remain outstanding.
+
+## Shared setup cleanup
+
+From `53d07cf7eeefe117850bd558d7851432a0b3ce31`, extracted contract reads, artifact
+checks and pending-transaction discovery into `DeploymentIO`. Ethereum setup now
+uses those shared operations directly instead of constructing the Chiado planner.
+The moved method bodies, timeout, recovery window and artifact checks are
+unchanged. Safe inspection and mirror-call lookup use narrower read interfaces.
+Internal transfers reuse the existing Safe batch encoder, retaining lowercase
+calldata for saved requests. No setup schema or deployment artifact changed.
+
+Validation: all 434 JavaScript tests, TypeScript/Vite build, release integrity,
+19 isolated Anvil setup scenarios and three browser regressions pass. The Anvil
+suite exercises real Safe batches, saved progress and payments in both directions
+with fixture EEZ managers; the browsers use controlled providers. Sixteen transfer
+vectors retain exact serialized calldata and Safe signing hashes. An initial
+hex-casing difference was corrected, with a fixed signing-vector regression added.
+Python syntax, 149 source-inventory paths, local links, whitespace and all nine
+preserved input hashes pass. Existing bundle-size warnings remain.
+
+Logs, comparison vectors and initial failures are local-only in
+`.runtime/treasury-cleanup-2-20261022/`; the isolated integration evidence is in
+`.runtime/treasury-deployment-batches/anvil-MziVzo/`. Contract, native process and
+service-image suites were not repeated for this application refactor. Running
+services, chain state and the outstanding publication checks are unchanged.

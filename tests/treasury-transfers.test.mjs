@@ -28,6 +28,13 @@ test('internal transfer signs an exact approve/bridge/reset batch from the exist
   assert.equal(readIntent(c,JSON.stringify(intent)).safeHash,intent.safeHash);
   for(const change of [{amount:'427740001'},{rollupId:'2'},{recipient:address(30)}]) assert.throws(()=>readIntent(c,JSON.stringify({...intent,payment:{...p,...change}})));
 });
+test('transfer batching preserves stored calldata casing and its Safe signing hash', () => {
+  const config = { ...c, l1: { ...c.l1, chainId: 1 }, safeL1: address(0xabc123), safeL2: address(0xdef456),
+    payments: { ...c.payments, tokenL1: address(0xbadc0ffe), bridgeL1: address(0xcafeaaaa) } };
+  const tx = paymentTransaction(config, { ...p, recipient: config.safeL2, amount: '1' }, 0n);
+  assert.equal(tx.message.data, tx.message.data.toLowerCase());
+  assert.equal(safeTransactionHash(tx), '0xd58ef4ca16e0ebaef0f3e0e895c7c7b3658ecea03ce5faae7828d12ddb6c375c');
+});
 test('transfer validation cannot become an arbitrary owner call or silently bypass payment limits', () => {
   for(const change of [{amount:'0'},{amount:String(1n<<256n)},{source:'l2'},{destination:'l1'},{funding:'split'},{rollupId:'0'},{rollupId:String(1n<<64n)},{fromL1:'1'},{bps:'1000'}])assert.throws(()=>checkedPayment({...p,...change}));
   for(const amount of ['-1','1e6','0','0.0000001'])assert.throws(()=>parseTransferAmount(amount));

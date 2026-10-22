@@ -1,6 +1,6 @@
 import { concatHex, encodeFunctionData, getAddress, keccak256, parseAbi, size, toHex } from "viem";
 import type { Address, Hex } from "viem";
-import type { TreasuryDeployment } from "./deployment.ts";
+import type { DeploymentIO } from "./deploymentIO.ts";
 
 export type SetupChain = "l1" | "l2";
 export type SafeInspection = {
@@ -42,7 +42,7 @@ export function ownerFingerprint(owners: readonly Address[], threshold: number) 
 }
 
 /** Inspect a real Safe at one canonical block; version() alone is insufficient. */
-export async function inspectSafe(d: TreasuryDeployment, chain: SetupChain, address: Address): Promise<SafeInspection> {
+export async function inspectSafe(d: Pick<DeploymentIO, "artifacts" | "rpc" | "read" | "runtimeMatches">, chain: SetupChain, address: Address): Promise<SafeInspection> {
   const block = await d.rpc<{ number: Hex; hash: Hex }>(chain, "eth_getBlockByNumber", ["latest", false]);
   check(block, "Canonical Safe state is unavailable");
   const [proxy, slot, guard] = await Promise.all([
