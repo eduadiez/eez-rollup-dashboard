@@ -17,8 +17,7 @@ contract TreasurySplitTest is BidirectionalTreasuryPolicyTest {
             address(module1),
             module2,
             address(usdc),
-            bridge2,
-            address(merchant)
+            bridge2
         );
     }
 

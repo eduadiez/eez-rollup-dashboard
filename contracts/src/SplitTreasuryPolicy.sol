@@ -15,11 +15,8 @@ contract SplitTreasuryPolicy is BidirectionalTreasuryPolicy {
         address moduleL1,
         IAllowanceModule moduleL2,
         address token,
-        TreasuryBridge bridge_,
-        address merchant
+        TreasuryBridge bridge_
     )
-        BidirectionalTreasuryPolicy(
-            safeL1_, safeL2_, manager, aliasReaderL1_, moduleL1, moduleL2, token, bridge_, merchant
-        )
+        BidirectionalTreasuryPolicy(safeL1_, safeL2_, manager, aliasReaderL1_, moduleL1, moduleL2, token, bridge_)
     {}
 }

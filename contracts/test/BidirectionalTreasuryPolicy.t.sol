@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {TreasuryPolicyTest} from "./TreasuryPolicy.t.sol";
 import {TreasuryPolicy} from "../src/TreasuryPolicy.sol";
 import {BidirectionalTreasuryPolicy} from "../src/BidirectionalTreasuryPolicy.sol";
@@ -17,8 +18,7 @@ contract BidirectionalTreasuryPolicyTest is TreasuryPolicyTest {
             address(module1),
             module2,
             address(usdc),
-            bridge2,
-            address(merchant)
+            bridge2
         );
     }
 
@@ -89,9 +89,10 @@ contract BidirectionalTreasuryPolicyTest is TreasuryPolicyTest {
     }
 
     function testL1FailureRollsBackEarlierL2LegAndNonce() public {
-        bytes memory data = abi.encodeCall(
-            policy.payInvoice, (address(usdc), recipient, 110 * U, bytes32("closed"), block.timestamp / 600)
-        );
+        bytes memory data = _l1Data(true, 110 * U);
+        vm.mockCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), abi.encode(false));
+        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 10 * U)), 1);
+        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), 1);
         uint256 nonce = safeL1.nonce();
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, alias_, data, 0)), A, B);
         vm.expectRevert(bytes("GS013"));

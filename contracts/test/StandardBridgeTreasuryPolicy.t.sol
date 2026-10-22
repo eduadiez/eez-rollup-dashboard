@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 import {OwnerFixture, ReadThroughManager} from "./helpers/OwnerFixture.sol";
-import {InvoiceMerchant} from "../src/InvoiceMerchant.sol";
-import {TreasuryAliasReader} from "../src/TreasuryAliasReader.sol";
 import {StandardBridgeTreasuryPolicy as TreasuryPolicy} from "../src/StandardBridgeTreasuryPolicy.sol";
 import {StandardBridgeDelegate} from "../src/StandardBridgeDelegate.sol";
 import {IStandardBridge} from "../src/interfaces/IStandardBridge.sol";
@@ -16,7 +14,6 @@ import {ISafe} from "../src/interfaces/ISafe.sol";
 contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
     TreasuryPolicy policy;
     StandardBridgeDelegate executor;
-    InvoiceMerchant merchant;
     DevnetUSDC usdc;
     IERC20 wrapped;
     Bridge bridge1;
@@ -42,10 +39,8 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         wrapped = IERC20(bridge2.getWrappedToken(address(usdc), 0));
         module1 = IAllowanceModule(_deployLegacy("AllowanceModule"));
         module2 = IAllowanceModule(_deployLegacy("AllowanceModule"));
-        merchant = new InvoiceMerchant(address(usdc));
         policy = _newPolicy();
         alias_ = l1.getOrCreateCrossChainProxy(address(policy), ROLLUP_ID);
-        merchant.bindPolicy(alias_);
         vm.prank(address(safeL1));
         executor.bindPolicy(alias_);
         _adminL1(abi.encodeCall(ISafe.enableModule, (address(module1))));
@@ -63,12 +58,10 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
             address(safeL1),
             address(safeL2),
             IEEZProxyRegistry(address(l2)),
-            address(new TreasuryAliasReader(IEEZProxyRegistry(address(l1)))),
             address(module1),
             module2,
             address(usdc),
             IStandardBridge(address(bridge2)),
-            address(merchant),
             address(executor)
         );
     }
@@ -250,12 +243,13 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
     }
 
     function testL1FailureRollsBackEarlierL2LegAndNonce() public {
-        bytes memory data = abi.encodeCall(
-            policy.payInvoice, (address(usdc), recipient, 110 * U, bytes32("closed"), block.timestamp / 600)
-        );
+        bytes memory data = _l1Data(true, 110 * U);
+        vm.mockCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), abi.encode(false));
+        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 10 * U)), 1);
+        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), 1);
         uint256 nonce = safeL1.nonce();
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, alias_, data, 0)), A, B);
-        _expectL1Failure(abi.encodeWithSelector(InvoiceMerchant.InvoiceNotOpen.selector, bytes32("closed")));
+        _expectL1Failure(abi.encodeWithSignature("Error(string)", "Could not execute token transfer"));
         _execute(safeL1, alias_, data, 0, signatures);
         assertEq(safeL1.nonce(), nonce);
         assertEq(usdc.balanceOf(recipient), 0);
@@ -263,6 +257,31 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         assertEq(_spent(true), 0);
         assertEq(_spent(false), 0);
         assertEq(policy.spent(block.timestamp / 600), 0);
+    }
+
+    function testUnboundDelegateRejectsBeforeSpending() public {
+        policy = _newPolicy();
+        l1.getOrCreateCrossChainProxy(address(policy), ROLLUP_ID);
+        vm.prank(address(safeL2));
+        vm.expectRevert(TreasuryPolicy.InvalidConfiguration.selector);
+        policy.pay(address(usdc), recipient, U, false, block.timestamp / 600);
+        assertEq(policy.spent(block.timestamp / 600), 0);
+        assertEq(_spent(false), 0);
+        assertEq(wrapped.balanceOf(address(safeL2)), 150 * U);
+    }
+
+    function testBoundPolicyAliasCannotBeTheRecipient() public {
+        vm.prank(address(safeL2));
+        vm.expectRevert(TreasuryPolicy.InvalidRecipient.selector);
+        policy.pay(address(usdc), alias_, U, false, block.timestamp / 600);
+        assertEq(policy.spent(block.timestamp / 600), 0);
+    }
+
+    function testProductionPolicyHasNoInvoiceOrAliasReaderEntryPoint() public {
+        (bool invoice,) = address(policy).call(abi.encodeWithSignature("payInvoice(bytes32,uint256,uint256)"));
+        (bool reader,) = address(policy).staticcall(abi.encodeWithSignature("aliasReaderL1()"));
+        assertFalse(invoice);
+        assertFalse(reader);
     }
 
     function testFundingDelegateBindsOnlyOnceThroughItsSafe() public {

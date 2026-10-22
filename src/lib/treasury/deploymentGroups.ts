@@ -61,8 +61,8 @@ export function groupedSteps(d: TreasuryDeployment, state: DeploymentState): Cal
     ...(!skipFunding ? [call('approveBridge', 'Approve exactly 150 Test USDC', 'l1', tokenArtifact, () => a('tokenL1'), 'approve', () => [a('bridgeL1'), 150_000_000n]),
     call('fundL2', 'Bridge 150 Test USDC to EEZ-X Safe', 'l1', bridgeArtifact, () => a('bridgeL1'), 'bridgeTokens', () => [a('tokenL1'), 150_000_000n, rollup, a('safeL2')], { output: 'tokenL2', special: 'wrapped' })] : []),
     ...(shared && !reused ? [call('registerShared', 'Make this Test USDC and bridge pair reusable', 'l1', tokenArtifact, () => a('tokenL1'), 'registerBridges', () => [a('bridgeL1'), a('bridgeL2')])] : [])];
-  const policy = [deploy('moduleL2', 'Deploy official allowance module', 'l2', 'AllowanceModule'),
-    deploy('policy', 'Deploy the shared 150 Test USDC budget', 'l2', state.version >= 9 ? 'SplitTreasuryPolicy' : state.bidirectional ? 'BidirectionalTreasuryPolicy' : 'TreasuryPolicy', () => [a('safeL1'), a('safeL2'), manager, a('aliasReaderL1'), a('moduleL1'), a('moduleL2'), a('tokenL1'), a('bridgeL2'), zeroAddress])];
+  const policy = [...(!has('moduleL2') ? [deploy('moduleL2', 'Deploy shared EEZ-X allowance module', 'l2', 'AllowanceModule')] : []),
+    deploy('policy', 'Deploy the shared 150 Test USDC budget', 'l2', d.artifacts.build || state.version >= 9 ? 'SplitTreasuryPolicy' : state.bidirectional ? 'BidirectionalTreasuryPolicy' : 'TreasuryPolicy', () => [a('safeL1'), a('safeL2'), manager, a('aliasReaderL1'), a('moduleL1'), a('moduleL2'), a('tokenL1'), a('bridgeL2')])];
   const config = (chain: Chain): Call => {
     const suffix = chain === 'l1' ? 'L1' : 'L2';
     const account = () => a(`safe${suffix}`), module = () => a(`module${suffix}`), delegate = () => a(chain === 'l1' ? 'alias' : 'policy');

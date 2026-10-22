@@ -6,7 +6,6 @@ import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {TreasuryAliasReader} from "./TreasuryAliasReader.sol";
-import {InvoiceMerchant} from "./InvoiceMerchant.sol";
 import {TreasuryBridge} from "./TreasuryBridge.sol";
 
 /// @notice A single canonical USDC budget over two Safe allowance delegates.
@@ -31,14 +30,11 @@ contract TreasuryPolicy {
     uint64 public immutable rollupId;
     TreasuryBridge public immutable bridge;
     address public immutable bridgeL1;
-    address public immutable invoiceMerchant;
-    InvoiceMerchant public immutable invoiceL1Proxy;
     mapping(uint256 epoch => uint256 amount) public spent;
     bool private entered;
 
     error OnlySafe();
     error InvalidConfiguration();
-    error InvoicesDisabled();
     error InvalidAsset();
     error InvalidRecipient();
     error InvalidAmount();
@@ -59,8 +55,6 @@ contract TreasuryPolicy {
         uint256 fromL2,
         uint256 epoch
     );
-
-    event InvoicePaid(bytes32 indexed invoiceId);
 
     event RulePaid(
         address indexed token,
@@ -96,8 +90,7 @@ contract TreasuryPolicy {
         address moduleL1,
         IAllowanceModule moduleL2,
         address token,
-        TreasuryBridge bridge_,
-        address merchant
+        TreasuryBridge bridge_
     ) {
         if (
             safeL1_ == address(0) || safeL2_.code.length == 0 || address(moduleL2).code.length == 0
@@ -117,12 +110,6 @@ contract TreasuryPolicy {
         bridge = bridge_;
         bridgeL1 = bridge_.canonicalBridgeAddress();
         rollupId = manager.ROLLUP_ID();
-        invoiceMerchant = merchant;
-        // Ordinary payment treasuries do not need the controlled invoice fixture.
-        // No proxy to address(0) is provisioned when that capability is disabled.
-        invoiceL1Proxy = merchant == address(0)
-            ? InvoiceMerchant(address(0))
-            : InvoiceMerchant(manager.getOrCreateCrossChainProxy(merchant, 0));
         // Provision local proxies outside STATICCALL. The deployment must also
         // provision this policy's L1 alias before its first remote read.
         allowanceL1Proxy = IAllowanceModule(manager.getOrCreateCrossChainProxy(moduleL1, 0));
@@ -202,25 +189,6 @@ contract TreasuryPolicy {
         emit RulePaid(canonicalToken, recipient, onL1, bps, balanceL1, balanceL2, amount, expectedEpoch);
     }
 
-    /// @notice Route an L1 invoice payment, then require acceptance of the signed terms.
-    /// @dev The immutable merchant is a terminal L1 call, after all transfers.
-    ///      A rejection must propagate through the zero-refund Safe transaction.
-    function payInvoice(
-        address token,
-        address recipient,
-        uint256 amount,
-        bytes32 invoiceId,
-        uint256 expectedEpoch
-    )
-        external
-        paymentExecution
-    {
-        if (invoiceMerchant == address(0)) revert InvoicesDisabled();
-        _pay(token, recipient, amount, true, true, expectedEpoch, type(uint256).max);
-        invoiceL1Proxy.accept(invoiceId, token, recipient, amount);
-        emit InvoicePaid(invoiceId);
-    }
-
     function _pay(
         address token,
         address recipient,
@@ -230,7 +198,7 @@ contract TreasuryPolicy {
         uint256 expectedEpoch,
         uint256 requestedL1
     )
-        private
+        internal
     {
         if (token != canonicalToken) revert InvalidAsset();
         if (amount == 0 || amount > PER_PAYMENT || amount > type(uint96).max) revert InvalidAmount();

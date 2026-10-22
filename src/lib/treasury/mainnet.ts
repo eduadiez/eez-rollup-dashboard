@@ -59,7 +59,7 @@ const networkAbi = parseAbi([
   "function wrappedTokenInfo(address) view returns (address,uint64)", "function BRIDGE() view returns (address)",
   "function getTokenAllowance(address,address,address) view returns (uint256[5])",
 ]);
-const policyAbi = parseAbi(["function invoiceMerchant() view returns(address)", "function rollupId() view returns (uint64)"]);
+const policyAbi = parseAbi(["function rollupId() view returns (uint64)"]);
 type Block = { number: Hex; hash: Hex };
 
 // Fixture exclusion also ignores Solidity's trailing CBOR metadata. Via-IR

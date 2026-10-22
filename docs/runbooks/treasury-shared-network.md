@@ -26,6 +26,20 @@ Infrastructure deployment is separate from each treasury setup and from
 real-wallet/Safe-app acceptance. The linked audit records the state observed at
 the time; the dashboard verifies the selected treasury before opening it.
 
+The simplified contract build targets fresh treasury setups. It does not migrate
+existing policy contracts or preserve earlier constructor layouts.
+
+## Shared EEZ-X Safe infrastructure
+
+New treasuries reuse the Safe implementation, proxy factory, call-only batch
+helper and allowance module. Setup discovers the existing bootstrap creation
+logs, matches exact release bytecode at a stable block and rechecks the selected
+code before submission. Missing contracts are prepared from the connected wallet
+in the usual setup batches; later wallets discover the same confirmed contracts.
+Each Safe's allowances remain independent. An already-enabled module is omitted
+from the signed configuration batch, and a change to enablement invalidates the
+review. RPC errors stop setup instead of triggering another deployment.
+
 ## Token display in explorers
 
 The shared Test USDC uses six decimals, like USDC. A raw amount of `450000000`
@@ -438,7 +452,7 @@ configurations; network switches may also prompt. Token funding is outside setup
 | 1 | Chiado | Deploy the alias reader and allowance module for the existing Safe, reusing verified Safe infrastructure. |
 | 2 | EEZ-X | Create missing infrastructure, owner proxy/adapter, mirror Safe and call-only helper. Reuse the predeployed bridge. |
 | 3 | Chiado | Register the owner-verification alias and close the setup executor. |
-| 4 | EEZ-X | Deploy the allowance module and policy, execute the owner-approved spending configuration and close its executor. |
+| 4 | EEZ-X | Reuse or prepare the shared allowance module, deploy the policy, execute the owner-approved spending configuration and close its executor. |
 | 5 | Chiado | Execute the owner-approved alias/module/delegate/100-token allowance configuration. |
 
 The browser checks occupied EEZ-X CREATE addresses for the selected wallet's
@@ -509,11 +523,10 @@ The named transactions implement this application setup sequence:
 4. Register the owner verifier's L1 alias and close the Chiado setup executor.
    Do not request token approval or move tokens. Empty Safes can complete setup;
    balances remain available for separate ordinary transfers.
-5. Deploy `BidirectionalTreasuryPolicy` with the **alias reader address** as its fourth
-   constructor argument. This used to be the L1 registry address; do not reuse
-   old deployment calldata. New payment-only policies pass zero for the merchant;
-   `payInvoice` explicitly reverts with `InvoicesDisabled` before paying. An
-   invoice fixture already deployed by an older setup is retained and bound.
+5. Deploy `SplitTreasuryPolicy` with the **alias reader address** as its fourth
+   constructor argument. The eight-argument constructor has no merchant argument,
+   and the public policy has no invoice entry point. Invoice demonstrations use
+   a separate fixture policy only on an isolated devnet.
 6. Through normal Safe administration, enable only the official allowance
    modules, add the policy/alias as delegates, and grant each 100 tokens with
    reset interval 10 minutes and reset base 10. Group the remaining calls in one
@@ -716,7 +729,7 @@ use `checkpoint: { number, hash }` for a retained finalized block instead of a
 reference requires checking it against the same intended network. Payment
 bindings include both protocol implementation slots/code hashes, the deployed
 `aliasReaderL1` and its code hash, and asset label
-`Test USDC`. Omit `invoiceControl` on this network.
+`Test USDC`. Omit both `invoiceMerchant` and `invoiceControl` on this network.
 
 Transaction ownership/status (`eez_getCrossChainTransaction`) uses `l2.front`,
 the Composer endpoint. Receipt, block and contract reads use `l2.rpc`; the regular

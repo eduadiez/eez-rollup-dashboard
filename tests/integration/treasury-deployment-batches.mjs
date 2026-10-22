@@ -17,7 +17,7 @@ import { adoptL1Owners, inspectSafe, SAFE_GUARD_SLOT } from '../../src/lib/treas
 import { buildSafeTransaction, encodeSafeExecution, packEOAApprovals, safeTransactionHash } from '../../src/lib/treasury/safeTransactions.ts';
 import { COMPOSER_DISCOVERY_ABI, COMPOSER_DISCOVERY_MARKER } from '../../src/lib/composerDiscovery.ts';
 const legacy = JSON.parse(readFileSync('src/lib/treasury/deployment-artifacts.json'));
-const release = process.argv.includes('--current-release') ? JSON.parse(readFileSync(`src/lib/treasury/builds/${JSON.parse(readFileSync('src/lib/treasury/current-build.json')).build}.json`)) : legacy;
+const release = JSON.parse(readFileSync(`src/lib/treasury/builds/${JSON.parse(readFileSync('src/lib/treasury/current-build.json')).build}.json`));
 const artifacts = { ...release, contracts: { ...legacy.contracts, ...release.contracts } };
 const officialRuntime = JSON.parse(readFileSync('tests/fixtures/official-safe-runtime.json'));
 const profile = JSON.parse(readFileSync('src/lib/treasury/shared-network.json'));
@@ -54,6 +54,10 @@ function provider(chain, account) {
     calls.push(method);
     if (method === 'eth_accounts') return [account.address];
     if (method === 'eth_chainId') return toHex(profile.chains[chain].chainId);
+    if (chain === 'l2' && method === 'eth_getLogs' && params[0].topics?.[0] === keccak256(toHex('Created(uint256,address,bytes32)'))) {
+      const logs = await rawRpc(chain, method, params, front);
+      return logs.filter(log => evidence.transactions.some(tx => tx.chain === 'l2' && tx.hash === log.transactionHash));
+    }
     if (method === 'eth_signTypedData_v4') { assert.equal(params[0], account.address); return account.signTypedData(JSON.parse(params[1])); }
     if (method === 'eth_call') {
       const [nonce] = decodeFunctionData({ abi: COMPOSER_DISCOVERY_ABI, data: params[0].data }).args;
@@ -118,6 +122,13 @@ try {
   for (const item of Object.values(officialRuntime.contracts)) await rpc('l1', 'anvil_setCode', [item.address, item.runtime]);
   const rawRpc = d.rpc.bind(d);
   d.rpc = async (chain, method, params = [], front = false) => {
+    // This fixture models both logical chains on one EVM; their network IDs are
+    // supplied per read, while signed transactions still select the Anvil ID.
+    if (method === 'eth_chainId') return toHex(profile.chains[chain].chainId);
+    if (chain === 'l2' && method === 'eth_getLogs' && params[0].topics?.[0] === keccak256(toHex('Created(uint256,address,bytes32)'))) {
+      const logs = await rawRpc(chain, method, params, front);
+      return logs.filter(log => evidence.transactions.some(tx => tx.chain === 'l2' && tx.hash === log.transactionHash));
+    }
     if (method === 'eez_quoteFee') {
       // Exercise the production request validation and exact quote binding. This
       // response fixture supplies pricing only; Anvil executes the actual batch.
@@ -196,7 +207,10 @@ try {
   assert.equal(await d.read('l1', a.tokenL1, 'DevnetUSDC', 'allowance', [a.bootstrapL1, a.bridgeL1]), 0n);
   await admin('l1', a.safeL1, 'addOwnerWithThreshold', [B.address, 2n], [C]);
   const existingL2 = await newSafe('l2', a.singletonL2, a.factoryL2, [A.address, B.address], 2, 926);
+  await admin('l2', existingL2, 'enableModule', [a.moduleL2], [A, B]);
   let reused = await d.group(await d.configure(C.address, a.safeL1, existingL2));
+  assert.equal(reused.addresses.moduleL2, a.moduleL2, 'reuse the already-enabled shared module');
+  assert(!d.steps(reused).flatMap(s => s.group?.actions ?? [s]).some(s => s.output === 'moduleL2'));
   assert.equal(d.steps(reused).length, 6);
   evidence.existingSafePhases = [];
   while (reused.completed.length < d.steps(reused).length) {
@@ -259,6 +273,10 @@ try {
     let next = await d.useExistingAsset(await d.group(await d.configure(account.address, existingL1)));
     assert.equal(next.version, 6);
     const plan = d.steps(next), actions = plan.flatMap(s => s.group?.actions ?? [s]);
+    for (const key of ['singletonL2', 'factoryL2', 'multiSendL2', 'moduleL2']) {
+      assert.equal(next.addresses[key], a[key], `reuse shared ${key} across wallets`);
+      assert(!actions.some(action => action.output === key), `no duplicate ${key} deployment`);
+    }
     assert(!actions.some(s => ['tokenL1', 'bridgeL1', 'bridgeL2'].includes(s.output)));
     assert(!actions.some(s => s.method === 'claim' || s.method === 'registerBridges'));
     let supplyBeforeFunding, walletBeforeFunding;

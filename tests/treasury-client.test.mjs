@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { encodeAbiParameters, encodeEventTopics, encodeFunctionResult, decodeFunctionData, keccak256, stringToHex } from 'viem';
+import { encodeAbiParameters, encodeEventTopics, encodeFunctionResult, decodeFunctionData, keccak256, parseAbi, stringToHex } from 'viem';
 import { actionTransaction, canonicalRequestRetired, parseTreasuryConfig, readIntent, safeAbi, TreasuryClient, unchanged } from '../src/lib/treasury/client.ts';
 import { paymentAbi, tokenAbi, moduleAbi, treasuryBridgeAbi } from '../src/lib/treasury/payments.ts';
 import { safeTransactionHash } from '../src/lib/treasury/safeTransactions.ts';
@@ -393,4 +393,31 @@ test('signing and submission still reject a wallet on the other Safe network', a
     await assert.rejects(client.prepare(provider, tx, snapshot, [], payment), /Switch your wallet to the selected Safe/);
     assert(calls.every(method => ['eth_accounts', 'eth_chainId'].includes(method)));
   }
+});
+
+test('standard policy validates its canonical alias and Safe-bound delegate without an alias reader', async () => {
+  const p = { policy: address('7'), alias: address('8'), tokenL1: address('9'), tokenL2: address('a'), moduleL1: address('b'), moduleL2: address('c'),
+    bridgeL1: address('d'), bridgeL2: address('e'), bridgeKind: 'standard', bridgeExecutorL1: address('f'), safeL2Alias: address('0') };
+  const registryAbi = parseAbi(['function computeCrossChainProxyAddress(address,uint64) view returns(address)', 'function authorizedProxies(address) view returns(bool,address,uint64)']);
+  const delegateAbi = parseAbi(['function safe() view returns(address)', 'function policyAlias() view returns(address)', 'function allowance() view returns(address)', 'function token() view returns(address)', 'function bridge() view returns(address)', 'function rollupId() view returns(uint64)']);
+  const abi = [...paymentAbi, ...tokenAbi, ...moduleAbi, ...registryAbi, ...delegateAbi], calls = [];
+  let mode;
+  const client = new TreasuryClient({ ...config, payments: p });
+  client.rpc = async (url, method, params) => {
+    assert.equal(method, 'eth_call');
+    const { functionName: name, args } = decodeFunctionData({ abi, data: params[0].data });
+    calls.push(name); let result;
+    if (name === 'computeCrossChainProxyAddress') result = args[0] === p.policy ? mode === 'canonical' ? address('1') : p.alias : p.safeL2Alias;
+    else if (name === 'authorizedProxies') result = args[0] === p.alias ? [mode !== 'registered', mode === 'origin' ? config.safeL2 : p.policy, mode === 'rollup' ? 0n : 42n] : [true, config.safeL2, 42n];
+    else if (params[0].to === p.bridgeExecutorL1) result = { safe: config.safeL1, policyAlias: mode === 'delegate' ? address('1') : p.alias,
+      allowance: p.moduleL1, token: p.tokenL1, bridge: p.bridgeL1, rollupId: 42n }[name];
+    else result = { safeL1: config.safeL1, safeL2: config.safeL2, canonicalToken: p.tokenL1, wrappedToken: p.tokenL2, allowanceL2: p.moduleL2,
+      bridge: p.bridgeL2, bridgeExecutorL1: p.bridgeExecutorL1, rollupId: 42n, GLOBAL_LIMIT: 150_000_000n, PERIOD: 600n, decimals: 6, isModuleEnabled: true }[name];
+    assert.notEqual(result, undefined, name);
+    return encodeFunctionResult({ abi, functionName: name, result });
+  };
+  await client.validatePayments();
+  assert(!calls.some(n => /aliasReader|aliasOf/.test(n)));
+  for (mode of ['canonical', 'registered', 'origin', 'rollup']) await assert.rejects(client.validatePayments(), /Policy alias binding changed/);
+  mode = 'delegate'; await assert.rejects(client.validatePayments(), /funding delegate binding changed/);
 });

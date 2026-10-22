@@ -30,8 +30,7 @@ contract TreasuryPolicyUpgrade is BidirectionalTreasuryPolicy {
             moduleL1,
             previous.allowanceL2(),
             previous.canonicalToken(),
-            previous.bridge(),
-            address(0)
+            previous.bridge()
         )
     {
         if (

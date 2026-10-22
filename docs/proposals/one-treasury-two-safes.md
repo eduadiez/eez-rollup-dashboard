@@ -19,6 +19,46 @@ presenter instructions, use the [shared-network](../runbooks/treasury-shared-net
 [mainnet](../runbooks/treasury-mainnet.md) and [rehearsal](../runbooks/treasury-rehearsal.md)
 runbooks. Evidence from an earlier milestone does not validate a later build.
 
+## Accepted treasury contract simplification (2026-10-22)
+
+For new setups on both public networks, reuse a verified EEZ-X Safe singleton,
+proxy factory, call-only batch helper and allowance module. Bind shared addresses
+to the selected chain and manager, check exact runtime identities at one canonical
+block, and recheck saved bindings before submission. Reused modules must not be
+enabled twice; the reviewed batch must reflect that observed state. Preserve
+other delegates, counters and the existing Safe owners and threshold.
+
+New standard-bridge policies obtain the policy alias from the existing Ethereum
+funding delegate's one-time Safe-authorized binding. Reject an unbound delegate;
+retain the canonical alias and delegate binding checks in the client. Remove the
+alias-reader constructor argument, proxy and calls from this policy. Chiado's
+demo bridge policy still needs its reader to execute its existing bridge API.
+
+Remove the invoice merchant, invoice proxy, constructor argument and invoice
+entry point from new public mainnet **and testnet** policies. The controlled
+invoice demonstration belongs only to isolated test fixtures. Exercise real
+payment rollback after an earlier leg on both production policy variants.
+
+Publish a new immutable contract build. This simplification targets new deployments;
+old policy constructor layouts do not need a compatibility path. Keep historical
+verification inputs and local operator state intact, without migrating contracts
+or changing network identities or environment files.
+
+Discover reusable EEZ-X infrastructure through the existing bootstrap `Created`
+events, matching creation hashes and exact deployed runtimes. If a contract is
+absent, prepare it from the connected wallet in the normal setup batches. Later
+wallets find those confirmed deployments from chain history. Do not introduce a
+registry contract, an operator key or new environment settings. Concurrent first
+setups can create equivalent copies; reuse does not require global uniqueness.
+
+Acceptance: exact shared-code and canonical-block validation; new selections
+reuse infrastructure across wallets; module-enable changes invalidate approvals;
+new production ABIs exclude invoices; mainnet has no reader dependency; both
+initiation and destination chains, explicit splits, percentage rules, 100/150
+accounting and later-leg rollback pass contract and isolated native integration
+checks. Retained release inputs reproduce the new deployed bytes. No public chain
+broadcast is required for validation.
+
 ## Accepted shared Ethereum helpers (2026-10-22)
 
 For new mainnet treasuries, reuse the verified Ethereum allowance module and

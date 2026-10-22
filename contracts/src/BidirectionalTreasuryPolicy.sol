@@ -24,10 +24,9 @@ contract BidirectionalTreasuryPolicy is TreasuryPolicy {
         address moduleL1,
         IAllowanceModule moduleL2,
         address token,
-        TreasuryBridge bridge_,
-        address merchant
+        TreasuryBridge bridge_
     )
-        TreasuryPolicy(safeL1_, safeL2_, manager, aliasReaderL1_, moduleL1, moduleL2, token, bridge_, merchant)
+        TreasuryPolicy(safeL1_, safeL2_, manager, aliasReaderL1_, moduleL1, moduleL2, token, bridge_)
     {
         address proxy = manager.getOrCreateCrossChainProxy(safeL1_, 0);
         (bool registered, address original, uint64 origin) = manager.authorizedProxies(proxy);

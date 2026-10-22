@@ -5,8 +5,6 @@ import {IEEZProxyRegistry} from "./interfaces/IEEZProxyRegistry.sol";
 import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {TreasuryAliasReader} from "./TreasuryAliasReader.sol";
-import {InvoiceMerchant} from "./InvoiceMerchant.sol";
 import {IStandardBridge} from "./interfaces/IStandardBridge.sol";
 import {StandardBridgeDelegate} from "./StandardBridgeDelegate.sol";
 import {ISafe} from "./interfaces/ISafe.sol";
@@ -35,19 +33,14 @@ contract StandardBridgeTreasuryPolicy {
     IAllowanceModule public immutable allowanceL2;
     IAllowanceModule public immutable allowanceL1Proxy;
     IERC20 public immutable tokenL1Proxy;
-    address public immutable aliasReaderL1;
-    TreasuryAliasReader public immutable aliasReaderL1Proxy;
     uint64 public immutable rollupId;
     IStandardBridge public immutable bridge;
     address public immutable bridgeL1;
-    address public immutable invoiceMerchant;
-    InvoiceMerchant public immutable invoiceL1Proxy;
     mapping(uint256 epoch => uint256 amount) public spent;
     bool private entered;
 
     error OnlySafe();
     error InvalidConfiguration();
-    error InvoicesDisabled();
     error InvalidAsset();
     error InvalidRecipient();
     error InvalidAmount();
@@ -68,8 +61,6 @@ contract StandardBridgeTreasuryPolicy {
         uint256 fromL2,
         uint256 epoch
     );
-
-    event InvoicePaid(bytes32 indexed invoiceId);
 
     event RulePaid(
         address indexed token,
@@ -103,18 +94,16 @@ contract StandardBridgeTreasuryPolicy {
         address safeL1_,
         address safeL2_,
         IEEZProxyRegistry manager,
-        address aliasReaderL1_,
         address moduleL1,
         IAllowanceModule moduleL2,
         address token,
         IStandardBridge bridge_,
-        address merchant,
         address executor
     ) {
         if (
             executor == address(0) || safeL1_ == address(0) || safeL2_.code.length == 0
-                || address(moduleL2).code.length == 0 || aliasReaderL1_ == address(0) || moduleL1 == address(0)
-                || token == address(0) || manager.ROLLUP_ID() == 0 || address(bridge_.manager()) != address(manager)
+                || address(moduleL2).code.length == 0 || moduleL1 == address(0) || token == address(0)
+                || manager.ROLLUP_ID() == 0 || address(bridge_.manager()) != address(manager)
                 || bridge_.rollupId() != manager.ROLLUP_ID() || bridge_.canonicalBridgeAddress() == address(0)
         ) revert InvalidConfiguration();
         address wrapped = bridge_.getWrappedToken(token, 0);
@@ -135,18 +124,10 @@ contract StandardBridgeTreasuryPolicy {
         bridge = bridge_;
         bridgeL1 = bridge_.canonicalBridgeAddress();
         rollupId = manager.ROLLUP_ID();
-        invoiceMerchant = merchant;
-        // Ordinary payment treasuries do not need the controlled invoice fixture.
-        // No proxy to address(0) is provisioned when that capability is disabled.
-        invoiceL1Proxy = merchant == address(0)
-            ? InvoiceMerchant(address(0))
-            : InvoiceMerchant(manager.getOrCreateCrossChainProxy(merchant, 0));
         // Provision local proxies outside STATICCALL. The deployment must also
         // provision this policy's L1 alias before its first remote read.
         allowanceL1Proxy = IAllowanceModule(manager.getOrCreateCrossChainProxy(moduleL1, 0));
         tokenL1Proxy = IERC20(manager.getOrCreateCrossChainProxy(token, 0));
-        aliasReaderL1 = aliasReaderL1_;
-        aliasReaderL1Proxy = TreasuryAliasReader(manager.getOrCreateCrossChainProxy(aliasReaderL1_, 0));
     }
 
     /// @notice Spend only the destination chain's allowance.
@@ -220,25 +201,6 @@ contract StandardBridgeTreasuryPolicy {
         emit RulePaid(canonicalToken, recipient, onL1, bps, balanceL1, balanceL2, amount, expectedEpoch);
     }
 
-    /// @notice Route an L1 invoice payment, then require acceptance of the signed terms.
-    /// @dev The immutable merchant is a terminal L1 call, after all transfers.
-    ///      A rejection must propagate through the zero-refund Safe transaction.
-    function payInvoice(
-        address token,
-        address recipient,
-        uint256 amount,
-        bytes32 invoiceId,
-        uint256 expectedEpoch
-    )
-        external
-        paymentExecution
-    {
-        if (invoiceMerchant == address(0)) revert InvoicesDisabled();
-        _pay(token, recipient, amount, true, true, expectedEpoch, type(uint256).max);
-        invoiceL1Proxy.accept(invoiceId, token, recipient, amount);
-        emit InvoicePaid(invoiceId);
-    }
-
     function _pay(
         address token,
         address recipient,
@@ -259,7 +221,10 @@ contract StandardBridgeTreasuryPolicy {
             bridge.canonicalBridgeAddress() != bridgeL1 || bridgeL1Proxy.canonicalBridgeAddress() != address(bridge)
                 || bridgeL1Proxy.rollupId() != 0
         ) revert InvalidConfiguration();
-        address alias_ = aliasReaderL1Proxy.aliasOf(address(this), rollupId);
+        // The Safe binds this delegate once during setup. Reuse that authenticated
+        // binding instead of provisioning a separate remote alias reader.
+        address alias_ = bridgeExecutorL1Proxy.policyAlias();
+        if (alias_ == address(0)) revert InvalidConfiguration();
         if (
             recipient == address(0) || recipient == address(this) || recipient == alias_ || recipient == safeL1
                 || recipient == safeL2 || recipient == address(bridge) || recipient == bridgeL1
@@ -270,17 +235,17 @@ contract StandardBridgeTreasuryPolicy {
         if (requestedL1 != type(uint256).max) {
             fromL1 = requestedL1;
             fromL2 = amount - fromL1;
-            if (fromL1 > _capacity(true, alias_, epoch) || fromL2 > _capacity(false, alias_, epoch)) revert Capacity();
+            if (fromL1 > _capacity(true, epoch) || fromL2 > _capacity(false, epoch)) revert Capacity();
         } else if (onL1) {
-            uint256 cap = _capacity(true, alias_, epoch);
+            uint256 cap = _capacity(true, epoch);
             fromL1 = amount < cap ? amount : cap;
             fromL2 = amount - fromL1;
-            if (fromL2 > 0 && (!routed || fromL2 > _capacity(false, alias_, epoch))) revert Capacity();
+            if (fromL2 > 0 && (!routed || fromL2 > _capacity(false, epoch))) revert Capacity();
         } else {
-            uint256 cap = _capacity(false, alias_, epoch);
+            uint256 cap = _capacity(false, epoch);
             fromL2 = amount < cap ? amount : cap;
             fromL1 = amount - fromL2;
-            if (fromL1 > 0 && (!routed || fromL1 > _capacity(true, alias_, epoch))) revert Capacity();
+            if (fromL1 > 0 && (!routed || fromL1 > _capacity(true, epoch))) revert Capacity();
         }
         spent[epoch] += amount;
         // Execute the L2 contribution first. Required failures propagate through
@@ -304,7 +269,7 @@ contract StandardBridgeTreasuryPolicy {
         emit Paid(canonicalToken, recipient, onL1, amount, fromL1, fromL2, epoch);
     }
 
-    function _capacity(bool onL1, address alias_, uint256 epoch) private view returns (uint256) {
+    function _capacity(bool onL1, uint256 epoch) private view returns (uint256) {
         uint256 remaining = _remaining(
             onL1 ? allowanceL1Proxy : allowanceL2,
             onL1 ? safeL1 : safeL2,

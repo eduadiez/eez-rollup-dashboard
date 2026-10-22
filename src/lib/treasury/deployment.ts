@@ -1,3 +1,5 @@
+import { discoverSafeInfrastructure, validateSafeInfrastructure } from "./safeInfrastructure.ts";
+import type { SafeInfrastructure } from "./safeInfrastructure.ts";
 import { appendSourceRequest, retainSourceRequests } from "./sourceVerification.ts";
 import type { SourceRequest } from "./sourceVerification.ts";
 import { DeploymentIO } from "./deploymentIO.ts";
@@ -37,7 +39,7 @@ export type SetupReview = { id: string; chain: Chain; safe: Address; to: Address
   safeHash: Hex; approvals: Approval[] };
 export type OfficialBinding = { address: Address; codeHash: Hex };
 export type FaucetRequest = { amount: string; recipient: Address; destination: Chain; faucet?: Address };
-export type DeploymentState = { build?: string; sourceRequests?: SourceRequest[]; faucetRequests?: Record<string, FaucetRequest>; bidirectional?: true; version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10; fundingSkipped?: { source: DeploymentState }; asset?: { source: DeploymentState; binding: AssetInfrastructure; fundingBase: { l1: string; l2: string } }; shared?: { source: DeploymentState; binding?: SharedInfrastructure; fundingBase: { l1: string; l2: string } }; grouping?: { source: DeploymentState; walletPreparation?: { nonce: string; calls: number } }; identity: Hex; deployer: Address; salt: Hex; reuse: { l1?: SafeInspection; l2?: SafeInspection };
+export type DeploymentState = { infrastructure?: SafeInfrastructure; build?: string; sourceRequests?: SourceRequest[]; faucetRequests?: Record<string, FaucetRequest>; bidirectional?: true; version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10; fundingSkipped?: { source: DeploymentState }; asset?: { source: DeploymentState; binding: AssetInfrastructure; fundingBase: { l1: string; l2: string } }; shared?: { source: DeploymentState; binding?: SharedInfrastructure; fundingBase: { l1: string; l2: string } }; grouping?: { source: DeploymentState; walletPreparation?: { nonce: string; calls: number } }; identity: Hex; deployer: Address; salt: Hex; reuse: { l1?: SafeInspection; l2?: SafeInspection };
   simplification?: { preserved: number; official: Record<string, OfficialBinding> };
   completed: string[]; addresses: Record<string, Address>; transactions: Hex[]; inclusions?: Record<string, SetupInclusion>; pending?: DeploymentPending; review?: SetupReview };
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
@@ -246,7 +248,12 @@ export class TreasuryDeployment extends DeploymentIO {
         "This EEZ-X Safe already follows another L1 Safe. Select its matching L1 Safe");
       addresses.adapter = reuse.l2.adapter.address;
     }
-    return this.simplify({ ...(this.artifacts.build ? { build: this.artifacts.build } : {}), version: 2, bidirectional: true, identity: deploymentIdentity, deployer: getAddress(deployer), salt: toHex(crypto.getRandomValues(new Uint8Array(32))),
+    const infrastructure = await discoverSafeInfrastructure(this, profile.chains.l2.chainId, profile.chains.l2.checkpoint.number as Hex);
+    for (const [key, binding] of Object.entries(infrastructure)) if (!addresses[key]) addresses[key] = binding.address;
+    // An imported mirror keeps its existing singleton. Only bind reused helpers
+    // actually selected for this setup.
+    for (const key of Object.keys(infrastructure) as (keyof SafeInfrastructure)[]) if (!same(addresses[key]!, infrastructure[key]!.address)) delete infrastructure[key];
+    return this.simplify({ infrastructure, ...(this.artifacts.build ? { build: this.artifacts.build } : {}), version: 2, bidirectional: true, identity: deploymentIdentity, deployer: getAddress(deployer), salt: toHex(crypto.getRandomValues(new Uint8Array(32))),
       reuse, addresses, completed: [], transactions: [] });
   }
   /** Preserve every confirmed step. An outstanding request/review keeps its old
@@ -375,6 +382,7 @@ export class TreasuryDeployment extends DeploymentIO {
     return getAddress(await this.read<Address>("l1", getAddress(profile.registry), "Registry", "computeCrossChainProxyAddress", [policy, BigInt(profile.rollupId)], "latest"));
   }
   async validateImports(state: DeploymentState) {
+    await validateSafeInfrastructure(this, state.infrastructure ?? {}, state.addresses);
     if (state.asset) await verifyAssetInfrastructure(this, state.asset.binding);
     if (state.shared?.binding) await verifySharedInfrastructure(this, state.shared.binding);
     for (const [key, binding] of Object.entries(state.simplification?.official ?? {})) {
@@ -498,7 +506,12 @@ export class TreasuryDeployment extends DeploymentIO {
         && same(local.adapter.safeL1, state.addresses.safeL1!) && same(local.adapter.manager, profile.manager), "EEZ-X Safe owner adapter changed");
       authority = await inspectSafe(this, "l1", state.addresses.safeL1!); adapter = local.adapter.address;
     }
-    const args = step.migration ? [adoptL1Owners(local.address, local.owners, state.addresses.adapter!)] : step.args();
+    let args = step.migration ? [adoptL1Owners(local.address, local.owners, state.addresses.adapter!)] : step.args();
+    if (!step.migration && step.batch && state.addresses[step.chain === "l1" ? "moduleL1" : "moduleL2"] && await this.read<boolean>(step.chain, local.address, "Safe", "isModuleEnabled", [state.addresses[step.chain === "l1" ? "moduleL1" : "moduleL2"]!], local.block)) {
+      args = [packSafeCalls(step.batch.filter(call => call.method !== "enableModule").map(call => ({
+        to: call.target!(), data: encodeFunctionData({ abi: this.abi(call.artifact), functionName: call.method!, args: call.args() }),
+      })))];
+    }
     const data = encodeFunctionData({ abi: this.abi(step.artifact), functionName: step.method!, args });
     const review: SetupReview = { id: step.id, chain: step.chain, safe: local.address, to: step.target!(), data,
       operation: step.migration ? 1 : step.operation ?? 0, nonce: local.nonce, owners: [...authority.owners], threshold: authority.threshold,

@@ -79,13 +79,13 @@ export function parseTreasuryConfig(value: unknown): TreasuryConfig {
         && c.code.some(b => b.chain === chain && same(b.address, binding.proxy))
         && c.code.some(b => b.chain === chain && same(b.address, binding.implementation)), "Invalid protocol implementation binding");
     }
-    requireThat(c.payments?.invoiceControl === undefined, "Invoice fixture controls are isolated-devnet only");
+    requireThat(c.payments?.invoiceControl === undefined && c.payments?.invoiceMerchant === undefined, "Invoice fixture controls are isolated-devnet only");
   }
   if (c.safeImplementations) for (const chain of ["l1", "l2"] as const)
     requireThat(isAddress(c.safeImplementations[chain]) && c.code.some(b => b.chain === chain && same(b.address, c.safeImplementations![chain])), "Missing Safe implementation code binding");
   if (c.payments) {
     const p = c.payments;
-    requireThat(c.environment === "isolated-devnet" || p.aliasReaderL1, "Shared-network payments require an L1 alias reader");
+    requireThat(c.environment === "isolated-devnet" || p.bridgeKind === "standard" || p.aliasReaderL1, "Shared-network payments require an L1 alias reader");
     if (p.aliasReaderL1 !== undefined) requireThat(isAddress(p.aliasReaderL1) && BigInt(p.aliasReaderL1) !== 0n
       && c.code.some(b => b.chain === "l1" && same(b.address, p.aliasReaderL1!)), "Invalid alias reader identity");
     if (p.invoiceMerchant !== undefined) {
@@ -269,6 +269,9 @@ export class TreasuryClient {
         requireThat(same(await contractRead(this, "l1", p.bridgeExecutorL1!, delegateAbi, name!) as string, expected!), "Ethereum funding delegate binding changed");
       const rollup = await contractRead(this, "l2", p.policy, paymentAbi, "rollupId") as bigint;
       requireThat(await contractRead(this, "l1", p.bridgeExecutorL1!, delegateAbi, "rollupId") === rollup, "Ethereum funding delegate rollup changed");
+      const policyAlias = await contractRead(this, "l1", c.registry, registryAbi, "computeCrossChainProxyAddress", [p.policy, rollup]) as Address;
+      const [policyRegistered, policyOriginal, policyOrigin] = await contractRead(this, "l1", c.registry, registryAbi, "authorizedProxies", [p.alias]) as [boolean, Address, bigint];
+      requireThat(same(policyAlias, p.alias) && policyRegistered && same(policyOriginal, p.policy) && policyOrigin === rollup, "Policy alias binding changed");
       const expected = await contractRead(this, "l1", c.registry, registryAbi, "computeCrossChainProxyAddress", [c.safeL2, rollup]) as Address;
       const [registered, original, origin] = await contractRead(this, "l1", c.registry, registryAbi, "authorizedProxies", [p.safeL2Alias!]) as [boolean, Address, bigint];
       requireThat(same(expected, p.safeL2Alias!) && registered && same(original, c.safeL2) && origin === rollup, "Mirror Safe relay binding changed");

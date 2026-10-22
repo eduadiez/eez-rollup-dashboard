@@ -6,7 +6,7 @@ import { encodeFunctionData, concatHex, zeroAddress, zeroHash, keccak256, encode
 import { buildSafeTransaction, packOwnerApprovals, encodeSafeExecution } from '../../src/lib/treasury/safeTransactions.ts';
 export async function setupPayments(f, { legacy = false } = {}) {
   const { network: n, read, rpc, artifact, deploy, send, safeArtifact, A, B, adapter, safeL1, safeL2, manager } = f;
-  const token = artifact('out', 'SharedTestUSDC'), bridge = artifact('out', 'SharedTreasuryBridge'), module = artifact('legacy/out', 'AllowanceModule'), policyArtifact = legacy ? (() => { const frozen = JSON.parse(readFileSync('contracts/legacy/artifacts/TreasuryPolicy.json')); return { abi: frozen.abi, bytecode: { object: frozen.bytecode } }; })() : artifact('out', 'BidirectionalTreasuryPolicy');
+  const token = artifact('out', 'SharedTestUSDC'), bridge = artifact('out', 'SharedTreasuryBridge'), module = artifact('legacy/out', 'AllowanceModule'), policyArtifact = legacy ? (() => { const frozen = JSON.parse(readFileSync('contracts/legacy/artifacts/TreasuryPolicy.json')); return { abi: frozen.abi, bytecode: { object: frozen.bytecode } }; })() : artifact('out', 'InvoiceTreasuryPolicy');
   const tokenL1 = await deploy(n.l1, token);
   const bootstrapArtifact = artifact('out', 'TreasuryBootstrap');
   const helperArtifact = artifact('legacy/out', 'MultiSendCallOnly');

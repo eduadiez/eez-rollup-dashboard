@@ -288,3 +288,12 @@ wallet acceptance were not repeated for this planner/UI change. Chiado setup,
 EEZ-X module deployment and existing treasury contracts are unchanged. No public
 broadcast, service rollout or push was performed; the hosted UI needs this update
 published before new treasuries use the shared Ethereum helpers.
+
+## Shared EEZ-X infrastructure and smaller policies
+
+The subsequent [contract simplification record](../2026-10-22-treasury-contract-simplification/README.md)
+covers connected-wallet preparation and cross-wallet reuse of EEZ-X Safe
+infrastructure, removal of the mainnet alias-reader dependency, and invoice
+fixtures excluded from both public policy variants. It supersedes the earlier
+shared-helper layout above for new deployments and identifies the new immutable
+source build and its validation.

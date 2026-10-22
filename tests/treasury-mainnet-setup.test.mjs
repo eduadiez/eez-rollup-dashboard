@@ -1,30 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decodeAbiParameters, decodeFunctionData, getAddress, getContractAddress, keccak256, toHex, zeroAddress, zeroHash } from 'viem';
+import { decodeAbiParameters, decodeFunctionData, encodeAbiParameters, encodeEventTopics, parseAbi, getAddress, getContractAddress, keccak256, toHex, zeroAddress, zeroHash } from 'viem';
 import { MainnetSetup, mainnetSetupKey, mainnetManifestKey, mainnetSetupSteps, readMainnetSetup, isMainnetSetupTarget, loadMainnetManifest } from '../src/lib/treasury/mainnetSetup.ts';
 import { sharedDeploymentKey, sharedManifestKey } from '../src/lib/treasury/deployment.ts';
 const json=path=>JSON.parse(readFileSync(path));
 const base=json('src/lib/treasury/deployment-artifacts.json'),current=json('src/lib/treasury/mainnet-artifacts.json'),network=json('src/lib/treasury/mainnet-network.json');
 const shared=json('src/lib/treasury/mainnet-shared-contracts.json'),release=json(`src/lib/treasury/builds/${json('src/lib/treasury/current-build.json').build}.json`);
-const artifacts={...base,contracts:{...base.contracts,...current.contracts}},addr=n=>getAddress(`0x${n.toString(16).padStart(40,'0')}`);
+const artifacts={...release,contracts:{...base.contracts,...release.contracts}},addr=n=>getAddress(`0x${n.toString(16).padStart(40,'0')}`);
 const target={l1:{rpc:'http://127.0.0.1:1',front:'http://127.0.0.1:1',explorer:'https://etherscan.io'},l2:{rpc:'http://127.0.0.1:2',front:'http://127.0.0.1:2',explorer:'https://explorer.eez.dev'},fees:{l1:'1',l2:'1'}};
 function fixture(){
- const aliasArtifact=release.contracts.TreasuryAliasReader;
- let readerRuntime=aliasArtifact.runtime;
- for(const slot of aliasArtifact.immutables){const start=2+slot.start*2;readerRuntime=readerRuntime.slice(0,start)+network.registry.slice(2).padStart(slot.length*2,'0')+readerRuntime.slice(start+slot.length*2);}
- const sharedCode={ [shared.contracts.aliasReaderL1.address.toLowerCase()]:readerRuntime,[shared.contracts.moduleL1.address.toLowerCase()]:release.contracts.AllowanceModule.runtime };
+ const sharedCode={ [shared.contracts.moduleL1.address.toLowerCase()]:release.contracts.AllowanceModule.runtime };
  for(const b of Object.values(shared.contracts))assert.equal(keccak256(sharedCode[b.address.toLowerCase()]),b.hash);
  const engine=new MainnetSetup(target,artifacts),safe=addr(100),singleton=addr(101),deployer=addr(200),block={number:'0xa',hash:zeroHash};
  engine.validate=async()=>{};
  engine.io.rpc=async(chain,method,params)=>{
   if(method==='eth_getBlockByNumber')return block;
+  if(method==='eth_chainId')return toHex(network.chains[chain].chainId);
+  if(method==='eth_getLogs')return [];
   if(method==='eth_getStorageAt')return params[1]==='0x0'?toHex(BigInt(singleton),{size:32}):zeroHash;
   if(method==='eth_getCode')return params[0]===safe?artifacts.contracts.SafeProxy.runtime:params[0]===singleton?artifacts.contracts.Safe.runtime:sharedCode[params[0].toLowerCase()]??'0x';
   if(method==='eth_getTransactionCount')return '0x4';
   throw Error(method);
  };
- engine.io.read=async(chain,address,name,method)=>({VERSION:'1.4.1',getOwners:[deployer],getThreshold:1n,nonce:0n,getModulesPaginated:[[],addr(1)],sequence:1n,owner:deployer,closed:false,registry:network.registry,isModuleEnabled:false}[method]);
+ engine.io.read=async(chain,address,name,method)=>({VERSION:'1.4.1',getOwners:[deployer],getThreshold:1n,nonce:0n,getModulesPaginated:[[],addr(1)],sequence:1n,owner:deployer,closed:false,registry:network.registry,isModuleEnabled:false,proxyCreationCode:artifacts.contracts.SafeProxyFactory.proxyCreationCode}[method]);
  return {engine,safe,singleton,deployer};
 }
 test('mainnet eligibility uses the selected network, not a treasury Safe or wallet',()=>{
@@ -36,7 +35,7 @@ test('mainnet eligibility uses the selected network, not a treasury Safe or wall
 test('selection preserves the entered Safe, its owner threshold and a different deployer',async()=>{
  const {engine,safe,deployer}=fixture(),s=await engine.configure(addr(201),safe);
  assert.equal(s.addresses.safeL1,safe);assert.equal(s.deployer,addr(201));assert.notEqual(s.deployer,deployer);
- assert.equal(s.completed.length,0);assert.equal(s.addresses.safeL2,undefined);assert.equal(s.code.length,4);
+ assert.equal(s.completed.length,0);assert.equal(s.addresses.safeL2,undefined);assert.equal(s.code.length,3);
  assert.deepEqual(readMainnetSetup(JSON.stringify(s)),s);
  assert.throws(()=>readMainnetSetup(JSON.stringify({...s,identity:zeroHash})),/Invalid Ethereum setup/);
 });
@@ -64,7 +63,7 @@ test('new mirror creation and policy deployment fit separate EVM batches without
  assert.deepEqual(budget.outputs.map(x=>x.key),['moduleL2','policy']);
  const policy=decoded.args[1][1],a=artifacts.contracts.StandardBridgeTreasuryPolicy;
  const args=decodeAbiParameters(a.abi.find(x=>x.type==='constructor').inputs,`0x${policy.data.slice(a.bytecode.length)}`);
- assert.equal(args[0].toLowerCase(),safe.toLowerCase());assert.equal(args[7].toLowerCase(),network.contracts.bridgeL2.address.toLowerCase());assert.equal(args[8],zeroAddress);
+ assert.equal(args[0].toLowerCase(),safe.toLowerCase());assert.equal(args.length,8);assert.equal(args[6].toLowerCase(),network.contracts.bridgeL2.address.toLowerCase());assert.equal(args[7].toLowerCase(),s.addresses.bridgeExecutorL1.toLowerCase());
 });
 test('pending and incomplete mainnet setup cannot select the Chiado manifest',async()=>{
  const {engine,safe,deployer}=fixture(),s=await engine.configure(deployer,safe);
@@ -96,17 +95,13 @@ test('new Ethereum treasuries reuse the same verified helpers across wallets and
  assert.equal(mainnetSetupKey,`eez:treasury:ethereum-setup:${keccak256(toHex(JSON.stringify(network)))}`);
 });
 
-test('shared helper inspection rejects missing or changed code, wrong registry, RPC uncertainty and reorgs',async()=>{
+test('shared helper inspection rejects missing or changed code, RPC uncertainty and reorgs',async()=>{
  for(const key of Object.keys(shared.contracts))for(const changed of ['0x','0x6000']){
   const {engine,safe,deployer}=fixture(),rpc=engine.io.rpc;
   engine.io.rpc=(chain,method,params)=>method==='eth_getCode'&&params[0].toLowerCase()===shared.contracts[key].address.toLowerCase()?changed:rpc(chain,method,params);
   await assert.rejects(engine.configure(deployer,safe),/Shared Ethereum .* code/);
  }
- {
-  const {engine,safe,deployer}=fixture(),read=engine.io.read;
-  engine.io.read=(chain,address,name,method)=>method==='registry'?addr(999):read(chain,address,name,method);
-  await assert.rejects(engine.configure(deployer,safe),/alias reader.*registry/);
- }
+
  {
   const {engine,safe,deployer}=fixture(),rpc=engine.io.rpc;
   engine.io.rpc=(chain,method,params)=>{if(method==='eth_getCode'&&params[0]===shared.contracts.moduleL1.address)throw Error('RPC unavailable');return rpc(chain,method,params);};
@@ -121,20 +116,6 @@ test('shared helper inspection rejects missing or changed code, wrong registry, 
   };
   await assert.rejects(engine.configure(deployer,safe),/Shared Ethereum contracts changed/);
  }
-});
-
-test('saved setup plans keep their own helper addresses and original deployment batch',async()=>{
- const {engine,safe,deployer}=fixture(),fresh=await engine.configure(deployer,safe);
- const old=structuredClone(fresh);
- for(const key of Object.keys(shared.contracts))delete old.addresses[key];
- old.code=old.code.filter(b=>!Object.values(shared.contracts).some(c=>c.address===b.address));
- const saved=readMainnetSetup(JSON.stringify(old)),batch=await engine.batch(saved,'0x4');
- assert.deepEqual(batch.outputs.map(x=>x.key),['bootstrapL1','aliasReaderL1','moduleL1','multiSendL1','bridgeExecutorL1']);
- assert.deepEqual(saved,old);
- const resumed={...saved,addresses:{...saved.addresses,aliasReaderL1:addr(301),moduleL1:addr(302)}};
- const resumedBatch=await engine.batch(readMainnetSetup(JSON.stringify(resumed)),'0x4');
- assert(!resumedBatch.outputs.some(o=>['aliasReaderL1','moduleL1'].includes(o.key)));
- assert.equal(resumed.addresses.moduleL1,addr(302));assert.equal(resumed.addresses.aliasReaderL1,addr(301));
 });
 
 function safeBatchCalls(tx){
@@ -163,4 +144,42 @@ test('Safe approvals preserve old batches and skip module enablement only when a
  assert.notEqual(current.hash,initial.hash);s.review=current;
  assert.deepEqual(await engine.currentReview(s),current);
  assert.throws(()=>readMainnetSetup(JSON.stringify({...s,review:{...current,moduleEnabled:'true'}})),/Invalid setup approvals/);
+});
+
+test('a first wallet prepares shared EEZ-X contracts; another wallet reuses the same exact deployments',async()=>{
+ const {engine,safe,deployer}=fixture(),first=await engine.configure(deployer,safe);
+ const prep=await engine.batch(first,'0x4');for(const o of prep.outputs)first.addresses[o.key]=o.address;
+ first.completed=[{hash:zeroHash,chain:'l1',number:'0xa',blockHash:zeroHash}];
+ const mirror=await engine.batch(first,'0x4');for(const o of mirror.outputs)first.addresses[o.key]=o.address;
+ first.completed.push({hash:zeroHash,chain:'l2',number:'0xa',blockHash:zeroHash});
+ const beforeBudget=engine.io.rpc;
+ engine.io.rpc=(chain,method,params)=>method==='eth_getTransactionCount'?'0x5':beforeBudget(chain,method,params);
+ const budget=await engine.batch(first,'0x5');
+ const keys=['singletonL2','factoryL2','multiSendL2','moduleL2'],outputs=[...mirror.outputs,...budget.outputs].filter(o=>keys.includes(o.key));
+ assert.equal(outputs.length,4);
+ const abi=parseAbi(['event Created(uint256 indexed index,address indexed target,bytes32 initHash)']);
+ const logs=outputs.map((o,i)=>({topics:encodeEventTopics({abi,eventName:'Created',args:{index:BigInt(i),target:o.address}}),
+  data:encodeAbiParameters([{type:'bytes32'}],[keccak256(artifacts.contracts[o.artifact].bytecode)])}));
+ const rpc=engine.io.rpc;
+ engine.io.rpc=(chain,method,params)=>{
+  if(chain==='l2'&&method==='eth_getBlockByNumber')return {number:network.chains.l2.number,hash:zeroHash};
+  if(chain==='l2'&&method==='eth_getLogs')return logs;
+  if(chain==='l2'&&method==='eth_getCode'){
+   const o=outputs.find(o=>o.address.toLowerCase()===params[0].toLowerCase());if(o)return artifacts.contracts[o.artifact].runtime;
+  }
+  return rpc(chain,method,params);
+ };
+ const second=await engine.configure(addr(201),safe);
+ for(const o of outputs)assert.equal(second.addresses[o.key],getAddress(o.address));
+ const secondPrep=await engine.batch(second,'0x9');for(const o of secondPrep.outputs)second.addresses[o.key]=o.address;
+ second.completed=[{hash:zeroHash,chain:'l1',number:'0xa',blockHash:zeroHash}];
+ const secondMirror=await engine.batch(second,'0x9');
+ assert(!secondMirror.outputs.some(o=>keys.includes(o.key)));
+ for(const o of secondMirror.outputs)second.addresses[o.key]=o.address;
+ second.completed.push({hash:zeroHash,chain:'l2',number:'0xa',blockHash:zeroHash});
+ const read=engine.io.read;
+ engine.io.read=(chain,address,name,method,args)=>method==='owner'?second.deployer:read(chain,address,name,method,args);
+ const secondBudget=await engine.batch(second,'0xa');assert.deepEqual(secondBudget.outputs.map(o=>o.key),['policy']);
+ assert.notEqual(second.addresses.safeL2,first.addresses.safeL2);
+ assert.equal(second.addresses.aliasReaderL1,undefined);
 });

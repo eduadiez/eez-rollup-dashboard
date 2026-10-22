@@ -20,6 +20,9 @@ does not require the Chiado extension’s canonical-token or treasury-rollup get
 are needed to discover these public bindings. See the
 [deployment check](../audits/2026-10-22-treasury-mainnet/README.md#public-mainnet-deployment-discovery--2026-10-22-follow-up).
 
+The simplified contract build targets fresh treasury setups. It does not migrate
+existing policy contracts or preserve earlier constructor layouts.
+
 ## What is compatible
 
 Use an existing Ethereum Safe and deploy a new mirror or connect a mirror already
@@ -68,7 +71,7 @@ addresses' runtime hashes in `code`. Provision the mirror and policy aliases
 through the existing registry before configuring them. The policy creates its
 local proxies in its constructor. Enable the official allowance module on both
 Safes and configure their respective delegates with 100 USDC, ten-minute resets
-and aligned base periods. Set the optional merchant argument to zero. The owners'
+and aligned base periods. There is no invoice merchant argument or entry point. The owners'
 normal Safe transaction can batch delegate binding and allowance configuration.
 No assets are created or funded by production setup.
 
@@ -97,31 +100,34 @@ transaction. The connected deployment wallet can differ from the Safe owners.
 
 The six transactions are:
 
-1. Reuse the shared Ethereum allowance module and alias reader; deploy the setup executor and this Safe’s bounded funding delegate.
+1. Reuse the shared Ethereum allowance module; deploy the setup executor and this Safe’s bounded funding delegate.
 2. Deploy or connect the EEZ-X mirror and live owner adapter, reusing verified Safe infrastructure where available.
-3. Deploy the EEZ-X allowance module and shared policy using the existing bridge.
+3. Reuse or prepare the shared EEZ-X allowance module, then deploy the treasury policy using the existing bridge.
 4. Register the mirror, adapter and policy aliases on Ethereum.
 5. Collect the Ethereum Safe quorum and approve its 100-USDC allowance and delegate binding.
 6. Collect the mirror Safe quorum, then submit through Ethereum to approve its 100-USDC allowance.
 
 New Ethereum setups use the predeployed addresses in
 [`mainnet-shared-contracts.json`](../../src/lib/treasury/mainnet-shared-contracts.json).
-The alias reader is bound to this EEZ registry; the official allowance module
-keeps independent state for each Safe, delegate and token. Setup checks both full
-runtime hashes and the reader's registry at one canonical block, then saves those
-identities in the treasury manifest. Missing or inconsistent code, RPC failures
-or reorgs stop selection; they never trigger replacement deployments.
+The allowance module keeps independent state for each Safe, delegate and token.
+Setup checks its full runtime hash at one canonical block and retains that identity
+in the manifest. Mainnet policies read their alias from the funding delegate's
+one-time Safe-authorized binding; they have no alias-reader dependency.
 
-The shared addresses are kept outside `mainnet-network.json`, whose hash identifies
-saved browser journals. Only **Start setup** adopts them. Pending and completed
-setups retain their original helpers, CREATE addresses and transaction bytes.
-No `.env` change, Safe upgrade or treasury migration is needed. A Safe that already
-has the module enabled skips `enableModule`; the owner-signed batch still grants
-the new delegate its own allowance. Changes to module enablement invalidate a
-previous review. Existing delegates and their spending counters are retained.
-Keep this UI version while completing a new setup: older versions always include
-`enableModule` and cannot prepare the already-enabled-module approval correctly.
-The EEZ-X module deployment and the Chiado planner keep their existing behavior.
+For EEZ-X, setup first checks official Safe deployments, then discovers matching
+Safe implementations, proxy factories, call-only batch helpers and allowance
+modules through bootstrap creation logs. Exact release runtime checks authorize
+reuse; a log alone is insufficient. History is read in bounded ranges and checked
+against a stable block. A missing contract is prepared by the connected wallet
+inside the normal setup batches. Subsequent treasuries, including other wallets,
+reuse those deployments. No operator account or `.env` setting is required.
+RPC failures or a changed block stop selection rather than treating an uncertain
+read as an absent contract. Concurrent first setups may deploy equivalent copies.
+
+A Safe that already has the module enabled skips `enableModule`; the signed batch
+still grants the new delegate its own allowance. Changes to module enablement
+invalidate a previous review. Existing delegates and spending counters are
+retained. Shared code identities are rechecked before preparing a transaction.
 
 The last two steps require Safe signatures in addition to the submitting wallet's
 transaction confirmation. The shared limit is 150 USDC per ten minutes. Setup

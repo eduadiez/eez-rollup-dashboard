@@ -319,6 +319,8 @@ function infrastructure(d, present = true) {
   d.rpc = async (chain, method, params) => {
     calls.push({ chain, method, params });
     if (method === 'eth_getBlockByNumber') return { number: '0x42', hash: hash('infrastructure block') };
+    if (method === 'eth_chainId') return toHex(profile.chains[chain].chainId);
+    if (method === 'eth_getLogs') return [];
     if (method === 'eth_getCode') return chain === 'l1' && present
       ? Object.values(officialRuntime.contracts).find(item => item.address.toLowerCase() === params[0].toLowerCase())?.runtime ?? '0x' : '0x';
     assert.fail(`Unexpected RPC ${method}`);

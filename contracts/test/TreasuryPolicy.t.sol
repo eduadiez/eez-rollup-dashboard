@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 import {OwnerFixture, ReadThroughManager} from "./helpers/OwnerFixture.sol";
-import {InvoiceMerchant} from "../src/InvoiceMerchant.sol";
 import {TreasuryAliasReader} from "../src/TreasuryAliasReader.sol";
 import {TreasuryPolicy} from "../src/TreasuryPolicy.sol";
 import {DevnetUSDC} from "./fixtures/DevnetUSDC.sol";
@@ -12,9 +11,8 @@ import {IAllowanceModule} from "../src/interfaces/IAllowanceModule.sol";
 import {IEEZProxyRegistry} from "../src/interfaces/IEEZProxyRegistry.sol";
 import {ISafe} from "../src/interfaces/ISafe.sol";
 
-contract TreasuryPolicyTest is OwnerFixture {
+abstract contract TreasuryPolicyFixture is OwnerFixture {
     TreasuryPolicy policy;
-    InvoiceMerchant merchant;
     DevnetUSDC usdc;
     IERC20 wrapped;
     TreasuryBridge bridge1;
@@ -40,10 +38,8 @@ contract TreasuryPolicyTest is OwnerFixture {
         wrapped = IERC20(bridge2.getWrappedToken(address(usdc), 0));
         module1 = IAllowanceModule(_deployLegacy("AllowanceModule"));
         module2 = IAllowanceModule(_deployLegacy("AllowanceModule"));
-        merchant = new InvoiceMerchant(address(usdc));
         policy = _newPolicy();
         alias_ = l1.getOrCreateCrossChainProxy(address(policy), ROLLUP_ID);
-        merchant.bindPolicy(alias_);
         _adminL1(abi.encodeCall(ISafe.enableModule, (address(module1))));
         _callL2(address(safeL2), abi.encodeCall(ISafe.enableModule, (address(module2))));
         _configure(true, abi.encodeCall(IAllowanceModule.addDelegate, (alias_)));
@@ -61,8 +57,7 @@ contract TreasuryPolicyTest is OwnerFixture {
             address(module1),
             module2,
             address(usdc),
-            bridge2,
-            address(merchant)
+            bridge2
         );
     }
 
@@ -114,34 +109,25 @@ contract TreasuryPolicyTest is OwnerFixture {
             onL1 ? address(usdc) : address(wrapped)
         )[1];
     }
+}
 
-    function testPaymentsWithoutInvoiceFixtureAndExplicitInvoiceRejection() public {
-        policy = new TreasuryPolicy(
-            address(safeL1),
-            address(safeL2),
-            IEEZProxyRegistry(address(l2)),
-            address(new TreasuryAliasReader(IEEZProxyRegistry(address(l1)))),
-            address(module1),
-            module2,
-            address(usdc),
-            bridge2,
-            address(0)
-        );
-        alias_ = l1.getOrCreateCrossChainProxy(address(policy), ROLLUP_ID);
-        _configure(true, abi.encodeCall(IAllowanceModule.addDelegate, (alias_)));
-        _configure(false, abi.encodeCall(IAllowanceModule.addDelegate, (address(policy))));
-        _setAllowance(true, 100 * U, 10, 10);
-        _setAllowance(false, 100 * U, 10, 10);
-        assertEq(policy.invoiceMerchant(), address(0));
-        assertEq(address(policy.invoiceL1Proxy()), address(0));
+contract TreasuryPolicyTest is TreasuryPolicyFixture {
+    function testProductionPolicyHasNoInvoiceEntryPoint() public {
         vm.prank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.InvoicesDisabled.selector);
-        policy.payInvoice(address(usdc), recipient, U, bytes32("missing"), vm.getBlockTimestamp() / 600);
-        assertEq(wrapped.balanceOf(recipient), 0);
-        assertEq(usdc.balanceOf(recipient), 0);
+        (bool success,) = address(policy)
+            .call(
+                abi.encodeWithSignature(
+                    "payInvoice(address,address,uint256,bytes32,uint256)",
+                    address(usdc),
+                    recipient,
+                    U,
+                    bytes32("missing"),
+                    vm.getBlockTimestamp() / 600
+                )
+            );
+        assertFalse(success);
         assertEq(_spent(false), 0);
         assertEq(_spent(true), 0);
-        testFortyThenSplit110ThenGlobalRejectsOneWithL2Capacity();
     }
 
     function testRemoteManagerDestinationIsRejectedButAliasReaderWorks() public {
@@ -579,101 +565,5 @@ contract TreasuryPolicyTest is OwnerFixture {
         assertEq(policy.spent(vm.getBlockTimestamp() / 600), expected);
         assertEq(_spent(true) + _spent(false), expected);
         assertEq(usdc.balanceOf(address(bridge1)), wrapped.totalSupply());
-    }
-
-    function _invoiceData(bytes32 id, uint256 amount) private view returns (bytes memory) {
-        return
-            abi.encodeCall(
-                TreasuryPolicy.payInvoice, (address(usdc), recipient, amount, id, vm.getBlockTimestamp() / 600)
-            );
-    }
-
-    function _treasuryState() private view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                usdc.balanceOf(address(safeL1)),
-                wrapped.balanceOf(address(safeL2)),
-                usdc.balanceOf(recipient),
-                wrapped.balanceOf(recipient),
-                usdc.balanceOf(address(bridge1)),
-                wrapped.totalSupply(),
-                usdc.balanceOf(alias_),
-                wrapped.balanceOf(address(policy)),
-                module1.getTokenAllowance(address(safeL1), alias_, address(usdc)),
-                module2.getTokenAllowance(address(safeL2), address(policy), address(wrapped)),
-                policy.spent(vm.getBlockTimestamp() / 600),
-                safeL1.nonce(),
-                safeL2.nonce()
-            )
-        );
-    }
-
-    function testInvoiceAcceptsExactTermsAfterBothContributions() public {
-        bytes32 id = keccak256("invoice");
-        merchant.open(id, recipient, 110 * U);
-        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 10 * U)), 1);
-        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), 1);
-        _callL2(address(policy), _invoiceData(id, 110 * U));
-        (,, InvoiceMerchant.Status status) = merchant.invoices(id);
-        assertEq(uint256(status), uint256(InvoiceMerchant.Status.Paid));
-        assertEq(usdc.balanceOf(recipient), 110 * U);
-        assertEq(policy.spent(vm.getBlockTimestamp() / 600), 110 * U);
-        assertEq(_spent(true), 100 * U);
-        assertEq(_spent(false), 10 * U);
-        vm.expectRevert(abi.encodeWithSelector(InvoiceMerchant.InvoiceNotOpen.selector, id));
-        vm.prank(alias_);
-        merchant.accept(id, address(usdc), recipient, 110 * U);
-    }
-
-    function testClosedInvoiceRollsBackTransfersAllowancesBudgetAndSafeNonce() public {
-        bytes32 id = keccak256("closed invoice");
-        merchant.open(id, recipient, 110 * U);
-        merchant.close(id);
-        bytes32 beforeState = _treasuryState();
-        bytes memory data = _invoiceData(id, 110 * U);
-        bytes memory signatures =
-            _outer(adapter, _signTwo(keccak256(_preimage(safeL2, address(policy), data, 0)), A, B));
-        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 10 * U)), 1);
-        vm.expectCall(address(usdc), abi.encodeCall(IERC20.transfer, (recipient, 100 * U)), 1);
-        vm.expectCall(
-            address(merchant), abi.encodeCall(InvoiceMerchant.accept, (id, address(usdc), recipient, 110 * U)), 1
-        );
-        vm.expectRevert("GS013");
-        _execute(safeL2, address(policy), data, 0, signatures);
-        assertEq(_treasuryState(), beforeState);
-        (,, InvoiceMerchant.Status status) = merchant.invoices(id);
-        assertEq(uint256(status), uint256(InvoiceMerchant.Status.Closed));
-    }
-
-    function testInvoiceTermsAndControllerCannotBeBypassed() public {
-        bytes32 id = keccak256("terms");
-        merchant.open(id, recipient, U);
-        vm.expectRevert(InvoiceMerchant.Unauthorized.selector);
-        merchant.accept(id, address(usdc), recipient, U);
-        vm.expectRevert(InvoiceMerchant.Unauthorized.selector);
-        vm.prank(recipient);
-        merchant.close(id);
-        vm.expectRevert(InvoiceMerchant.Unauthorized.selector);
-        merchant.bindPolicy(recipient);
-        vm.startPrank(alias_);
-        vm.expectRevert(InvoiceMerchant.TermsMismatch.selector);
-        merchant.accept(id, address(wrapped), recipient, U);
-        vm.expectRevert(InvoiceMerchant.TermsMismatch.selector);
-        merchant.accept(id, address(usdc), alias_, U);
-        vm.expectRevert(InvoiceMerchant.TermsMismatch.selector);
-        merchant.accept(id, address(usdc), recipient, U + 1);
-        vm.stopPrank();
-        vm.expectRevert(TreasuryPolicy.OnlySafe.selector);
-        policy.payInvoice(address(usdc), recipient, U, id, vm.getBlockTimestamp() / 600);
-        bytes32 beforeState = _treasuryState();
-        bytes memory data = _invoiceData(id, 2 * U);
-        bytes memory signatures =
-            _outer(adapter, _signTwo(keccak256(_preimage(safeL2, address(policy), data, 0)), A, B));
-        vm.expectRevert("GS013");
-        _execute(safeL2, address(policy), data, 0, signatures);
-        assertEq(_treasuryState(), beforeState);
-        merchant.close(id);
-        vm.expectRevert(InvoiceMerchant.InvalidInvoice.selector);
-        merchant.open(id, recipient, U);
     }
 }

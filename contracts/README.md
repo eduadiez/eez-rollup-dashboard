@@ -155,6 +155,8 @@ through a local L1 registry call, reached through the helper's cross-chain proxy
 the registry argument in the earlier private deployment. Deploy a new policy
 and manifest; old deployed policies cannot acquire this compatibility in place.
 The helper owns no funds and has no module or administrative permissions.
+This reader is specific to the Chiado bridge policy. The standard-bridge policy
+reads its alias from its Safe-bound funding delegate instead.
 
 [ConfiguredTreasuryBridge.sol](src/ConfiguredTreasuryBridge.sol) binds manager,
 local rollup and administrator in its constructor. The inherited first-caller
@@ -272,14 +274,19 @@ recalculates the contribution using authenticated reads. No funds or counters
 are deducted optimistically by the UI. A submitted request is saved before the
 wallet broadcast and remains unresolved until a canonical outcome is verified.
 
-## Invoice payments and rollback
+## Isolated invoice fixture and rollback
 
-`payInvoice` uses the existing combined router to pay an L1 recipient, then calls
-its immutable `InvoiceMerchant` through an EEZ proxy. The signed fields bind the
-invoice ID, asset, recipient, amount, epoch and Safe nonce. The merchant accepts
+[`InvoiceTreasuryPolicy`](test/fixtures/InvoiceTreasuryPolicy.sol) extends the
+Chiado policy only for isolated tests. Its `payInvoice` uses the combined router
+to pay an L1 recipient, then calls its immutable
+[`InvoiceMerchant`](test/fixtures/InvoiceMerchant.sol) through an EEZ proxy.
+The signed fields bind the invoice ID, asset, recipient, amount, epoch and Safe nonce. The merchant accepts
 only its one-time configured policy alias and exact open-invoice terms. Closing
 or paying an invoice prevents reuse. `InvoicePaid` is emitted only after required
 acceptance succeeds. There is no arbitrary external-call parameter.
+
+Neither fixture is included in the current public deployment release. Both public
+policy variants have no invoice fields, proxy, constructor argument or entry point.
 
 The fixture controller owns invoice creation/closure but has no Safe module or
 payment authority. It cannot provide owner approvals. For the failure act it
@@ -301,9 +308,8 @@ remains committed; fees and the submitter's network nonce are outside rollback.
 A known closed invoice is a separate preparation rejection. Missing receipts,
 missing `L2TxSkipped`, timeouts or an incomplete fixture report do not establish
 rollback. The standard dashboard does not serve the fixture control endpoints.
-Old manifests without `invoiceMerchant` and `invoiceControl` hide this preset.
-A new policy constructor pins the merchant, so use a fresh isolated deployment;
-existing policies and pending saved intents are not migrated.
+The fixture constructor pins the merchant. Use a fresh isolated deployment;
+public-network manifests reject both `invoiceMerchant` and `invoiceControl`.
 
 See the [invoice validation record](../docs/audits/2026-10-20-treasury-invoices/README.md)
 for executed checks, inclusion evidence and remaining limitations.
@@ -315,8 +321,9 @@ for executed checks, inclusion evidence and remaining limitations.
 | [L1Owners.t.sol](test/L1Owners.t.sol) | Real 0.7.6 Safes: quorum, addition/removal, threshold changes, duplicate/insufficient signatures, chain/Safe/nonce isolation, calldata fuzzing, eth_sign, explicit vs implicit approved hashes, full contract-owner preimages, constructor binding and Safe failure/nonce behavior |
 | [L1OwnersEEZ.t.sol](test/L1OwnersEEZ.t.sol) | Real pinned EEZL2/proxy route from Safe signature verification; manually loaded static entries derived from real L1 Safe outcomes; missing, stale, wrong-position/identity and failed-result cases |
 | [AllowanceModule.t.sol](test/AllowanceModule.t.sol) | Official module accepts contract and EEZ proxy delegates with empty signatures, rejects other callers, enforces its own ceiling, resets at an aligned boundary and checks token returns while preserving counters/nonces on failure |
-| [BidirectionalTreasuryPolicy.t.sol](test/BidirectionalTreasuryPolicy.t.sol) | Both initiating Safes, both destinations, shared counters, forged proxy and EOA rejection, L1 signature replay and invoice rollback; inherits the base payment suite |
-| [TreasuryPolicy.t.sol](test/TreasuryPolicy.t.sol) | Exact 40 / 110 / rejected 1 sequence, bridge backing, balance-limited routing, aligned reset and stale-epoch rejection, caller/asset/amount/recipient bounds, final-transfer/terminal-lock failure rollback, reverse lock/mint, alias approval consumption, authenticated payer/bridge, receipt and nonce rejection, amount/fraction fuzzing, percentage rounding/bounds, both destinations, signed-fraction execution after a balance change, excluded custody, shared counters, rule failure rollback, authenticated invoice terms and rollback after both contributions |
+| [BidirectionalTreasuryPolicy.t.sol](test/BidirectionalTreasuryPolicy.t.sol) | Both initiating Safes, both destinations, shared counters, forged proxy and EOA rejection, L1 signature replay and later-transfer rollback; inherits the base payment suite |
+| [TreasuryPolicy.t.sol](test/TreasuryPolicy.t.sol) | Exact 40 / 110 / rejected 1 sequence, bridge backing, balance-limited routing, aligned reset and stale-epoch rejection, caller/asset/amount/recipient bounds, final-transfer/terminal-lock failure rollback, reverse lock/mint, alias approval consumption, authenticated payer/bridge, receipt and nonce rejection, amount/fraction fuzzing, percentage rounding/bounds, both destinations, signed-fraction execution after a balance change, excluded custody, shared counters, rule failure rollback |
+| [TreasuryInvoice.t.sol](test/TreasuryInvoice.t.sol) | Isolated fixture invoice terms, authorization and rollback after both contributions |
 | [Native process scenario](../tests/integration/README.md) | Real Composer/signer/L1 settlement and independent follower; owner addition, removal, replay rejection, Safe nonce and application state; browser invoices exercise actual L1 inclusion failure and distinct preparation rejection |
 | [Safe signature vector](test/fixtures/safe-signature.json) | Frontend hash and packed bytes independently checked by real Safe Solidity code; matching frontend tests cover edits, invalid/removed/duplicate owners, thresholds and exact integers |
 
@@ -419,14 +426,10 @@ delegate, allowance and alias changes. Real official runtime fixtures cover this
 on owned Anvil networks. Native rehearsal additionally executes both batches
 through the actual Composer/signer and owner adapter.
 
-New payment-only deployments omit `TreasuryOwnerAction` and pass zero as the
-policy's merchant. No invoice proxy is provisioned in this mode and `payInvoice`
-reverts with `InvoicesDisabled` before any payment. Existing invoice-enabled
-policies remain compatible; isolated invoice tests still deploy a merchant.
-Pending pre-change policy deployments are recognized only by their retained
-initcode identity and exact canonical creation receipt. The archived artifact in
-[the compatibility fixture](../tests/fixtures/treasury-policy-v2.json) tests that
-narrow historical case; it is not a newly deployable artifact.
+New payment deployments omit `TreasuryOwnerAction` and invoice contracts. The
+public policies have eight constructor arguments and no invoice entry point.
+The isolated fixture extends the Chiado payment path to test invoice failure;
+production rollback tests instead make a later token or bridge leg fail.
 
 See the [validation record](../docs/audits/2026-10-20-treasury-simplified-setup/README.md)
 for source identity, migration coverage, rollback evidence and deployment limits.

@@ -1,3 +1,4 @@
+import { discoverSafeInfrastructure } from "./safeInfrastructure.ts";
 import { appendSourceRequest } from "./sourceVerification.ts";
 import type { SourceRequest } from "./sourceVerification.ts";
 import { concatHex, decodeEventLog, encodeAbiParameters, encodeDeployData, encodeFunctionData, getAddress, getContractAddress, isAddress, keccak256, parseAbi, parseAbiParameters, toHex, zeroAddress, zeroHash } from "viem";
@@ -23,9 +24,9 @@ const identity = keccak256(toHex(JSON.stringify(network)));
 export const mainnetSetupKey = `eez:treasury:ethereum-setup:${identity}`;
 export const mainnetManifestKey = `${mainnetSetupKey}:manifest`;
 export const mainnetSetupSteps = [
-  { label: "Prepare Ethereum spending", chain: "l1", details: ["Reuse the selected Ethereum Safe", "Connect the allowance module and alias reader", "Deploy this Safe’s bounded funding delegate", "Reuse a verified Safe batch helper where available"] },
-  { label: "Connect your mirror Safe", chain: "l2", details: ["Deploy or connect the EEZ-X mirror", "Verify approvals against the current Ethereum owners", "Preserve the Ethereum Safe’s owners and threshold"] },
-  { label: "Create the shared budget", chain: "l2", details: ["Deploy the shared 150-USDC policy", "Connect the existing USDC bridge", "Prepare the EEZ-X allowance module"] },
+  { label: "Prepare Ethereum spending", chain: "l1", details: ["Reuse the selected Ethereum Safe", "Reuse the Ethereum allowance module", "Deploy this Safe’s bounded funding delegate", "Reuse a verified Safe batch helper where available"] },
+  { label: "Connect your mirror Safe", chain: "l2", details: ["Reuse or prepare shared Safe contracts on EEZ-X", "Deploy or connect the EEZ-X mirror", "Verify approvals against the current Ethereum owners", "Preserve the Ethereum Safe’s owners and threshold"] },
+  { label: "Create the shared budget", chain: "l2", details: ["Deploy the shared 150-USDC policy", "Connect the existing USDC bridge", "Reuse or prepare the shared EEZ-X allowance module"] },
   { label: "Connect Ethereum execution", chain: "l1", details: ["Register the mirror and policy’s Ethereum aliases", "Connect live owner verification"] },
   { label: "Approve Ethereum spending", chain: "l1", details: ["Authorize the funding delegate through the official allowance module", "Set 100 USDC per ten minutes", "Bind the delegate to this treasury policy"] },
   { label: "Approve EEZ-X spending", chain: "l1", details: ["Authorize the policy through the official allowance module", "Set 100 USDC per ten minutes", "Sign for the mirror Safe and submit through Ethereum"] },
@@ -131,13 +132,15 @@ export class MainnetSetup {
     for (const [key, binding] of Object.entries(sharedContracts.contracts)) {
       const address = getAddress(binding.address);
       const bytes = await this.io.rpc<Hex>("l1", "eth_getCode", [address, block.number]);
-      check(bytes !== "0x" && keccak256(bytes) === binding.hash, `Shared Ethereum ${key === "moduleL1" ? "allowance module" : "alias reader"} code is unavailable or changed`);
+      check(bytes !== "0x" && keccak256(bytes) === binding.hash, "Shared Ethereum allowance module code is unavailable or changed");
       addresses[key] = address; code.push({ chain: "l1", address, hash: binding.hash as Hex });
     }
-    const registry = await this.io.read<Address>("l1", addresses.aliasReaderL1!, "TreasuryAliasReader", "registry", [], block.number);
-    check(same(registry, network.registry), "Shared Ethereum alias reader uses a different registry");
     const again = await this.io.rpc<{ hash: Hex }>("l1", "eth_getBlockByNumber", [block.number, false]);
     check(again?.hash === block.hash, "Shared Ethereum contracts changed during inspection; try again");
+    const infrastructure = await discoverSafeInfrastructure(this.io, network.chains.l2.chainId, network.chains.l2.number as Hex);
+    for (const [key, binding] of Object.entries(infrastructure)) if (!addresses[key]) {
+      addresses[key] = binding.address; code.push({ chain: "l2", ...binding });
+    }
     return { ...(this.artifacts.build ? { build: this.artifacts.build } : {}), version: this.artifacts.build ? 2 : 1, identity, salt: toHex(crypto.getRandomValues(new Uint8Array(32))), deployer: getAddress(deployer), addresses, code, completed: [] };
   }
   async unchanged(s: MainnetSetupState) {
@@ -234,7 +237,7 @@ export class MainnetSetup {
     const call = (target: Address, name: string, method: string, args: unknown[]) => actions.push({ create: false, target,
       data: encodeFunctionData({ abi: this.io.abi(name), functionName: method, args }), returnHash: zeroHash });
     if (step === 0) {
-      deploy("aliasReaderL1", "TreasuryAliasReader", [network.registry]); deploy("moduleL1", "AllowanceModule"); deploy("multiSendL1", "MultiSendCallOnly");
+      deploy("moduleL1", "AllowanceModule"); deploy("multiSendL1", "MultiSendCallOnly");
       deploy("bridgeExecutorL1", "StandardBridgeDelegate", [a.safeL1, a.moduleL1, network.contracts.usdcProxy.address, network.contracts.bridgeL1.address, BigInt(network.rollupId)]);
     } else if (step === 1) {
       call(getAddress(network.manager), "Registry", "getOrCreateCrossChainProxy", [a.safeL1, 0n]);
@@ -250,8 +253,8 @@ export class MainnetSetup {
       }
     } else if (step === 2) {
       deploy("moduleL2", "AllowanceModule");
-      deploy("policy", "StandardBridgeTreasuryPolicy", [a.safeL1, a.safeL2, network.manager, a.aliasReaderL1, a.moduleL1, a.moduleL2,
-        network.contracts.usdcProxy.address, network.contracts.bridgeL2.address, zeroAddress, a.bridgeExecutorL1]);
+      deploy("policy", "StandardBridgeTreasuryPolicy", [a.safeL1, a.safeL2, network.manager, a.moduleL1, a.moduleL2,
+        network.contracts.usdcProxy.address, network.contracts.bridgeL2.address, a.bridgeExecutorL1]);
     } else {
       for (const [key, original] of [["adapterAlias", a.adapter!], ["safeL2Alias", a.safeL2!], ["alias", a.policy!]]) {
         const address = await this.io.read<Address>("l1", getAddress(network.registry), "Registry", "computeCrossChainProxyAddress", [original, BigInt(network.rollupId)]);
@@ -317,7 +320,7 @@ export class MainnetSetup {
       safeAppUrl: `https://app.safe.global/home?safe=eth:${a.safeL1}`, code: [...new Map(code.map(b => [`${b.chain}:${b.address.toLowerCase()}`, b])).values()],
       protocol: network.protocol.map(p => ({ chain: p.chain, proxy: p.proxy, implementation: p.implementation })),
       mainnet: { rollupId: network.rollupId, usdcImplementation: network.contracts.usdcImplementation.address, bridgeImplementations: { l1: { kind: "immutable" }, l2: { kind: "immutable" } } },
-      payments: { bridgeKind: "standard", policy: a.policy, alias: a.alias, aliasReaderL1: a.aliasReaderL1, safeL2Alias: a.safeL2Alias, bridgeExecutorL1: a.bridgeExecutorL1,
+      payments: { bridgeKind: "standard", policy: a.policy, alias: a.alias, safeL2Alias: a.safeL2Alias, bridgeExecutorL1: a.bridgeExecutorL1,
         moduleL1: a.moduleL1, moduleL2: a.moduleL2, tokenL1: network.contracts.usdcProxy.address, tokenL2: network.contracts.wrappedUSDC.address,
         bridgeL1: network.contracts.bridgeL1.address, bridgeL2: network.contracts.bridgeL2.address, recipient: s.deployer,
         l1Initiation: true, combinedL2: true, exactSplits: true, percentageRules: true, decimals: 6, period: 600, globalLimit: "150000000", assetLabel: "USDC" } });

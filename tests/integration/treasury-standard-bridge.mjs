@@ -57,7 +57,6 @@ export async function runStandardBridge(networkFile, evidenceFile) {
       const a=await f.read(n.l2.rpc,bridgeL2,bridgeABI,'getWrappedToken',[tokenL1,0n]);return a!==zeroAddress?a:false;
     });
     assert.equal(await f.read(n.l2.rpc,tokenL2,token,'balanceOf',[f.safeL2]),150_000_000n);
-    const aliasReaderL1=await f.deploy(n.l1,f.artifact('out','TreasuryAliasReader'),[n.registry]);
     const moduleArtifact=f.artifact('legacy/out','AllowanceModule');
     const moduleL1=await f.deploy(n.l1,moduleArtifact),moduleL2=await f.deploy(n.l2,moduleArtifact);
     const helper=f.artifact('legacy/out','MultiSendCallOnly');
@@ -83,7 +82,7 @@ export async function runStandardBridge(networkFile, evidenceFile) {
     }
     async function newPolicy(label) {
       bridgeExecutorL1=await f.deploy(n.l1,f.artifact('out','StandardBridgeDelegate'),[f.safeL1,moduleL1,tokenL1,bridgeL1,BigInt(n.rollupId)]);
-      const policy=await f.deploy(n.l2,policyArtifact,[f.safeL1,f.safeL2,f.manager,aliasReaderL1,moduleL1,moduleL2,tokenL1,bridgeL2,zeroAddress,bridgeExecutorL1]);
+      const policy=await f.deploy(n.l2,policyArtifact,[f.safeL1,f.safeL2,f.manager,moduleL1,moduleL2,tokenL1,bridgeL2,bridgeExecutorL1]);
       await call(n.l1,n.registry,f.eeZAbi,'getOrCreateCrossChainProxy',[policy,BigInt(n.rollupId)]);
       const alias=await f.read(n.l1.rpc,n.registry,f.eeZAbi,'computeCrossChainProxyAddress',[policy,BigInt(n.rollupId)]);
       for(const onL1 of [true,false]) {
@@ -96,9 +95,9 @@ export async function runStandardBridge(networkFile, evidenceFile) {
         await admin(onL1,calls);
       }
       enabled=true;
-      const payments={bridgeKind:'standard',bridgeExecutorL1,safeL2Alias,aliasReaderL1,policy,alias,tokenL1,tokenL2,moduleL1,moduleL2,bridgeL1,bridgeL2,
+      const payments={bridgeKind:'standard',bridgeExecutorL1,safeL2Alias,policy,alias,tokenL1,tokenL2,moduleL1,moduleL2,bridgeL1,bridgeL2,
         l1Initiation:true,combinedL2:true,percentageRules:true,exactSplits:true,recipient:'0x0000000000000000000000000000000000001234',decimals:6,period:600,globalLimit:'150000000',assetLabel:'Devnet USDC'};
-      const bindings=[['l1',bridgeExecutorL1],['l1',f.safeL1],['l2',f.safeL2],['l2',f.adapter],['l1',safeL2Alias],['l1',aliasReaderL1],['l1',alias],['l1',tokenL1],['l2',tokenL2],['l1',moduleL1],['l2',moduleL2],['l1',bridgeL1],['l2',bridgeL2],['l2',policy]];
+      const bindings=[['l1',bridgeExecutorL1],['l1',f.safeL1],['l2',f.safeL2],['l2',f.adapter],['l1',safeL2Alias],['l1',alias],['l1',tokenL1],['l2',tokenL2],['l1',moduleL1],['l2',moduleL2],['l1',bridgeL1],['l2',bridgeL2],['l2',policy]];
       const code=await Promise.all(bindings.map(async([chain,address])=>({chain,address,hash:keccak256(await f.rpc(n[chain].rpc,'eth_getCode',[address,'latest']))})));
       c=parseTreasuryConfig({...base,instance:keccak256(toHex(policy)),payments,code});client=new TreasuryClient(c);await client.validate();
       (f.evidence.standardPolicies??=[]).push({label,policy,alias});f.checkpoint();

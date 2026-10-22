@@ -18,7 +18,7 @@ function config() {
     safeAppUrl: `https://app.safe.global/home?safe=eth:${a(4)}`,
     mainnet: { rollupId: 7, usdcImplementation: implementation, bridgeImplementations: { l1: { kind: 'immutable' }, l2: { kind: 'immutable' } } },
     payments: { bridgeKind: "standard", safeL2Alias: a(26), bridgeExecutorL1: a(27), policy: a(11), alias: a(12), tokenL1: ETHEREUM_USDC, tokenL2: a(14), moduleL1: a(15), moduleL2: a(16), bridgeL1: a(17), bridgeL2: a(18),
-      aliasReaderL1: a(19), recipient: a(20), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'USDC',
+      recipient: a(20), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'USDC',
       combinedL2: true, l1Initiation: true, exactSplits: true, percentageRules: true } };
   c.code = [['l1', [2, 4, 7, 9, 12, 15, 17, 19, 23, 26, 27]], ['l2', [3, 5, 6, 8, 10, 11, 14, 16, 18]]]
     .flatMap(([chain, addresses]) => addresses.map(n => ({ chain, address: a(n), hash: keccak256('0x6000600055') })));

@@ -1,0 +1,108 @@
+{
+  "baseline": "34765d3dcbf8507d6cbda61b98d98bf8b44949f7",
+  "branch": "codex/treasury-demo-release",
+  "build": "41f1c1c5c18a6e4a534055c105c5fda77437321634db5a267d48e106f8034443",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "javascript": {
+    "passed": 449,
+    "failed": 0,
+    "skipped": 0
+  },
+  "solidity": {
+    "passed": 236,
+    "failed": 0,
+    "skipped": 0,
+    "latestFixtureOnlyTests": 3
+  },
+  "localEvidence": ".runtime/treasury-contract-simplification-20261022",
+  "logSha256": {
+    "node-tests-complete.log": "a28ad16e4515f72263ffac1e816bd498e90e1614714019167046549a19bcc9d8",
+    "contracts-final.log": "897f9c19c2c814c028fd5186c38525a1763b382a55a926cc773b6f79b5393e3d",
+    "invoice-fixture-final.log": "a00095dbe6e82491de3877867c69e609c27d973cd924addc6bcd6ad55acd9f46",
+    "release-check.log": "f5764c82edb6a5d266ca879b8796e56a481d528f262c1b9578d326ba425edea4",
+    "build-complete.log": "ca83bc5fe2293ec787a7310c4ba780a045c752f81a19a66f16a6fae54b040d85",
+    "deployment-batches-final.log": "b2eed5a2fc3c38e82187a2c008e56bc138af110a8aaa653aadc13a0c6f7ea3e9",
+    "source-verification.log": "757e8f278063f04985bf18905390230d8f333846948f0f9c695b90602030d576",
+    "mainnet-browser-owned-tmp.log": "4a23de0cd4f3b4743b510ae24bc0da6f93fda8850a0f418678acfc75a9684324",
+    "native-standard-final.log": "3c08684765e4872e6ae3f742ba0a0b5060fc19d50e935b053007b1f5589ba9cd"
+  },
+  "setup": {
+    "path": ".runtime/treasury-deployment-batches/anvil-jK9c4h/summary.json",
+    "cases": 19,
+    "verified": true,
+    "scope": "real contracts on one Anvil modeling two logical chains; not native settlement",
+    "sha256": "d12ab4e58094361f58b9930f41dd7244891aaac5cec8a0e10ae6c73f1663b27f"
+  },
+  "sourceVerification": {
+    "path": ".runtime/treasury-auto-verification-20261022/anvil-4nJIcy/summary.json",
+    "deployments": 6,
+    "verified": true,
+    "scope": "real compiler, controlled explorer transport",
+    "sha256": "d38cc42e1f9633325295e5907d9873523bf6002ad4b1e8033c7ce67721d7317b"
+  },
+  "browser": {
+    "passed": true,
+    "scope": "controlled EIP-1193 provider, owned TMPDIR"
+  },
+  "publicChainBroadcasts": false,
+  "environmentFilesChanged": false,
+  "native": {
+    "verified": true,
+    "path": ".runtime/treasury-integration/20261022T215319-xkpfpui0",
+    "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+    "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+    "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+    "executables": {
+      "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+      "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+      "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+    },
+    "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+    "summarySha256": "04edfe1a92718134014247f9f68433b81f120110f63ee752037fab92a5f91b61",
+    "scenarioSha256": "028c095c843b5102f0ced4d504a430414c62d713cc433346144b35344dd4abd8",
+    "applicationSourceIdentitySha256": "9635ed5d402ac9c61c106026bea2bf5b953a28d7edd71d9b023c5d93054f9872",
+    "snapshotSha256": "bdb885590bbee086263328a8ab02fdc196ade917616ff78660697e4b4f4ad253",
+    "scriptedCases": 8,
+    "independentReplay": {
+      "hash": "0x3062ffc9fc81abf32e95a52107594568c05e0b058d2ac71ef931ab065780bdba",
+      "height": 280
+    },
+    "attestationVerified": true,
+    "browser": {
+      "verified": true,
+      "genuineFixtureSignatures": true,
+      "singleBroadcast": true,
+      "reloadAndLostResponseRecovery": true
+    },
+    "rollback": {
+      "stage": "L1 inclusion",
+      "earlierSuccessfulRelease": true,
+      "laterBlacklistedTransfer": true,
+      "allRecordedStateRestored": true,
+      "originalProofAndBlobCommitmentsUnchanged": true
+    },
+    "sourceIntegrityChecksPassed": true,
+    "publicBroadcasts": false
+  },
+  "readOnlyDiscovery": {
+    "build": "41f1c1c5c18a6e4a534055c105c5fda77437321634db5a267d48e106f8034443",
+    "bindings": {
+      "moduleL2": {
+        "address": "0xf0f97A26dD10253d53ebB30336656a83c2115635",
+        "hash": "0xc176516783a19611f61a3c0a45ea6c8cc534d06f06ca211d1074d69226233a27"
+      },
+      "multiSendL2": {
+        "address": "0xa0c9f58e3FBb3164643bD01F072e9540296A7be6",
+        "hash": "0x841ade0f90f2984301ef2f4a39a7006c84dde6eebcbbefe2019bdfc1ec512db4"
+      },
+      "factoryL2": {
+        "address": "0x20C5BCC00A921421D52f4C0333d3EE1A784C8f8b",
+        "hash": "0x54fdc0f05ea1402773651d5de2a6692776f5ee2087d1ef57a2d625170082ed83"
+      },
+      "singletonL2": {
+        "address": "0x1238441F6b38f4BC6248B6286118B1f6Bec91932",
+        "hash": "0x3b3c721001965f70a18fc113f8bbcaa323d307a078d92615178fce15df9347a5"
+      }
+    }
+  }
+}
