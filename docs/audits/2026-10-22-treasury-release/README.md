@@ -71,3 +71,27 @@ A public mainnet release additionally needs the real-wallet/Safe-app acceptance
 and independent contract review described in the
 [mainnet record](../2026-10-22-treasury-mainnet/README.md#verification-and-limits).
 The successful isolated native rehearsal there is distinct from those live checks.
+
+## Cleanup follow-up
+
+Reviewed from `48d6f771e64de8769ff72fc557d7c05670d599eb`. Removed the two obsolete
+standalone browser-artifact generators, which could overwrite frozen setup
+bundles. The integration source inventory now records the immutable release
+tools and selected build instead. Removed nine unused CSS classes from the old
+simulation/history layout and corrected current documentation for existing-Safe
+selection, separate funding, current controls and release status. Dated design
+and validation history remains available.
+
+All 433 JavaScript tests, TypeScript/Vite build and release integrity checks pass.
+The existing connected-view browser regression passes the same 15 cases before
+and after cleanup, including mobile layouts, history, split diagrams, reorg/RPC
+recovery and internal transfers. Its providers are controlled. Python syntax,
+all 148 source-inventory paths, local documentation links and whitespace pass.
+The nine preserved operator/profile/artifact inputs still match their recorded
+hashes; deployment bytecode and build identity are unchanged.
+
+Logs and browser results are local-only in
+`.runtime/treasury-cleanup-20261022/`. Solidity, native process and service-image
+checks were not repeated for this CSS, inventory and documentation cleanup.
+The earlier results above retain their original scope. No running service or
+chain state was changed, and the publication checks remain outstanding.

@@ -7,8 +7,9 @@ operator wallets and chain data are not redeployed for this demo.
 Choose the deployment wallet using the dashboard's normal wallet selector.
 New setup requires an **existing Chiado Safe address** with a verified Safe /
 SafeL2 1.3.0 or 1.4.1 implementation, including **1.3.0+L2**. Its owners and threshold are retained. On EEZ-X,
-create a Safe using the L1 owner adapter or reuse an existing compatible Safe. B can still be selected later from the connected
-wallet. Keep **100 per Safe / 150 global** per ten minutes, with no Guard.
+deploy a mirror Safe using the L1 owner adapter or reuse an existing compatible
+Safe. Add owners later by entering their addresses in **Shared owners**; the
+current Chiado quorum approves each change. Keep **100 per Safe / 150 global** per ten minutes, with no Guard.
 New setups use one predeployed six-decimal **Test USDC** asset and sealed treasury
 bridge pair. Setup only connects the Safes and configures spending; it does not
 require a token balance, request token approvals or transfer tokens. Fund either
@@ -20,8 +21,9 @@ Validation and the local UI rollout are recorded in the
 The shared infrastructure is predeployed and canonically verified on both chains.
 Its addresses, transaction receipts and current checks are recorded in the
 [wallet-funding audit](../audits/2026-10-21-treasury-wallet-funding/README.md).
-The user's confirmed setup remains in progress; infrastructure deployment is not
-completion of that treasury or a real-wallet/Safe-app rehearsal.
+Infrastructure deployment is separate from each treasury setup and from
+real-wallet/Safe-app acceptance. The linked audit records the state observed at
+the time; the dashboard verifies the selected treasury before opening it.
 
 ## Token display in explorers
 
@@ -51,8 +53,8 @@ Build with `npm run build:treasury-release` and check with
 paths, retains each exact compiler/version/settings/source input, and independently
 recompiles the smaller per-contract verification inputs before accepting them.
 `build:treasury-artifacts` / `check:treasury-artifacts` now use this release path.
-The frozen legacy bundles are only for resuming existing setups. Do not regenerate
-them with the old standalone scripts during ordinary development.
+The frozen legacy bundles are only for resuming existing setups. Keep them
+unchanged; the release builder produces new immutable bundles separately.
 
 `src/lib/treasury/current-build.json` selects the new build. Keep all published
 `src/lib/treasury/builds/<id>.json` and `verification/builds/<id>/manifest.json`
@@ -316,8 +318,8 @@ From the dashboard repository root, set `TREASURY_DEPLOYER_ADDRESS` to the publi
 address selected in your wallet:
 
 ```bash
-npm run build:treasury-artifacts
-npm run check:treasury-artifacts
+npm run build:treasury-release
+npm run check:treasury-release
 npm test
 npm run build
 node scripts/treasury-network.mjs \

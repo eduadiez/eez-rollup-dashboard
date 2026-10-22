@@ -125,10 +125,10 @@ it is not the presenter’s owner-management UI.
 
 ## Connected treasury UI
 
-The hidden Treasury Demo defaults to **Payments** when started with
-the isolated launcher. Without a treasury deployment in runtime config, the
-existing payment simulation remains the default. A separate **Connected owner
-demo** still executes `TreasuryOwnerAction.setValue` through the actual EEZ-X Safe.
+The hidden Treasury Demo defaults to **Payments** with the isolated launcher's
+runtime manifest. Without a manifest, supported dashboard networks show the
+Safe chooser; other networks show a configuration prompt. **Owner demo** executes
+`TreasuryOwnerAction.setValue` through the fixture's EEZ-X Safe.
 
 The launcher deploys `TreasuryPolicy`, the official AllowanceModules and the
 dashboard-owned sealed `SharedTreasuryBridge` pair extending the pinned test bridge. The
@@ -404,24 +404,25 @@ and status downgrades; these do not substitute for native settlement evidence.
 See the [history increment record](../../docs/audits/2026-10-20-treasury-history/README.md)
 for executed results and exact source identities.
 
-## Predeployed assets and wallet funding
+## Predeployed assets and separate funding
 
-`node tests/integration/treasury-deployment-batches.mjs` uses an owned Anvil
-instance to exercise the three operator infrastructure batches, then two
-independent wallet-funded treasuries sharing that sealed pair. It checks that
-unfunded wallets reject before submission, explicit faucet claims remain
-separate, each wallet loses exactly 450 tokens, setup does not mint, allowances
-are consumed, and 110-token payments work in both directions without spending
-the other treasury's allowance. This uses local cross-chain manager fixtures,
-so it does not establish Composer, signer or independent follower correctness.
-Run the native `--ui test` suite separately for those checks.
+`node tests/integration/treasury-deployment-batches.mjs --current-release` uses an
+owned Anvil instance to exercise the operator infrastructure batches, Safe setup
+without funding, and payments after separate funding. It also preserves coverage
+for older wallet-funded journals: explicit faucet claims, exact 450-token wallet
+debits, unchanged supply and consumed allowances. Independent treasuries share
+one sealed bridge pair; payments in both directions cannot spend another
+treasury's allowance.
 
-`node tests/treasury-shared-browser.mjs` exercises the served UI in a fresh
-Playwright context, including preserved journals, predeployed asset discovery,
-funding explanations, insufficient wallet balance and a separate faucet screen.
-Its injected wallet does not sign or broadcast on Chiado. Infrastructure RPC
-responses used for these specific setup states are fixtures, not deployment
-evidence. The operator CLI and actual broadcast procedure are in the
+The EEZ managers in this test are fixtures, so it does not establish Composer,
+signer or independent follower correctness. Run the native `--ui test` suite
+separately for those checks.
+
+`node tests/treasury-shared-browser.mjs` checks preserved journals, predeployed
+asset discovery, retained funding requests and the transition to setup without
+funding. New setup must not show a funding requirement or faucet shortcut.
+The injected wallet and RPC fixtures do not sign or broadcast on Chiado. The
+operator CLI and broadcast procedure are in the
 [shared-network runbook](../../docs/runbooks/treasury-shared-network.md).
 
 The native browser harness forwards its own loopback HTTP through Playwright's

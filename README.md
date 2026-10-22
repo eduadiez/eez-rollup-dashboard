@@ -1,8 +1,9 @@
 # EEZ Rollup UI
 
 Standalone Docker-first web interface for an EEZ rollup network. This repository
-contains the UI and demo documentation. Core protocol contracts, the node, and
-Kurtosis topology remain in the rollup repository.
+contains the UI, treasury application contracts, deployment tooling and demo
+documentation. Pinned protocol contracts are a dependency; the node and Kurtosis
+topology remain in the rollup repository.
 
 The source baseline is the earlier
 [`eez-association/sync-rollups-poc`](https://github.com/eez-association/sync-rollups-poc)
@@ -186,48 +187,41 @@ Safe, choose **Move to EEZ-X Safe** in payment review. This owner-approved inter
 transfer uses the shared bridge and does not consume the policy's payment budgets.
 See the [transfer procedure](docs/runbooks/treasury-shared-network.md#moving-funds-to-the-mirror-safe).
 
-The [shared-network setup](docs/runbooks/treasury-shared-network.md) uses the
-selected wallet and supports existing Safe 1.4.1 accounts. It reuses verified
-Safe infrastructure and batches contract creation, funding and Safe configuration.
-With the first Safe implementation already confirmed, the grouped plan normally
-needs **five more transactions**, plus two Safe signature approvals for a 1-of-1
-treasury. Wallet A currently needs **seven more transactions**: its first two
-EEZ-X deployment addresses already contain protocol contracts, so setup first
-uses those nonces for two required proxy calls. The UI detects this from the
-selected wallet. Existing Safes retain their quorum requirements. Reloading preserves
-confirmed deployments and pending requests; each batch shows its contracts and
-calls before approval. See the [batch validation record](docs/audits/2026-10-20-treasury-deployment-batches/README.md).
-**Start new treasury** returns to the Safe chooser with the same connected
-wallet. Create new Safes or enter existing Safe addresses on either chain;
-there is no archive collection or download step.
-Pending setup, payment and owner-change requests must be resolved first. See the
+The [shared-network setup](docs/runbooks/treasury-shared-network.md) reuses verified
+Safe infrastructure and batches application deployment and Safe configuration.
+Existing Safes retain their quorum requirements. Reloading preserves confirmed
+deployments and pending requests; each batch shows its contracts and calls before
+approval. Setup does not fund either Safe.
+**Start new treasury** returns to the Safe chooser with the same connected wallet:
+enter an existing L1 Safe and deploy or connect its EEZ-X mirror. There is no
+archive collection or download step. Pending setup, payment and owner-change
+requests must be resolved first. See the
 [restart procedure](docs/runbooks/treasury-shared-network.md#start-a-new-treasury-with-the-same-wallet).
 
-
 The [isolated treasury launcher](tests/integration/README.md#connected-treasury-ui)
-opens **Payments** in the same hidden tab. It deploys two Safes,
-`L1Owners`, `BidirectionalTreasuryPolicy`, the official allowance modules and a fresh
-`TreasuryBridge` pair extending the pinned demo bridge. Each Safe grants 100 USDC per ten minutes; the policy enforces 150
+opens **Payments** in the same hidden tab. Its fixture deploys and funds both
+Safes, the owner adapter, payment policy, official allowance modules and a test
+bridge pair. Each Safe grants 100 USDC per ten minutes; the policy enforces 150
 across both. The UI reads actual holdings and counters, collects EIP-712 owner
-approvals and submits through Composer. It supports local payments on either
-chain and combined funding to either chain. **Start from** selects which Safe
-owners authorize; signatures use that Safe’s chain and nonce. New shared-network
-setup requires an existing Chiado Safe and preserves its owners and threshold.
-Existing deployed policies keep their L2 entry point until explicitly replaced. Try **Pay 40 on EEZ-X**, **Split 110
-to L1**, then **Try another 1** in one period. After the next reset, **Pay 10% of
-holdings** calculates 30 from the Safes' combined 300. Then use **Split 110 to
-EEZ-X**: 100 comes from its local Safe and 10 from L1, bringing the new period's
-shared spending to 140. Each preset only fills the form. Rule approvals authorize
-the percentage; the UI distinguishes its estimate from the balances and amount
-observed during execution.
+approvals and submits through Composer. **Start from** selects the Safe signing
+domain and nonce; the split control sets each Safe's contribution.
 
-These are real transfers of a six-decimal **Devnet USDC** fixture on private
-chains, not Circle-issued USDC. The initial 150 wrapped tokens are backed by
-150 locked on L1. The UI verifies canonical Safe/payment events, shows actual
-funding and resumes pending submissions across reloads. Its ports, chain state,
-test wallets and configuration belong to that invocation. **Connected owner
-demo** retains the earlier value-setting action; the simulated preview stays
-separate. The invoice preset now requires explicit merchant acceptance after both payment legs and displays verified rollback evidence. **Payment history** keeps this browser's live payment attempts across **New payment** and reloads, with filters for settled payments, preparation rejections, verified rollbacks and unresolved requests. Expand an entry for actual funding, transaction identifiers or rollback state comparisons. Local budget checks are marked as not submitted. The UI checks submitted outcomes again on reload; missing evidence remains unresolved. See the [history scope and validation](docs/audits/2026-10-20-treasury-history/README.md).
+Enter the rehearsal sequence in the form: pay 40 on EEZ-X, pay 110 to the L1
+recipient with 100 from its local Safe and 10 from EEZ-X, then try another 1.
+After the next reset, a 10% rule pays 30 from the remaining combined 300; a
+110-USDC payment to EEZ-X then uses 100 locally and 10 from L1. Rule approvals
+bind the percentage, and the UI distinguishes estimates from execution results.
+These fixtures use six-decimal test tokens with bridge backing. Their funding
+belongs to the isolated harness, not normal dashboard setup.
+
+**Owner demo** retains the fixture's value-setting action. The invoice test
+requires explicit merchant acceptance after both payment legs and compares
+rollback evidence. **Payment history** retains this browser's payment attempts
+across reloads, including settled payments, preparation rejections, verified
+rollbacks and unresolved requests. Expanded entries show the actual split and
+transaction/block links. Submitted outcomes are rechecked on reload; missing
+evidence remains unresolved. See the
+[history scope and validation](docs/audits/2026-10-20-treasury-history/README.md).
 Use `npm run dev:treasury -- --runtime /path/to/rollupX` and follow the printed
 URL and linked wallet/setup instructions. This launcher keeps its private chain
 state separate from the normal dashboard networks.

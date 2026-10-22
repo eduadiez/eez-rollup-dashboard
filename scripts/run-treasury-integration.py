@@ -78,7 +78,7 @@ def main():
     if args.ui:
         app_paths += ['scripts/treasury-relay.py', 'scripts/treasury-invoices.mjs', 'src/lib/treasury/invoices.ts', 'tests/treasury-invoices.test.mjs', 'tests/integration/treasury-invoice-browser.mjs', 'contracts/src/InvoiceMerchant.sol', 'contracts/src/TreasuryBridge.sol', 'contracts/src/TreasuryPolicy.sol', 'contracts/src/TreasuryAliasReader.sol', 'contracts/test/TreasuryPolicy.t.sol', 'contracts/test/helpers/OwnerFixture.sol', 'contracts/test/fixtures/DevnetUSDC.sol', 'tests/integration/treasury-payments.mjs', 'tests/integration/treasury-payment-browser.mjs', 'src/lib/treasury/payments.ts', 'tests/treasury-payments.test.mjs', 'tests/treasury-rules.test.mjs', 'scripts/treasury-composer.mjs', 'tests/treasury-composer.test.mjs', 'src/lib/composerDiscovery.ts', 'scripts/treasury-devnet.mjs', 'scripts/treasury-owner.mjs', 'tests/integration/treasury-browser.mjs', 'tests/treasury-client.test.mjs', 'src/lib/treasury/client.ts', 'src/components/TreasuryConnected.tsx', 'src/components/TreasuryDemo.tsx', 'src/components/TreasuryDemo.module.css', 'src/hooks/useWallet.ts', 'src/hooks/useConfig.ts', 'src/config.ts', 'src/App.tsx', 'vite.config.ts']
     app_paths += ['src/lib/treasury/owners.ts', 'src/components/TreasuryOwners.tsx', 'src/lib/fees/payment.mjs', 'src/lib/fees/l2-fees.mjs', 'src/lib/treasury/history.ts', 'src/hooks/useTreasuryHistory.ts', 'src/components/TreasuryPaymentHistory.tsx', 'src/components/TreasuryOutcomeDetails.tsx', 'tests/treasury-history.test.mjs', 'tests/integration/treasury-history-browser.mjs']
-    app_paths += ['contracts/src/ConfiguredTreasuryBridge.sol', 'contracts/test/ConfiguredTreasuryBridge.t.sol', 'scripts/build-treasury-browser.mjs', 'scripts/treasury-network.mjs', 'src/lib/treasury/deployment.ts', 'src/lib/treasury/deployment-artifacts.json', 'src/lib/treasury/shared-network.json', 'src/components/TreasurySetup.tsx', 'tests/treasury-deployment.test.mjs', 'tests/treasury-owners.test.mjs']
+    app_paths += ['contracts/src/ConfiguredTreasuryBridge.sol', 'contracts/test/ConfiguredTreasuryBridge.t.sol', 'scripts/treasury-network.mjs', 'src/lib/treasury/deployment.ts', 'src/lib/treasury/deployment-artifacts.json', 'src/lib/treasury/shared-network.json', 'src/components/TreasurySetup.tsx', 'tests/treasury-deployment.test.mjs', 'tests/treasury-owners.test.mjs']
     app_paths += ['src/lib/treasury/safeSetup.ts', 'tests/integration/treasury-setup.mjs', 'tests/treasury-shared-browser.mjs', 'contracts/legacy/src/Artifacts.sol', 'tests/treasury-signatures.test.mjs']
     app_paths += ['src/lib/treasury/official-safe-deployments.json', 'tests/fixtures/official-safe-runtime.json', 'tests/fixtures/treasury-policy-v2.json']
     app_paths += ['contracts/src/TreasuryBootstrap.sol', 'contracts/src/BootstrapTreasuryBridge.sol', 'contracts/test/TreasuryBootstrap.t.sol', 'src/lib/treasury/deploymentGroups.ts', 'tests/treasury-deployment-batches.test.mjs', 'tests/integration/treasury-deployment-batches.mjs']
@@ -99,9 +99,13 @@ def main():
       'contracts/test/StandardBridgeTreasuryPolicy.t.sol', 'tests/treasury-standard-bridge.test.mjs',
       'src/components/TreasuryPaymentFlow.tsx', 'src/lib/treasury/settlement.ts', 'src/lib/treasury/mirrorRelay.ts', 'src/components/TreasuryConnected.tsx', 'src/lib/treasury/transfers.ts', 'src/lib/treasury/mainnet.ts']
     app_paths += ['src/lib/treasury/mainnetSetup.ts', 'src/lib/treasury/mainnetSetupRelay.ts', 'src/lib/treasury/mainnet-network.json',
-                  'src/lib/treasury/mainnet-artifacts.json', 'scripts/build-treasury-mainnet-browser.mjs',
+                  'src/lib/treasury/mainnet-artifacts.json',
                   'src/components/TreasuryMainnetSetup.tsx', 'tests/treasury-mainnet-setup.test.mjs',
                   'tests/treasury-mainnet-setup-browser.mjs', 'tests/fixtures/treasury-mainnet-setup.tsx', 'src/components/TreasuryDemo.tsx']
+    release = json.loads((ROOT / 'src/lib/treasury/current-build.json').read_text())['build']
+    app_paths += ['scripts/build-treasury-release.mjs', 'scripts/check-treasury-release.mjs',
+                  'src/lib/treasury/release.ts', 'src/lib/treasury/current-build.json',
+                  f'src/lib/treasury/builds/{release}.json', f'verification/builds/{release}/manifest.json']
     if args.standard_bridge_snapshot:
         shutil.copy2(args.standard_bridge_snapshot, run / 'mainnet-snapshot.json')
         env['TREASURY_STANDARD_BRIDGE_SNAPSHOT'] = str(run / 'mainnet-snapshot.json')

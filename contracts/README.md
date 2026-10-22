@@ -1,24 +1,26 @@
 # Treasury demo contracts
 
-The implementation includes `L1Owners`, real Safe signing, and `BidirectionalTreasuryPolicy`
-for local payments, payments to either chain funded by both Safes, and percentage
-rules over their combined holdings, and invoices with required L1 acceptance. The
-[isolated launcher](../tests/integration/README.md) deploys these alongside the
-official allowance modules and the dashboard-owned `TreasuryBridge` extension
-of the pinned test bridge. The hidden UI uses
-real transfers, counters and canonical payment events in that environment.
-The regular Chiado/EEZ-X dashboard now has wallet-approved setup and live owner
-administration; its [shared-network runbook](../docs/runbooks/treasury-shared-network.md)
-tracks the separate infrastructure predeployment and user-approved Safe setup.
-Explicit Ethereum manifests and the opt-in real-USDC fork suite are described in
-the [mainnet compatibility runbook](../docs/runbooks/treasury-mainnet.md). The
-packaged bridges remain test-only; production bridge deployment and review are
-still required. Other configurations without bindings retain the simulation.
+The application uses `L1Owners` for live L1 owner verification and
+`SplitTreasuryPolicy` for payments through the shared Chiado test bridge.
+`StandardBridgeTreasuryPolicy` and its bounded Ethereum delegate use the existing
+mainnet bridge and USDC. Both support payments initiated by either Safe, split
+funding to either chain and percentage rules over combined holdings.
 
-The private fixture's six-decimal **Devnet USDC** is not Circle-issued USDC. Its
-fixed initial supply is 450: 300 funds the L1 Safe and 150 is locked by a real
-bridge-in to the L2 Safe. The canonical token has no post-deployment mint authority. The paired bridge
-owns mint/burn authority over its backed representation. The invoice fixture and controlled settlement-failure path are described below. Actual wallet-extension and L1 Safe-app rehearsal also remain pending.
+The [shared-network runbook](../docs/runbooks/treasury-shared-network.md) covers
+predeployed test infrastructure and wallet-approved Safe setup. Setup does not
+fund the Safes. The [mainnet runbook](../docs/runbooks/treasury-mainnet.md) covers
+the existing Ethereum bridge, isolated native rehearsal, real-USDC fork tests
+and remaining release checks. The packaged test bridges are not production
+bridges. Independent contract review and actual wallet-extension/Safe-app
+acceptance remain outstanding.
+
+The [isolated launcher](../tests/integration/README.md) deploys and funds its own
+Safes and six-decimal test tokens. Initially, 300 tokens are held by the L1 Safe
+and 150 are bridged to its EEZ-X mirror. The hidden UI uses real transfers,
+counters and canonical payment events in that environment. Test funding and
+controlled invoice failures belong to that harness, not normal setup. Without
+bindings, supported dashboard networks show the Safe chooser; other networks
+show a configuration prompt.
 
 ## Exact payment allocation
 
@@ -28,7 +30,7 @@ for fixed payments. Safe signatures bind the exact L1 contribution; L2 supplies
 bridge execution share the existing payment path. Capacity changes reject the
 chosen split. `Paid` must match the signed amounts before the UI reports success.
 
-Fresh version-9 setups use this artifact and expose the allocation slider
+Fresh Chiado setups use this artifact and expose the allocation slider
 without a separate activation. The dashboard no longer executes policy
 handovers. Existing setup bytecode under `legacy/artifacts` and migration
 contracts remain frozen or retained for historical recovery and tests; they are
@@ -130,7 +132,6 @@ helpers for owner actions and payments with the selected wallet. Payment approva
 bind the canonical token, recipient, destination, budget epoch and Safe nonce.
 Fixed payments also bind the amount and funding mode; a rule binds its percentage
 and always uses combined destination-first funding. A changed epoch requires a new review and fresh signatures.
-The separate payment preview remains explicitly simulated.
 
 ## Shared-network compatibility
 
@@ -474,25 +475,23 @@ with real Composer, signer and follower, including the invoice rollback act.
 See [the shared-network runbook](../docs/runbooks/treasury-shared-network.md) for
 canonical discovery, first-install coordination and journal compatibility.
 
-## Existing-asset treasury funding
+## Separate funding and retained setup recovery
 
-The shared-network browser setup uses predeployed Test USDC and sealed bridges.
-It never deploys a token or claims a faucet while creating a treasury. The
-connected wallet approves exactly 450 tokens; its bootstrap uses ERC-20
-`transferFrom`, transfers 300 to its L1 Safe and bridges 150 to its L2 Safe.
-Insufficient balance stops preparation. No token supply increases during this
-funding batch, and both wallet/executor and executor/bridge allowances must be
-fully consumed. Test token acquisition is a separately requested faucet action.
+Current shared-network setup uses predeployed Test USDC and sealed bridges. It
+requires no wallet token balance, token approval, mint or funding transaction.
+Fund either Safe separately after setup. The test-token faucet is an explicit
+Chiado-only action; Ethereum uses the existing canonical USDC and bridge.
 
-The operator's three infrastructure batches and recovery journal live in
+Older saved setup plans may contain a reviewed 450-token approval and funding
+batch. Recovery preserves those exact bytes: ERC-20 `transferFrom` debits the
+wallet, 300 stays in its L1 Safe and 150 is bridged to its mirror. Tests retain
+that path, including insufficient-balance rejection, consumed allowances and
+unchanged token supply. It is not offered by new setup plans.
+
+The operator's shared test infrastructure batches and recovery journal live in
 [`treasury-infrastructure.mjs`](../scripts/treasury-infrastructure.mjs); see the
-[runbook](../docs/runbooks/treasury-shared-network.md#predeploy-the-shared-infrastructure-once).
-Contract artifacts are unchanged by the funding transition, so pending legacy
-setup calldata remains verifiable. The browser adopts the new plan only before
-the old L1 creation/funding batch; existing custody and policies are preserved.
-The payment bridges still extend the pinned test bridge. Standard ERC-20 funding
-alone does not establish mainnet bridge readiness or Circle-USDC validation.
-
+[runbook](../docs/runbooks/treasury-shared-network.md#predeploy-the-shared-infrastructure-once)
+for predeployment and saved-plan compatibility.
 
 ## Configurable test-token faucet
 

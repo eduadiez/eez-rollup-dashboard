@@ -4,15 +4,20 @@
 
 | Field | Value |
 | --- | --- |
-| Design status | Agreed demo scope; implementation proposal. Integration and deployment acceptance remain outstanding. |
-| Date | 2026-10-19 |
-| Demo repository | `eduadiez/eez-rollup-dashboard`, branch `feat/treasury-demo`. This proposal, the UI and planned demo application contracts and tooling belong here. |
+| Design status | Implemented demo with isolated integration evidence. Public explorer acceptance, real-wallet/Safe-app acceptance and independent contract review remain outstanding; see the [release record](../audits/2026-10-22-treasury-release/README.md). |
+| Date | Initial design 2026-10-19; status updated 2026-10-22. |
+| Demo repository | `eduadiez/eez-rollup-dashboard`. This proposal, UI, application contracts and tooling are prepared on `codex/treasury-demo-release`. |
 | UI baseline | `917a365db5b021c970607e3f4c45c35877fcb2b8`: initial hidden preview with simulated data; current connected milestones are recorded below. |
 | Runtime baseline | `eduadiez/rollupX`, commit `fa916b13254a36423cad130080dde367bb18a7d6`. The initial review used its `feat/l2-fee-recovery` checkout with pre-existing Composer, node and E2E changes; implementation evidence must identify the exact tested revision and any patches. |
 | Protocol baseline | `eez-core-protocol` at `855fe0602484750861b4c31502a1a91355d33ed6`. |
-| Safe baseline | Safe v1.4.1 at `bf943f80fec5ac647159d26161446ac5d716a294`; AllowanceModule v1.0.0 at `c95f03900bff99be090dadb9de1c74b162365485`. Both are pinned under `contracts/lib`; verification of reused deployment bytecode remains outstanding. |
-| Implemented environment | Private development L1 (1337) and EEZ-X (420691), with a six-decimal Devnet USDC fixture and real bridge backing. Mainnet-fork/Circle-USDC and actual Safe-app rehearsal remain separate readiness work. |
+| Safe baseline | Safe v1.4.1 at `bf943f80fec5ac647159d26161446ac5d716a294`; AllowanceModule v1.0.0 at `c95f03900bff99be090dadb9de1c74b162365485`. Both are pinned under `contracts/lib`; setup verifies reused runtime bytecode and bindings. |
+| Implemented environments | Isolated development chains and shared Chiado/EEZ-X setup. The existing Ethereum bridge and USDC path has isolated native rehearsal and fork-test evidence; public mainnet wallet/Safe-app acceptance remains separate. |
 | Related contracts | [Core protocol](https://github.com/eez-association/eez-core-protocol/blob/855fe0602484750861b4c31502a1a91355d33ed6/docs/CORE_PROTOCOL_SPEC.md), [execution entries](https://github.com/eez-association/eez-core-protocol/blob/855fe0602484750861b4c31502a1a91355d33ed6/docs/EXECUTION_ENTRY_SPEC.md), [static entries](https://github.com/eez-association/eez-core-protocol/blob/855fe0602484750861b4c31502a1a91355d33ed6/docs/STATIC_ENTRY.md), [protocol caveats](https://github.com/eez-association/eez-core-protocol/blob/855fe0602484750861b4c31502a1a91355d33ed6/docs/CAVEATS.md), [signer specification](https://github.com/eduadiez/rollupX/blob/fa916b13254a36423cad130080dde367bb18a7d6/crates/eez-proof-signer/SPEC.md). |
+
+The dated sections below retain the design's evolution. For current setup and
+presenter instructions, use the [shared-network](../runbooks/treasury-shared-network.md),
+[mainnet](../runbooks/treasury-mainnet.md) and [rehearsal](../runbooks/treasury-rehearsal.md)
+runbooks. Evidence from an earlier milestone does not validate a later build.
 
 ## Accepted existing-mainnet-bridge integration (2026-10-22)
 
