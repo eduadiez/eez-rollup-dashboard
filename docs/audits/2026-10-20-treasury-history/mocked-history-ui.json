@@ -1,0 +1,20 @@
+{
+  "mode": "UI-only outcomes mocked inside an isolated browser context; real devnet settlement is validated separately",
+  "counts": {
+    "settled": 4,
+    "preparation": 3,
+    "rollback": 1,
+    "pending": 0,
+    "rejected": 0
+  },
+  "filters": true,
+  "ruleDetails": true,
+  "rollbackRows": 10,
+  "offlineDowngrade": true,
+  "responsiveWidths": [
+    390,
+    320
+  ],
+  "pageErrors": [],
+  "transactionsSent": 0
+}

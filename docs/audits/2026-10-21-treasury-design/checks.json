@@ -1,0 +1,38 @@
+{
+  "unitTests": {
+    "passed": 282,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": "TypeScript and Vite passed; existing bundle-size warning",
+  "browser": "passed after fixes; read-only provider and synthetic browser storage fixtures",
+  "backgroundRefreshRegression": {
+    "before": "1 selected test failed with Treasury changed in another tab",
+    "after": "same selected test passed"
+  },
+  "retainedFailures": [
+    {
+      "log": "browser.log",
+      "finding": "Test clicked a transient Connect button during automatic wallet reconnection; fixed by waiting for the connected header."
+    },
+    {
+      "log": "browser-2.log",
+      "finding": "Restart did not reach the storage-failure branch."
+    },
+    {
+      "log": "browser-3.log",
+      "finding": "Diagnostic repeat captured a false Treasury changed in another tab error during a background refresh of the same setup; fixed by binding restart to the selected salt/instance and checking current pending requests."
+    }
+  ],
+  "localEvidence": {
+    "baseline-browser.log": "c5954e7217d56e1c1f6ca9779e97e362b95813f5c6e03d5ed2309d133e16eeb9",
+    "browser.log": "a04359a9b522c4e3ab5630f8c6e368d020bacb9b76bfb02dbbc9da0c1414fe26",
+    "browser-2.log": "985007367de4214377a1b9df4a78c3bba2ceed451dced4c42fcf838caa16d75a",
+    "browser-3.log": "8969cea48baf36b27c4e76d710b58ec6af6607e1c55087e38ad90ff3b270a0b0",
+    "browser-4.log": "1853edfa96ccf5a19d990995489f8656ea09f969d139625b94d03ae4b6ecd887",
+    "background-refresh-before.log": "9b667c5adeafb4f05a19fa7dcf7fa70a32d1abc70e9f782d52628c0dac70f523",
+    "background-refresh-after.log": "f597c55b155591ac3110b99038ce6c2719c3c89c80dd8d222d407454c587405c",
+    "unit-final.log": "63f1b0592498eb7e4ed032ad4092b6b83f8473ba001cc4dfb3cb32be055b772c",
+    "build-corrected.log": "60f7d05ee78cb1eb1cc70fd694d2de151ebd3cd0d8b5198c014855fe86aca8e7"
+  }
+}

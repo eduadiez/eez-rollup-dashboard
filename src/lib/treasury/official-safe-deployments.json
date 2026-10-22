@@ -1,0 +1,40 @@
+{
+  "revision": "e9cc9798ab834e7fe515d361566eb4a28c65387f",
+  "deployments": [
+    {
+      "kind": "singleton",
+      "version": "1.4.1",
+      "address": "0x41675C099F32341bf84BFc5382aF534df5C7461a",
+      "codeHash": "0x1fe2df852ba3299d6534ef416eefa406e56ced995bca886ab7a553e6d0c5e1c4",
+      "source": "src/assets/v1.4.1/safe.json"
+    },
+    {
+      "kind": "factory",
+      "version": "1.4.1",
+      "address": "0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67",
+      "codeHash": "0x50c3cdc4074750a7a974204a716c999edd37482f907608d960b2b025ee0b3317",
+      "source": "src/assets/v1.4.1/safe_proxy_factory.json"
+    },
+    {
+      "kind": "factory",
+      "version": "1.3.0",
+      "address": "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2",
+      "codeHash": "0x337d7f54be11b6ed55fef7b667ea5488db53db8320a05d1146aa4bd169a39a9b",
+      "source": "src/assets/v1.3.0/proxy_factory.json"
+    },
+    {
+      "kind": "multiSend",
+      "version": "1.4.1",
+      "address": "0x9641d764fc13c8B624c04430C7356C1C7C8102e2",
+      "codeHash": "0xecd5bd14a08c5d2122379900b2f272bdf107a7e92423c10dd5fe3254386c9939",
+      "source": "src/assets/v1.4.1/multi_send_call_only.json"
+    },
+    {
+      "kind": "multiSend",
+      "version": "1.3.0",
+      "address": "0x40A2aCCbd92BCA938b02010E17A5b8929b49130D",
+      "codeHash": "0xa9865ac2d9c7a1591619b188c4d88167b50df6cc0c5327fcbd1c8c75f7c066ad",
+      "source": "src/assets/v1.3.0/multi_send_call_only.json"
+    }
+  ]
+}

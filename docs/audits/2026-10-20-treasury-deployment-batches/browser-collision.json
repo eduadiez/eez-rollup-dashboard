@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-20T21:45:53.473Z",
+  "scope": "isolated synthetic confirmed journal; actual shared-network nonce/code reads for public wallet A",
+  "wallet": "0xcEAF908C05B277E92e89b51B281Ec76305b9A141",
+  "completed": 1,
+  "total": 8,
+  "remaining": 7,
+  "preparation": {
+    "nonce": "0",
+    "calls": 2
+  },
+  "confirmedJournalPreserved": true,
+  "noSubmission": true,
+  "methods": [
+    "eth_chainId",
+    "eth_getCode",
+    "eth_call",
+    "eth_getBlockByNumber",
+    "eth_getStorageAt",
+    "eth_getTransactionCount"
+  ]
+}

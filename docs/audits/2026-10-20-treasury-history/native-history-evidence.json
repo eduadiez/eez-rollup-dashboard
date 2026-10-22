@@ -1,0 +1,32 @@
+{
+  "counts": {
+    "settled": 4,
+    "preparation": 3,
+    "rollback": 1,
+    "pending": 0,
+    "rejected": 0
+  },
+  "retainedAcrossReload": true,
+  "ownerActionsExcluded": true,
+  "verifiedFunding": [
+    "40 local EEZ-X",
+    "110 split L1",
+    "30 percentage rule",
+    "110 split EEZ-X"
+  ],
+  "preparation": [
+    "closed invoice at Composer",
+    "1 USDC local budget check",
+    "16 USDC rule local budget check"
+  ],
+  "rollbackTraceAndStateDetails": true,
+  "expiredQueueDiagnosticsHandled": true,
+  "queueExpiredNaturally": false,
+  "missingDiagnosticInjectedOnReload": true,
+  "unavailableReadsDowngrade": true,
+  "responsiveWidths": [
+    390,
+    320
+  ],
+  "automaticResubmissions": 0
+}

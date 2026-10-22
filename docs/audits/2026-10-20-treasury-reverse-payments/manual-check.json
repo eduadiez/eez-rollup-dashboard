@@ -1,0 +1,70 @@
+{
+  "run": "20261020T130157-_pacc__z",
+  "url": "http://127.0.0.1:46345/dashboard/#/treasury-demo",
+  "instance": "0xb8e6264e638b695e06e0cee49ba12061a838e62da6d9de6b73caa37ef15e3cf9",
+  "capability": true,
+  "reviewedPayment": {
+    "recipient": "0x0000000000000000000000000000000000001234",
+    "amount": "110000000",
+    "destination": "l2",
+    "funding": "combined",
+    "epoch": "2987502"
+  },
+  "funding": {
+    "fromL1": "10000000",
+    "fromL2": "100000000"
+  },
+  "safeNonce": "3",
+  "balances": {
+    "l1": "300000000",
+    "l2": "150000000"
+  },
+  "allowanceSpending": [
+    "0",
+    "0"
+  ],
+  "globalSpent": "0",
+  "escrow": "150000000",
+  "supply": "150000000",
+  "submitted": false,
+  "pageErrors": [],
+  "mobileWidths": [
+    390,
+    320
+  ],
+  "applicationSources": {
+    "scripts/run-treasury-integration.py": "3c110abb3283b1b862e37efd25f2c6f473a2846d75d512b7212188cc693ab0dc",
+    "tests/integration/treasury_owners.rs": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00",
+    "tests/integration/treasury-owners.mjs": "2705a1efe5383b40da359f9e70f0cd5f24faba9d3f15c4dae14983ab848dfa7f",
+    "src/lib/treasury/safeTransactions.ts": "86002f3b1694be86d7e12c8785aa94f6c2f6ec3529f2eff4a2372719dd93e732",
+    "contracts/src/L1Owners.sol": "1e967a3941c829fb07d79c2c5e5f3d8f1a20a740fadd07109f1cdd458514285d",
+    "contracts/test/fixtures/TreasuryOwnerAction.sol": "215bbf66fa5324f5607bef3f5068ce146aec2fbb30e4a6fd31be7eabc671154d",
+    "contracts/foundry.toml": "75f257c0bd4a6122f4bfc5f4eaa9abac47903fc2e388403e22c5ed35a61bae98",
+    "contracts/legacy/foundry.toml": "30bc96601ea3470d31853a90c41e57559545c5304dc1b3cb8ec2b4ec7afc8ebf",
+    "contracts/src/TreasuryBridge.sol": "ef2273130ea2649cb1951d2875dc0380ea66ebd7a9951a184347655f74309907",
+    "contracts/src/TreasuryPolicy.sol": "cc2625212887b47fcee550db5f2f08189bd3a2b6b95f4839068d1c2f146ca532",
+    "contracts/test/TreasuryPolicy.t.sol": "a5e6278beb5088fff85526e05f51d55eaeded05368db078856c37f11e33b634b",
+    "contracts/test/helpers/OwnerFixture.sol": "cbd561f9c7dd0570f0ff7c7af16edf20e23359b59f38a592aafd6ff3a70ae8fd",
+    "contracts/test/fixtures/DevnetUSDC.sol": "2e3f732d845f20c5120b98f0e017008fe8780e9fe50798ca06ab3d1cbdac9a2b",
+    "tests/integration/treasury-payments.mjs": "b25b9c9ef6b55b741019539b29e4beb1334638dc66f5e2e75c9d600b29b547a5",
+    "tests/integration/treasury-payment-browser.mjs": "14d84fb4093f38d242cc565b8a3b16b280da15e98548151f3bb45919ce7d6abe",
+    "src/lib/treasury/payments.ts": "e73c3e5eb7e1b607f37b4708c778ce1d08dc84359172b14392bde440fe209eb2",
+    "tests/treasury-payments.test.mjs": "3cbdd409ff1a6846cf1d3b3362faf7ce2e85547832465aa4300b8526d378a342",
+    "scripts/treasury-composer.mjs": "ca36e2f282c18fa0b6fe44acb58012b6ea39f5d044ccc25ded345a14e326b40b",
+    "tests/treasury-composer.test.mjs": "4d9c79449d72c48d5bf1d25d6d57e26e86ba9dbf5bc0bd158d49da836a8a9768",
+    "src/lib/composerDiscovery.ts": "45ccb32407115d488b031cfd997661ada79e16127ffd17ef1c3c20ba2dba3fc4",
+    "scripts/treasury-devnet.mjs": "5201f02d4d019317922d75f3d753fc3c9a95eecab0d4a9c2044c2241852ee6a3",
+    "scripts/treasury-owner.mjs": "5511787cf4d9dd8e0dd543a841ae975bc3bc7820e7eabcb6558063349d838e10",
+    "tests/integration/treasury-browser.mjs": "84c608c973f5a2b078d05b94de1ec25773105ecf716b11ed1f6fd2eb3d640044",
+    "tests/treasury-client.test.mjs": "5b06b080f59caa09b8bc2a799c319c788e6a4aea2ff5824d4d09ff3741948d15",
+    "src/lib/treasury/client.ts": "b2383740a02086679cfb7e7729f6e340f3656cd08f134f9c8d72ccdd6c57492e",
+    "src/components/TreasuryConnected.tsx": "f84342323bc16f7ed3c59138418f06fb9618dcdb2d2eb3f5e20c5dcfa37eb9a1",
+    "src/components/TreasuryDemo.tsx": "c1e39c767f5447a5c1cac8f107c9db992c3c7a834813bab6809a718846c95fea",
+    "src/components/TreasuryDemo.module.css": "36794c4530bca910b9992429d69eba859330ef0a7aa688f3f04e6b68b83322aa",
+    "src/hooks/useWallet.ts": "87bc15e86da83a8b0311f0373bc35e0205d278e2f1aaba9ad74161bea8532c46",
+    "src/hooks/useConfig.ts": "31007d0c17327b5e02b1e964816dc532ad74b851ebfac2d80846456ce68cef96",
+    "src/config.ts": "feed237f7160dd8780bcf4a109d2ddba79e1010b4384f9371950626c88161799",
+    "src/App.tsx": "c41983714e89ace8cb95ba95a090e23ac25e9b22672288eaf03909c0c6bab5ca",
+    "vite.config.ts": "f2c54c1457fb2304718e354f0946d85a66cfbbd197e82a4f47adfeecd42a7030"
+  }
+}

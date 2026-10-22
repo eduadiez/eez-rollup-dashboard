@@ -528,7 +528,7 @@ export function App() {
 
             {treasuryVisible && dashboardTab === "treasury-demo" && (
               <Suspense fallback={<p role="status">Loading treasury preview…</p>}>
-                <TreasuryDemo />
+                <TreasuryDemo wallet={wallet} ready={configLoaded} />
               </Suspense>
             )}
 

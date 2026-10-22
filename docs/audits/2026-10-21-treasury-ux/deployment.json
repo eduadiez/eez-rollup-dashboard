@@ -1,0 +1,46 @@
+{
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "runtimeConfigurationUnchanged": true,
+  "networkServicesUnchanged": true,
+  "servedAssets": [
+    {
+      "file": "TreasuryDemo-CkRYNoDN.js",
+      "sha256": "09c6e00198d53610135c0f1aa54d50db0e5dabb2968471550b93883a04a5e9dd"
+    },
+    {
+      "file": "TreasuryDemo-BNoLmFlK.css",
+      "sha256": "e9352569888a3df475002114a23cef6681f40a631b626592b0492a0c29e3d189"
+    },
+    {
+      "file": "deployment-artifacts-BD63PDLo.js",
+      "sha256": "e2a90186b025a30bf758bc48211c3ec2eb31c5f4ab2816edae9f6b91f888d5d3"
+    },
+    {
+      "file": "index-BK-O6pMz.js",
+      "sha256": "91e936d3d02771deae05d8ec0266282cafeeebbe4999229e014c32be73108108"
+    }
+  ],
+  "uiImage": "sha256:649809db7cad5be5edb7b29d4e899541e4b0a48f71cde09e404668848d852079",
+  "logs": [
+    {
+      "path": ".runtime/treasury-ux-20261021/unit-tests.log",
+      "sha256": "3bd67abde44b74e976dedb1a8bec8f13fc997b74633060fec15543a08a1cdb22"
+    },
+    {
+      "path": ".runtime/treasury-ux-20261021/build-release.log",
+      "sha256": "5f51592735180c4ab9aec21b47d6d4005c4a5f7577637177ada4f04e19bd8bfe"
+    },
+    {
+      "path": ".runtime/treasury-ux-20261021/reviewed-browser.log",
+      "sha256": "62f1b3ab011edff18284167285bca404acfed5887f93177029894ba532c66e09"
+    },
+    {
+      "path": ".runtime/treasury-ux-20261021/simulation-browser.log",
+      "sha256": "fbd24e987267411a8c737ed0f37e9a187c51588c0da5b9ccc693466b30a495d8"
+    },
+    {
+      "path": ".runtime/treasury-ux-20261021/image-reviewed.log",
+      "sha256": "d2abe790c03a82c63c2ec47923e852a2ba4d1345ec8d4dc2b8e515aa8619f470"
+    }
+  ]
+}

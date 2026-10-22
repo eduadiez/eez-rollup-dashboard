@@ -1,0 +1,12 @@
+{
+  "l1": {
+    "number": "0x168532e",
+    "hash": "0xd0d6fe751efbd7769ce06b7863810d09ff6519b2cb7a260a72b3dc7c94b8856e",
+    "gasLimit": "17000000"
+  },
+  "l2": {
+    "number": "0x115cba",
+    "hash": "0xb5718dd783818bcdeb6b044ee1afae78de7d58b1ef6128f08c5cffc0908ff7fb",
+    "gasLimit": "30000000"
+  }
+}

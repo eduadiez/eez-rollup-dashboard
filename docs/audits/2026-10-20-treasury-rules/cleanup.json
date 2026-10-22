@@ -1,0 +1,33 @@
+{
+  "run": "20261020T130157-_pacc__z",
+  "normalExit": true,
+  "mode": "serve",
+  "verified": false,
+  "ports": [
+    {
+      "port": 33923,
+      "closed": true
+    },
+    {
+      "port": 40105,
+      "closed": true
+    },
+    {
+      "port": 40945,
+      "closed": true
+    },
+    {
+      "port": 45605,
+      "closed": true
+    },
+    {
+      "port": 46063,
+      "closed": true
+    },
+    {
+      "port": 46345,
+      "closed": true
+    }
+  ],
+  "note": "Manual serve mode deliberately does not claim the full test scenario was verified."
+}

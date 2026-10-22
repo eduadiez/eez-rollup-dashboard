@@ -1,0 +1,138 @@
+{
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "6061ac5b6fadcd2e138e50f995ee1c0d5165139c51fb3410d473273f8d766a2b",
+  "reusedArtifacts": {
+    "run": "20261021T100301-lxuzi2wh",
+    "summarySha256": "79e5c31474d493d3030e68f2443159ee515a91f80dca20250a4fc10ccc271c11",
+    "nativeHarnessSourceSha256": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00"
+  },
+  "run": "20261021T105557-n74oh1oo",
+  "durationSeconds": 869.64,
+  "selectedTests": 1,
+  "passed": 1,
+  "failed": 0,
+  "ignored": 0,
+  "cases": [
+    {
+      "label": "Browser B+C approval, submission and reload reconciliation",
+      "transaction": "0x3eee668f5ce188161a2c8f9fb8a7d2f88376ec542f641e84ac3e6e6ecafc0f75"
+    },
+    {
+      "label": "Browser A+B after removing C",
+      "transaction": "0xdcfd1d4a9ca327afea4cd85c4a24e943924d9c792d9705d4fc32a58ecba6af63"
+    },
+    {
+      "label": "Invoice rejected after two L1 transfers; rollback verified",
+      "transaction": "0x494bf9fb553397b6af06982ff6ba535b150ad18332bc23b884a7269315366a04"
+    },
+    {
+      "label": "Closed invoice rejected during preparation",
+      "transaction": "0xd6e792dac19e25d574296f150745bbe6b0c5cc5babc2df7c7e8c2080aa54d8a3"
+    },
+    {
+      "label": "Pay 40 on EEZ-X",
+      "transaction": "0x51c84b1f5931d9f205512871c1324a27e09578a2ee6c09e6d511c016652a6364"
+    },
+    {
+      "label": "Split 110 to L1",
+      "transaction": "0xedbfbd230b337ba4862ceb171d87cc7f2961a6fd82cfb10c69bc5085fa7b25b4"
+    },
+    {
+      "label": "Extra 1 rejected by the independent global budget",
+      "transaction": "0x4caf9931fd696cee8f00a4344ebe89b2b471b682e9834d0cfcc7ff7841a07eff"
+    },
+    {
+      "label": "Pay 10% of holdings",
+      "transaction": "0xe7c4380c1ea93f3d00a7e91a9818d687a5db6ef06920734ef259a0a38b373cca"
+    },
+    {
+      "label": "Split 110 to EEZ-X",
+      "transaction": "0x497da71ace0218ffa09c958b2fd497baf6f43582b916bc6b9da8e2e7dcb82365"
+    }
+  ],
+  "walletFunding": {
+    "allowanceConsumed": true,
+    "amount": "450000000",
+    "standardERC20": true,
+    "supplyUnchanged": true
+  },
+  "independentReplay": {
+    "hash": "0x34c25fc64be7b7a949539c16830e68b529c19949fa12391682cacbb254121ec4",
+    "height": 860
+  },
+  "postedAttestationVerified": true,
+  "paymentChecks": [
+    "40 local",
+    "110 split",
+    "same L1 transaction receives both legs",
+    "global rejection despite 50 L2 allowance remaining",
+    "actual Composer policy rejection",
+    "unchanged state on rejection",
+    "bridge backing",
+    "no residual policy custody",
+    "independent follower",
+    "payment reload recovery",
+    "10% of 200 L1 + 100 L2 pays 30",
+    "rule fraction edits invalidate approvals",
+    "rule reload recovers signed fraction",
+    "RulePaid observations and Paid funding agree",
+    "actual 30 token transfer on L1",
+    "percentage rule independently replayed",
+    "110 to EEZ-X: 100 local + 10 L1",
+    "terminal L1 lock in canonical batch",
+    "exact approval consumed",
+    "nonce-bound lock and mint",
+    "both contributions in the same L2 receipt",
+    "reverse payment reload recovery",
+    "natural period reset with idle L2",
+    "reverse state independently replayed",
+    "16-USDC rule preview rejected with only 10 global remaining"
+  ],
+  "historyChecks": {
+    "automaticResubmissions": 0,
+    "counts": {
+      "pending": 0,
+      "preparation": 3,
+      "rejected": 0,
+      "rollback": 1,
+      "settled": 4
+    },
+    "expiredQueueDiagnosticsHandled": true,
+    "missingDiagnosticInjectedOnReload": true,
+    "ownerActionsExcluded": true,
+    "preparation": [
+      "closed invoice at Composer",
+      "1 USDC local budget check",
+      "16 USDC rule local budget check"
+    ],
+    "queueExpiredNaturally": true,
+    "responsiveWidths": [
+      390,
+      320
+    ],
+    "retainedAcrossReload": true,
+    "rollbackTraceAndStateDetails": true,
+    "unavailableReadsDowngrade": true,
+    "verifiedFunding": [
+      "40 local EEZ-X",
+      "110 split L1",
+      "30 percentage rule",
+      "110 split EEZ-X"
+    ]
+  },
+  "firstRunClean": false,
+  "retainedFailedRuns": [
+    "20261021T104030-sdz8367k",
+    "20261021T104631-4jhi7la8",
+    "20261021T105116-s4piwsme"
+  ],
+  "browserTransport": "Actual loopback HTTP responses forwarded through Playwright request client; no retries or synthetic chain responses"
+}

@@ -1,0 +1,48 @@
+{
+  "applicationSources": {
+    "scripts/run-treasury-integration.py": "d81e2863b66dcd9ca7f7089cd80ce1ac1132c48242e49ad086e89c52227dfe57",
+    "tests/integration/treasury_owners.rs": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00",
+    "tests/integration/treasury-owners.mjs": "bf4a978755f7a2dbb3cb7dc05c819522292f4d4f0a5048819605f34703f16953",
+    "src/lib/treasury/safeTransactions.ts": "86002f3b1694be86d7e12c8785aa94f6c2f6ec3529f2eff4a2372719dd93e732",
+    "contracts/src/L1Owners.sol": "1e967a3941c829fb07d79c2c5e5f3d8f1a20a740fadd07109f1cdd458514285d",
+    "contracts/test/fixtures/TreasuryOwnerAction.sol": "215bbf66fa5324f5607bef3f5068ce146aec2fbb30e4a6fd31be7eabc671154d",
+    "contracts/foundry.toml": "c1eefd044349d24189e51d49d4c5bfd4cea8fafc3ecc6bfb7172bcbb7864b647",
+    "contracts/legacy/foundry.toml": "30bc96601ea3470d31853a90c41e57559545c5304dc1b3cb8ec2b4ec7afc8ebf"
+  },
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "steps": [
+    {
+      "name": "dashboard-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "runtime-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "runtime-binaries",
+      "exitCode": 0
+    },
+    {
+      "name": "harness-lock",
+      "exitCode": 0
+    },
+    {
+      "name": "harness-build",
+      "exitCode": 0
+    },
+    {
+      "name": "integration",
+      "exitCode": 0
+    }
+  ],
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "6061ac5b6fadcd2e138e50f995ee1c0d5165139c51fb3410d473273f8d766a2b"
+}

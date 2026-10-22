@@ -204,6 +204,119 @@ expand inline with visible focus and return focus when dismissed. The primary
 action connects a wallet when disconnected. Balance and recipient validation
 use amber; transaction and RPC failures retain error styling.
 
+The treasury reuses the dashboard's connected wallet. Setup requires an existing Chiado Safe address and offers a new or
+existing EEZ-X Safe. Label the new option **Deploy a mirror Safe**: it verifies
+owners and the approval threshold against the L1 Safe dynamically. The imported
+L1 Safe keeps its owners and threshold. **Start new treasury** is a secondary action that
+returns to these choices without disconnecting the wallet; there is no archived
+treasury collection. Before any deployment is confirmed, **Change setup** serves
+that purpose. Pending requests must remain visible and be resolved before
+restarting. Keep every setup action list visible under a
+heading that explains its purpose. Explain contract deployment, owner verification
+and spending authorization as distinct steps. Reserve disclosures for
+supporting contract information; owner changes and the next wallet approval
+remain visible before signing. Use one
+primary action for the current approval stage; collected approvals and submitted
+transactions are distinct states. Environment badges remain neutral; a green
+approval or connection badge requires the corresponding observed state.
+
+Show ownership beside Safe selection and creation, and limits at spending
+configuration. Setup does not fund Safes: show no funding form, token balance
+requirement, faucet entry or skip control. Keep the required owner-verification
+connection visible without suggesting tokens will move. Preserve any historical
+funding transactions and unresolved wallet requests in transaction history.
+Do not add separate deployment-wallet, gas-balance or reused-infrastructure panels. Keep
+setup progress compact and lead with the current action. After the final transaction,
+verify the treasury automatically and open its connected view. Show only a compact
+verification status while checking; on failure retain setup and offer **Retry verification**.
+A configured treasury must not show a completed setup panel or another open button.
+In the connected view,
+show the shared budget and both Safe balances, then payment and **Shared owners**.
+Each Safe balance card shows an abbreviated address linking to its chain’s configured
+explorer and an adjacent icon button that copies the full address. Keep the address
+and copy icon on one line, with the full address in the link’s accessible name and tooltip. Keep these visible while balances load; the Chiado
+card also links to the Safe app when configured.
+The shared-owners card shows wallet addresses and the **Approval threshold** as
+“2 of 3 owners”, separate from approvals collected for the current transaction.
+Explain that EEZ-X reads the current owners and threshold from Chiado through EEZ,
+so **both Safes stay in sync automatically**. Refresh after verified owner changes
+and poll for changes made elsewhere. Keep the last observed list visible with a
+stale-state message if reads fail; never present entered addresses as confirmed
+owners before inclusion. Label current signers **Owner**, and mark the active
+account separately as **Connected wallet**. Historical deployment labels must
+not imply another role or extra authority in this list.
+For fixed payments, replace the funding selector with a percentage slider between
+the two Safes. Show both percentages and exact USDC amounts; the left endpoint
+uses Chiado and the right endpoint EEZ-X. Default from available funds, retain a
+chosen split through polling, and lock it during review. Sign exact contributions,
+never silently rebalance them. Invalid capacity stays visible. New setups include
+custom splits directly; there is no separate activation or policy-upgrade flow.
+Percentage rules keep automatic allocation of their dynamic amount.
+Keep initiating Safe, recipient, amount, destination and funding visible before signing; put
+contract identifiers, token movement and observed block details in disclosures.
+The payment form has no **Demo scenarios** shortcuts or repeated test-token tagline;
+use the ordinary amount, destination, percentage and split controls. After settlement, show a continuous connected flow from
+owner verification through the shared budget, branching into the two Safe
+contributions and rejoining at the recipient. Keep connectors joined as the layout
+reflows. Put explorer links inside the relevant nodes: initiating Safe transaction,
+EEZ-X policy execution and block, each funding transaction, and the settlement
+transaction and block. Show each contribution's verified amount, share, and direct
+or bridged route; mark unused Safes explicitly. Use network names (Chiado or
+Ethereum, and EEZ-X) in treasury labels, not L1/L2. Never invent a separate EEZ-X
+settlement transaction or treat the Safe signing hash as an explorer transaction.
+Payment-history rows show the verified amount from each Safe, transactions and
+blocks on both chains, and expand to this same flow. Keep a distinct initiating
+Chiado/Ethereum transaction visible when it differs from settlement. Missing
+optional settlement data withholds its links without changing verified payment
+status; refresh it sequentially and share evidence between rows and diagrams.
+Omit the generic explanatory footer under the diagram. Remove the generic Treasury details
+panel. Verified completed payments release the form and restart control automatically,
+retaining their identity in history; a changed or unresolved observation restores
+the pending lock while that request is being tracked. Pending requests and errors remain visible. Treasury transaction
+links open the configured block explorer for their L1 or L2 chain. Use the same
+visible and accessible names for navigation. For a new payment, default **Start
+from** to the connected network when that Safe supports initiation; retain any
+explicit choice, review or pending request. Do not show a standalone network
+switch in payment approvals. **Sign approval** and **Submit Safe transaction**
+request a switch only when the wallet differs from the reviewed Safe. Explain
+that prompt beside the action, and stop if the user cancels, the network does not
+change, or the selected account/review changes while the prompt is open.
+
+Keep **Add an owner** within **Shared owners**, with a **New owner address** input and
+**Required approvals** defaulting to the current L1 threshold. Enter the candidate
+address directly; the connected wallet is used by current owners to approve the
+change. Keep reviewed fields fixed until the user chooses to edit them. Owner
+changes advance on verified L1 inclusion and show **Owner change included**;
+keep checking until dismissed, without waiting for the `safe` checkpoint. Show
+reverts as failures rather than successful owner additions.
+
+Keep **Get Test USDC** as a separate, secondary action on the connected treasury.
+Show amount (up to six decimals), destination network (Chiado / EEZ-X), and
+recipient address, defaulting to the connected wallet with an optional reset.
+The connected wallet signs and pays Chiado gas; any wallet or Safe can receive
+tokens without having gas. Preserve the draft amount, recipient and destination
+when changing the paying wallet. Returning to an unresolved request restores that
+wallet’s exact locked selection.
+Existing balances never restrict a request. Explain the first request's two
+confirmations (prepare the dispenser, then deliver); subsequent requests reuse it.
+Keep pending selections locked and restore them on reload. Confirm exact delivery
+only after verification; preparing the dispenser is not receipt of tokens.
+Preserve the independent faucet journal and the treasury's setup/payment state.
+
+New treasury setups deploy a policy that supports both initiation chains and
+custom splits. Do not show activation links or a policy-upgrade card. Retained
+handover transaction records remain saved; their presence
+does not offer another migration.
+
+Use the Bridge & Calls history layout for treasury setup transactions, oldest
+first. Keep the action, network, transaction, block, observed status and time
+visible during setup. Once the treasury is open, show **Payment history** in this
+same row layout and hide the setup transaction panel; retain its saved records.
+Advance setup on verified successful inclusion;
+show finality separately without delaying the next step. RPC uncertainty must
+replace a stale success state. A pending row makes the disabled restart action
+clear without repeating a second instruction below it.
+
 ## Do's and Don'ts
 
 - **Do** reserve the gradient for hover states, thin accent rails, progress bars, and the primary button — never as per-category branding or large fills.

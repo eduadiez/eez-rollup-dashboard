@@ -1,0 +1,511 @@
+# Treasury demo contracts
+
+The implementation includes `L1Owners`, real Safe signing, and `BidirectionalTreasuryPolicy`
+for local payments, payments to either chain funded by both Safes, and percentage
+rules over their combined holdings, and invoices with required L1 acceptance. The
+[isolated launcher](../tests/integration/README.md) deploys these alongside the
+official allowance modules and the dashboard-owned `TreasuryBridge` extension
+of the pinned test bridge. The hidden UI uses
+real transfers, counters and canonical payment events in that environment.
+The regular Chiado/EEZ-X dashboard now has wallet-approved setup and live owner
+administration; its [shared-network runbook](../docs/runbooks/treasury-shared-network.md)
+tracks the separate infrastructure predeployment and user-approved Safe setup.
+Explicit Ethereum manifests and the opt-in real-USDC fork suite are described in
+the [mainnet compatibility runbook](../docs/runbooks/treasury-mainnet.md). The
+packaged bridges remain test-only; production bridge deployment and review are
+still required. Other configurations without bindings retain the simulation.
+
+The private fixture's six-decimal **Devnet USDC** is not Circle-issued USDC. Its
+fixed initial supply is 450: 300 funds the L1 Safe and 150 is locked by a real
+bridge-in to the L2 Safe. The canonical token has no post-deployment mint authority. The paired bridge
+owns mint/burn authority over its backed representation. The invoice fixture and controlled settlement-failure path are described below. Actual wallet-extension and L1 Safe-app rehearsal also remain pending.
+
+## Exact payment allocation
+
+`SplitTreasuryPolicy` adds `paySplit(token, recipient, amount, onL1, epoch, fromL1)`
+for fixed payments. Safe signatures bind the exact L1 contribution; L2 supplies
+`amount - fromL1`. Authorization, recipient checks, shared debit, allowances and
+bridge execution share the existing payment path. Capacity changes reject the
+chosen split. `Paid` must match the signed amounts before the UI reports success.
+
+Fresh version-9 setups use this artifact and expose the allocation slider
+without a separate activation. The dashboard no longer executes policy
+handovers. Existing setup bytecode under `legacy/artifacts` and migration
+contracts remain frozen or retained for historical recovery and tests; they are
+not a way to activate the current UI. The
+[setup runbook](../docs/runbooks/treasury-shared-network.md#payment-split-on-a-new-treasury)
+describes the fresh-deployment requirement and outstanding legacy journals.
+
+## Sources and builds
+
+The contract builds are self-contained in this repository. The separate process
+integration runner uses an explicitly supplied runtime checkout. Initialize the pinned submodules:
+
+```bash
+git submodule update --init --recursive contracts/lib/safe contracts/lib/safe-modules contracts/lib/eez-core-protocol
+npm run build:contracts
+npm run test:contracts
+npm run test:treasury-signatures
+```
+
+Run from the dashboard repository root. Use Foundry 1.7.1; Foundry selects the two
+pinned Solidity compilers. The npm commands compile the legacy artifacts first,
+so tests never rely on an artifact left over from an earlier dependency pin.
+
+| Dependency | Pin | Compilation |
+| --- | --- | --- |
+| Safe smart account v1.4.1 | `bf943f80fec5ac647159d26161446ac5d716a294` | Solidity 0.7.6, Istanbul, optimizer off |
+| Safe AllowanceModule v1.0.0 | `c95f03900bff99be090dadb9de1c74b162365485` (`allowances/v1.0.0`) | Solidity 0.7.6, Istanbul, optimizer off |
+| EEZ core | `855fe0602484750861b4c31502a1a91355d33ed6` | Solidity 0.8.34, optimizer runs 1, via IR |
+| forge-std | Vendored by the EEZ pin above | Test/script dependency only |
+
+[legacy/src/Artifacts.sol](legacy/src/Artifacts.sol) imports the original 0.7.6
+sources. The 0.8.34 tests deploy their compiled artifacts through interfaces;
+they do not port or recompile the allowance implementation with another language
+version. These are reproducible local builds, not a claim of bytecode identity
+with a particular existing public-chain deployment. Verify reused deployment
+bytecode and implementation bindings before the connected rehearsal.
+
+## Owner adapter
+
+[L1Owners.sol](src/L1Owners.sol) implements `isValidSignature(bytes,bytes)` and
+returns `0x20c13b0b`, the interface used by Safe v1.3.0 and v1.4.1. It passes the full Safe
+transaction preimage and its hash to the L1 Safe's `checkSignatures`. That Safe
+checks its current owner list and threshold. No owner list is cached on L2.
+
+The constructor accepts the local EEZ-X manager and original L1 Safe address.
+It derives the L1 Safe's local proxy using that manager and checks deployed code
+and the registry's original address/rollup binding. Provision the proxy first;
+also provision the adapter's L1 alias through the L1 registry before verification.
+A signature check cannot create a missing proxy inside STATICCALL. The manager is a trusted
+deployment input, not a security root established by this constructor.
+
+The L1 caller during verification is the adapter's alias. Merely submitting the
+L2 transaction from an L1 owner's EOA does not satisfy Safe's `v = 1` implicit
+approval. Explicit L1 `approveHash` is covered separately. The demo signing
+helper accepts EOA EIP-712 signatures; contract owners with further cross-chain
+calls are outside that helper and need additional runtime validation.
+
+The [deployment script](script/DeployL1Owners.s.sol) provisions the L2 proxy and
+adapter. Its L1 alias is a separate setup call; the process runner handles both. It does not create/fund Safes, grant allowances or install a Guard.
+Its inputs are separate from the dashboard operator settings:
+
+| Environment variable | Meaning |
+| --- | --- |
+| `TREASURY_L2_CHAIN_ID` | Expected EIP-155 chain ID |
+| `TREASURY_ROLLUP_ID` | Expected nonzero EEZ rollup ID |
+| `TREASURY_L2_MANAGER` | Local manager address |
+| `TREASURY_L2_MANAGER_CODEHASH` | Expected local runtime keccak256 |
+| `TREASURY_SAFE_L1` | Independently verified original L1 Safe address |
+| `TREASURY_L2_RPC_URL` | Intended isolated EEZ-X RPC |
+
+After setting these for the prepared environment, run a dry run:
+
+```bash
+forge script --root contracts script/DeployL1Owners.s.sol:DeployL1Owners --rpc-url "$TREASURY_L2_RPC_URL"
+```
+
+The command omits `--broadcast`. For an upgradeable manager, checking the proxy's
+runtime hash alone does not authenticate its implementation: verify that binding
+and the agreed protocol revision independently. Any real deployment must record
+both chain IDs, manager/implementation identity, Safe code and threshold, proxy
+identities and resulting adapter address. The process test deployed these only
+on its disposable private devnet; the dashboard deployment is unchanged.
+
+## Signing integration
+
+[safeTransactions.ts](../src/lib/treasury/safeTransactions.ts) provides immutable
+reviewed Safe typed data, exact JSON for `eth_signTypedData_v4`, owner recovery,
+quorum/duplicate checks, address ordering, the legacy contract-signature wrapper,
+and `execTransaction` calldata. The domain always uses the L2 Safe and chain,
+even when a later payment is destined for L1. It fixes native value, operation,
+`safeTxGas`, gas refunds and `gasPrice` to the agreed zero-value Call shape.
+Network gas remains payable by the submitter.
+
+The observed L1 owners and Safe nonce must be refreshed before submission.
+Changing the reviewed fields invalidates prior approvals; runtime verification
+is still authoritative. Collecting signatures does not establish settlement.
+The hidden [connected screen](../src/components/TreasuryConnected.tsx) uses these
+helpers for owner actions and payments with the selected wallet. Payment approvals
+bind the canonical token, recipient, destination, budget epoch and Safe nonce.
+Fixed payments also bind the amount and funding mode; a rule binds its percentage
+and always uses combined destination-first funding. A changed epoch requires a new review and fresh signatures.
+The separate payment preview remains explicitly simulated.
+
+## Shared-network compatibility
+
+The observed shared runtime uses core `f46af7c9833ac12a54f14d52f4da1f318a0f6525`;
+the local integration continues to use the pinned `855fe06` source. The newer
+core rejects remote calls whose destination is the protocol manager itself.
+[TreasuryAliasReader.sol](src/TreasuryAliasReader.sol) performs alias derivation
+through a local L1 registry call, reached through the helper's cross-chain proxy.
+**TreasuryPolicy constructor argument 4 is the L1 helper address**, replacing
+the registry argument in the earlier private deployment. Deploy a new policy
+and manifest; old deployed policies cannot acquire this compatibility in place.
+The helper owns no funds and has no module or administrative permissions.
+
+[ConfiguredTreasuryBridge.sol](src/ConfiguredTreasuryBridge.sol) binds manager,
+local rollup and administrator in its constructor. The inherited first-caller
+initializer then rejects further initialization, removing a takeover window on
+the shared testnet. Counterpart configuration still precedes funding. This does
+not turn the inherited demo bridge into a production bridge or alter the
+normal dashboard bridge. See the [shared validation record](../docs/audits/2026-10-20-treasury-shared-network/README.md).
+
+Build a new immutable deployment/source release with
+`npm run build:treasury-release`, then `npm run check:treasury-release`. Each
+release retains ABI, exact creation/runtime bytecode, compiler immutable offsets,
+all three dependency pins and the standard JSON source inputs. The builder
+recompiles each verification input to reproduce its deployment bytes, including
+metadata. Runtime checks mask only compiler-declared immutable locations; final
+manifest validation checks constructor and application bindings.
+
+New setup transactions queue source verification automatically. Existing setup
+journals continue using their original artifact build. See the
+[source-verification workflow](../docs/runbooks/treasury-shared-network.md#automatic-contract-source-verification)
+for worker persistence, deployment, retry semantics and inherited factory limits.
+
+## Payment policy
+
+[BidirectionalTreasuryPolicy.sol](src/BidirectionalTreasuryPolicy.sol) accepts its
+configured L2 Safe and the manager-registered L2 proxy of its L1 Safe (origin 0).
+The L1 Safe verifies normal owner signatures before calling the policy's L1 alias.
+An L2 Safe call retains `L1Owners` verification. Both use the accounting and routes
+in [TreasuryPolicy.sol](src/TreasuryPolicy.sol), whose legacy entry point remains
+L2-only. The L1 path emits a nonce/calldata marker for canonical receipt matching;
+it does not grant an EOA, bare remote address or arbitrary proxy payment authority.
+
+The policy recognizes one immutable canonical asset and its bridge-verified wrapped
+representation. The global and per-payment ceilings are fixed at 150 USDC; each
+period is 600 seconds. No deployment admin, Guard or arbitrary-call method is
+introduced. Only the official AllowanceModule is enabled on each Safe: the policy
+is its L2 delegate, and the policy's authenticated alias is its L1 delegate.
+Owners retain direct spending and administrative authority outside this policy.
+
+`pay` uses only the destination chain's Safe. `payRouted` fills that chain's
+capacity first and bridges the remainder. Capacity is the minimum of the Safe's
+balance and effective allowance. For an L1 recipient, the L2 module transfers
+its contribution to the policy, which burns it through the bridge; L1 escrow
+releases the same amount to the recipient. The L1 module pays directly.
+
+For an EEZ-X recipient, the L2 module pays directly first. The L1 module then
+transfers its contribution to the policy's L1 alias. A policy-originated token
+call approves exactly that contribution to the L1 bridge. The policy calls
+`TreasuryBridge.bridgeFromL1` locally; that bridge calls the terminal L1
+`lockForL2`, then mints the matching wrapped amount to the recipient. None of
+these L1 operations calls back into L2. The policy checks that its alias retains
+no contribution and the exact approval is fully consumed. All required failures
+propagate; the shared counter is debited before transfers.
+
+`payRule` reads canonical L1 and wrapped L2 balances held by the Safes, computes
+`floor((balanceL1 + balanceL2) * bps / 10000)`, then uses the same router and limits.
+It excludes bridge escrow and temporary policy/alias balances. `bps` must be
+1–10000 (0.01–100%); zero-rounded amounts, results over 150, insufficient capacity
+and exhausted shared budgets reject the entire payment without clipping it.
+Full-precision multiplication avoids intermediate product overflow; the sum
+remains checked. The authorization/reentrancy boundary covers both the rule's
+reads and all transfer legs. `RulePaid` records both observed balances, fraction
+and calculated amount alongside the common `Paid` funding event.
+
+Owners authorize a percentage, not the UI's estimated amount. Normal owner
+spending or incoming funds can change the result before execution/recomposition.
+The signed epoch still bounds when it can execute. A fresh manifest advertises
+`percentageRules: true` only with the matching deployed policy; the client checks
+its code hash and 10000 denominator. Old manifests keep their fixed payment flows
+and omit the rule controls. Saved fixed-payment shapes remain readable, while a
+saved rule retains its fraction and cannot be recovered on a different instance.
+Policies are not upgradeable here: restart this private fixture with a fresh
+funded deployment, without moving existing escrow or replaying pending intents.
+
+[TreasuryBridge.sol](src/TreasuryBridge.sol) inherits the pinned **test-only**
+bridge without modifying core. The token and destination rollup are immutable.
+Only the configured L2 bridge's authenticated L1 alias can lock a deposit;
+that bridge binds the payer to its actual local caller. L1 derives the payer's
+alias and takes tokens from that alias. Each pair-wide nonce is consumed once.
+The returned receipt binds both bridges, rollup, asset, payer, recipient, amount
+and nonce. L2 validates it and mints only inside that same call after a successful
+lock; there is no independent receipt-redemption endpoint. Exact escrow credit
+is required, and existing burn/release uses the same escrow and wrapped asset.
+The inherited initialization/admin and generic token paths retain the pinned
+fixture's limitations; this is not a production bridge.
+
+For an isolated fixture, deploy a fresh compatible pair and wrapped token. New
+shared-network treasuries reuse the registered sealed pair. The policy requires
+the extension and pins its configured L1 counterpart. Existing
+bridge deployments and their wrapped assets are not upgraded or remapped.
+The manifest's optional `combinedL2: true` enables the reverse route only after
+the client checks deployed code identity, both bridge counterparts, managers,
+rollup, canonical token and wrapped mapping. Old configs without the capability
+retain their prior routes. Pending intents remain scoped to their original
+instance; restarting this disposable devnet creates a new deployment.
+
+Set both official allowances to 100 USDC, reset time 10 minutes and the same
+aligned base (`resetBaseMin = 10` in this fixture). The policy refuses a grant
+whose effective period differs from its own. Owners can change their grants;
+100 is the fixture's configured ceiling, while 150 is fixed in this policy.
+Provision the policy's L1 alias before its first remote read. The setup uses the
+registry's derivation API and normal owner-authorized Safe administration.
+
+[payments.ts](../src/lib/treasury/payments.ts) reads canonical balances and
+counters, parses exact six-decimal amounts, builds the immutable Safe transaction
+and checks the exact `Paid` event. Rules additionally require a matching
+`RulePaid`, recompute its amount from both observations and verify the funding
+sum before reporting settlement. The review shows its block-tagged estimate;
+the result shows the execution observations and actual amount. The current budget period comes from L1.
+When an idle L2's settled block predates that period, the reader applies the
+module's aligned reset rule to its historical allowance: grant and nonce stay
+the same, effective spending resets, and settled token balances are preserved.
+The policy counter is read for the new epoch from settled storage. This avoids
+blocking the first payment after an idle period. Funding previews are advisory; execution
+recalculates the contribution using authenticated reads. No funds or counters
+are deducted optimistically by the UI. A submitted request is saved before the
+wallet broadcast and remains unresolved until a canonical outcome is verified.
+
+## Invoice payments and rollback
+
+`payInvoice` uses the existing combined router to pay an L1 recipient, then calls
+its immutable `InvoiceMerchant` through an EEZ proxy. The signed fields bind the
+invoice ID, asset, recipient, amount, epoch and Safe nonce. The merchant accepts
+only its one-time configured policy alias and exact open-invoice terms. Closing
+or paying an invoice prevents reuse. `InvoicePaid` is emitted only after required
+acceptance succeeds. There is no arbitrary external-call parameter.
+
+The fixture controller owns invoice creation/closure but has no Safe module or
+payment authority. It cannot provide owner approvals. For the failure act it
+holds the already proved posting request at the native relay's existing test
+barrier and prepends a separate signed closure. The post and native blob bytes
+are unchanged. The test requires the closure and post to execute, in order, in
+the intended target block; a missed ordering is unverified, never a rollback pass.
+
+The hidden UI's **Invoice rollback** preset opens a 110-USDC test invoice in a
+fresh budget period. Owners review and sign normally. The payment bridges 10
+from EEZ-X, transfers 100 from the L1 Safe, then encounters `InvoiceNotOpen`.
+Only a trace containing both successful token calls before this exact error in
+a shared reverted frame establishes that earlier legs executed. The UI checks
+canonical block anchors, receipts, the trace, and before/after balances, escrow,
+supply, allowance spending/nonces, global spending, Safe nonces and temporary
+funds. It also waits for terminal Composer reconciliation. The separate closure
+remains committed; fees and the submitter's network nonce are outside rollback.
+
+A known closed invoice is a separate preparation rejection. Missing receipts,
+missing `L2TxSkipped`, timeouts or an incomplete fixture report do not establish
+rollback. The standard dashboard does not serve the fixture control endpoints.
+Old manifests without `invoiceMerchant` and `invoiceControl` hide this preset.
+A new policy constructor pins the merchant, so use a fresh isolated deployment;
+existing policies and pending saved intents are not migrated.
+
+See the [invoice validation record](../docs/audits/2026-10-20-treasury-invoices/README.md)
+for executed checks, inclusion evidence and remaining limitations.
+
+## Validation and limits
+
+| Check | What it establishes |
+| --- | --- |
+| [L1Owners.t.sol](test/L1Owners.t.sol) | Real 0.7.6 Safes: quorum, addition/removal, threshold changes, duplicate/insufficient signatures, chain/Safe/nonce isolation, calldata fuzzing, eth_sign, explicit vs implicit approved hashes, full contract-owner preimages, constructor binding and Safe failure/nonce behavior |
+| [L1OwnersEEZ.t.sol](test/L1OwnersEEZ.t.sol) | Real pinned EEZL2/proxy route from Safe signature verification; manually loaded static entries derived from real L1 Safe outcomes; missing, stale, wrong-position/identity and failed-result cases |
+| [AllowanceModule.t.sol](test/AllowanceModule.t.sol) | Official module accepts contract and EEZ proxy delegates with empty signatures, rejects other callers, enforces its own ceiling, resets at an aligned boundary and checks token returns while preserving counters/nonces on failure |
+| [BidirectionalTreasuryPolicy.t.sol](test/BidirectionalTreasuryPolicy.t.sol) | Both initiating Safes, both destinations, shared counters, forged proxy and EOA rejection, L1 signature replay and invoice rollback; inherits the base payment suite |
+| [TreasuryPolicy.t.sol](test/TreasuryPolicy.t.sol) | Exact 40 / 110 / rejected 1 sequence, bridge backing, balance-limited routing, aligned reset and stale-epoch rejection, caller/asset/amount/recipient bounds, final-transfer/terminal-lock failure rollback, reverse lock/mint, alias approval consumption, authenticated payer/bridge, receipt and nonce rejection, amount/fraction fuzzing, percentage rounding/bounds, both destinations, signed-fraction execution after a balance change, excluded custody, shared counters, rule failure rollback, authenticated invoice terms and rollback after both contributions |
+| [Native process scenario](../tests/integration/README.md) | Real Composer/signer/L1 settlement and independent follower; owner addition, removal, replay rejection, Safe nonce and application state; browser invoices exercise actual L1 inclusion failure and distinct preparation rejection |
+| [Safe signature vector](test/fixtures/safe-signature.json) | Frontend hash and packed bytes independently checked by real Safe Solidity code; matching frontend tests cover edits, invalid/removed/duplicate owners, thresholds and exact integers |
+
+The owner/policy fixture routes reads and mutable deliveries directly between two logical managers in one EVM.
+The EEZ-specific suite uses a real manager with **manually loaded tables**; it
+neither obtains a proof nor invokes the production Composer/signer/follower.
+Allowance alias tests supply the trusted manager delivery explicitly. These are
+contract tests, not L1 settlement rollback evidence. The separate native scenario
+uses isolated genesis-funded public test wallets and actual runtime processes.
+
+Local validation on 2026-10-20 passed 52 Solidity tests (three 256-case fuzz tests),
+222 dashboard tests and the TypeScript/Vite build. The build retains its existing
+large-chunk warning. The [owner integration](../docs/audits/2026-10-20-treasury-owner-integration/README.md)
+and [connected owner UI](../docs/audits/2026-10-20-treasury-connected-ui/README.md)
+records preserve the earlier evidence. The new
+[payment evidence](../docs/audits/2026-10-20-treasury-payments/README.md) records the
+real browser sequence, same-L1-transaction split, contract-level rejection,
+bridge accounting, independent replay and exact tested identities. The [reverse-route record](../docs/audits/2026-10-20-treasury-reverse-payments/README.md)
+tracks the paired extension and reverse browser path. The [percentage-rule record](../docs/audits/2026-10-20-treasury-rules/README.md)
+tracks the new rule and its exact validation status. The local
+contract failure fixture demonstrates rollback within a single-EVM mock delivery;
+it does not establish failure after L1 inclusion. The [invoice record](../docs/audits/2026-10-20-treasury-invoices/README.md) separately records the controlled native inclusion failure and its canonical trace/state evidence.
+
+Checks before committing changes:
+
+```bash
+forge fmt --check --root contracts
+forge fmt --check --root contracts/legacy
+npm run test:contracts
+npm test
+npm run build
+git diff --check
+```
+
+Use the [full rehearsal runbook](../docs/runbooks/treasury-rehearsal.md) for
+connected payments through the dashboard and L1 owner changes through the local
+Safe app. Actual wallet-extension approvals remain a human rehearsal step.
+The connected UI now retains browser-local payment history; see its
+[scope and validation](../docs/audits/2026-10-20-treasury-history/README.md).
+Remaining rehearsal requirements are in the
+[proposal](../docs/proposals/one-treasury-two-safes.md).
+
+
+## Selected-wallet setup and existing Safes
+
+The [shared-network setup](../docs/runbooks/treasury-shared-network.md) can reuse
+verified Safe / SafeL2 1.3.0 and 1.4.1 implementations. The exact upstream singleton hashes
+come from `safe-deployments` revision `e9cc9798ab834e7fe515d361566eb4a28c65387f`
+([Safe](https://github.com/safe-global/safe-deployments/blob/e9cc9798ab834e7fe515d361566eb4a28c65387f/src/assets/v1.4.1/safe.json),
+[SafeL2](https://github.com/safe-global/safe-deployments/blob/e9cc9798ab834e7fe515d361566eb4a28c65387f/src/assets/v1.4.1/safe_l2.json));
+local pinned 1.4.1 builds are also recognized. Safe 1.3.0 EVM hashes use the same
+registry revision's [GnosisSafe](https://github.com/safe-global/safe-deployments/blob/e9cc9798ab834e7fe515d361566eb4a28c65387f/src/assets/v1.3.0/gnosis_safe.json)
+and [GnosisSafeL2](https://github.com/safe-global/safe-deployments/blob/e9cc9798ab834e7fe515d361566eb4a28c65387f/src/assets/v1.3.0/gnosis_safe_l2.json)
+entries; the latter is shown as **1.3.0+L2** in the Safe app. New Safes retain 1.4.1.
+Proxy matching compares executable code
+without compiler metadata; manifests bind the full observed code hashes and
+Safe singleton slots. `VERSION()` alone never establishes compatibility.
+Execution tracking handles 1.3.0's non-indexed hash and 1.4.1's indexed hash with
+strict complete log layouts. Recovery filters both execution result topics, then
+matches the expected Safe and transaction hash before verifying the receipt.
+For an imported `L1Owners`, repeated compiler-declared immutable slots must agree;
+its `safeL1Proxy` must equal the manager's computed and registered L1 Safe proxy.
+This prevents accepting code whose getters describe the expected Safe but whose
+signature check calls a different proxy.
+
+The browser collects the current quorum's typed signatures. To adopt an existing
+L2 Safe, it delegates one call-only batch to Safe's unmodified `MultiSendCallOnly`:
+remove the old linked-list heads and replace the last owner with `L1Owners`.
+The entire transaction reverts on failure (`safeTxGas = gasPrice = 0`). No token,
+module, handler or Safe address migration is involved. A Guard or an unsupported
+contract-owner quorum stops setup; it is not removed or bypassed.
+
+`npm run test:treasury:setup` builds the artifacts and runs
+[the setup test](../tests/integration/treasury-setup.mjs) on two owned Anvils with
+dynamic ports. It exercises real Safe creation, retained-quorum administration,
+owner adoption and rollback, using the production TypeScript approval and receipt
+paths. Protocol identity/discovery are fixtures, and intermediate application
+setup steps are explicitly omitted. It does not establish cross-chain settlement;
+use the separate native process/browser regression for that evidence.
+Run `EEZ_TEST_SAFE_VERSION=1.3.0 npm run test:treasury:setup` for official 1.3.0
+bytecode. The [fixture](../tests/fixtures/safe-130-runtime.json) comes from
+`@gnosis.pm/safe-contracts@1.3.0` (LGPL-3.0); it records package integrity and the
+pinned deployment hashes. Tests assert those runtime hashes before execution.
+The package contains the corresponding upstream source; no dependency pin or
+production deployment artifact is changed.
+
+## Simplified shared setup
+
+[Version-3 shared setup](../docs/runbooks/treasury-shared-network.md) reuses
+[official Safe infrastructure](../src/lib/treasury/official-safe-deployments.json)
+only after exact on-chain code verification. The reviewed Safe deployment catalog
+revision is retained in that file. Chiado's 1.3.0 factory creates the same
+executable proxy body used by the pinned 1.4.1 Safe; it emits a non-indexed
+`ProxyCreation` event. Newly deployed Safe singletons remain 1.4.1; imports may use either supported version.
+
+Each Safe delegates an atomic zero-value CALL batch to an exact-code-verified
+`MultiSendCallOnly`. The current quorum signs the entire batch; inner calls
+retain the Safe as caller. Configuration failure reverts its earlier module,
+delegate, allowance and alias changes. Real official runtime fixtures cover this
+on owned Anvil networks. Native rehearsal additionally executes both batches
+through the actual Composer/signer and owner adapter.
+
+New payment-only deployments omit `TreasuryOwnerAction` and pass zero as the
+policy's merchant. No invoice proxy is provisioned in this mode and `payInvoice`
+reverts with `InvoicesDisabled` before any payment. Existing invoice-enabled
+policies remain compatible; isolated invoice tests still deploy a merchant.
+Pending pre-change policy deployments are recognized only by their retained
+initcode identity and exact canonical creation receipt. The archived artifact in
+[the compatibility fixture](../tests/fixtures/treasury-policy-v2.json) tests that
+narrow historical case; it is not a newly deployable artifact.
+
+See the [validation record](../docs/audits/2026-10-20-treasury-simplified-setup/README.md)
+for source identity, migration coverage, rollback evidence and deployment limits.
+
+
+## Batched contract deployment
+
+Version 4 uses [TreasuryBootstrap](src/TreasuryBootstrap.sol) for atomic CREATE
+and CALL sequences. Each executor is created from the selected wallet, has an
+immutable owner and exact sequence check, rejects reentrancy, and permanently
+closes at completion. It has no Safe owner/module role and permits no delegatecall.
+Expected creation addresses and optional return hashes make changed nonces and
+false token/Safe results revert the entire transaction. The L1 executor temporarily
+holds 150 newly minted test tokens until bridging; its final balance and approval
+are zero. [BootstrapTreasuryBridge](src/BootstrapTreasuryBridge.sol) returns its
+temporary administrator to that wallet without changing the legacy bridge artifact.
+
+The browser predicts each CREATE from the executor nonce and each Safe from its
+factory's exact creation bytes. The legacy compiler embeds different proxy CBOR
+metadata inside `SafeProxyFactory` than in the standalone proxy artifact. The
+artifact generator extracts that unique literal, checks that only the metadata
+span differs, and the live-factory integration checks the getter byte-for-byte.
+Do not substitute a metadata-stripped hash for CREATE2 address derivation.
+
+Before the wallet creates its EEZ-X executor, the planner checks its pending
+nonce and prospective CREATE addresses. The observed shared wallet A starts at
+nonce 0 although its first two CREATE addresses already contain protocol code.
+Two required manager proxy calls consume those nonces before creation. This is
+an ordinary wallet-approved flow, not a node nonce override. Tests inject occupied
+addresses into their owned Anvil and execute the same preparation transactions;
+ordinary wallets have no extra calls.
+
+Run `node tests/integration/treasury-deployment-batches.mjs` after building the
+contracts/artifacts. It uses one owned Anvil and the test-only read-through EEZ
+managers, switching chain ID before each phase. Real contract deployment, Safe
+quorums, bridge transfers and receipt checks run; this is not proof/Composer
+validation. The native rehearsal separately groups L1 funding and L2 module/policy
+creation plus Safe approval under the actual Composer, signer and follower.
+See the [evidence and limitations](../docs/audits/2026-10-20-treasury-deployment-batches/README.md).
+
+## Shared treasury token and bridge pair
+
+New wallet setups use `SharedTestUSDC` and `SharedTreasuryBridge`. The faucet
+issues 450 units once per setup executor (permissionless test supply), retaining
+300/150 initial funding and 100/100/150 policy limits. The first pair is connected
+and sealed before its on-chain registration; later setups verify and reuse it.
+The extended `bridgeFromL1`/`lockForL2` path and ordinary burn/release path are
+unchanged. `TreasuryPolicy` remains immutable and treasury-specific.
+
+`tests/integration/treasury-deployment-batches.mjs` exercises legacy recovery,
+then creates two treasuries with different wallets using one shared asset and
+pair. It checks independent balances, limits, both payment destinations, escrow
+backing and rejection. Its protocol managers are read-through fixtures, not
+proof validation. The native browser scenario in
+[the integration guide](../tests/integration/README.md) uses the shared contracts
+with real Composer, signer and follower, including the invoice rollback act.
+See [the shared-network runbook](../docs/runbooks/treasury-shared-network.md) for
+canonical discovery, first-install coordination and journal compatibility.
+
+## Existing-asset treasury funding
+
+The shared-network browser setup uses predeployed Test USDC and sealed bridges.
+It never deploys a token or claims a faucet while creating a treasury. The
+connected wallet approves exactly 450 tokens; its bootstrap uses ERC-20
+`transferFrom`, transfers 300 to its L1 Safe and bridges 150 to its L2 Safe.
+Insufficient balance stops preparation. No token supply increases during this
+funding batch, and both wallet/executor and executor/bridge allowances must be
+fully consumed. Test token acquisition is a separately requested faucet action.
+
+The operator's three infrastructure batches and recovery journal live in
+[`treasury-infrastructure.mjs`](../scripts/treasury-infrastructure.mjs); see the
+[runbook](../docs/runbooks/treasury-shared-network.md#predeploy-the-shared-infrastructure-once).
+Contract artifacts are unchanged by the funding transition, so pending legacy
+setup calldata remains verifiable. The browser adopts the new plan only before
+the old L1 creation/funding batch; existing custody and policies are preserved.
+The payment bridges still extend the pinned test bridge. Standard ERC-20 funding
+alone does not establish mainnet bridge readiness or Circle-USDC validation.
+
+
+## Configurable test-token faucet
+
+[`TestUSDCFaucet`](src/TestUSDCFaucet.sol) delivers an exact six-decimal amount to
+any recipient on Chiado or through the existing shared bridge to EEZ-X. It pools
+fresh `TestUSDCClaim` allocations from the immutable test token and retains excess
+for future permissionless requests. It never spends from a Safe. Request failure
+reverts refills, transfers and locks; the bridge allowance is zero after success.
+The one-time constructor validates the token/bridge binding but does not mint.
+Delivery is a separate call so EEZ-X requests use the existing fee quote profile.
+
+The UI validates the deployed dispenser runtime and immutable bindings, persists
+the selected request before sending, and checks canonical receipts and exact
+transfer/delivery events. Old fixed claims retain their bytecode and journal
+identity. No shared token, bridge or treasury migration is required. See the
+[runbook](../docs/runbooks/treasury-shared-network.md#requesting-more-test-usdc).

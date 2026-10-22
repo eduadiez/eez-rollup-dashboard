@@ -1,0 +1,16 @@
+{
+  "run": "20261020T154209-7sciw1sf",
+  "location": ".runtime/treasury-integration/20261020T154209-7sciw1sf",
+  "availability": "Local-only ignored artifacts; not included in another checkout",
+  "sha256": {
+    "integration.log": "8ae0dde7bd256c993b2b1d178f9a3431b849489e807edaad9402cf9b0641a210",
+    "summary.json": "0f370a2683016a22a826ed0d37de4615d76de84ef65893b242c18afd7b6adce3",
+    "scenario.json": "ea9174a5bfa9e1c92387ba1d66cf92135c525fe18b491cf8cd93226f88bcaacb",
+    "history-evidence.json": "77b3e1146ce03936709ade42bedbd935f6c9758ecdd022b827ee02f8801b394e",
+    "runtime-sources.json": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+    "treasury-history-desktop.png": "21c9c568916fe63ae45ad8eb8dffa1c2d202a91be330a34706400cd06f99999c",
+    "treasury-history-rollback-desktop.png": "8e92012fa20f346f31743e52a7aa24e79a65087e0936a0585f8b248e8defcc5b",
+    "treasury-history-rollback-mobile.png": "c913aea0b99f99524ae9647f5a165e394d62b54bbf235c72a9d6623481569254",
+    "invoice-0xa2b9e63f2f7134f17f286f1a2fab51c74659c6c6b38d76e732bf8d75652ae22b-trace.json": "be251ad8ba84b59021ae1a194948b87e7a45ee6e6c6400586ab87db7793f3240"
+  }
+}

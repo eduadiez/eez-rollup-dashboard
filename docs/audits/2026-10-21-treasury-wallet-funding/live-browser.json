@@ -1,0 +1,25 @@
+{
+  "verifiedAt": "2026-10-21T11:08:12.349Z",
+  "actualCanonicalInfrastructure": true,
+  "asset": {
+    "tokenL1": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+    "tokenL2": "0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32",
+    "bridgeL1": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+    "bridgeL2": "0x976BF7AEB2b24291970965C8035687a1926a0B35",
+    "tokenCodeHash": "0x3e74479f3b2e4316237cf6d3ba680030ba243a0abfd524fb5ec9f6d203c984f9"
+  },
+  "journalVersion": 6,
+  "transactionsSubmitted": 0,
+  "signaturesRequested": 0,
+  "wallet": "Read-only injected public fixture address",
+  "methods": [
+    "eth_call",
+    "eth_chainId",
+    "eth_getBalance",
+    "eth_getBlockByNumber",
+    "eth_getCode",
+    "eth_getLogs",
+    "eth_getStorageAt",
+    "eth_getTransactionCount"
+  ]
+}

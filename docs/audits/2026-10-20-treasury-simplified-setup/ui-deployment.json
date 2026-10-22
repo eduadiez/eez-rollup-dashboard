@@ -1,0 +1,52 @@
+{
+  "ui": {
+    "image": "sha256:b9dbe4ce60302bb9f20f44bc1d3474f7bdb3a1f01dc6f0cf0ac7fa69d59b6f76",
+    "tag": "eez-rollup-ui:treasury-simplified-final-20261020",
+    "overlay": "/home/edu/Development/eez-rollup-dashboard/.runtime/treasury-simplified-setup/ui.compose.yml"
+  },
+  "services": [
+    {
+      "name": "eez-rollup-ui-ui-1",
+      "id": "610623914d23d989bd2da971de5f583eee428986d9da5dec550a90196889b201",
+      "image": "sha256:b9dbe4ce60302bb9f20f44bc1d3474f7bdb3a1f01dc6f0cf0ac7fa69d59b6f76",
+      "started": "2026-10-20T21:03:50.444638279Z",
+      "health": "healthy"
+    },
+    {
+      "name": "eez-node-chiado",
+      "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+      "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+      "started": "2026-10-20T17:01:51.373519938Z"
+    },
+    {
+      "name": "eez-proof-signer-chiado",
+      "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+      "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+      "started": "2026-10-20T17:01:45.288733799Z",
+      "health": "healthy"
+    },
+    {
+      "name": "eez-rollup-ui-monitor-1",
+      "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+      "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+      "started": "2026-10-18T14:32:01.399302934Z",
+      "health": "healthy"
+    }
+  ],
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "nonUiServicesUnchanged": true,
+  "servedAssetsMatch": [
+    {
+      "file": "TreasuryDemo-BNkMqhNp.js",
+      "sha256": "063b3d8739ee5fa85197ae5c3425d9f1c8046d5212e5c45e05a61034d7e969a1"
+    },
+    {
+      "file": "deployment-artifacts-BQDThkXt.js",
+      "sha256": "409d5dc5ced0b9b0a77b07a7d4c41e21c13e105b10d52267ae3b89646a2e50cd"
+    },
+    {
+      "file": "index-D79skx_3.js",
+      "sha256": "ce946cf636637c2ba38e04b764638cb98c01403a42301ca861bfc8a60cbeb00d"
+    }
+  ]
+}

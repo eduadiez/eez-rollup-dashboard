@@ -71,6 +71,14 @@ server {
         proxy_read_timeout 3600s;
     }
 
+    # This worker shares the UI's network namespace. It publishes only retained
+    # source bundles; requests cannot choose an RPC URL or compiler input.
+    location /treasury-verification/ {
+        client_max_body_size 2k;
+        proxy_pass http://127.0.0.1:18081/;
+        proxy_http_version 1.1;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

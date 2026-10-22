@@ -1,0 +1,91 @@
+{
+  "verifiedAt": "2026-10-21T11:07:31.525Z",
+  "deployer": "0x2A8dd7551eF6Fc95000C76F2A0e7848A4bA5E73e",
+  "binding": {
+    "tokenL1": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+    "tokenL2": "0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32",
+    "bridgeL1": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+    "bridgeL2": "0x976BF7AEB2b24291970965C8035687a1926a0B35",
+    "registration": {
+      "blockNumber": "0x16874f4",
+      "blockHash": "0x8cac014bdafa250baa0fea07a0d2893a6e1dc8fda0062cf378ca3063ba26cd8e",
+      "transactionHash": "0x62c5a9e34410c840f7e9ef1ffd6c1f83e53dcada7da4c50924a89ecf7fd3613f",
+      "logIndex": "0xc"
+    }
+  },
+  "asset": {
+    "tokenL1": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+    "tokenL2": "0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32",
+    "bridgeL1": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+    "bridgeL2": "0x976BF7AEB2b24291970965C8035687a1926a0B35",
+    "tokenCodeHash": "0x3e74479f3b2e4316237cf6d3ba680030ba243a0abfd524fb5ec9f6d203c984f9"
+  },
+  "receipts": [
+    {
+      "step": "networkL1",
+      "chain": "l1",
+      "hash": "0xa6af32d0db3a21e8531910b119164ad242abb6abbfdb0cd85351e387e883ce70",
+      "blockNumber": 23622854,
+      "blockHash": "0xe65ce75e16c1f7cd1607629caa86cf16e3d2fe641701730c97dbdd0f7c3aaa06",
+      "gasUsed": "3908469",
+      "effectiveGasPrice": "7"
+    },
+    {
+      "step": "networkL2",
+      "chain": "l2",
+      "hash": "0xc5ffb4a76e1bb19c417fb38ddf2a88ed14933e177e8a541df093daf05c074e1a",
+      "blockNumber": 1186882,
+      "blockHash": "0x33672b475b1a67118efb6b742f92eece296938b44be3b7c754b21e8fe8de591a",
+      "gasUsed": "3157171",
+      "effectiveGasPrice": "49"
+    },
+    {
+      "step": "networkConnectL1",
+      "chain": "l1",
+      "hash": "0x62c5a9e34410c840f7e9ef1ffd6c1f83e53dcada7da4c50924a89ecf7fd3613f",
+      "blockNumber": 23622900,
+      "blockHash": "0x8cac014bdafa250baa0fea07a0d2893a6e1dc8fda0062cf378ca3063ba26cd8e",
+      "gasUsed": "588381",
+      "effectiveGasPrice": "749226553"
+    }
+  ],
+  "code": [
+    {
+      "key": "tokenL1",
+      "chain": "l1",
+      "address": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "keccak256": "0x3e74479f3b2e4316237cf6d3ba680030ba243a0abfd524fb5ec9f6d203c984f9"
+    },
+    {
+      "key": "bridgeL1",
+      "chain": "l1",
+      "address": "0x7F772f334b9a97C514A89FfD004AFcEAF5DDF789",
+      "keccak256": "0x064a9a7a4994bcddff9684e4d89c4ea57fd97486beba188471a036d845ac7823"
+    },
+    {
+      "key": "tokenL2",
+      "chain": "l2",
+      "address": "0xdc207D5CE4e36560aD9f941Dd7A0a37cB5174c32",
+      "keccak256": "0x137c09e096b4ebdb78f626ac644b4403ca2e37da2920c681537023c16105cf8d"
+    },
+    {
+      "key": "bridgeL2",
+      "chain": "l2",
+      "address": "0x976BF7AEB2b24291970965C8035687a1926a0B35",
+      "keccak256": "0x064a9a7a4994bcddff9684e4d89c4ea57fd97486beba188471a036d845ac7823"
+    }
+  ],
+  "verified": {
+    "sealedPeers": true,
+    "discoveredByTreasurySetup": true,
+    "escrowBaseUnits": "1",
+    "wrappedSupplyBaseUnits": "1",
+    "operatorL1TokensBaseUnits": "449999999",
+    "operatorL2TokensBaseUnits": "1",
+    "executorsHoldNoTokens": true,
+    "seedAllowanceConsumed": true,
+    "l1ExecutorClosed": true
+  },
+  "userSafesCreated": 0,
+  "userFaucetClaims": 0
+}

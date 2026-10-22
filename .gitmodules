@@ -1,0 +1,9 @@
+[submodule "contracts/lib/safe"]
+	path = contracts/lib/safe
+	url = https://github.com/safe-fndn/safe-smart-account.git
+[submodule "contracts/lib/safe-modules"]
+	path = contracts/lib/safe-modules
+	url = https://github.com/safe-fndn/safe-modules.git
+[submodule "contracts/lib/eez-core-protocol"]
+	path = contracts/lib/eez-core-protocol
+	url = https://github.com/eez-association/eez-core-protocol.git

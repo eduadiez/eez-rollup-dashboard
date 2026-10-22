@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "checkedAt": "2026-10-20T16:47:34.596Z",
+  "environment": "dashboard-testnet",
+  "initialOwners": [
+    "0xcEAF908C05B277E92e89b51B281Ec76305b9A141"
+  ],
+  "initialThreshold": 1,
+  "addOwner": "Use the connected wallet as B; current L1 owners approve the change",
+  "registry": "0x3C81284dAE576D5152C9CA290668537618c44e5E",
+  "manager": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+  "rollupId": "1",
+  "networks": {
+    "l1": {
+      "chainId": 10200,
+      "rpc": "http://127.0.0.1:8080/rpc/l1",
+      "front": "http://127.0.0.1:8080/composer/l1",
+      "checkpoint": {
+        "number": "0x1684787",
+        "hash": "0xfc859fbcbc621a4bcca43206183994a91d926a636f201b541dc554d535f2aba0"
+      },
+      "protocol": {
+        "proxy": "0x3C81284dAE576D5152C9CA290668537618c44e5E",
+        "proxyCodeHash": "0xe31bd9b10bbde57c28584749d7928a9212a568d0f5c0e70fc4832c365dc788eb",
+        "implementation": "0xCf0d5aD1f69441bCab46644100c02F76fc23Cd10",
+        "implementationCodeHash": "0x861fe0b137571881a74f7c2e69e2af7cd3098b127fc7583de02f62bcf2b27d46"
+      },
+      "ownerGasBalanceWei": "0",
+      "ownerGasBalance": "0"
+    },
+    "l2": {
+      "chainId": 906969,
+      "rpc": "http://127.0.0.1:8080/rpc/l2",
+      "front": "http://127.0.0.1:8080/composer/l2",
+      "checkpoint": {
+        "number": "0x0",
+        "hash": "0x10c9ab15fb55a85ca101320e9bf842a67946704b36b98f5ae18ecac8ba8ffcd5"
+      },
+      "protocol": {
+        "proxy": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+        "proxyCodeHash": "0x88068de4c46d94b72f5d39f17b5407c958ec6920376ff1dd366995f65564372a",
+        "implementation": "0x42Ba74B1247B2B8442CEB33727c18170d3e4cb5f",
+        "implementationCodeHash": "0xa2086d2b2ba93b227215dbe6803e939681eb5e25be75990c2046ac24ac42b3a5"
+      },
+      "ownerGasBalanceWei": "0",
+      "ownerGasBalance": "0"
+    }
+  },
+  "fees": {
+    "l1": {
+      "enabled": true,
+      "maxTotalWei": "100000000000000000"
+    },
+    "l2": {
+      "enabled": true,
+      "maxTotalWei": "100000000000000000"
+    }
+  },
+  "checks": [
+    "l1: chain reference, manager, implementation code and wallet-compatible Composer discovery",
+    "l2: chain reference, manager, implementation code and wallet-compatible Composer discovery"
+  ],
+  "blockers": [
+    "Initial owner needs test gas on Chiado",
+    "Initial owner needs test gas on EEZ-X",
+    "Treasury application contracts and Safes have not been deployed on this target"
+  ],
+  "deployed": false,
+  "scope": "Read-only configuration and code observations; no payment, proof, replay or wallet-extension validation"
+}

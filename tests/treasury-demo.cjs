@@ -29,10 +29,8 @@ async function fixture(browser, blockedStorage = false) {
       : method === 'eth_getLogs' ? [] : method === 'eth_getBalance' ? '0x0' : null;
     return route.fulfill({ json: { jsonrpc: '2.0', id, result } });
   });
-  const treasury = page.getByRole('region', { name: 'Treasury demo preview', exact: true });
+  const treasury = page.getByText('Connect a configured treasury for this network.', { exact: true });
   const tab = page.getByRole('navigation', { name: 'Dashboard sections' }).getByRole('button', { name: 'Treasury Demo', exact: true });
-  const budget = treasury.getByRole('region', { name: 'Shared budget', exact: true });
-  const holdings = treasury.getByRole('region', { name: 'Combined holdings', exact: true });
   const toggle = async (keys = shortcut) => { await page.locator('body').click({ position: { x: 1, y: 1 } }); await page.keyboard.press(keys); };
   const hidden = async () => {
     assert.equal(await tab.count(), 0);
@@ -43,7 +41,7 @@ async function fixture(browser, blockedStorage = false) {
     assert.ok(methods.every(method => !/send|sign/i.test(method)), 'preview never sends or signs a transaction');
     await context.close();
   };
-  return { page, context, treasury, tab, budget, holdings, toggle, hidden, close, chunks };
+  return { page, context, treasury, tab, toggle, hidden, close, chunks };
 }
 
 (async () => {
@@ -66,76 +64,13 @@ async function fixture(browser, blockedStorage = false) {
     assert.equal(await f.page.evaluate(key => sessionStorage.getItem(key), visibilityKey), '1');
     assert.equal(await f.page.evaluate(key => localStorage.getItem(key), visibilityKey), null);
     assert.equal(await f.page.getByRole('region', { name: 'Transaction history', exact: true }).count(), 0);
-    await f.holdings.getByText('450 USDC', { exact: true }).waitFor();
-    await f.budget.getByText('150 USDC', { exact: true }).waitFor();
-
-    // Reload keeps visibility, but not fabricated balances or approvals.
-    await f.page.reload();
-    await f.treasury.waitFor();
-    await f.page.getByLabel('Amount (USDC)', { exact: true }).focus();
-    await f.page.keyboard.press(shortcut);
-    assert.ok(await f.treasury.isVisible(), 'shortcut does not fire in editable fields');
-    await f.page.evaluate(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyT', ctrlKey: true, altKey: true, shiftKey: true, repeat: true, bubbles: true })));
-    assert.ok(await f.treasury.isVisible(), 'held shortcut does not toggle repeatedly');
-    await f.page.evaluate(() => document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyT', ctrlKey: true, altKey: true, shiftKey: true, isComposing: true, bubbles: true })));
-    assert.ok(await f.treasury.isVisible(), 'IME composition does not toggle visibility');
-
-    // Editing a reviewed payment cannot retain its approvals.
-    await f.treasury.getByRole('button', { name: 'Review payment', exact: true }).click();
-    const settle = f.treasury.getByRole('button', { name: 'Simulate settlement', exact: true });
-    assert.ok(await settle.isDisabled());
-    await f.treasury.getByRole('button', { name: 'Simulate B approval', exact: true }).click();
-    assert.ok(await settle.isDisabled());
-    assert.ok(await f.page.getByLabel('Amount (USDC)', { exact: true }).isDisabled());
-    await f.treasury.getByRole('button', { name: 'Edit payment', exact: true }).click();
-    await f.treasury.getByText('0 of 2 simulated approvals', { exact: true }).waitFor();
-    for (const invalid of ['0', '-1', '1e2', '0.0000001']) {
-      await f.page.getByLabel('Amount (USDC)', { exact: true }).fill(invalid);
-      assert.ok(await f.treasury.getByRole('button', { name: 'Review payment', exact: true }).isDisabled());
+    assert.equal(await f.page.getByRole('button', { name: 'Simulation', exact: true }).count(), 0);
+    assert.equal(await f.page.getByRole('button', { name: 'Get Test USDC', exact: true }).count(), 0);
+    await f.page.reload(); await f.treasury.waitFor();
+    for (const width of [1440, 390, 320]) {
+      await f.page.setViewportSize({width,height:1100});
+      assert(await f.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     }
-
-    const simulate = async (preset, before, after) => {
-      if (preset) await f.treasury.getByRole('button', { name: preset, exact: true }).click();
-      await f.treasury.getByRole('button', { name: 'Review payment', exact: true }).click();
-      await f.treasury.getByRole('button', { name: 'Simulate B approval', exact: true }).click();
-      await f.treasury.getByRole('button', { name: 'Simulate C approval', exact: true }).click();
-      await settle.click();
-      await f.treasury.getByText('Simulating settlement… Balances and budgets have not changed yet.', { exact: true }).waitFor();
-      await f.holdings.getByText(before + ' USDC', { exact: true }).waitFor();
-      await f.page.clock.fastForward(700);
-      await f.holdings.getByText(after + ' USDC', { exact: true }).waitFor();
-    };
-    await simulate('Pay 40 on EEZ-X', 450, 410);
-    await f.budget.getByText('110 USDC', { exact: true }).waitFor();
-    await f.treasury.getByRole('button', { name: 'Split 110 to Ethereum', exact: true }).click();
-    const route = f.treasury.locator('[aria-label="Funding preview"]');
-    assert.match(await route.innerText(), /100 USDC from Ethereum · local/);
-    assert.match(await route.innerText(), /10 USDC from EEZ-X · bridged/);
-    await simulate('Split 110 to Ethereum', 410, 300);
-    await f.budget.getByText('0 USDC', { exact: true }).waitFor();
-    assert.equal(await f.treasury.getByRole('region', { name: 'Simulated payment history' }).getByRole('listitem').count(), 2);
-    await f.treasury.getByRole('button', { name: 'Try another 1', exact: true }).click();
-    await f.treasury.getByRole('alert').getByText('Shared budget exhausted. EEZ-X still has 50 USDC of allowance remaining.', { exact: true }).waitFor();
-    assert.ok(await f.treasury.getByRole('button', { name: 'Review payment', exact: true }).isDisabled());
-    await f.holdings.getByText('300 USDC', { exact: true }).waitFor();
-
-    // Reversing the recipient chain reverses the local/bridged contributions.
-    await f.treasury.getByRole('button', { name: 'Reset simulation', exact: true }).click();
-    await f.page.getByLabel('Amount (USDC)', { exact: true }).fill('110');
-    assert.match(await route.innerText(), /100 USDC from EEZ-X · local/);
-    assert.match(await route.innerText(), /10 USDC from Ethereum · bridged/);
-    for (const width of [1440, 800, 390, 320]) {
-      await f.page.setViewportSize({ width, height: 1100 });
-      assert.ok(await f.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal overflow at ' + width);
-      if (process.env.EEZ_UI_SCREENSHOT_DIR && [1440, 390].includes(width)) {
-        await f.page.evaluate(() => { document.activeElement?.blur(); window.scrollTo({ top: 0, behavior: 'instant' }); });
-        await f.page.screenshot({ path: `${process.env.EEZ_UI_SCREENSHOT_DIR}/treasury-${width}.png`, fullPage: true });
-      }
-    }
-    await simulate(null, 450, 340);
-    await f.budget.getByText('40 USDC', { exact: true }).waitFor();
-    await f.treasury.getByRole('region', { name: 'Ethereum Safe', exact: true }).getByText('290 USDC', { exact: true }).waitFor();
-    await f.treasury.getByRole('region', { name: 'EEZ-X Safe', exact: true }).getByText('50 USDC', { exact: true }).waitFor();
     await f.toggle();
     await f.page.getByRole('region', { name: 'Counter demo', exact: true }).waitFor();
     await f.hidden();
@@ -165,7 +100,7 @@ async function fixture(browser, blockedStorage = false) {
     await blocked.hidden();
     await blocked.close();
     console.log(JSON.stringify({ passed: true, hiddenByDefault: true, guardedDeepLinks: true, sessionVisibility: true,
-      shortcutFiltering: true, blockedStorage: true, simulatedQuorum: true, exactBudgetSequence: true,
-      bothDestinations: true, noOptimisticDebit: true, responsiveWidths: 4, transactionsSent: 0 }));
+      shortcutFiltering: true, blockedStorage: true, simulationRemoved: true, faucetHiddenOutsideChiado: true,
+      responsiveWidths: 3, transactionsSent: 0 }));
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

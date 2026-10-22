@@ -1,0 +1,89 @@
+{
+  "contractTests": {
+    "command": "npm run test:contracts",
+    "passed": 49,
+    "failed": 0,
+    "skipped": 0,
+    "fuzzTests": 3,
+    "casesPerFuzzTest": 256,
+    "localLog": ".runtime/treasury-rule-contract-check.log",
+    "logSha256": "f9c9f4329a4066b4a8595ecb479d80fb5d337dadcc34e05efe91cfd3ee504057"
+  },
+  "dashboardTests": {
+    "command": "npm test",
+    "passed": 217,
+    "failed": 0,
+    "skipped": 0,
+    "localLog": ".runtime/treasury-rule-node-check.log",
+    "logSha256": "4a559e29c19d66d16ea1b82f78fdc57f522bb28a5159d14519efe47a74c24c80"
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "warning": "Existing large-chunk warning"
+  },
+  "format": {
+    "commands": [
+      "forge fmt --check --root contracts",
+      "forge fmt --check --root contracts/legacy"
+    ],
+    "passed": true
+  },
+  "native": {
+    "status": "passed",
+    "run": "20261020T140047-p_9zxi9v",
+    "command": "python3 scripts/run-treasury-integration.py --runtime /home/edu/Development/rollupX --ui test --reuse-run .runtime/treasury-integration/20261020T125820-wpm4yppo",
+    "previousFailure": "first-failure.json",
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0,
+    "durationSeconds": 573.77,
+    "independentFollower": true,
+    "attestationVerified": true,
+    "scenarioComplete": true,
+    "ownedListenersAfterCompletion": [
+      {
+        "port": 33937,
+        "closed": true
+      },
+      {
+        "port": 36253,
+        "closed": true
+      },
+      {
+        "port": 40079,
+        "closed": true
+      },
+      {
+        "port": 40193,
+        "closed": true
+      },
+      {
+        "port": 40927,
+        "closed": true
+      },
+      {
+        "port": 45895,
+        "closed": true
+      }
+    ]
+  },
+  "notRun": [
+    "Full runtime/core matrix: runtime, protocol and Rust harness unchanged",
+    "Real browser wallet extension and official Safe app",
+    "Controlled L1 inclusion-failure scenario"
+  ],
+  "documentation": {
+    "bashBlocksSyntaxChecked": 22,
+    "documents": 5,
+    "pythonRunnerSyntax": true,
+    "execution": "Syntax checks only; these do not execute the procedures."
+  },
+  "manualDeploymentSourceComparison": {
+    "differences": [
+      "tests/integration/treasury-payment-browser.mjs"
+    ],
+    "reason": "Checksum normalization in the native test assertion only. Deployed contracts, UI, signing helpers and runtime are identical."
+  }
+}

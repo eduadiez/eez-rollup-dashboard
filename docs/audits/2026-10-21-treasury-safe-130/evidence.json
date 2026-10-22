@@ -1,0 +1,277 @@
+{
+  "dashboardRevision": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "applicationSources": {
+    "src/lib/treasury/safeSetup.ts": "d4a4f3fdd40b463983fb004054a6020d4f88a538e02cd70fc81fcb69035cad2a",
+    "src/lib/treasury/safeEvents.ts": "256d76ab000e857f87e7c7577447442272cf7cf74dcef25e0e5bb394d3804776",
+    "src/lib/treasury/client.ts": "a0d00ec383a3559c7934e19139edae95770fc4284d561ed945af5f3422e7871d",
+    "src/lib/treasury/deployment.ts": "8843465309fe50f1e8d25087141e38e8785d2caa834671be90cd7104a30053fb",
+    "src/lib/treasury/owners.ts": "7e9c762a0006902cf48830f2e96424eb664125e4404e9f02049c1bb2ef7ec460",
+    "src/lib/treasury/l1Payments.ts": "437669c29183b451367cd0c6ca420dd8364d40f42f3a57a29087618ec5e1a1f7",
+    "src/lib/treasury/safeTransactions.ts": "1a714c480e0b6dd3ec2ddee040c8e913e7938cae568e7822bf4e797d19259144",
+    "tests/treasury-safe-compatibility.test.mjs": "2d0e6573f834d1bd39e7165df853317c61aa641300530adef615969d0fd25708",
+    "tests/treasury-client.test.mjs": "e2203b02ae4998a7d158c71dadbde1a73047268a0678a8b7202c31800db2f3ce",
+    "tests/treasury-bidirectional.test.mjs": "c8af5c44619cc0785be2f0118db4b9285a48acd8c9e105cbbe051663712650fa",
+    "tests/treasury-owners.test.mjs": "670b8b917eb96350d5e20996adb20b91984134bde44b28a50bcbace8a8009f9a",
+    "tests/integration/treasury-setup.mjs": "30ae46b18e51485421f2c9da9597cb3cccad7135ce5efddb29593f1b09f3589b",
+    "tests/integration/treasury-owners.mjs": "2d5224cd9b4d77286d2a6350bc59149c3ca56e7deb9039a772ae03c0013c5b98",
+    "tests/fixtures/safe-130-runtime.json": "2dd2eae3659142d2cee5befbd9beba7aff564ae2838a485433f2c718948fc66a",
+    "scripts/run-treasury-integration.py": "9d2bb75271be82b3e709b357f5a2f27ed08b4297a4f04026f1d0c05ed04f456c",
+    "tests/integration/treasury-browser.mjs": "39d7e27c9d48ea195ab88e15d583622bb98afad8665e46747bf981827f05a7a5"
+  },
+  "jsTests": {
+    "passed": 343,
+    "failed": 0,
+    "skipped": 0
+  },
+  "baselineSetup": {
+    "run": "anvil-XKzYnY",
+    "failure": "Unsupported Safe implementation: verified Safe / SafeL2 1.4.1 only"
+  },
+  "setupTests": [
+    {
+      "safeVersion": "1.3.0",
+      "run": "anvil-USTYDs",
+      "passed": true
+    },
+    {
+      "safeVersion": "1.4.1",
+      "run": "anvil-uAyoSK",
+      "passed": true
+    }
+  ],
+  "nativeRun": "20261021T170134-zaqf3_0g",
+  "nativeVerified": true,
+  "chiadoSingletons": [
+    {
+      "name": "Safe130",
+      "address": "0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552",
+      "codeHash": "0xbba688fbdb21ad2bb58bc320638b43d94e7d100f6f3ebaab0a4e4de6304b1c2e"
+    },
+    {
+      "name": "Safe130L2",
+      "address": "0x3E5c63644E683549055b9Be8653de26E0B4CD36E",
+      "codeHash": "0x21842597390c4c6e3c1239e434a682b054bd9548eee5e9b1d6a4482731023c0f"
+    }
+  ],
+  "artifactCheckPassed": true,
+  "native": {
+    "safeVersion": "1.3.0",
+    "scenarioComplete": true,
+    "postedAttestationVerified": true,
+    "independentReplay": {
+      "hash": "0x274766b59f3a8883e1032738bd71fc255c5b7a291e1d98d311ea56e2cee809e4",
+      "height": 535
+    },
+    "bidirectionalBrowser": {
+      "block": "535",
+      "destination": "l2",
+      "hash": "0xc78080a3eab2cabb6bc2bac037a551ae22c83c8ff0cfc2b5adb51af8ae7321a5",
+      "independentReplay": true,
+      "l1Block": "0x6b",
+      "postIndex": 0,
+      "reloadRecovery": true,
+      "signaturesInvalidatedOnSourceChange": true,
+      "source": "l1",
+      "sourceIndex": "0x1"
+    },
+    "browserChecks": [
+      "hidden navigation",
+      "live owners and threshold",
+      "network switch",
+      "non-owner blocked",
+      "wallet signature rejection",
+      "duplicate approval blocked",
+      "incomplete quorum blocked",
+      "edit clears signatures",
+      "owner addition clears stale review",
+      "removal clears stale review",
+      "EIP-712 approvals",
+      "one submission per action",
+      "wallet submission cancellation",
+      "reload reconciliation",
+      "lost-response recovery",
+      "canonical Safe success",
+      "independent follower",
+      "mobile layout"
+    ],
+    "paymentChecks": [
+      "40 local",
+      "110 split",
+      "same L1 transaction receives both legs",
+      "global rejection despite 50 L2 allowance remaining",
+      "actual Composer policy rejection",
+      "unchanged state on rejection",
+      "bridge backing",
+      "no residual policy custody",
+      "independent follower",
+      "payment reload recovery",
+      "10% of 200 L1 + 100 L2 pays 30",
+      "rule fraction edits invalidate approvals",
+      "rule reload recovers signed fraction",
+      "RulePaid observations and Paid funding agree",
+      "actual 30 token transfer on L1",
+      "percentage rule independently replayed",
+      "110 to EEZ-X: 100 local + 10 L1",
+      "terminal L1 lock in canonical batch",
+      "exact approval consumed",
+      "nonce-bound lock and mint",
+      "both contributions in the same L2 receipt",
+      "reverse payment reload recovery",
+      "natural period reset with idle L2",
+      "reverse state independently replayed",
+      "16-USDC rule preview rejected with only 10 global remaining"
+    ],
+    "historyChecks": {
+      "automaticResubmissions": 0,
+      "counts": {
+        "pending": 0,
+        "preparation": 3,
+        "rejected": 0,
+        "rollback": 1,
+        "settled": 4
+      },
+      "expiredQueueDiagnosticsHandled": true,
+      "missingDiagnosticInjectedOnReload": true,
+      "ownerActionsExcluded": true,
+      "preparation": [
+        "closed invoice at Composer",
+        "1 USDC local budget check",
+        "16 USDC rule local budget check"
+      ],
+      "queueExpiredNaturally": true,
+      "responsiveWidths": [
+        390,
+        320
+      ],
+      "retainedAcrossReload": true,
+      "rollbackTraceAndStateDetails": true,
+      "unavailableReadsDowngrade": true,
+      "verifiedFunding": [
+        "40 local EEZ-X",
+        "110 split L1",
+        "30 percentage rule",
+        "110 split EEZ-X"
+      ]
+    }
+  },
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+  "firstNativeAttempt": {
+    "run": "20261021T164832-v97dbemy",
+    "exitCode": 1,
+    "scenarioComplete": true,
+    "lastSuccessfulL2Block": 720,
+    "failure": "Browser teardown disposed the request context while route.fetch was still active; overall native runner failed",
+    "browserChecks": [
+      "hidden navigation",
+      "live owners and threshold",
+      "network switch",
+      "non-owner blocked",
+      "wallet signature rejection",
+      "duplicate approval blocked",
+      "incomplete quorum blocked",
+      "edit clears signatures",
+      "owner addition clears stale review",
+      "removal clears stale review",
+      "EIP-712 approvals",
+      "one submission per action",
+      "wallet submission cancellation",
+      "reload reconciliation",
+      "lost-response recovery",
+      "canonical Safe success",
+      "independent follower",
+      "mobile layout"
+    ],
+    "bidirectionalBrowser": {
+      "hash": "0x5a53347e138643dad008389ce78f111d072ca1b22d2037ad8a8113b4e0d9f4f6",
+      "block": "720",
+      "source": "l1",
+      "destination": "l2",
+      "l1Block": "0x90",
+      "sourceIndex": "0x1",
+      "postIndex": 0,
+      "signaturesInvalidatedOnSourceChange": true,
+      "reloadRecovery": true,
+      "independentReplay": true
+    },
+    "summaryVerified": false
+  },
+  "browserImport": {
+    "passed": true,
+    "safeVersion": "1.3.0+L2",
+    "runtimeHash": "0x21842597390c4c6e3c1239e434a682b054bd9548eee5e9b1d6a4482731023c0f",
+    "ownersPreserved": true,
+    "importedAddressPreserved": true,
+    "reloadPreserved": true,
+    "viewports": [
+      1440,
+      390
+    ],
+    "signaturesOrSubmissions": false,
+    "scope": "served dashboard, controlled read-only Safe import responses, isolated browser storage"
+  },
+  "broaderReadonlySmoke": {
+    "passed": false,
+    "failure": "Playwright route.fulfill: Route is already handled! during history-fixture transitions",
+    "log": ".runtime/treasury-safe-130-20261021/browser-smoke.log"
+  },
+  "localDeployment": {
+    "before": {
+      "eez-rollup-ui-ui-1": {
+        "id": "513a56aeed41fc346bb376d5d4d0f796a6c421935cf2ed44154fac494bebb1e6",
+        "image": "sha256:8117a2358f35ad082213e3adbcbaeaa1ae9d6847c2cc4db35f91a03c2553f9cc"
+      },
+      "eez-rollup-ui-monitor-1": {
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546"
+      },
+      "eez-node-chiado": {
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95"
+      },
+      "eez-proof-signer-chiado": {
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6"
+      }
+    },
+    "after": {
+      "eez-rollup-ui-ui-1": {
+        "id": "f1c7974e6655b037c1e4bdf631783de23efecb619f5a0c243a212b43e8d03508",
+        "image": "sha256:2188c8d642b70cbbb741ccc01ba2c07ed5182f9a217ddb7ca510aede0e58c2a5"
+      },
+      "eez-rollup-ui-monitor-1": {
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546"
+      },
+      "eez-node-chiado": {
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95"
+      },
+      "eez-proof-signer-chiado": {
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6"
+      }
+    },
+    "imageOnlyComposeChange": true,
+    "otherServicesUnchanged": true,
+    "runtimeConfigUnchanged": true,
+    "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+    "servedTreasuryAssets": [
+      {
+        "name": "TreasuryDemo-ey3invWK.js",
+        "sha256": "f4a78521145c359f38928dcc618aa078b6bce02f417a1be64178e6481313d4a9"
+      },
+      {
+        "name": "TreasuryDemo-l3qWbejI.css",
+        "sha256": "b06022e24f05aa2087586806713fdccbb7a16013403da3d3487123ff9311c07f"
+      }
+    ]
+  }
+}

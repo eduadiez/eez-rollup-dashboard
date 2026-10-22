@@ -1,0 +1,20 @@
+{
+  "head": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "branch": "feat/treasury-demo",
+  "files": {
+    "contracts/src/SharedTestUSDC.sol": "d9e264fa05683cdf1453f72714faf5ce1a1a89b19a13f0bc653656775ae73016",
+    "contracts/src/SharedTreasuryBridge.sol": "1e52aa86bda422460e70af7cee9c57a07a648339bd94f9acce1ead56874811d0",
+    "contracts/test/SharedTreasuryInfrastructure.t.sol": "92112766a31c9f45ec85a2e5de4d5b4099018969cb88aece119e99bf9dbda257",
+    "src/lib/treasury/sharedInfrastructure.ts": "82017af8d9654fa4ed94727f3cd6904ea95f557a9f32d809064480c9a9a9f8b0",
+    "src/lib/treasury/deployment.ts": "0354da56921f67b0b036745ef6969f7990bfe95ba36ba1509d51df157a5da1a2",
+    "src/lib/treasury/deploymentGroups.ts": "6fa9837345ca13e0d735e882d982f8aa3cbf1a1f070b1168ed89e01a12f066af",
+    "src/lib/treasury/deployment-artifacts.json": "63e64af6063c0b6fe92f263e4610c5074b7f3390a4d01dea5fce36bd2fab1324",
+    "src/components/TreasurySetup.tsx": "78b2fd1380f3bcafe93e923e7df4be56328f9df299a9f9280633f7caae998ac2",
+    "scripts/build-treasury-browser.mjs": "b9e99332a86ba2f9d450f328844684c73a04f9706459389f8330d3124dc7e9fd",
+    "scripts/run-treasury-integration.py": "bbf73bf80ea6c6953154098feb76d33eda93ac077b2b87c09801e46948712e1c",
+    "tests/treasury-shared-infrastructure.test.mjs": "cabcbf5eb8ef95efbb613e69f050a627b967588058e8698d4428546bfb6512b8",
+    "tests/integration/treasury-deployment-batches.mjs": "27ec86bb8f015c066f2a33859085c4b88a54d14e9e40075d7d8b4d10a857e347",
+    "tests/integration/treasury-payments.mjs": "c7d906aec9d743be19c26b93f66585b3bbc7d8a88b68590c8ef878d05c0ef452",
+    "tests/treasury-shared-browser.mjs": "0a420ced81238373b216bce989730f40ccd44d3f58485eaf9e2f3b79a30e9146"
+  }
+}

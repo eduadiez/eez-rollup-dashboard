@@ -32,6 +32,23 @@ const {fixture,until,target,eoa} = require('./cross-chain-calls.cjs');
       assert.deepEqual(f.errors,[]);
       await f.context.close(); scenarios++;
     }
+    // Treasury setup reaches this same bundled fee helper with a 32,068-byte
+    // contract batch. Preserve every byte through both supported wallet formats.
+    const batchSizedData = '0x' + 'ab'.repeat(32_068);
+    for (const walletName of ['Rabby', 'MetaMask']) {
+      const f = await fixture(browser, {feesEnabled:true, walletName, chain:'0x27d8', l2Chain:'0xdd6d9'});
+      await f.select(eoa, true);
+      await f.panel.getByLabel('Calldata', {exact:true}).fill(batchSizedData);
+      await until(() => f.send.isEnabled(), 'large call was not ready');
+      await f.send.click();
+      await until(() => f.page.evaluate(() => window.walletRequests.length === 1), 'large quoted call did not reach wallet');
+      const quotes = f.requests.filter(request => request.method === 'eez_quoteFee');
+      assert.equal(quotes.length, 1); assert.equal(quotes[0].params[0].data, batchSizedData);
+      const tx = await f.page.evaluate(() => window.walletRequests[0]);
+      assert.equal(tx.data, batchSizedData); assert.equal(tx.type, walletName === 'Rabby' ? '0x0' : '0x2');
+      assert.equal(tx.walletChain, '0xdd6d9'); assert.deepEqual(f.errors, []);
+      await f.context.close(); scenarios++;
+    }
     console.log(JSON.stringify({passed:true,scenarios,realTransactionsBroadcast:0}));
   } finally { await browser.close(); }
 })().catch(error => {console.error(error);process.exitCode=1;});

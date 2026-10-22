@@ -5,6 +5,8 @@ const ORIGIN = window.location.origin;
 const absolute = (path: string) => new URL(path, ORIGIN).toString();
 
 export const config = {
+  /** Optional treasury deployment, validated by the hidden example. */
+  treasury: null as unknown,
   /** Human-readable rollup name, supplied by runtime networkName. */
   rollupName: "EEZ L2",
   l1NetworkName: "L1 network",

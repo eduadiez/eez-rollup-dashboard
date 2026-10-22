@@ -1,0 +1,12 @@
+{
+  "head": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "upstreamSdkRevision": "8d03af4f78cb1c2bde36a64cc1fa09d4af288950",
+  "sha256": {
+    "src/lib/fees/l2-fees.mjs": "346aa6e89b828462396917b0783f90beb5e396f74e5ade24c46847a41b9e2545",
+    "src/lib/fees/l2-fees.test.mjs": "b3cbd438c8fdbcadb2de0ddb4164ac3584a8f332652674f63d155a5082f18573",
+    "tests/integration/treasury-deployment-batches.mjs": "c531314f8502179bfe33256287dbe4bacb54bb0fb2e3c1097a5feb86f0506b4b",
+    "tests/cross-chain-call-fees.cjs": "83bee0e9c82f2029535940c375677dd378b446ecf0df561f72165040f1bdc528",
+    "README.md": "aba1d3b53febad6bbc7b883aa2c29a16a0f4f3b8cdca2f1cd8fbd819eeb07e35",
+    "docs/runbooks/treasury-shared-network.md": "3fcbf6403105dda3dd5c0c6f92fb4178bb8ae6a7c5b76bbf031018f3453ef169"
+  }
+}

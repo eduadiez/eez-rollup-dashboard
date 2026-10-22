@@ -1,0 +1,12 @@
+{
+  "base": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "core": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "files": {
+    "src/lib/treasury/deployment.ts": "84a0c1385cd09dead5cda841161da004b06f92aec5304911ed48e257766c8f20",
+    "src/components/TreasurySetup.tsx": "101c53be5fb1c3e051b4bd4e5b47a02853d255a3f3d2c39c2144199e396cf26d",
+    "tests/treasury-deployment.test.mjs": "368f3f9755416faf6f841c101e80cc869dfc521a5c04968676ab906a148de7ff",
+    "tests/treasury-shared-browser.mjs": "98e6c30fa15126047e3017a0abce2bed910cf777908701f19a3b2f777d9cbf23",
+    "tests/integration/treasury-setup.mjs": "4f6619363265a3726a5cce0be26eaff344f6a9ce48591bbc35bdda8f0b9ffb9b",
+    "src/lib/treasury/deployment-artifacts.json": "e789ed47a683b588f5997f55859ef62daf509d4d64403314fe7dc11d069bd0bb"
+  }
+}

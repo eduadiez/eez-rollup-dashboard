@@ -1,0 +1,8 @@
+{
+  "run": ".runtime/treasury-integration/20261020T135223-if4s3eqk",
+  "invoiceControlVisible": 0,
+  "nonce": "3",
+  "balanceL1": "300000000",
+  "balanceL2": "150000000",
+  "spent": "0"
+}

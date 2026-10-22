@@ -1,0 +1,183 @@
+{
+  "verified": true,
+  "scope": "real Safe contracts; mocked protocol discovery, no EEZ execution",
+  "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:50:55.527285345Z (1778226655)\nBuild Profile: dist",
+  "cases": [
+    "missing wallet response recovered from real account history, then exact canonical deployment validated",
+    "actual fee replacement discovered by sender/nonce and confirmed without resubmission",
+    "confirmed 1.4.1 singleton and transaction retained; official 1.3.0 factory creates its 1-of-1 Safe after reload, with 23 total steps",
+    "existing Safe and SafeL2 1.4.1 recognized with 2-of-3 owners and retained modules",
+    "Non-Safe addresses, implementation tampering, Guards and unsupported contract-owner quorums rejected; EIP-7702 wallet recognized",
+    "later batch failure executes the owner swap then rolls back every owner, threshold, nonce, balance, module and handler change",
+    "quorum, duplicate approval, stale nonce/threshold and missing success event rejected; reloaded approvals execute adoption with a separate submitter",
+    "an already-adapted Safe reuses the verified owner adapter and rejects a different L1 treasury",
+    "reused adapter rejects inconsistent immutable copies and a consistently wrong L1 Safe proxy",
+    "late configuration failure follows successful allowance setup then rolls back module, delegate allowance, alias deployment and Safe nonce",
+    "official call-only helper batches alias provisioning, module, delegate and 100-token allowance with the existing quorum"
+  ],
+  "transactions": [
+    {
+      "chain": "l1",
+      "hash": "0x355bdec9b667e54610c35c50dabfc4e965522c893cef4b312fd18765fd4d39db",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x9b6eb09c547c062365d3019a6a7f582c66cc2b260ef8c2b52d3acafd5d514eef",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x7b1f4b7d7eee8db02f98de9e7423933ac3d00a9020fae8bbbe4168b612a876d3",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x7df586ee4bbc419d6154bf622c02d2e7565d38eeb4430e4e37df70eab4d5728f",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x88145447bd6a397ba3673c9fb3f22357b2d2daffaa504b15318ee51d2fedd22b",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x4a26ac9cf9521205dbd3c553b25fb330f54b19ba9a1b02f63f27b04781bddf2f",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x5093f3382e754953252251c35827ee6253811912ed03ab29580d820828da3022",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x54362e0babef39615a405f629843deb21df19a75126a188250719b4f0a2788f0",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xb5a591d6408688bac3b6564a7adff45d3cc79b05532fbaa9f3b85cae34e7724a",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xa31e9fdde0feac707e75c9803be1f404e708c83a6e96ec19837cd0df4d742fb9",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x36862d6c63b973f5ca826c451571d586ebf6be11fc25853cbf5ed62246c3c0a4",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xfefb4cd7768e00b2967e64ce6de25fe029bfd1bc3441b712d1536c026fffc18c",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x6f3053808f22ae165d74568509ad87f2a27ef001d1a16ab17744a3554900c359",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x10a27b73bc62386401ac12141cd51b7fea24d681c8d4bcaa96754312e4559254",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x36bfeeaa40d0872f621fbcade2eb9576866de352aef576a8e09bf396735eaeba",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0xd499d31303c82cecdf0dccec5208a6ad96c17ad82182d858b125febd58fe26f2",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x256b5194a5d3236ec6c1be3638d07f134d2d6627c52477213a69badf4e3df999",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x12bcb7c4d8abb171a0b578b0310c18971f962e357cb0f2d3da7c56c12a053035",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x672b0de0fc842d3d6ddcfe65ccbc572f9bdcaf611d595f4945897449ddff0751",
+      "success": false
+    },
+    {
+      "chain": "l2",
+      "hash": "0x411960ccea26fc0e9a3ed092fac7dfb0e5bbd1eb0eb585e28133955f77f05888",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x6a099bc664476d7ce06ca6ea8ea2cf4add71f0afe7c80dffe338bb7b12300ef6",
+      "success": true
+    },
+    {
+      "chain": "l2",
+      "hash": "0x0e216ed670998c90d7e728f74c057916f86a1354f8d1e1a995cfa5b87a3a2ca4",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xa18694c781efe7b241319d365e37ecc40eee105c8cc5564d924ee87da97ebcc5",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x2ba9ee9b70852de48695973bd3331a25dfb550709681237b69dfb0ca7c205968",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x2ce777e09dddfd373f325f096eef6c8f3523aec8b4f6374ad3f0d5722aa1761a",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0x3aed9f6fd4596da350c310ae551096e2a5dd0e3d663d3c7f637882a5947afda7",
+      "success": true
+    },
+    {
+      "chain": "l1",
+      "hash": "0xe9065338a01a258348801719e21f4610b75e110ed43bfdc8a8e296953c4c3720",
+      "success": false
+    },
+    {
+      "chain": "l1",
+      "hash": "0xa1d7225bd853f4db8c4e8931087d269bb89395525fe005cba9927d56027e4e0b",
+      "success": true
+    }
+  ],
+  "replacement": {
+    "originalHash": "0x40ded54c7d9ee58f71ce42dc8b315b25d4f700e64986270c1138b578158920ee",
+    "replacementHash": "0x9b6eb09c547c062365d3019a6a7f582c66cc2b260ef8c2b52d3acafd5d514eef"
+  },
+  "calls": [
+    "eth_accounts",
+    "eth_chainId",
+    "eth_call",
+    "eth_signTypedData_v4"
+  ],
+  "chains": [
+    10200,
+    906969
+  ],
+  "contracts": {
+    "safeL1": "0x8DAcBF79D81EA0D10675eE516b38C235502E2199",
+    "safeL2": "0x3eC662340841ddbED3e91E71f57f79ef202014C5",
+    "adapter": "0x717CA671AF7aB3A72ec37791Ff8414C9437199E7",
+    "batch": "0xcc7780e4871c6dde30e3e52d638989585e704474",
+    "singletonL1": "0x7Cd767f886dd62FDC7e7dc8C01499F1c6F24c679",
+    "singletonL2": "0xcf75462c9e7fff4eeb0c50185087a0fb9a056d2b"
+  },
+  "artifactsHash": "0xdd801711e8ccab645a7da6ce9732d1d5d2707fe1958a93f60c69e9b2d9810855"
+}

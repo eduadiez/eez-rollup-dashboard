@@ -1,0 +1,84 @@
+{
+  "sourceRevision": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "protocolGitlink": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "tokenSourceSha256": "d9e264fa05683cdf1453f72714faf5ce1a1a89b19a13f0bc653656775ae73016",
+  "compiler": "0.8.34+commit.80d5c536",
+  "sourceCount": 30,
+  "sourceHashesMatch": true,
+  "settingsMatch": true,
+  "onchain": [
+    {
+      "source": "dashboard",
+      "address": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "chainId": 10200,
+      "head": {
+        "number": 23629348,
+        "hash": "0xabb13e4267c55642f2f58f8bea3db77ebb658f01a8ec6ad54a0dc21f80e22e47"
+      },
+      "codeHash": "0x3e74479f3b2e4316237cf6d3ba680030ba243a0abfd524fb5ec9f6d203c984f9",
+      "runtimeMatchesArtifactExceptImmutables": true,
+      "metadata": {
+        "name": "Test USD Coin",
+        "symbol": "Test USDC",
+        "decimals": "6",
+        "totalSupply": "900000000"
+      }
+    },
+    {
+      "source": "public-chiado",
+      "address": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "chainId": 10200,
+      "head": {
+        "number": 23629348,
+        "hash": "0xabb13e4267c55642f2f58f8bea3db77ebb658f01a8ec6ad54a0dc21f80e22e47"
+      },
+      "codeHash": "0x3e74479f3b2e4316237cf6d3ba680030ba243a0abfd524fb5ec9f6d203c984f9",
+      "runtimeMatchesArtifactExceptImmutables": true,
+      "metadata": {
+        "name": "Test USD Coin",
+        "symbol": "Test USDC",
+        "decimals": "6",
+        "totalSupply": "900000000"
+      }
+    }
+  ],
+  "before": {
+    "observedAt": "2026-10-21T21:13:01.011501+00:00",
+    "token": {
+      "address_hash": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "name": null,
+      "symbol": null,
+      "decimals": null,
+      "total_supply": null,
+      "type": "ERC-20"
+    },
+    "isContract": true,
+    "isVerified": false
+  },
+  "after": {
+    "observedAt": "2026-10-21T21:35:15.416247+00:00",
+    "token": {
+      "address_hash": "0x67732Ead04CF5c6665Cb95b87e48Ec2B712541Eb",
+      "name": null,
+      "symbol": null,
+      "decimals": null,
+      "total_supply": null,
+      "type": "ERC-20"
+    },
+    "isContract": true,
+    "isVerified": true,
+    "verification": {
+      "message": "OK",
+      "result": "Pass - Verified",
+      "status": "1"
+    },
+    "contract": {
+      "name": "SharedTestUSDC",
+      "compiler_version": "v0.8.34+commit.80d5c536",
+      "is_verified": true,
+      "is_partially_verified": false,
+      "language": "solidity",
+      "message": null
+    }
+  }
+}

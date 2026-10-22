@@ -89,24 +89,103 @@ session starts hidden, and `#/treasury-demo` alone does not enable it. This is a
 navigation preference, not access control: anyone who knows the shortcut can
 open the example, and its code ships with the application.
 
-The treasury page is an **interactive preview with simulated data**, not a live
-Safe integration. Try 40 USDC on EEZ-X, then a 110-USDC payment to Ethereum
-(100 from L1 plus 10 bridged from L2), then another 1 on EEZ-X. Each Safe's
-allowance is 100 and the shared budget is 150. The last payment is rejected even
-though EEZ-X still has 50 of allowance. Review each payment, simulate two owner
-approvals, and simulate settlement; editing a reviewed payment clears its
-approvals. The presets only fill the form. The explicit simulation reset, leaving
-the page or reloading clears sample balances/history. The illustrative ten-minute
-period does not advance automatically. This page does not request wallet
-signatures or broadcast transactions, and its history is separate from live
-transaction history. Live Safe owners, policy contracts and Composer settlement
-integration are subsequent milestones.
+On the configured **Chiado 10200 / EEZ-X 906969** dashboard, this tab opens
+wallet-approved setup when no shared manifest is saved. **Start setup** connects
+an existing verified Chiado Safe (Safe / SafeL2 1.3.0 or 1.4.1) and deploys or
+connects its EEZ-X mirror. The Chiado owner set and threshold are retained. Setup
+uses the predeployed shared Test USDC and bridge pair; it does not fund the Safes.
+Transaction calls are visible at each setup step. The connected view provides
+payment review, a funding split, shared owners and payment history.
+
+The normal wallet integration collects approvals and submits named transactions.
+Progress survives reloads. Add an owner by entering its address in Shared owners;
+the current Chiado quorum approves the change. Limits remain 100 per Safe and
+150 shared per ten minutes. See the
+[shared-network runbook](docs/runbooks/treasury-shared-network.md).
+
+On the existing Ethereum-backed network, the treasury asks for the user's
+**Ethereum Safe address**, then deploys or connects its EEZ-X mirror with the
+selected wallet. Six transactions batch application deployment and allowance
+configuration, reusing the existing bridge and Circle USDC. Mainnet setup has its
+own browser journal and application artifact bundle; Chiado remains unchanged.
+No new `.env` variables, automatic funding or token minting are used. An explicit
+runtime `treasury` manifest remains an optional import for existing deployments.
+The [mainnet runbook](docs/runbooks/treasury-mainnet.md) covers setup, exact code
+bindings, isolated native/browser rehearsal, real-USDC fork checks and remaining
+production requirements. These checks are not a production security audit.
+
+Simulation is no longer offered. Supported networks without treasury bindings show the Safe chooser;
+other networks show a configuration prompt. **Get Test USDC** is available only for configured Chiado
+treasuries; it is hidden on Ethereum. To fund the mirror from the existing Chiado
+Safe, choose **Move to EEZ-X Safe** in payment review. This owner-approved internal
+transfer uses the shared bridge and does not consume the policy's payment budgets.
+See the [transfer procedure](docs/runbooks/treasury-shared-network.md#moving-funds-to-the-mirror-safe).
+
+The [shared-network setup](docs/runbooks/treasury-shared-network.md) uses the
+selected wallet and supports existing Safe 1.4.1 accounts. It reuses verified
+Safe infrastructure and batches contract creation, funding and Safe configuration.
+With the first Safe implementation already confirmed, the grouped plan normally
+needs **five more transactions**, plus two Safe signature approvals for a 1-of-1
+treasury. Wallet A currently needs **seven more transactions**: its first two
+EEZ-X deployment addresses already contain protocol contracts, so setup first
+uses those nonces for two required proxy calls. The UI detects this from the
+selected wallet. Existing Safes retain their quorum requirements. Reloading preserves
+confirmed deployments and pending requests; each batch shows its contracts and
+calls before approval. See the [batch validation record](docs/audits/2026-10-20-treasury-deployment-batches/README.md).
+**Start new treasury** returns to the Safe chooser with the same connected
+wallet. Create new Safes or enter existing Safe addresses on either chain;
+there is no archive collection or download step.
+Pending setup, payment and owner-change requests must be resolved first. See the
+[restart procedure](docs/runbooks/treasury-shared-network.md#start-a-new-treasury-with-the-same-wallet).
+
+
+The [isolated treasury launcher](tests/integration/README.md#connected-treasury-ui)
+opens **Payments** in the same hidden tab. It deploys two Safes,
+`L1Owners`, `BidirectionalTreasuryPolicy`, the official allowance modules and a fresh
+`TreasuryBridge` pair extending the pinned demo bridge. Each Safe grants 100 USDC per ten minutes; the policy enforces 150
+across both. The UI reads actual holdings and counters, collects EIP-712 owner
+approvals and submits through Composer. It supports local payments on either
+chain and combined funding to either chain. **Start from** selects which Safe
+owners authorize; signatures use that Safe’s chain and nonce. New shared-network
+setup requires an existing Chiado Safe and preserves its owners and threshold.
+Existing deployed policies keep their L2 entry point until explicitly replaced. Try **Pay 40 on EEZ-X**, **Split 110
+to L1**, then **Try another 1** in one period. After the next reset, **Pay 10% of
+holdings** calculates 30 from the Safes' combined 300. Then use **Split 110 to
+EEZ-X**: 100 comes from its local Safe and 10 from L1, bringing the new period's
+shared spending to 140. Each preset only fills the form. Rule approvals authorize
+the percentage; the UI distinguishes its estimate from the balances and amount
+observed during execution.
+
+These are real transfers of a six-decimal **Devnet USDC** fixture on private
+chains, not Circle-issued USDC. The initial 150 wrapped tokens are backed by
+150 locked on L1. The UI verifies canonical Safe/payment events, shows actual
+funding and resumes pending submissions across reloads. Its ports, chain state,
+test wallets and configuration belong to that invocation. **Connected owner
+demo** retains the earlier value-setting action; the simulated preview stays
+separate. The invoice preset now requires explicit merchant acceptance after both payment legs and displays verified rollback evidence. **Payment history** keeps this browser's live payment attempts across **New payment** and reloads, with filters for settled payments, preparation rejections, verified rollbacks and unresolved requests. Expand an entry for actual funding, transaction identifiers or rollback state comparisons. Local budget checks are marked as not submitted. The UI checks submitted outcomes again on reload; missing evidence remains unresolved. See the [history scope and validation](docs/audits/2026-10-20-treasury-history/README.md).
+Use `npm run dev:treasury -- --runtime /path/to/rollupX` and follow the printed
+URL and linked wallet/setup instructions. This launcher keeps its private chain
+state separate from the normal dashboard networks.
+
+For the full wallet and Safe-app walkthrough, use the
+[treasury rehearsal runbook](docs/runbooks/treasury-rehearsal.md).
+`npm run treasury:safe -- start "$TREASURY_RUN/ui-session.json"` attaches a
+pinned local Safe application and indexer to that devnet. The dashboard remains
+the payment/signing interface; **Open L1 Safe** handles owner administration.
 
 The [One treasury, two Safes proposal](docs/proposals/one-treasury-two-safes.md)
 contains the full design, demo script and development plan. Treasury demo
-application contracts and tooling will live alongside the UI in this repository;
+application contracts and tooling live alongside the UI in this repository;
 the runtime and core protocol remain external dependencies at the revisions
 recorded in the proposal.
+
+The [contract project](contracts/README.md) includes `L1Owners`, `TreasuryPolicy`, `TreasuryBridge`,
+pinned Safe/AllowanceModule/EEZ sources, contract tests and frontend signature
+helpers. Run `npm run test:contracts` after initializing its submodules. The
+[isolated browser integration](tests/integration/README.md#browser-integration)
+checks owner verification, the 40 / 110 / rejected 1 sequence, a next-period
+10% rule paying 30, and a 110-USDC split to EEZ-X through the real Composer, proof
+signer and independent follower. The invoice scenario additionally checks an actual L1 inclusion failure and a distinct preparation rejection; see its [validation record](docs/audits/2026-10-20-treasury-invoices/README.md). See the [rule validation and remaining limits](docs/audits/2026-10-20-treasury-rules/README.md).
 
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
@@ -438,10 +517,13 @@ is below the cap. Disabling a direction restores its ordinary wallet path; it
 does not disable backend fee enforcement.
 
 The SDK and its tests in `src/lib/fees/l2-fees.*` are copied byte-for-byte from
-RollupX `51ef1ba08d5c506c8909bc8be2e16e8d25c0a7a8` (`sdk/l2-fees.*`);
+RollupX `8d03af4f78cb1c2bde36a64cc1fa09d4af288950` (`sdk/l2-fees.*`);
 despite the file name, they support both directions. Keep these copies aligned
-with the backend contract. `payment.mjs` normalizes dashboard requests and binds
-the SDK to the selected wallet. The Kurtosis Vite configuration helper also
+with the backend contract. This revision allows up to 64 KiB of decoded calldata,
+including the treasury budget deployment batch. The request hash still binds all
+bytes, and the server remains authoritative for admission. Older Composers may
+reject larger requests; no unquoted or truncated fallback is used. `payment.mjs`
+normalizes dashboard requests and binds the SDK to the selected wallet. The Kurtosis Vite configuration helper also
 accepts the same four fee environment variables:
 
 ```bash

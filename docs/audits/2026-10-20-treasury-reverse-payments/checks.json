@@ -1,0 +1,56 @@
+{
+  "contracts": {
+    "command": "npm run test:contracts",
+    "passed": 38,
+    "failed": 0,
+    "skipped": 0,
+    "fuzzTests": 2,
+    "runsPerFuzzTest": 256,
+    "delivery": "single-EVM logical managers; real Safe/module/bridge contracts"
+  },
+  "dashboard": {
+    "command": "npm test",
+    "passed": 208,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "warning": "existing >500 kB chunk warning"
+  },
+  "staticChecks": [
+    "forge fmt --check --root contracts",
+    "forge fmt --check --root contracts/legacy",
+    "node --check tests/integration/treasury-payment-browser.mjs",
+    "node --check tests/integration/treasury-payments.mjs",
+    "Python ast.parse on scripts/run-treasury-integration.py",
+    "git diff --check",
+    "edited local Markdown link targets exist"
+  ],
+  "nativeRun": "20261020T125820-wpm4yppo",
+  "nativeStatus": "passed",
+  "iterationCorrections": [
+    "Renamed a testFailed-prefixed test because Foundry reserves testFail; reran the complete suite successfully.",
+    "Removed an unused L1 getWrappedToken response from the binding-test mutation inventory; the real L2 mapping and both counterparts are tested."
+  ],
+  "native": {
+    "selected": 1,
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filteredOut": 0,
+    "seconds": 712.52,
+    "semanticAssertions": true,
+    "independentReplay": true,
+    "postedAttestationVerified": true,
+    "applicationHashesMatchFinalFiles": true,
+    "manualDeploymentUsesSameApplicationHashes": true,
+    "screenshotsInspected": [
+      "treasury-payments-desktop.png",
+      "treasury-reverse-desktop.png",
+      "manual-reverse-review-desktop.png",
+      "manual-reverse-review-mobile.png"
+    ]
+  }
+}
