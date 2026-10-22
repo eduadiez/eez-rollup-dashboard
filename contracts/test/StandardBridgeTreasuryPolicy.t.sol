@@ -211,6 +211,10 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         assertEq(policy.spent(block.timestamp / 600), 110 * U);
     }
 
+    function _expectL1Failure(bytes memory) internal virtual {
+        vm.expectRevert(bytes("GS013"));
+    }
+
     function testSharedBudgetAcrossBothInitiators() public {
         _pay(false, false, 40 * U);
         _fromL1(_l1Data(true, 110 * U));
@@ -219,7 +223,7 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         uint256 nonce = safeL1.nonce();
         bytes memory data = _l1Data(false, U);
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, alias_, data, 0)), A, B);
-        vm.expectRevert(bytes("GS013"));
+        _expectL1Failure(abi.encodeWithSelector(TreasuryPolicy.GlobalLimit.selector));
         _execute(safeL1, alias_, data, 0, signatures);
         assertEq(safeL1.nonce(), nonce);
         assertEq(_spent(false), 50 * U);
@@ -251,7 +255,7 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         );
         uint256 nonce = safeL1.nonce();
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, alias_, data, 0)), A, B);
-        vm.expectRevert(bytes("GS013"));
+        _expectL1Failure(abi.encodeWithSelector(InvoiceMerchant.InvoiceNotOpen.selector, bytes32("closed")));
         _execute(safeL1, alias_, data, 0, signatures);
         assertEq(safeL1.nonce(), nonce);
         assertEq(usdc.balanceOf(recipient), 0);
