@@ -111,7 +111,7 @@ abstract contract OwnerFixture is Test {
         address[] memory owners = new address[](2);
         owners[0] = vm.addr(A);
         owners[1] = vm.addr(B);
-        safeL1 = _newSafe(owners, 2);
+        safeL1 = _newL1Safe(owners, 2);
         l1 = new ReadThroughManager(0);
         l2 = new ReadThroughManager(ROLLUP_ID);
         l1.setPeer(l2);
@@ -125,6 +125,10 @@ abstract contract OwnerFixture is Test {
 
     function _deployLegacy(string memory name) internal returns (address) {
         return deployCode(string.concat(vm.projectRoot(), "/legacy/out/", name, ".sol/", name, ".json"));
+    }
+
+    function _newL1Safe(address[] memory owners, uint256 threshold) internal virtual returns (ISafe) {
+        return _newSafe(owners, threshold);
     }
 
     function _newSafe(address[] memory owners, uint256 threshold) internal returns (ISafe) {
@@ -154,6 +158,7 @@ abstract contract OwnerFixture is Test {
     )
         internal
         view
+        virtual
         returns (bytes memory)
     {
         return safe.encodeTransactionData(to, 0, data, 0, safeTxGas, 0, 0, address(0), address(0), safe.nonce());

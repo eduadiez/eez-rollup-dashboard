@@ -164,3 +164,58 @@ checks above remain open. In particular, the inherited Chiado factory metadata
 gap affects newly created aliases too; dropping historical backfill does not
 resolve it. Mainnet release still requires independent contract review and the
 real-wallet/Safe-app acceptance.
+
+## Safe 1.5.0 compatibility
+
+The mainnet address `0x1a38210B3330aa0B41267D605f14C699A7189b60` exposed a
+missing supported version after the review above. At Ethereum block **26250717**
+(`0x0f1c0f8399b99b0c666fa9985e11af470a8fcab3612a1cdaec0a6fd883af12a6`),
+the original inspector at `c9e4a87b48f3e6a722a7090f12123dbaecc0c1d8` rejected its
+proxy; the updated production inspector accepted the same address and block.
+These were read-only calls through the public mainnet dashboard's configured RPC.
+The observed Safe has one owner, threshold one, nonce zero and no enabled modules,
+transaction Guard or module Guard.
+
+The Safe uses official 1.5.0 implementation
+`0xFf51A5898e281Db6DfC7855790607438dF2ca44b`, code hash
+`0xdda019cbd7c867a533a2a86e5c53434fdc50b13122b5a5ddb4a8df61b31c20f2`.
+Its new proxy hash is
+`0x4e381985ca68b3e5d27b4425fa581c19cf33146d3f887a3cfca96f55528ea46f`.
+The runtime matches the published
+[Safe deployment catalog](https://github.com/safe-global/safe-deployments/blob/8e200b0b4c72dbbfe371cbd61b3a21ae2ec4af62/src/assets/v1.5.0/safe.json).
+The pinned [fixture](../../../contracts/test/fixtures/safe-150.json) contains both
+1.5.0 singleton variants and the proxy, from the integrity-checked
+`@safe-global/safe-smart-account@1.5.0` package. Source revision:
+`dc437e8fba8b4805d76bcbd1c668c9fd3d1e83be`.
+
+The fix admits these official runtimes for an existing L1 Safe and rejects
+nonzero module Guards. It retains bytecode identities, canonical-block checks,
+EOA-quorum restrictions and version checks on setup and reopening. Mirrors remain
+1.3.0/1.4.1: the existing adapter calls the retained legacy L1 verification
+interface, but does not implement the modern contract-owner interface required
+by a 1.5.0 mirror. No production Solidity or immutable build changed.
+
+Validation of this patch:
+
+- The focused JavaScript baseline had 35 passes and three failures: both official
+  1.5.0 proxy imports and reopening a treasury with that L1 version. All 38 cases
+  pass after the change, including modified-code rejection, false versions,
+  module Guards, unsupported mirrors and exact event layouts.
+- `npm test`: **440 passed**, zero failures or skips.
+- `forge test --root contracts`: **234 passed**, zero failures or skips. The 30
+  added cases deploy the real published 1.5.0 Safe/SafeL2 bytecode and exercise
+  current-owner verification, threshold changes, official allowance modules,
+  both payment initiators and destinations, shared limits and rollback. These
+  reuse read-through EEZ manager fixtures; they are not Composer/proof tests.
+- `forge fmt --check --root contracts`, `npm run build`,
+  `npm run check:treasury-release` and `git diff --check` pass. The existing Vite
+  bundle-size warning remains. All nine preserved configuration/profile/artifact
+  hashes are unchanged, as is release
+  `3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d`.
+
+Detailed logs and the before/after RPC observation are local-only under
+`.runtime/treasury-mainnet-safe-20261022/`. This run did not repeat native EEZ
+process tests, browser wallet acceptance or a real-USDC fork rehearsal. No public
+transaction, Safe upgrade, contract deployment, service rollout or push was made.
+The updated dashboard must be published before the reported Safe works in the
+hosted setup form.

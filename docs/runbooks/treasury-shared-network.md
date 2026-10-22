@@ -6,7 +6,8 @@ operator wallets and chain data are not redeployed for this demo.
 
 Choose the deployment wallet using the dashboard's normal wallet selector.
 New setup requires an **existing Chiado Safe address** with a verified Safe /
-SafeL2 1.3.0 or 1.4.1 implementation, including **1.3.0+L2**. Its owners and threshold are retained. On EEZ-X,
+SafeL2 1.3.0, 1.4.1 or 1.5.0 implementation, including **1.3.0+L2**. Its owners and
+threshold are retained. Existing EEZ-X mirrors support 1.3.0 and 1.4.1. On EEZ-X,
 deploy a mirror Safe using the L1 owner adapter or reuse an existing compatible
 Safe. Add owners later by entering their addresses in **Shared owners**; the
 current Chiado quorum approves each change. Keep **100 per Safe / 150 global** per ten minutes, with no Guard.
@@ -133,6 +134,21 @@ including recovery when the wallet's transaction hash response is lost. Existing
 journals and signed requests require no migration. Older dashboard builds reject
 1.3.0 treasuries; keep the updated build while using one. Guards and unsupported
 contract-owner quorums remain explicit setup blockers.
+
+## Reusing Safe 1.5.0 on the base chain
+
+A verified Safe or SafeL2 1.5.0 can be the Chiado or Ethereum Safe. Its current
+EOA quorum authorizes the 1.4.1 mirror through the retained legacy
+`checkSignatures(bytes32,bytes,bytes)` overload. The new proxy runtime and both
+singleton runtimes are checked against published artifacts. A nonzero 1.5.0 module
+Guard blocks setup, like a transaction Guard; setup never removes either.
+
+The EEZ-X mirror must still be 1.3.0 or 1.4.1: a 1.5.0 mirror expects the modern
+ERC-1271 contract-owner interface, which the current adapter does not implement.
+This dashboard update does not deploy or upgrade any Safe, adapter or policy and
+requires no journal migration. Earlier dashboard builds reject 1.5.0 treasuries;
+retain the compatible UI while using one. See the
+[compatibility validation](../audits/2026-10-22-treasury-release/README.md#safe-150-compatibility).
 
 ## Shared asset lifecycle and compatibility
 

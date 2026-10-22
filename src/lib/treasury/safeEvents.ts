@@ -14,7 +14,7 @@ export const safeExecutionTopics = [
   encodeEventTopics({ abi: indexed, eventName: "ExecutionFailure" })[0]!,
 ];
 
-/** Safe 1.3.0 stores txHash in data; 1.4.1 indexes it. Require the exact event
+/** Safe 1.3.0 stores txHash in data; 1.4.1/1.5.0 index it. Require the exact event
  * shape so malformed or unrelated logs cannot establish execution. Callers must
  * also match the emitting Safe, reviewed hash and canonical receipt identity.
  */

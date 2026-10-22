@@ -23,10 +23,15 @@ are needed to discover these public bindings. See the
 ## What is compatible
 
 Use an existing Ethereum Safe and deploy a new mirror or connect a mirror already
-linked to it. Supported
-Safe versions remain 1.3.0 and 1.4.1, including their SafeL2 variants. The current
-wallet flow collects EOA approvals; a quorum that needs contract-owner signatures
-is not supported. Safe administration and direct spending remain under the owners'
+linked to it. Existing Ethereum Safes may use verified **1.3.0, 1.4.1 or 1.5.0**
+implementations, including their SafeL2 variants. Imported EEZ-X mirrors support
+1.3.0 and 1.4.1; new mirrors use 1.4.1. Safe 1.5.0 retains the legacy signature
+verification used by the adapter on Ethereum, but its contract-owner signature
+interface cannot use the current adapter as an EEZ-X owner. Both proxy and
+singleton bytecode are checked; a version string alone does not establish support.
+Transaction Guards, and the module Guard introduced in 1.5.0, must be absent.
+The current wallet flow collects EOA approvals; a quorum that needs contract-owner
+signatures is not supported. Safe administration and direct spending remain under the owners'
 control; this shared budget applies only to policy payments.
 
 Both Safe signing domains, both initiation directions, both payment destinations,

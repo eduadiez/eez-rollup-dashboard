@@ -10,6 +10,9 @@ export type SafeInspection = {
   adapter?: { address: Address; safeL1: Address; manager: Address };
 };
 export const SAFE_GUARD_SLOT = "0x4a204f620c8c5ccdca3fd54d003badd85ba500436a431f0cbda4f558c93c34c8";
+const SAFE_MODULE_GUARD_SLOT = "0xb104e0b93118902c651344349b610029d694cfdec91c589c91ebafbcd0289947";
+// Published @safe-global/safe-smart-account@1.5.0 SafeProxy, including metadata.
+const SAFE_150_PROXY_HASH = "0x4e381985ca68b3e5d27b4425fa581c19cf33146d3f887a3cfca96f55528ea46f";
 const sentinel = getAddress("0x0000000000000000000000000000000000000001");
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 const canonicalSingletons = new Map<Hex, string>([
@@ -19,8 +22,15 @@ const canonicalSingletons = new Map<Hex, string>([
   ["0xb1f926978a0f44a2c0ec8fe822418ae969bd8c3f18d61e5103100339894f81ff", "1.4.1"],
   ["0xbba688fbdb21ad2bb58bc320638b43d94e7d100f6f3ebaab0a4e4de6304b1c2e", "1.3.0"],
   ["0x21842597390c4c6e3c1239e434a682b054bd9548eee5e9b1d6a4482731023c0f", "1.3.0"],
+  // Official safe-deployments 8e200b0b4c72dbbfe371cbd61b3a21ae2ec4af62: Safe/SafeL2 1.5.0.
+  ["0xdda019cbd7c867a533a2a86e5c53434fdc50b13122b5a5ddb4a8df61b31c20f2", "1.5.0"],
+  ["0x180193227186ccb85316c94db1f0d156ed932b14712cfaac78901899178572dc", "1.5.0"],
 ]);
-export function supportedSafeVersion(version: unknown) { return version === "1.3.0" || version === "1.4.1"; }
+export function supportedSafeVersion(version: unknown, chain: SetupChain) {
+  // L1 1.5 retains legacy checkSignatures for EOA quorums. A 1.5 mirror instead
+  // calls modern ERC-1271, which the current L1Owners adapter does not implement.
+  return version === "1.3.0" || version === "1.4.1" || chain === "l1" && version === "1.5.0";
+}
 function check(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
 
 /** SafeProxy always terminates before its compiler metadata. Accept the same
@@ -50,12 +60,17 @@ export async function inspectSafe(d: Pick<DeploymentIO, "artifacts" | "rpc" | "r
     d.rpc<Hex>(chain, "eth_getStorageAt", [address, "0x0", block.number]),
     d.rpc<Hex>(chain, "eth_getStorageAt", [address, SAFE_GUARD_SLOT, block.number]),
   ]);
-  check(matchingSafeCode(proxy, d.artifacts.contracts.SafeProxy!.runtime), "This address is not a supported Safe proxy");
+  check(matchingSafeCode(proxy, d.artifacts.contracts.SafeProxy!.runtime) || keccak256(proxy) === SAFE_150_PROXY_HASH, "This address is not a supported Safe proxy");
   const singleton = getAddress(`0x${slot.slice(-40)}`);
   const code = await d.rpc<Hex>(chain, "eth_getCode", [singleton, block.number]);
   const implementationVersion = canonicalSingletons.get(keccak256(code))
     ?? (["Safe", "SafeL2"].some(name => matchingSafeCode(code, d.artifacts.contracts[name]!.runtime)) ? "1.4.1" : undefined);
-  check(implementationVersion, "Unsupported Safe implementation. Reuse supports verified Safe / SafeL2 1.3.0 and 1.4.1");
+  check(implementationVersion, "Unsupported Safe implementation. Reuse supports verified Safe / SafeL2 1.3.0, 1.4.1 and 1.5.0");
+  check(supportedSafeVersion(implementationVersion, chain), "EEZ-X mirrors require Safe 1.3.0 or 1.4.1 with the current owner adapter");
+  if (implementationVersion === "1.5.0") {
+    const moduleGuard = await d.rpc<Hex>(chain, "eth_getStorageAt", [address, SAFE_MODULE_GUARD_SLOT, block.number]);
+    check(BigInt(moduleGuard) === 0n, "This Safe has a module Guard. Setup will not remove it; use an unguarded Safe");
+  }
   check(BigInt(guard) === 0n, "This Safe has a transaction Guard. Setup will not remove it; use an unguarded Safe");
   const [version, owners, threshold, nonce, modules] = await Promise.all([
     d.read<string>(chain, address, "Safe", "VERSION", [], block.number),

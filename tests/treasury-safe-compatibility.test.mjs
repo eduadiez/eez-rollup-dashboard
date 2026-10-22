@@ -6,12 +6,13 @@ import { matchesRuntime } from '../src/lib/treasury/runtimeCode.ts';
 import { inspectSafe } from '../src/lib/treasury/safeSetup.ts';
 import { decodeSafeExecution, safeExecutionTopics } from '../src/lib/treasury/safeEvents.ts';
 const fixtures = JSON.parse(readFileSync(new URL('./fixtures/safe-130-runtime.json', import.meta.url)));
+const safe150 = JSON.parse(readFileSync(new URL('../contracts/test/fixtures/safe-150.json', import.meta.url)));
 const artifacts = JSON.parse(readFileSync(new URL('../src/lib/treasury/deployment-artifacts.json', import.meta.url)));
 const address = n => getAddress(toHex(n, { size: 20 }));
 const safe = address(100), singleton = address(101), owner = address(102);
 const txHash = keccak256(toHex('reviewed Safe transaction'));
 
-function inspection(contract, version = '1.3.0') {
+function inspection(contract, version = '1.3.0', proxy = artifacts.contracts.SafeProxy.runtime) {
   return {
     artifacts,
     runtimeMatches(code, name) { assert.equal(code, '0x'); assert.equal(name, 'L1Owners'); return false; },
@@ -19,7 +20,7 @@ function inspection(contract, version = '1.3.0') {
       if (method === 'eth_getBlockByNumber') return { number: '0x10', hash: txHash };
       if (method === 'eth_getStorageAt') return toHex(params[1] === '0x0' ? BigInt(singleton) : 0n, { size: 32 });
       assert.equal(method, 'eth_getCode');
-      return params[0] === safe ? artifacts.contracts.SafeProxy.runtime : params[0] === singleton ? contract.runtime : '0x';
+      return params[0] === safe ? proxy : params[0] === singleton ? contract.runtime : '0x';
     },
     async read(_chain, _address, _artifact, method) {
       return { VERSION: version, getOwners: [owner], getThreshold: 1n, nonce: 12n, getModulesPaginated: [[], address(1)] }[method];
@@ -41,11 +42,37 @@ for (const [name, contract] of Object.entries(fixtures.contracts)) {
   });
 }
 
-for (const [version, abi] of [['1.3.0+L2', fixtures.contracts.Safe130L2.abi], ['1.4.1', artifacts.contracts.Safe.abi]]) {
+for (const name of ['Safe', 'SafeL2']) {
+  const contract = safe150.contracts[name], proxy = safe150.contracts.SafeProxy;
+  test(`official 1.5.0 ${name} imports on L1 with its new proxy and preserves strict runtime checks`, async () => {
+    assert.equal(keccak256(contract.runtime), contract.codeHash);
+    assert.equal(keccak256(proxy.runtime), proxy.codeHash);
+    const d = inspection(contract, '1.5.0', proxy.runtime);
+    const imported = await inspectSafe(d, 'l1', safe);
+    assert.equal(imported.singletonHash, contract.codeHash);
+    assert.equal(imported.proxyHash, proxy.codeHash);
+    assert.deepEqual(imported.owners, [owner]); assert.equal(imported.threshold, 1);
+    // Supported singletons can also sit behind an older official proxy.
+    await inspectSafe(inspection(contract, '1.5.0'), 'l1', safe);
+    await assert.rejects(inspectSafe(inspection(contract, '1.4.1', proxy.runtime), 'l1', safe), /version does not match/);
+    await assert.rejects(inspectSafe(inspection({ ...contract, runtime: contract.runtime + '00' }, '1.5.0', proxy.runtime), 'l1', safe), /Unsupported Safe implementation/);
+    for (const changed of [proxy.runtime + '00', '0x00' + proxy.runtime.slice(4)]) {
+      await assert.rejects(inspectSafe(inspection(contract, '1.5.0', changed), 'l1', safe), /not a supported Safe proxy/);
+    }
+    // A 1.5 mirror calls modern ERC-1271, which the current adapter does not implement.
+    await assert.rejects(inspectSafe(d, 'l2', safe), /EEZ-X mirror.*1.3.0.*1.4.1/);
+    const rpc = d.rpc;
+    d.rpc = (chain, method, params) => method === 'eth_getStorageAt' && params[1] === '0xb104e0b93118902c651344349b610029d694cfdec91c589c91ebafbcd0289947'
+      ? toHex(BigInt(owner), { size: 32 }) : rpc(chain, method, params);
+    await assert.rejects(inspectSafe(d, 'l1', safe), /module Guard/);
+  });
+}
+
+for (const [version, abi] of [['1.3.0+L2', fixtures.contracts.Safe130L2.abi], ['1.4.1', artifacts.contracts.Safe.abi], ['1.5.0', safe150.contracts.Safe.abi], ['1.5.0+L2', safe150.contracts.SafeL2.abi]]) {
   for (const eventName of ['ExecutionSuccess', 'ExecutionFailure']) {
     test(`${version} ${eventName} requires its complete event layout`, () => {
       const topics = encodeEventTopics({ abi, eventName, args: { txHash } });
-      const data = version === '1.4.1' ? encodeAbiParameters([{ type: 'uint256' }], [7n])
+      const data = version !== '1.3.0+L2' ? encodeAbiParameters([{ type: 'uint256' }], [7n])
         : encodeAbiParameters([{ type: 'bytes32' }, { type: 'uint256' }], [txHash, 7n]);
       const event = decodeSafeExecution({ topics, data });
       assert.equal(event.eventName, eventName); assert.deepEqual(event.args, { txHash, payment: 7n });

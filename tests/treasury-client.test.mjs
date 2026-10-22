@@ -330,10 +330,10 @@ test('Safe singleton bindings are checked independently of proxy code and retain
     };
     client.read = async (_url, _target, _abi, name) => ({ VERSION: '1.4.1', getOwners: [config.adapter], getThreshold: 1n, safeL1: config.safeL1, manager: config.manager, safe: config.safeL2 })[name];
     if (wrong) await assert.rejects(client.validate(), /Safe implementation changed/);
-    else for (const versions of [['1.4.1', '1.4.1'], ['1.3.0', '1.4.1'], ['1.4.1', '1.3.0'], ['1.3.0', '1.3.0'], ['1.2.0', '1.4.1'], ['1.4.1', '1.3.0+L2']]) {
+    else for (const versions of [['1.4.1', '1.4.1'], ['1.3.0', '1.4.1'], ['1.4.1', '1.3.0'], ['1.3.0', '1.3.0'], ['1.5.0', '1.4.1'], ['1.5.0', '1.3.0'], ['1.2.0', '1.4.1'], ['1.4.1', '1.3.0+L2'], ['1.4.1', '1.5.0'], ['1.5.0', '1.5.0']]) {
       const read = client.read;
       client.read = async (url, target, abi, name) => name === 'VERSION' ? versions[url === config.l1.rpc ? 0 : 1] : read(url, target, abi, name);
-      if (versions.every(version => ['1.3.0', '1.4.1'].includes(version))) await client.validate();
+      if (['1.3.0', '1.4.1', '1.5.0'].includes(versions[0]) && ['1.3.0', '1.4.1'].includes(versions[1])) await client.validate();
       else await assert.rejects(client.validate(), /Safe or owner-adapter binding changed/);
       client.read = read;
     }

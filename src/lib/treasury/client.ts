@@ -232,7 +232,7 @@ export class TreasuryClient {
       this.read(c.l2.rpc, c.adapter, l1OwnersAbi, "safeL1"), this.read(c.l2.rpc, c.adapter, l1OwnersAbi, "manager"),
       c.action ? this.read(c.l2.rpc, c.action, actionAbi, "safe") : c.safeL2,
     ]);
-    requireThat(supportedSafeVersion(l1Version) && supportedSafeVersion(l2Version) && threshold === 1n && (owners as Address[]).length === 1
+    requireThat(supportedSafeVersion(l1Version, "l1") && supportedSafeVersion(l2Version, "l2") && threshold === 1n && (owners as Address[]).length === 1
       && same((owners as Address[])[0]!, c.adapter) && same(remote as string, c.safeL1) && same(manager as string, c.manager)
       && same(actionSafe as string, c.safeL2), "Safe or owner-adapter binding changed");
     await this.validatePayments();
