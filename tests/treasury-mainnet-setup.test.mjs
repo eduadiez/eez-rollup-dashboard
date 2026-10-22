@@ -6,19 +6,25 @@ import { MainnetSetup, mainnetSetupKey, mainnetManifestKey, mainnetSetupSteps, r
 import { sharedDeploymentKey, sharedManifestKey } from '../src/lib/treasury/deployment.ts';
 const json=path=>JSON.parse(readFileSync(path));
 const base=json('src/lib/treasury/deployment-artifacts.json'),current=json('src/lib/treasury/mainnet-artifacts.json'),network=json('src/lib/treasury/mainnet-network.json');
+const shared=json('src/lib/treasury/mainnet-shared-contracts.json'),release=json(`src/lib/treasury/builds/${json('src/lib/treasury/current-build.json').build}.json`);
 const artifacts={...base,contracts:{...base.contracts,...current.contracts}},addr=n=>getAddress(`0x${n.toString(16).padStart(40,'0')}`);
 const target={l1:{rpc:'http://127.0.0.1:1',front:'http://127.0.0.1:1',explorer:'https://etherscan.io'},l2:{rpc:'http://127.0.0.1:2',front:'http://127.0.0.1:2',explorer:'https://explorer.eez.dev'},fees:{l1:'1',l2:'1'}};
 function fixture(){
+ const aliasArtifact=release.contracts.TreasuryAliasReader;
+ let readerRuntime=aliasArtifact.runtime;
+ for(const slot of aliasArtifact.immutables){const start=2+slot.start*2;readerRuntime=readerRuntime.slice(0,start)+network.registry.slice(2).padStart(slot.length*2,'0')+readerRuntime.slice(start+slot.length*2);}
+ const sharedCode={ [shared.contracts.aliasReaderL1.address.toLowerCase()]:readerRuntime,[shared.contracts.moduleL1.address.toLowerCase()]:release.contracts.AllowanceModule.runtime };
+ for(const b of Object.values(shared.contracts))assert.equal(keccak256(sharedCode[b.address.toLowerCase()]),b.hash);
  const engine=new MainnetSetup(target,artifacts),safe=addr(100),singleton=addr(101),deployer=addr(200),block={number:'0xa',hash:zeroHash};
  engine.validate=async()=>{};
  engine.io.rpc=async(chain,method,params)=>{
   if(method==='eth_getBlockByNumber')return block;
   if(method==='eth_getStorageAt')return params[1]==='0x0'?toHex(BigInt(singleton),{size:32}):zeroHash;
-  if(method==='eth_getCode')return params[0]===safe?artifacts.contracts.SafeProxy.runtime:params[0]===singleton?artifacts.contracts.Safe.runtime:'0x';
+  if(method==='eth_getCode')return params[0]===safe?artifacts.contracts.SafeProxy.runtime:params[0]===singleton?artifacts.contracts.Safe.runtime:sharedCode[params[0].toLowerCase()]??'0x';
   if(method==='eth_getTransactionCount')return '0x4';
   throw Error(method);
  };
- engine.io.read=async(chain,address,name,method)=>({VERSION:'1.4.1',getOwners:[deployer],getThreshold:1n,nonce:0n,getModulesPaginated:[[],addr(1)],sequence:1n,owner:deployer,closed:false}[method]);
+ engine.io.read=async(chain,address,name,method)=>({VERSION:'1.4.1',getOwners:[deployer],getThreshold:1n,nonce:0n,getModulesPaginated:[[],addr(1)],sequence:1n,owner:deployer,closed:false,registry:network.registry,isModuleEnabled:false}[method]);
  return {engine,safe,singleton,deployer};
 }
 test('mainnet eligibility uses the selected network, not a treasury Safe or wallet',()=>{
@@ -30,7 +36,7 @@ test('mainnet eligibility uses the selected network, not a treasury Safe or wall
 test('selection preserves the entered Safe, its owner threshold and a different deployer',async()=>{
  const {engine,safe,deployer}=fixture(),s=await engine.configure(addr(201),safe);
  assert.equal(s.addresses.safeL1,safe);assert.equal(s.deployer,addr(201));assert.notEqual(s.deployer,deployer);
- assert.equal(s.completed.length,0);assert.equal(s.addresses.safeL2,undefined);assert.equal(s.code.length,2);
+ assert.equal(s.completed.length,0);assert.equal(s.addresses.safeL2,undefined);assert.equal(s.code.length,4);
  assert.deepEqual(readMainnetSetup(JSON.stringify(s)),s);
  assert.throws(()=>readMainnetSetup(JSON.stringify({...s,identity:zeroHash})),/Invalid Ethereum setup/);
 });
@@ -38,11 +44,11 @@ test('Ethereum preparation deploys bounded authority without creating, funding o
  const {engine,safe,deployer}=fixture(),s=await engine.configure(deployer,safe),batch=await engine.batch(s,'0x4');
  const artifact=artifacts.contracts.TreasuryBootstrap;
  const [owner,actions]=decodeAbiParameters(artifact.abi.find(x=>x.type==='constructor').inputs,`0x${batch.data.slice(artifact.bytecode.length)}`);
- assert.equal(owner.toLowerCase(),deployer.toLowerCase());assert.equal(actions.length,4);assert(actions.every(x=>x.create));
- assert.deepEqual(batch.outputs.map(x=>x.key),['bootstrapL1','aliasReaderL1','moduleL1','multiSendL1','bridgeExecutorL1']);
+ assert.equal(owner.toLowerCase(),deployer.toLowerCase());assert.equal(actions.length,2);assert(actions.every(x=>x.create));
+ assert.deepEqual(batch.outputs.map(x=>x.key),['bootstrapL1','multiSendL1','bridgeExecutorL1']);
  const funding=actions.at(-1),a=artifacts.contracts.StandardBridgeDelegate;
  const args=decodeAbiParameters(a.abi.find(x=>x.type==='constructor').inputs,`0x${funding.data.slice(a.bytecode.length)}`);
- assert.equal(args[0].toLowerCase(),safe.toLowerCase());assert.equal(args[2].toLowerCase(),network.contracts.usdcProxy.address.toLowerCase());
+ assert.equal(args[0].toLowerCase(),safe.toLowerCase());assert.equal(args[1].toLowerCase(),shared.contracts.moduleL1.address.toLowerCase());assert.equal(args[2].toLowerCase(),network.contracts.usdcProxy.address.toLowerCase());
  assert.equal(args[3].toLowerCase(),network.contracts.bridgeL1.address.toLowerCase());assert.equal(args[4],1n);
  assert.equal(batch.executor,getContractAddress({from:deployer,nonce:4n}));assert((batch.data.length-2)/2<49152);
 });
@@ -74,4 +80,87 @@ test('setup confirmation rejects a different replacement transaction',async()=>{
    method==='eth_getTransactionByHash'?{from:deployer,to:null,input:'0x5678',nonce:'0x1',value:'0x0'}:{hash:zeroHash};
  await assert.rejects(engine.reconcile(s),/replaced with different work/);
  assert.equal(s.completed.length,0);
+});
+
+
+test('new Ethereum treasuries reuse the same verified helpers across wallets and Safes',async()=>{
+ const {engine,safe}=fixture(),first=await engine.configure(addr(201),safe),otherSafe=addr(103),rpc=engine.io.rpc;
+ engine.io.rpc=(chain,method,params)=>rpc(chain,method,method==='eth_getCode'&&params[0]===otherSafe?[safe,...params.slice(1)]:params);
+ const second=await engine.configure(addr(202),otherSafe);
+ assert.equal(first.addresses.safeL1,safe);assert.equal(second.addresses.safeL1,otherSafe);
+ for(const s of [first,second])for(const [key,binding] of Object.entries(shared.contracts)){
+  assert.equal(s.addresses[key],binding.address);
+  assert(s.code.some(b=>b.chain==='l1'&&b.address===binding.address&&b.hash===binding.hash));
+ }
+ assert.notEqual(first.salt,second.salt);
+ assert.equal(mainnetSetupKey,`eez:treasury:ethereum-setup:${keccak256(toHex(JSON.stringify(network)))}`);
+});
+
+test('shared helper inspection rejects missing or changed code, wrong registry, RPC uncertainty and reorgs',async()=>{
+ for(const key of Object.keys(shared.contracts))for(const changed of ['0x','0x6000']){
+  const {engine,safe,deployer}=fixture(),rpc=engine.io.rpc;
+  engine.io.rpc=(chain,method,params)=>method==='eth_getCode'&&params[0].toLowerCase()===shared.contracts[key].address.toLowerCase()?changed:rpc(chain,method,params);
+  await assert.rejects(engine.configure(deployer,safe),/Shared Ethereum .* code/);
+ }
+ {
+  const {engine,safe,deployer}=fixture(),read=engine.io.read;
+  engine.io.read=(chain,address,name,method)=>method==='registry'?addr(999):read(chain,address,name,method);
+  await assert.rejects(engine.configure(deployer,safe),/alias reader.*registry/);
+ }
+ {
+  const {engine,safe,deployer}=fixture(),rpc=engine.io.rpc;
+  engine.io.rpc=(chain,method,params)=>{if(method==='eth_getCode'&&params[0]===shared.contracts.moduleL1.address)throw Error('RPC unavailable');return rpc(chain,method,params);};
+  await assert.rejects(engine.configure(deployer,safe),/RPC unavailable/);
+ }
+ {
+  const {engine,safe,deployer}=fixture(),rpc=engine.io.rpc;let helpersRead=false;
+  engine.io.rpc=(chain,method,params)=>{
+   if(method==='eth_getCode'&&params[0]===shared.contracts.moduleL1.address)helpersRead=true;
+   if(helpersRead&&method==='eth_getBlockByNumber'&&params[0]!=='latest')return {number:'0xa',hash:`0x${'ff'.repeat(32)}`};
+   return rpc(chain,method,params);
+  };
+  await assert.rejects(engine.configure(deployer,safe),/Shared Ethereum contracts changed/);
+ }
+});
+
+test('saved setup plans keep their own helper addresses and original deployment batch',async()=>{
+ const {engine,safe,deployer}=fixture(),fresh=await engine.configure(deployer,safe);
+ const old=structuredClone(fresh);
+ for(const key of Object.keys(shared.contracts))delete old.addresses[key];
+ old.code=old.code.filter(b=>!Object.values(shared.contracts).some(c=>c.address===b.address));
+ const saved=readMainnetSetup(JSON.stringify(old)),batch=await engine.batch(saved,'0x4');
+ assert.deepEqual(batch.outputs.map(x=>x.key),['bootstrapL1','aliasReaderL1','moduleL1','multiSendL1','bridgeExecutorL1']);
+ assert.deepEqual(saved,old);
+ const resumed={...saved,addresses:{...saved.addresses,aliasReaderL1:addr(301),moduleL1:addr(302)}};
+ const resumedBatch=await engine.batch(readMainnetSetup(JSON.stringify(resumed)),'0x4');
+ assert(!resumedBatch.outputs.some(o=>['aliasReaderL1','moduleL1'].includes(o.key)));
+ assert.equal(resumed.addresses.moduleL1,addr(302));assert.equal(resumed.addresses.aliasReaderL1,addr(301));
+});
+
+function safeBatchCalls(tx){
+ const packed=decodeFunctionData({abi:artifacts.contracts.MultiSendCallOnly.abi,data:tx.message.data}).args[0].slice(2),calls=[];
+ for(let start=0;start<packed.length;){
+  const length=Number(BigInt('0x'+packed.slice(start+106,start+170)))*2;
+  calls.push({to:getAddress('0x'+packed.slice(start+2,start+42)),data:'0x'+packed.slice(start+170,start+170+length)});start+=170+length;
+ }
+ return calls;
+}
+test('Safe approvals preserve old batches and skip module enablement only when already enabled',async()=>{
+ const {engine,safe,deployer}=fixture(),s=await engine.configure(deployer,safe);
+ Object.assign(s.addresses,{moduleL1:shared.contracts.moduleL1.address,bridgeExecutorL1:addr(301),alias:addr(302),multiSendL1:addr(303)});
+ s.completed=Array.from({length:4},()=>({hash:zeroHash,chain:'l1',number:'0xa',blockHash:zeroHash}));
+ engine.unchanged=async()=>{};
+ const read=engine.io.read;let enabled=false;
+ engine.io.read=(chain,address,name,method)=>method==='isModuleEnabled'?enabled:read(chain,address,name,method);
+ const initial=await engine.review(s),before=safeBatchCalls(engine.tx(s,initial));
+ assert.equal(before.length,4);
+ assert.equal(decodeFunctionData({abi:artifacts.contracts.Safe.abi,data:before[0].data}).functionName,'enableModule');
+ const legacy={...initial};delete legacy.moduleEnabled;assert.deepEqual(engine.tx(s,initial),engine.tx(s,legacy));
+ s.review=initial;enabled=true;
+ await assert.rejects(engine.currentReview(s),/Owners, threshold, Safe nonce or module configuration changed/);
+ const current=await engine.review(s),after=safeBatchCalls(engine.tx(s,current));
+ assert.equal(current.moduleEnabled,true);assert.deepEqual(after,before.slice(1));
+ assert.notEqual(current.hash,initial.hash);s.review=current;
+ assert.deepEqual(await engine.currentReview(s),current);
+ assert.throws(()=>readMainnetSetup(JSON.stringify({...s,review:{...current,moduleEnabled:'true'}})),/Invalid setup approvals/);
 });

@@ -97,12 +97,31 @@ transaction. The connected deployment wallet can differ from the Safe owners.
 
 The six transactions are:
 
-1. Prepare the Ethereum allowance module, alias reader and bounded funding delegate.
+1. Reuse the shared Ethereum allowance module and alias reader; deploy the setup executor and this Safe’s bounded funding delegate.
 2. Deploy or connect the EEZ-X mirror and live owner adapter, reusing verified Safe infrastructure where available.
 3. Deploy the EEZ-X allowance module and shared policy using the existing bridge.
 4. Register the mirror, adapter and policy aliases on Ethereum.
 5. Collect the Ethereum Safe quorum and approve its 100-USDC allowance and delegate binding.
 6. Collect the mirror Safe quorum, then submit through Ethereum to approve its 100-USDC allowance.
+
+New Ethereum setups use the predeployed addresses in
+[`mainnet-shared-contracts.json`](../../src/lib/treasury/mainnet-shared-contracts.json).
+The alias reader is bound to this EEZ registry; the official allowance module
+keeps independent state for each Safe, delegate and token. Setup checks both full
+runtime hashes and the reader's registry at one canonical block, then saves those
+identities in the treasury manifest. Missing or inconsistent code, RPC failures
+or reorgs stop selection; they never trigger replacement deployments.
+
+The shared addresses are kept outside `mainnet-network.json`, whose hash identifies
+saved browser journals. Only **Start setup** adopts them. Pending and completed
+setups retain their original helpers, CREATE addresses and transaction bytes.
+No `.env` change, Safe upgrade or treasury migration is needed. A Safe that already
+has the module enabled skips `enableModule`; the owner-signed batch still grants
+the new delegate its own allowance. Changes to module enablement invalidate a
+previous review. Existing delegates and their spending counters are retained.
+Keep this UI version while completing a new setup: older versions always include
+`enableModule` and cannot prepare the already-enabled-module approval correctly.
+The EEZ-X module deployment and the Chiado planner keep their existing behavior.
 
 The last two steps require Safe signatures in addition to the submitting wallet's
 transaction confirmation. The shared limit is 150 USDC per ten minutes. Setup
@@ -130,6 +149,11 @@ setup transactions have **not been broadcast to Ethereum**. The native rehearsal
 below deploys the same policy/delegate and exercises real signatures, payments,
 rollback and independent replay on owned chains; it is not a certification of a
 wallet extension or the public Safe application.
+
+Source verification runs independently of wallet confirmations. **Contract sources
+verified** means every discovered contract has a full explorer verification or
+an exact Sourcify match. Explorer publication can continue in the expanded details;
+an unresolved verification job still prevents the completion heading.
 
 ## Optional operator manifest import
 

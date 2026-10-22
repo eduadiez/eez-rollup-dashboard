@@ -14,6 +14,7 @@ import { quoteCrossChainFees } from "../fees/payment.mjs";
 import { probeComposer } from "../composerDiscovery.ts";
 import official from "./official-safe-deployments.json" with { type: "json" };
 import network from "./mainnet-network.json" with { type: "json" };
+import sharedContracts from "./mainnet-shared-contracts.json" with { type: "json" };
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 function check(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
@@ -22,7 +23,7 @@ const identity = keccak256(toHex(JSON.stringify(network)));
 export const mainnetSetupKey = `eez:treasury:ethereum-setup:${identity}`;
 export const mainnetManifestKey = `${mainnetSetupKey}:manifest`;
 export const mainnetSetupSteps = [
-  { label: "Prepare Ethereum spending", chain: "l1", details: ["Reuse the selected Ethereum Safe", "Deploy its bounded funding delegate and allowance module", "Reuse a verified Safe batch helper where available"] },
+  { label: "Prepare Ethereum spending", chain: "l1", details: ["Reuse the selected Ethereum Safe", "Connect the allowance module and alias reader", "Deploy this Safe’s bounded funding delegate", "Reuse a verified Safe batch helper where available"] },
   { label: "Connect your mirror Safe", chain: "l2", details: ["Deploy or connect the EEZ-X mirror", "Verify approvals against the current Ethereum owners", "Preserve the Ethereum Safe’s owners and threshold"] },
   { label: "Create the shared budget", chain: "l2", details: ["Deploy the shared 150-USDC policy", "Connect the existing USDC bridge", "Prepare the EEZ-X allowance module"] },
   { label: "Connect Ethereum execution", chain: "l1", details: ["Register the mirror and policy’s Ethereum aliases", "Connect live owner verification"] },
@@ -30,7 +31,7 @@ export const mainnetSetupSteps = [
   { label: "Approve EEZ-X spending", chain: "l1", details: ["Authorize the policy through the official allowance module", "Set 100 USDC per ten minutes", "Sign for the mirror Safe and submit through Ethereum"] },
 ] as const;
 type Output = { key: string; address: Address; artifact?: string; hash?: Hex };
-type Review = { step: number; chain: Chain; nonce: string; owners: Address[]; threshold: number; fingerprint: string; hash: Hex; approvals: Approval[] };
+type Review = { step: number; chain: Chain; nonce: string; owners: Address[]; threshold: number; fingerprint: string; hash: Hex; approvals: Approval[]; moduleEnabled?: boolean };
 type Pending = DeploymentPending & { outputs: Output[]; actionsHash?: Hex; executor?: Address; sequence?: string; closed?: boolean; safe?: Address; safeChain?: Chain };
 export type MainnetSetupState = { build?: string; sourceRequests?: SourceRequest[]; version: 1 | 2; identity: Hex; salt: Hex; deployer: Address; addresses: Record<string, Address>; code: TreasuryConfig["code"];
   completed: { hash: Hex; chain: Chain; number: Hex; blockHash: Hex }[]; pending?: Pending; review?: Review };
@@ -52,7 +53,8 @@ export function readMainnetSetup(raw: string | null): MainnetSetupState | null {
     && (!s.pending.hash || digest(s.pending.hash)) && (!s.pending.to || isAddress(s.pending.to)) && Array.isArray(s.pending.outputs)
     && s.pending.outputs.every(x => isAddress(x.address) && typeof x.key === "string"), "Invalid pending Ethereum setup");
   if (s.review) check(s.review.step === s.completed.length && s.review.owners.every(a => isAddress(a)) && digest(s.review.hash)
-    && s.review.threshold > 0 && s.review.threshold <= s.review.owners.length && Array.isArray(s.review.approvals), "Invalid setup approvals");
+    && s.review.threshold > 0 && s.review.threshold <= s.review.owners.length && Array.isArray(s.review.approvals)
+    && (s.review.moduleEnabled === undefined || typeof s.review.moduleEnabled === "boolean"), "Invalid setup approvals");
   return s;
 }
 export function loadMainnetManifest(storage: Pick<Storage, "getItem">) {
@@ -121,6 +123,21 @@ export class MainnetSetup {
       const bytes = await this.io.rpc<Hex>(chain, "eth_getCode", [item.address, "latest"]);
       if (keccak256(bytes) === item.codeHash) { addresses[key] = getAddress(item.address); code.push({ chain, address: getAddress(item.address), hash: item.codeHash as Hex }); }
     }
+    // Only new selections adopt shared helpers. Saved plans retain their addresses,
+    // CREATE nonces and approvals; the network identity/storage key stays unchanged.
+    check(sharedContracts.chainId === network.chains.l1.chainId && same(sharedContracts.registry, network.registry), "Shared Ethereum contracts belong to a different network");
+    const block = await this.io.rpc<{ number: Hex; hash: Hex }>("l1", "eth_getBlockByNumber", ["latest", false]);
+    check(block?.number && block.hash, "Shared Ethereum contracts are unavailable");
+    for (const [key, binding] of Object.entries(sharedContracts.contracts)) {
+      const address = getAddress(binding.address);
+      const bytes = await this.io.rpc<Hex>("l1", "eth_getCode", [address, block.number]);
+      check(bytes !== "0x" && keccak256(bytes) === binding.hash, `Shared Ethereum ${key === "moduleL1" ? "allowance module" : "alias reader"} code is unavailable or changed`);
+      addresses[key] = address; code.push({ chain: "l1", address, hash: binding.hash as Hex });
+    }
+    const registry = await this.io.read<Address>("l1", addresses.aliasReaderL1!, "TreasuryAliasReader", "registry", [], block.number);
+    check(same(registry, network.registry), "Shared Ethereum alias reader uses a different registry");
+    const again = await this.io.rpc<{ hash: Hex }>("l1", "eth_getBlockByNumber", [block.number, false]);
+    check(again?.hash === block.hash, "Shared Ethereum contracts changed during inspection; try again");
     return { ...(this.artifacts.build ? { build: this.artifacts.build } : {}), version: this.artifacts.build ? 2 : 1, identity, salt: toHex(crypto.getRandomValues(new Uint8Array(32))), deployer: getAddress(deployer), addresses, code, completed: [] };
   }
   async unchanged(s: MainnetSetupState) {
@@ -143,7 +160,9 @@ export class MainnetSetup {
     const chain = review.chain, suffix = chain === "l1" ? "L1" : "L2", a = s.addresses, safe = a[`safe${suffix}`]!, module = a[`module${suffix}`]!;
     const delegate = chain === "l1" ? a.bridgeExecutorL1! : a.policy!, token = chain === "l1" ? network.contracts.usdcProxy.address : network.contracts.wrappedUSDC.address;
     const call = (to: Address, name: string, method: string, args: unknown[]) => ({ to, data: encodeFunctionData({ abi: this.io.abi(name), functionName: method, args }) });
-    const calls = [call(safe, "Safe", "enableModule", [module]), call(module, "AllowanceModule", "addDelegate", [delegate]),
+    // Reusing a shared module on an existing Safe must not try to enable it twice.
+    // The observed state changes the signed batch hash and is rechecked before submission.
+    const calls = [...(review.moduleEnabled ? [] : [call(safe, "Safe", "enableModule", [module])]), call(module, "AllowanceModule", "addDelegate", [delegate]),
       call(module, "AllowanceModule", "setAllowance", [delegate, token, 100_000_000n, 10, 10])];
     if (chain === "l1") calls.push(call(delegate, "StandardBridgeDelegate", "bindPolicy", [a.alias]));
     return buildSafeTransaction({ chainId: BigInt(network.chains[chain].chainId), safe, to: a[`multiSend${suffix}`]!, operation: 1, nonce: BigInt(review.nonce),
@@ -157,12 +176,13 @@ export class MainnetSetup {
     const local = chain === "l1" ? owners : await inspectSafe(this.io, "l2", s.addresses.safeL2!);
     if (chain === "l2") check(local.adapter && same(local.adapter.address, s.addresses.adapter!) && same(local.adapter.safeL1, owners.address), "The mirror’s owner connection changed");
     const r: Review = { step: s.completed.length, chain, nonce: local.nonce, owners: owners.owners, threshold: owners.threshold,
-      fingerprint: ownerFingerprint(owners.owners, owners.threshold), hash: zeroHash, approvals: [] };
+      fingerprint: ownerFingerprint(owners.owners, owners.threshold), hash: zeroHash, approvals: [],
+      moduleEnabled: await this.io.read<boolean>(chain, local.address, "Safe", "isModuleEnabled", [s.addresses[chain === "l1" ? "moduleL1" : "moduleL2"]!], local.block) };
     r.hash = safeTransactionHash(this.tx(s, r)); return r;
   }
   async currentReview(s: MainnetSetupState) {
     const fresh = await this.review(s);
-    check(s.review && s.review.hash === fresh.hash && s.review.fingerprint === fresh.fingerprint, "Owners, threshold or Safe nonce changed. Review this step again");
+    check(s.review && s.review.hash === fresh.hash && s.review.fingerprint === fresh.fingerprint, "Owners, threshold, Safe nonce or module configuration changed. Review this step again");
     return s.review;
   }
   async approve(s: MainnetSetupState, provider: EthereumProvider) {

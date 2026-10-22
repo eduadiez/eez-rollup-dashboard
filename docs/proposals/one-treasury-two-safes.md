@@ -19,6 +19,27 @@ presenter instructions, use the [shared-network](../runbooks/treasury-shared-net
 [mainnet](../runbooks/treasury-mainnet.md) and [rehearsal](../runbooks/treasury-rehearsal.md)
 runbooks. Evidence from an earlier milestone does not validate a later build.
 
+## Accepted shared Ethereum helpers (2026-10-22)
+
+For new mainnet treasuries, reuse the verified Ethereum allowance module and
+registry-bound alias reader already deployed by the first setup. Pin their full
+runtime identities separately from the existing network identity, verify their
+canonical code and registry binding at selection, and carry the hashes into the
+manifest. Failed reads or changed code must not fall back to new deployments.
+Keep the treasury-specific funding delegate and deployment executor. Preserve
+saved setup addresses, transaction bytes and current Chiado behavior.
+
+An already-enabled module must not be enabled twice. Include that observed state
+in the reviewed Safe batch and invalidate approvals if it changes; configuring a
+new delegate must preserve all existing delegates and counters. Source verification
+is complete on an exact Sourcify match even if explorer publication is pending.
+Unresolved jobs remain visibly incomplete and continue retrying.
+
+Acceptance: verify the live shared helpers without broadcasts; test reuse across
+new selections, rejection of missing/changed code and registry/reorg/RPC failures,
+old-plan preservation, module-enable review invalidation, independent allowances
+in real Safe/module contracts, and browser completion with pending publication.
+
 ## Accepted existing-mainnet-bridge integration (2026-10-22)
 
 Use the bridge pair and canonical USDC discovered from the existing mainnet
