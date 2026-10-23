@@ -18,14 +18,15 @@ public diagnostic messages; raw provider errors remain server-side.
 
 The dashboard uses `service/server.mjs`, which imports the engine directly.
 Configuration comes from the shared root `.env` and exported variables. To run
-locally once dependencies are available:
+locally with the Node version in the repository root `.nvmrc`:
 
 ```sh
+npm ci --prefix trace-decoder --ignore-scripts
 node trace-decoder/service/server.mjs
 ```
 
-It binds to `127.0.0.1:18081` by default. Compose binds internally on port 8080;
-the host-network overlay uses loopback port 18081. `EEZ_TRACE_HOST` and
+It binds to `127.0.0.1:18082` by default. Compose binds internally on port 8080;
+the host-network overlay uses loopback port 18082. `EEZ_TRACE_HOST` and
 `EEZ_TRACE_PORT` override the listener. `EEZ_TRACE_TIMEOUT_MS` (default 120000)
 and `EEZ_TRACE_CONCURRENCY` (default 2, maximum 4) bound worker jobs.
 
@@ -320,10 +321,24 @@ The default decoder suite requires its declared `ethers` dependency and uses
 self-contained fixtures. API lifecycle and React row-selection tests are in
 `tests/service.test.mjs` and `tests/rows.test.mjs`; `tests/source-chain.test.mjs`
 covers source selection. The dashboard's `tests/trace-details.cjs` provides a
-mocked Playwright flow for the React page (requires an already-running dashboard).
+mocked Playwright flow for the React page. It starts an isolated Vite server by
+default; `EEZ_UI_URL` can select an existing test server instead.
 
 ```sh
-cd trace-decoder && npm test
+npm ci --prefix trace-decoder --ignore-scripts
+npm test --prefix trace-decoder
+npm audit --prefix trace-decoder --audit-level=high
+node tests/trace-details.cjs
+```
+
+CI runs these checks in addition to the dashboard and treasury suites. It builds
+the decoder image and runs `node tests/trace-services.mjs` to check the Compose
+configuration, Vite proxy targets, and real decoder listeners in an isolated
+container alongside the treasury-verification port. To run that check locally:
+
+```sh
+docker build -t eez-trace-decoder:check trace-decoder
+node tests/trace-services.mjs
 ```
 
 The optional `npm run test:legacy` suite still expects compiled `EEZ` / `EEZL2`

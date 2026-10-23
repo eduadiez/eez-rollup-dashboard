@@ -1,0 +1,303 @@
+{
+  "browserChecks": [
+    "hidden navigation",
+    "live owners and threshold",
+    "network switch",
+    "non-owner blocked",
+    "wallet signature rejection",
+    "duplicate approval blocked",
+    "incomplete quorum blocked",
+    "edit clears signatures",
+    "owner addition clears stale review",
+    "removal clears stale review",
+    "EIP-712 approvals",
+    "one submission per action",
+    "wallet submission cancellation",
+    "reload reconciliation",
+    "lost-response recovery",
+    "canonical Safe success",
+    "independent follower",
+    "mobile layout"
+  ],
+  "cases": [
+    {
+      "actionValue": "42",
+      "blockHash": "0xc896a9ac02b4bac60d531a0057cb0df0e50cbf60351c7ec68724f32e0ba37e78",
+      "blockNumber": 170,
+      "l1Verification": {
+        "blockHash": "0xed78489127a576ffdb37ea5287bf4f2259122ea191787b96a63c766e3d3965db",
+        "blockNumber": 33,
+        "calldataHash": "0x07b90741fcb95af30c9c155cfc8ecce6eebfb9db78133cc3f3e2df4899104463",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0x8583d3c60cd7dea639e567e2ad27cc19906abb0299ae4e3b8af6c7e8b3ad45bf",
+        "transaction": "0xb3c1d3e70f58bb726d08142321d27f38e91b6128712b198f6c545397fa959f87"
+      },
+      "label": "Browser B+C approval, submission and reload reconciliation",
+      "safeHash": "0x8583d3c60cd7dea639e567e2ad27cc19906abb0299ae4e3b8af6c7e8b3ad45bf",
+      "safeNonce": "4",
+      "transaction": "0x06c51bfb86244c2fb9927d76764ea1c7a4f62408c96a16f1817dd78c163ffa45"
+    },
+    {
+      "actionValue": "43",
+      "blockHash": "0x49bf423dc59f21faba3e720b5743c202a74c6bc650639daac06157a0f93f21e4",
+      "blockNumber": 180,
+      "l1Verification": {
+        "blockHash": "0x47318b5dc227ad8f363302058a0e31b6d6b98349d5970fcfd3a3912e3290256f",
+        "blockNumber": 35,
+        "calldataHash": "0x9c1bf987f59dcf640103fb231ca2313fb7eeabbbab91f0974ad147054760e7d4",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0xe56b25f0cf1ee73abd4f849a75f03710b3e6a9071f86ce95be6db2e5c40e1f11",
+        "transaction": "0x807edf1aacfb554c55fa210b04c513857fa4be90eb884c75e3502a1d88e118f7"
+      },
+      "label": "Browser A+B after removing C",
+      "safeHash": "0xe56b25f0cf1ee73abd4f849a75f03710b3e6a9071f86ce95be6db2e5c40e1f11",
+      "safeNonce": "5",
+      "transaction": "0xd04d4d0a66d1c98bac2c356bdc5d88b64aa2cae3768900eac3694287280333e3"
+    },
+    {
+      "blockHash": "0xae6280cd28e64f3b06b6d641df1243cd6ce55effe3352931bf4352d8954d3d17",
+      "blockNumber": 190,
+      "l1Verification": {
+        "blockHash": "0x0f93b0f47945d1df1151b1b7e1311b291f60ab7f8e26e56850689152f3a13e94",
+        "blockNumber": 37,
+        "calldataHash": "0xc54dbaf0ad13a27bc1fcd0b28a032682b6743e95a31c7e8515cac157f8bf367a",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0xfbaf81d0060deae03040e31969366efbdbd2c7a7daba675baeff5b18ea2a5ada",
+        "transaction": "0x1be8a6f8ddfa9ed1f379f69fbc28616eba5f52568a659aab149a7ce008f321af"
+      },
+      "label": "Pay 40 on EEZ-X",
+      "safeHash": "0xfbaf81d0060deae03040e31969366efbdbd2c7a7daba675baeff5b18ea2a5ada",
+      "snapshot": {
+        "aliasBalance": "0",
+        "allowanceL1": [
+          "100000000",
+          "0",
+          "10",
+          "29874990",
+          "1"
+        ],
+        "allowanceL2": [
+          "100000000",
+          "40000000",
+          "10",
+          "29874990",
+          "2"
+        ],
+        "balanceL1": "300000000",
+        "balanceL2": "110000000",
+        "epoch": "2987499",
+        "escrow": "150000000",
+        "policyBalance": "0",
+        "recipientL1": "0",
+        "recipientL2": "40000000",
+        "safeNonce": "6",
+        "spent": "40000000",
+        "supply": "150000000"
+      },
+      "transaction": "0x307842f3480c5fa802e80833d4d417f32b7e9c31636264f88a7a48481cb31363"
+    },
+    {
+      "blockHash": "0xa141d6e38bc05054c65ad5d813839afa234a84e55a851ec317d41e00084bbb80",
+      "blockNumber": 200,
+      "l1Verification": {
+        "blockHash": "0xb846347fda012c8f5d329f6b7ab3c5c3be530b5e2610fe120787995f94a8b4ec",
+        "blockNumber": 39,
+        "calldataHash": "0xb6ab7a7d05785f99272a003c7c23ae5625f656b71dc91fa7c7c27c2342afa7e1",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0x35f54909ee6f39bcddb93efb4508b07c21e44d136cb3060ccfa1e501f95b1223",
+        "transaction": "0x6b70c78d6c7a15a10d2df14fb5d4b4c8786a8d8e7178f567189838c53b6d81dc"
+      },
+      "label": "Split 110 to L1",
+      "safeHash": "0x35f54909ee6f39bcddb93efb4508b07c21e44d136cb3060ccfa1e501f95b1223",
+      "snapshot": {
+        "aliasBalance": "0",
+        "allowanceL1": [
+          "100000000",
+          "100000000",
+          "10",
+          "29874990",
+          "2"
+        ],
+        "allowanceL2": [
+          "100000000",
+          "50000000",
+          "10",
+          "29874990",
+          "3"
+        ],
+        "balanceL1": "200000000",
+        "balanceL2": "100000000",
+        "epoch": "2987499",
+        "escrow": "140000000",
+        "policyBalance": "0",
+        "recipientL1": "110000000",
+        "recipientL2": "40000000",
+        "safeNonce": "7",
+        "spent": "150000000",
+        "supply": "140000000"
+      },
+      "transaction": "0xb40d47f17c3e9b6466b4a4de3de06a498ac7649eee14559704864e8c716c5068"
+    },
+    {
+      "compositionTrace": "0x7414c49b821d1eef43bfbdb6a7a7b83c8627bc8078caa2f000d42a5062dbf6be-admission_execution-58513-1792499804011973947-20.jsonl",
+      "disposition": "PoolDiscarded",
+      "error": "GlobalLimit()",
+      "label": "Extra 1 rejected by the independent global budget",
+      "safeHash": "0xcc29831f1ca52c1521b4eaf7a12e50e14f6ebfe8d8277f66bae2b76143338651",
+      "snapshot": {
+        "aliasBalance": "0",
+        "allowanceL1": [
+          "100000000",
+          "100000000",
+          "10",
+          "29874990",
+          "2"
+        ],
+        "allowanceL2": [
+          "100000000",
+          "50000000",
+          "10",
+          "29874990",
+          "3"
+        ],
+        "balanceL1": "200000000",
+        "balanceL2": "100000000",
+        "epoch": "2987499",
+        "escrow": "140000000",
+        "policyBalance": "0",
+        "recipientL1": "110000000",
+        "recipientL2": "40000000",
+        "safeNonce": "7",
+        "spent": "150000000",
+        "supply": "140000000"
+      },
+      "transaction": "0x7414c49b821d1eef43bfbdb6a7a7b83c8627bc8078caa2f000d42a5062dbf6be"
+    }
+  ],
+  "contracts": {
+    "action": "0x1cfd8455f189c56a4fbd81eb7d4118db04616ba8",
+    "adapter": "0x82b769500e34362a76df81150e12c746093d954f",
+    "adapterAlias": "0x017d182bD3C160cC8381D51863E5b864A9783ad9",
+    "manager": "0x4b2760f84b83d6b3829e30a7573b0172b6d6402c",
+    "safeL1": "0x161A96E9b189d573560CCe2A5BeE72f10A8100F6",
+    "safeL2": "0x8236A0A16720511069Af4D406B8b2826bD8C0833"
+  },
+  "deployments": {
+    "l1:0x591b594f01ae53bff6fb44c5da0a16a62c2f3f6c": {
+      "codeHash": "0xabfc852e36370fe3da1eea0550aa998e76c4863bffe4cf675df7f8597d9415c7",
+      "transaction": "0x1d1f044cad31d14da73c8c3a3ee9e31f9767b36d1fa8ca673701e9f7fbe86ec4"
+    },
+    "l1:0x7ef8e99980da5bcedcf7c10f41e55f759f6a174b": {
+      "codeHash": "0x3b3c721001965f70a18fc113f8bbcaa323d307a078d92615178fce15df9347a5",
+      "transaction": "0x842e0f1e7b304e0ceba2dd7bf6069ed118928340a7654cb5b6aa8bcbee1e0d71"
+    },
+    "l1:0x82b769500e34362a76df81150e12c746093d954f": {
+      "codeHash": "0x54fdc0f05ea1402773651d5de2a6692776f5ee2087d1ef57a2d625170082ed83",
+      "transaction": "0xa83f91876f531b77df85e0f1614c73b947f6f925699d3f569186438134397bb2"
+    },
+    "l1:0x973adb9de34c974c3a421a870203c5be9059e9fa": {
+      "codeHash": "0x1a216d49214c50cd4bb00f216100778e4859b675ccbdf0da3396ea77f21cc5bd",
+      "transaction": "0x67a7a63a24858c2ac3a19ee348c6699b68c6af795072ad9449db733aac170fd1"
+    },
+    "l1:0xa28e65b0444392c7f591a321f9802d900a3229bc": {
+      "codeHash": "0xc176516783a19611f61a3c0a45ea6c8cc534d06f06ca211d1074d69226233a27",
+      "transaction": "0x57980df8b1bb5c330cedcd183e6724aa3e5a0b13c6ea145a82bd6b402a14aa30"
+    },
+    "l2:0x1cfd8455f189c56a4fbd81eb7d4118db04616ba8": {
+      "codeHash": "0x8c41117236185cc421a060005e6d95a57e1368191c20baa367254bd6db2bebd9",
+      "transaction": "0x5d0f685893411e4284ab086075d82b50925d02f417a1f95b00e11079af24aa64"
+    },
+    "l2:0x468603d798b4aea92e7aa06493982f22804ebbef": {
+      "codeHash": "0xc28daa337807afbe430d3b8eb3c46d3fc66aed4ab7790dc531cb750fb9e807b3",
+      "transaction": "0x1908633e878420b466522f07ba68c09a93f6c59c6f4947e5bf77ccaf347f37c2"
+    },
+    "l2:0x66db6d191cd163f56197b767928a507df8b47aa7": {
+      "codeHash": "0x54fdc0f05ea1402773651d5de2a6692776f5ee2087d1ef57a2d625170082ed83",
+      "transaction": "0x51b2a53cd643d1ef09065e516d9612b9937c983be2ab68b23c08a12ab01b2d36"
+    },
+    "l2:0x77c7e3905c21177be97956c6620567596492c497": {
+      "codeHash": "0x3b3c721001965f70a18fc113f8bbcaa323d307a078d92615178fce15df9347a5",
+      "transaction": "0xaf47392823069d8fd3a62db653c0228b7bfde9c61de148964109adff3527eca6"
+    },
+    "l2:0x781da48ea17664d0b53d7645d50c5dae93d27887": {
+      "codeHash": "0xc176516783a19611f61a3c0a45ea6c8cc534d06f06ca211d1074d69226233a27",
+      "transaction": "0x15b86f7bf7b189a77531f0cb3389231798d49f790ea258e2bd73d798b9bd2b09"
+    },
+    "l2:0x82b769500e34362a76df81150e12c746093d954f": {
+      "codeHash": "0xbd439d4de1bf4ce1ecdf994bd77eab1ef2227a278337847fdbf5ac383797e0d2",
+      "transaction": "0x3f561d1d1d1fd46f44d561c97e9a578df9e50aa78b5c29336358b7be6346e5b7"
+    },
+    "l2:0x8476fc408b2df4d03e9705fc2768d9179b62800c": {
+      "codeHash": "0x1a216d49214c50cd4bb00f216100778e4859b675ccbdf0da3396ea77f21cc5bd",
+      "transaction": "0xdbd27f24f389f8db4e385ccaf0af277b0f5dcc6e10b20a578ef35c7f4f6a5b4b"
+    }
+  },
+  "independentReplay": {
+    "hash": "0xa141d6e38bc05054c65ad5d813839afa234a84e55a851ec317d41e00084bbb80",
+    "height": 200
+  },
+  "lastSuccessfulL2Block": 200,
+  "network": {
+    "attester": "0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+    "deployBlock": 1,
+    "fixture": "eez-testkit native process devnet",
+    "follower": "http://127.0.0.1:36933",
+    "l1": {
+      "chainId": 1337,
+      "front": "http://127.0.0.1:39213",
+      "rpc": "http://127.0.0.1:45641"
+    },
+    "l2": {
+      "chainId": 420691,
+      "front": "http://127.0.0.1:39859",
+      "rpc": "http://127.0.0.1:40711"
+    },
+    "registry": "0x71c95911e9a5d330f4d621842ec243ee1343292e",
+    "rollupId": 1,
+    "traceDirectory": "local-only/composition-traces"
+  },
+  "ownerAddition": "0x3093a9ba20450923d489b4e4ed5738f2b3fe60a61120c5ffb0a97f3d5b2a60ce",
+  "ownerRemoval": "0xf32351d7ca8ad780788e8f70187101ba7fe02fe0c77b641b98e816df2ecc7782",
+  "owners": {
+    "A": "0xe05fcC23807536bEe418f142D19fa0d21BB0cfF7",
+    "B": "0x0376AAc07Ad725E01357B1725B5ceC61aE10473c",
+    "C": "0x96F4d4f7B947464111764d65f34A4751c888b01D",
+    "threshold": 2
+  },
+  "paymentChecks": [
+    "40 local",
+    "110 split",
+    "same L1 transaction receives both legs",
+    "global rejection despite 50 L2 allowance remaining",
+    "actual Composer policy rejection",
+    "unchanged state on rejection",
+    "bridge backing",
+    "no residual policy custody",
+    "independent follower",
+    "payment reload recovery"
+  ],
+  "paymentInitialNonce": "3",
+  "payments": {
+    "alias": "0xc1945Ee003CfceDB5f284Ac08111E94391c98cb3",
+    "assetLabel": "Devnet USDC",
+    "bridgeL1": "0x973adb9de34c974c3a421a870203c5be9059e9fa",
+    "bridgeL2": "0x8476fc408b2df4d03e9705fc2768d9179b62800c",
+    "decimals": 6,
+    "globalLimit": "150000000",
+    "moduleL1": "0xa28e65b0444392c7f591a321f9802d900a3229bc",
+    "moduleL2": "0x781da48ea17664d0b53d7645d50c5dae93d27887",
+    "period": 600,
+    "policy": "0x468603d798b4aea92e7aa06493982f22804ebbef",
+    "recipient": "0x0000000000000000000000000000000000001234",
+    "tokenL1": "0x591b594f01ae53bff6fb44c5da0a16a62c2f3f6c",
+    "tokenL2": "0xEdf2Ba0Cb1322ec2Fa2A2f55B38774872cBb8b65"
+  },
+  "postedAttestationVerified": true,
+  "scenarioComplete": true,
+  "verified": true,
+  "wallet": "Test EIP-1193 provider; genuine fixture-key signatures and real RPC submission. No wallet extension automation."
+}

@@ -1,0 +1,51 @@
+{
+  "run": ".runtime/treasury-integration/20261020T143219-w_hh_y06",
+  "verified": true,
+  "test": {
+    "passed": 1,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 0,
+    "seconds": 498.34
+  },
+  "applicationSourceCount": 40,
+  "finalSourcesMatch": true,
+  "manualDeploymentSourcesMatch": true,
+  "manualRun": ".runtime/treasury-integration/20261020T143356-blh2sl33",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "independentReplay": {
+    "hash": "0x649d108e0f0a3b4c75624b5eaf22c34ea382ef311ff7885c875428db45e5295c",
+    "height": 495
+  },
+  "postedAttestationVerified": true,
+  "testListenersClosed": [
+    {
+      "port": 37961,
+      "open": false
+    },
+    {
+      "port": 38647,
+      "open": false
+    },
+    {
+      "port": 40931,
+      "open": false
+    },
+    {
+      "port": 38027,
+      "open": false
+    },
+    {
+      "port": 42815,
+      "open": false
+    },
+    {
+      "port": 41187,
+      "open": false
+    }
+  ],
+  "ordinaryDashboardConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "localArtifacts": {
+    "traceSha256": "d41e95ec31b3584e485457442339ae1ff440ca4b17806193570d0537a66b1d87"
+  }
+}

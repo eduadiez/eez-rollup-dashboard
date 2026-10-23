@@ -1,0 +1,29 @@
+{
+  "readiness": {
+    "readiness": "rgb(59, 229, 126)",
+    "environment": "rgb(154, 163, 179)",
+    "visibleNavigationNames": true
+  },
+  "liveLayout": {
+    "widths": [
+      {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      {
+        "width": 320,
+        "scrollWidth": 320
+      }
+    ],
+    "source": "Real isolated devnet balances and owners; read-only browser without wallet"
+  },
+  "setupMobileWidth": 390,
+  "screenshots": "Local-only in .runtime/treasury-ux-20261021 and the native run directory",
+  "optionalOwnerDemo": {
+    "fixtureTabOpensReview": true,
+    "noFixtureTabHidden": true,
+    "ownerAdministrationAvailable": true,
+    "signatures": 0,
+    "submissions": 0
+  }
+}

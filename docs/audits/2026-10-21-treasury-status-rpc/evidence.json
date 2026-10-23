@@ -1,0 +1,96 @@
+{
+  "dashboardHead": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "corePin": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "sha256": {
+    "src/lib/treasury/client.ts": "d369dd9f96a456fab059b4f48435f0c7fcd81d787282f5cab2d49e1dda6ce280",
+    "tests/treasury-client.test.mjs": "6e211c65a07bf0e81bbb7cf30fc6fa84b46629e5e1bb9942a87388e9b0ccf09c",
+    "tests/integration/treasury-payment-browser.mjs": "a7c21f8b9fc33c1136a4f53f6d87c3f85eb689d426366a5cee9c0c265b95f73f",
+    "tests/integration/treasury-invoice-browser.mjs": "e9867961104092ec2d6e6469bcd2a98eb0ae703204bf51d52785b73242582c07",
+    "tests/integration/treasury-history-browser.mjs": "11fe09c5aa3092ff07407826404ef08325ccebc15583f32faa4fdb32dd345411",
+    "tests/integration/treasury-owners.mjs": "a5ccde062efb414fe262e01d8cb473d41b29fc26022ee88f0485b1be29741622",
+    "docs/runbooks/treasury-shared-network.md": "7f25edc30ff823b143ac3ae84f553c8842cdbe1bdeaf5ce4fab1c245d3375dfd"
+  },
+  "tests": {
+    "passed": 319,
+    "failed": 0,
+    "skipped": 0
+  },
+  "liveBefore": {
+    "error": "Method not found"
+  },
+  "liveAfter": {
+    "outcome": {
+      "kind": "pending",
+      "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "detail": "Outcome unresolved. Checking the submitted hash; no automatic resubmission."
+    }
+  },
+  "deployment": {
+    "before": {
+      "containers": [
+        {
+          "name": "/eez-rollup-ui-ui-1",
+          "id": "26f481de7b5d2c0bfb2031b484316ce9696c1b80201307ffdbb439381ce7643a",
+          "image": "sha256:5733f89a7890abbc625a52a64eb403ce44717be50c90b23ef1af367f0769a874",
+          "started": "2026-10-21T11:55:06.114199503Z"
+        },
+        {
+          "name": "/eez-rollup-ui-monitor-1",
+          "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+          "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+          "started": "2026-10-18T14:32:01.399302934Z"
+        },
+        {
+          "name": "/eez-node-chiado",
+          "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+          "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+          "started": "2026-10-20T17:01:51.373519938Z"
+        },
+        {
+          "name": "/eez-proof-signer-chiado",
+          "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+          "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+          "started": "2026-10-20T17:01:45.288733799Z"
+        }
+      ],
+      "runtimeConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71"
+    },
+    "after": {
+      "containers": [
+        {
+          "name": "/eez-rollup-ui-ui-1",
+          "id": "a0cfff6a69ae1b823d60e45c5d58f3581740acd28e710101326f433baeaaaf81",
+          "image": "sha256:a44501cb470b41f9ba6f09bd6b40150973b1a1a628f86618e4e0b6355d173ab5",
+          "started": "2026-10-21T12:08:34.126921123Z"
+        },
+        {
+          "name": "/eez-rollup-ui-monitor-1",
+          "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+          "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546",
+          "started": "2026-10-18T14:32:01.399302934Z"
+        },
+        {
+          "name": "/eez-node-chiado",
+          "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+          "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95",
+          "started": "2026-10-20T17:01:51.373519938Z"
+        },
+        {
+          "name": "/eez-proof-signer-chiado",
+          "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+          "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6",
+          "started": "2026-10-20T17:01:45.288733799Z"
+        }
+      ],
+      "runtimeConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+      "servedAssetsMatch": [
+        "/dashboard/assets/eez-icon-Dd9c4N72.svg",
+        "/dashboard/assets/index-DQ5PXZdB.js",
+        "/dashboard/assets/index-DspFixNr.css",
+        "/dashboard/assets/TreasuryDemo-BXhGgmiv.js"
+      ],
+      "healthEndpoint": "ok"
+    },
+    "onlyUiImageChanged": true
+  }
+}

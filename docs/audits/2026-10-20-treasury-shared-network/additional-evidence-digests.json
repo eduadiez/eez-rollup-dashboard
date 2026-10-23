@@ -1,0 +1,14 @@
+{
+  "tests/treasury-shared-browser.mjs": "4fe77c85fb7afa3bc2b18e9ccb0e3c9a02cea4139c5a193222c3e253888cf705",
+  "src/lib/treasury/deployment-artifacts.json": "b6248faf9984b701867e06d1529b15127e62a6ba322d3b48875248c803d8491d",
+  "src/lib/treasury/shared-network.json": "b768ba4b72abd355568eff985f1ca2152382102510be682d15417f390207a10e",
+  "logs": {
+    "unit-tests-shared.log": "f35519ca98c23f2aa143aaf1ea45c099638b06f88985d7a1be4620eba786d68a",
+    "contracts-final.log": "868ce45086d814f75d495d94453db50343847da008d4e73526ad9b81ac87896b",
+    "build-shared.log": "c483c166e8fbc2f57be7529eadc3454939f7256e8dbde5b8df6b5792030831ba",
+    "native-ui-final.log": "f738c54e3a779c5a987704a59933232ae0635c2e400fd680e2a63e5111f5430f",
+    "shared-browser-confirmed.log": "afaf39f8eecb026b561b3c0bc13ae10a7b8963cd7f1aad66e77c0c7e7afcfb83",
+    "preview-browser.log": "fbd24e987267411a8c737ed0f37e9a187c51588c0da5b9ccc693466b30a495d8",
+    "docker-build.log": "20a8ae78ed410ed4e107c99984265e7c4b68c1f967f14927cac0fbbaea513a38"
+  }
+}

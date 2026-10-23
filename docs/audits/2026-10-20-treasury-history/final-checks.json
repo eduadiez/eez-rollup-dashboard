@@ -1,0 +1,215 @@
+{
+  "checkedAt": "2026-10-20T15:51:17.826787+00:00",
+  "testRuns": [
+    {
+      "run": "20261020T145049-pqh8y7r5",
+      "listeners": [
+        {
+          "port": 44911,
+          "open": false
+        },
+        {
+          "port": 39103,
+          "open": false
+        },
+        {
+          "port": 42609,
+          "open": false
+        },
+        {
+          "port": 39443,
+          "open": false
+        },
+        {
+          "port": 42561,
+          "open": false
+        },
+        {
+          "port": 33907,
+          "open": false
+        }
+      ],
+      "logsAndDatadirsRetained": true
+    },
+    {
+      "run": "20261020T150512-ygfgfbp0",
+      "listeners": [
+        {
+          "port": 38273,
+          "open": false
+        },
+        {
+          "port": 37473,
+          "open": false
+        },
+        {
+          "port": 35143,
+          "open": false
+        },
+        {
+          "port": 44483,
+          "open": false
+        },
+        {
+          "port": 37859,
+          "open": false
+        },
+        {
+          "port": 46513,
+          "open": false
+        }
+      ],
+      "logsAndDatadirsRetained": true
+    },
+    {
+      "run": "20261020T151314-jv8fnjqm",
+      "listeners": [
+        {
+          "port": 42099,
+          "open": false
+        },
+        {
+          "port": 46859,
+          "open": false
+        },
+        {
+          "port": 37459,
+          "open": false
+        },
+        {
+          "port": 41867,
+          "open": false
+        },
+        {
+          "port": 34809,
+          "open": false
+        },
+        {
+          "port": 42211,
+          "open": false
+        }
+      ],
+      "logsAndDatadirsRetained": true
+    },
+    {
+      "run": "20261020T153230-22wjoedi",
+      "listeners": [
+        {
+          "port": 35903,
+          "open": false
+        },
+        {
+          "port": 45017,
+          "open": false
+        },
+        {
+          "port": 42261,
+          "open": false
+        },
+        {
+          "port": 35091,
+          "open": false
+        },
+        {
+          "port": 36291,
+          "open": false
+        },
+        {
+          "port": 32819,
+          "open": false
+        }
+      ],
+      "logsAndDatadirsRetained": true
+    },
+    {
+      "run": "20261020T154209-7sciw1sf",
+      "listeners": [
+        {
+          "port": 40201,
+          "open": false
+        },
+        {
+          "port": 34259,
+          "open": false
+        },
+        {
+          "port": 34035,
+          "open": false
+        },
+        {
+          "port": 33405,
+          "open": false
+        },
+        {
+          "port": 33321,
+          "open": false
+        },
+        {
+          "port": 35073,
+          "open": false
+        }
+      ],
+      "logsAndDatadirsRetained": true
+    }
+  ],
+  "currentInteractive": {
+    "run": "20261020T151413-q72r2wk7",
+    "listeners": [
+      {
+        "port": 42041,
+        "open": true
+      },
+      {
+        "port": 46145,
+        "open": true
+      },
+      {
+        "port": 37743,
+        "open": true
+      },
+      {
+        "port": 40731,
+        "open": true
+      },
+      {
+        "port": 45107,
+        "open": true
+      },
+      {
+        "port": 46735,
+        "open": true
+      }
+    ]
+  },
+  "previousInteractive": {
+    "run": "20261020T143356-blh2sl33",
+    "listeners": [
+      {
+        "port": 34845,
+        "open": true
+      },
+      {
+        "port": 36815,
+        "open": true
+      },
+      {
+        "port": 43379,
+        "open": true
+      },
+      {
+        "port": 44773,
+        "open": true
+      },
+      {
+        "port": 35651,
+        "open": true
+      },
+      {
+        "port": 33753,
+        "open": true
+      }
+    ]
+  },
+  "normalDashboardConfigUnchanged": true,
+  "applicationSourcesMatchPassedRun": true
+}

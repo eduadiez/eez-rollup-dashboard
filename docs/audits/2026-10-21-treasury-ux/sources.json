@@ -1,0 +1,86 @@
+{
+  "head": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "branch": "feat/treasury-demo",
+  "files": [
+    {
+      "path": "DESIGN.md",
+      "before": "764680d7107e769e692db50c0fd208c60858a8490cbbbd230a7a210efc2e190a",
+      "after": "f9b3ed8cbd79b90ecf3619f3140101672468b08628884d55415990722dfbd6e7"
+    },
+    {
+      "path": "README.md",
+      "before": "0da0daa85225b6457275900b1ae2e5e5051a1a58798d19676367879f27bf150f",
+      "after": "0fca7af7c67002e12f3ba9102a457127bf1a8f8427c64527ab957694321f40b8"
+    },
+    {
+      "path": "src/components/TreasurySetup.tsx",
+      "before": "6c2f1d7bfa7dcf60c49998e433a8e0304ec0faa8c548bbce6355526468651f65",
+      "after": "7cf379e9b5c223bf6a103eec6f5c4024976011c6bce66b06ba42d5e72daba69a"
+    },
+    {
+      "path": "src/components/TreasuryConnected.tsx",
+      "before": "b68e6a1a8788b660bbbefad0610cebff6bb1f45e073cded603d6972360ceda62",
+      "after": "4114663437a88d008fba50e7a0baa3312e19c1e708729ee04c73233461799092"
+    },
+    {
+      "path": "src/components/TreasuryDemo.tsx",
+      "before": "fe2f981f1450219fcbc0d4c6a126a1db93d780f237bb87f043c5b825ff092330",
+      "after": "397f5f2d178eebd342807ae49f5083473b16a071b4d91e5072b2518d6f430774"
+    },
+    {
+      "path": "src/components/TreasuryDemo.module.css",
+      "before": "9d30fbb620b4932ee74bc464aa558ee53f1a59309960d3887525579f607bfe5b",
+      "after": "df5cc85a53bbbdef146fc6df43ea1868a14b79ec0c46c45deb5f6339158d3eb4"
+    },
+    {
+      "path": "src/components/TreasuryOwners.tsx",
+      "before": "b280f22be18e80173596294751dd552cc3e1a6275e273985448380f89f413411",
+      "after": "3c5027422b391e97dea04a008a69fcf87ac6062beb5634c3061f1df7227758dc"
+    },
+    {
+      "path": "src/components/TreasuryPaymentHistory.tsx",
+      "before": "2356549655e2d332ef5be48030452558d908a16c15cca42eccf3002cfad3c671",
+      "after": "307ec97f28a2cfce07176049bbd1b49de1e50be3ba3f69effb5b7c6561d67b3a"
+    },
+    {
+      "path": "tests/treasury-shared-browser.mjs",
+      "before": "c59d0d20530101dd26dec94a6aaead0c005f4ea5659f32a60c89021bad3a2252",
+      "after": "2a59a0a1fe1929961f43bd550c47dbf388a613a0e0b48836def0eaabba35c27a"
+    },
+    {
+      "path": "tests/integration/treasury-browser.mjs",
+      "before": "433a2fb3485a562644b6d29c424e43359e1d6708ecac3a3355845553572cd086",
+      "after": "d99a712be7f493853e7c2419f793c69ad0f99fdc33c7af385765a8bbf1d737be"
+    },
+    {
+      "path": "tests/integration/treasury-payment-browser.mjs",
+      "before": "8a07274bafa88f038bfbf22650c25c490a87e54dc45f15dc6039f67dc54d1d8f",
+      "after": "da71f203dc79aedc6774b2df3c68bb98f7c75ae6744f89d06b92bca4ec77cc92"
+    },
+    {
+      "path": "tests/integration/treasury-invoice-browser.mjs",
+      "before": "2fa51609afde4c9b29b34aabecf5c50d15b37a46d43964d031d282047aad7238",
+      "after": "e2a5cbbcbd435eea5a5e253dbf8289ea5e142c2d63b290866a01f716f0bf327a"
+    },
+    {
+      "path": "tests/integration/README.md",
+      "before": null,
+      "after": "aec596cfbd370d9d1e6bb267b4491fc442b6363add98a57f54a2c9b8b4bd46b4"
+    },
+    {
+      "path": "docs/runbooks/treasury-shared-network.md",
+      "before": "e084c95d7492ae2e63c55ac441aad48d4a3226bfa8133391de2981d4b5d49416",
+      "after": "9979c1f0eae2a76210c4102bc7f56c6cbdb72beab1f1c82847dea4d1a879bee3"
+    },
+    {
+      "path": "docs/runbooks/treasury-rehearsal.md",
+      "before": null,
+      "after": "9e3f33a380b0b23cccdba83d040a5495bf27f95d4a788bdf68213c3104c757db"
+    },
+    {
+      "path": "docs/proposals/one-treasury-two-safes.md",
+      "before": "47b3b072d6086984b7aa0551088813f3ff1f3a807563e23977533692cbf6d7c2",
+      "after": "9e883c6a7abbdf734d677d7541afd2a78a307d2c1c3dfd2e9042bfe680c09a2b"
+    }
+  ]
+}

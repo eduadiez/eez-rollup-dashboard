@@ -5,6 +5,8 @@ const ORIGIN = window.location.origin;
 const absolute = (path: string) => new URL(path, ORIGIN).toString();
 
 export const config = {
+  /** Optional treasury deployment, validated by the hidden example. */
+  treasury: null as unknown,
   /** Human-readable rollup name, supplied by runtime networkName. */
   rollupName: "EEZ L2",
   l1NetworkName: "L1 network",
@@ -66,6 +68,10 @@ export const config = {
   aggWrappedWethL2: params.get("aggWrappedWethL2") || "",
   aggWrappedUsdcL2: params.get("aggWrappedUsdcL2") || "",
 };
+
+// The wallet definitions below have development defaults. ABI lookup must only
+// use a chain identity actually observed from that network's configured RPC.
+export const DISCOVERED_CHAIN_IDS: { l1: string | null; l2: string | null } = { l1: null, l2: null };
 
 /** Mutable — set after loading env files */
 export function setConfig(updates: Partial<typeof config>) {

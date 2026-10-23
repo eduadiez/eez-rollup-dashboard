@@ -21,16 +21,26 @@ import { CrossChainCallBuilder } from "./components/CrossChainCallBuilder";
 import { CrossChainTransactionDialog } from "./components/CrossChainTransactionDialog";
 import { BridgePanel } from "./components/BridgePanel";
 import { TxHistoryPanel } from "./components/TxHistoryPanel";
+import { QuoteDebugger } from "./components/QuoteDebugger";
 import styles from "./App.module.css";
 
 const VisualizerView = lazy(() => import("./components/VisualizerView").then(module => ({ default: module.VisualizerView })));
+const TreasuryDemo = lazy(() => import("./components/TreasuryDemo").then(module => ({ default: module.TreasuryDemo })));
+
+const TREASURY_VISIBILITY_KEY = "eez:treasury-demo:visible";
+
+function treasuryVisibleForSession(): boolean {
+  try { return sessionStorage.getItem(TREASURY_VISIBILITY_KEY) === "1"; }
+  catch { return false; }
+}
 
 // Flash-loan and aggregator views are retained but are not enabled on this network.
-type DashboardTab = "dashboard" | "counter-demo";
+type DashboardTab = "dashboard" | "counter-demo" | "treasury-demo";
 
 /** Dashboard sub-tabs that can be deep-linked via hash */
 const HASH_TO_TAB: Record<string, DashboardTab> = {
   "counter-demo": "counter-demo",
+  "treasury-demo": "treasury-demo",
   // Keep saved bridge links opening the combined dashboard.
   "bridge": "dashboard",
 };
@@ -40,14 +50,16 @@ function getInitialView(): string {
   const hash = raw.split("?")[0];
   if (hash === "monitor") return "monitor";
   if (hash === "visualizer") return "visualizer";
+  if (hash === "debug") return "debug";
   if (window.location.pathname === "/monitor" || window.location.pathname === "/monitor/") return "monitor";
   return "dashboard";
 }
 
-function getInitialTab(): DashboardTab {
+function getInitialTab(treasuryVisible: boolean): DashboardTab {
   const raw = window.location.hash.replace("#/", "").replace("#", "");
   const hash = raw.split("?")[0] || "";
-  return HASH_TO_TAB[hash] ?? "dashboard";
+  const tab = HASH_TO_TAB[hash] ?? "dashboard";
+  return tab === "treasury-demo" && !treasuryVisible ? "dashboard" : tab;
 }
 
 /** Parse ?key=value from the hash fragment (e.g. #/?target=0x...) */
@@ -62,6 +74,7 @@ function getHashParam(key: string): string | null {
 const DASHBOARD_TABS: { id: DashboardTab; label: string }[] = [
   { id: "dashboard", label: "Bridge & Calls" },
   { id: "counter-demo", label: "Counter Demo" },
+  { id: "treasury-demo", label: "Treasury Demo" },
 ];
 
 export function App() {
@@ -107,11 +120,12 @@ export function App() {
   const recentAddrs = useRecentAddresses(destinationChain);
 
   const [view, setView] = useState(getInitialView);
+  const [treasuryVisible, setTreasuryVisible] = useState(treasuryVisibleForSession);
   const [visualizerRoute, setVisualizerRoute] = useState(() => window.location.hash);
   const visualizerParams = new URLSearchParams(visualizerRoute.split("?")[1] ?? "");
-  const [dashboardTab, setDashboardTab] = useState<DashboardTab>(getInitialTab);
+  const [dashboardTab, setDashboardTab] = useState<DashboardTab>(() => getInitialTab(treasuryVisible));
   useEffect(() => {
-    document.title = `${view === "visualizer" ? "Execution Visualizer" : view === "monitor" ? "Network Monitor" : dashboardTab === "counter-demo" ? "Counter Demo" : "Dashboard"} — ${config.rollupName}`;
+    document.title = `${view === "debug" ? "Quote Debugger" : view === "visualizer" ? "Execution Visualizer" : view === "monitor" ? "Network Monitor" : dashboardTab === "counter-demo" ? "Counter Demo" : dashboardTab === "treasury-demo" ? "Treasury Demo" : "Dashboard"} — ${config.rollupName}`;
   }, [view, dashboardTab, configLoaded]);
 
   /** Switch dashboard sub-tab and update hash for deep linking */
@@ -123,10 +137,36 @@ export function App() {
   const navigate = useCallback((v: string) => {
     setView(v);
     const pathname = v === "monitor" ? "/monitor/" : import.meta.env.BASE_URL;
-    window.history.pushState(null, "", v === "visualizer" ? `${pathname}#/visualizer` : pathname);
+    window.history.pushState(null, "", v === "visualizer" || v === "debug" ? `${pathname}#/${v}` : pathname);
     if (v === "visualizer") setVisualizerRoute(window.location.hash);
     if (v === "dashboard") setDashboardTab("dashboard");
   }, []);
+
+  // This is a per-tab navigation preference, not authorization. A direct URL
+  // must not reveal the unfinished example before the shortcut is used.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (event.defaultPrevented || event.repeat || event.isComposing
+          || !(event.ctrlKey || event.metaKey) || !event.altKey || !event.shiftKey || event.code !== "KeyT"
+          || (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select, [role='textbox']")))) return;
+      event.preventDefault();
+      const visible = !treasuryVisible;
+      setTreasuryVisible(visible);
+      try {
+        if (visible) sessionStorage.setItem(TREASURY_VISIBILITY_KEY, "1");
+        else sessionStorage.removeItem(TREASURY_VISIBILITY_KEY);
+      } catch { /* Storage can be unavailable; the shortcut still works until reload. */ }
+      if (visible) {
+        navigate("dashboard");
+        switchTab("treasury-demo");
+      } else if (dashboardTab === "treasury-demo") {
+        switchTab("counter-demo");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [treasuryVisible, dashboardTab, navigate, switchTab]);
 
   // Listen for browser back/forward
   useEffect(() => {
@@ -137,7 +177,7 @@ export function App() {
       if (target) setGenericTargetAddr(target);
       // Deep link to dashboard sub-tabs (e.g. #/counter-demo, #/bridge)
       const tab = raw ? HASH_TO_TAB[raw] : undefined;
-      setDashboardTab(tab ?? "dashboard");
+      setDashboardTab(tab === "treasury-demo" && !treasuryVisible ? "dashboard" : tab ?? "dashboard");
       setView(getInitialView());
       setVisualizerRoute(window.location.hash);
     };
@@ -147,7 +187,7 @@ export function App() {
       window.removeEventListener("hashchange", onHashChange);
       window.removeEventListener("popstate", onHashChange);
     };
-  }, []);
+  }, [treasuryVisible]);
 
   // Track counter demo cross-chain transactions in history
   const ccTxRef = useRef<string | null>(null);
@@ -322,6 +362,8 @@ export function App() {
 
       {view === "monitor" ? (
         <NetworkMonitorView />
+      ) : view === "debug" ? (
+        <QuoteDebugger ready={configLoaded} />
       ) : view === "visualizer" ? (
         <Suspense fallback={<main id="main" tabIndex={-1} className={styles.page}>Loading visualizer…</main>}>
           <VisualizerView
@@ -355,7 +397,7 @@ export function App() {
           </section>
 
           <nav className={styles.tabs} aria-label="Dashboard sections">
-            {DASHBOARD_TABS.map((tab) => (
+            {DASHBOARD_TABS.filter(tab => tab.id !== "treasury-demo" || treasuryVisible).map((tab) => (
               <button
                 key={tab.id}
                 className={`${styles.tab} ${dashboardTab === tab.id ? styles.tabActive : ""}`}
@@ -489,11 +531,17 @@ export function App() {
               </div>
             )}
 
-            <TxHistoryPanel
+            {treasuryVisible && dashboardTab === "treasury-demo" && (
+              <Suspense fallback={<p role="status">Loading treasury preview…</p>}>
+                <TreasuryDemo wallet={wallet} ready={configLoaded} />
+              </Suspense>
+            )}
+
+            {dashboardTab !== "treasury-demo" && <TxHistoryPanel
               records={txHistory.records}
               onClear={txHistory.clearHistory}
               onInspect={(hash, chain) => { window.location.hash = `#/visualizer?mode=trace&chain=${chain}&tx=${hash}`; }}
-            />
+            />}
 
 
           </div>

@@ -1,0 +1,37 @@
+{
+  "javascript": {
+    "command": "npm test",
+    "passed": 235,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "warning": "Existing chunk over 500 kB"
+  },
+  "syntax": [
+    "node --check tests/integration/treasury-history-browser.mjs",
+    "Python ast.parse for scripts/run-treasury-integration.py"
+  ],
+  "scope": "UI, history persistence, and outcome classification; application contracts and runtime unchanged",
+  "mockedProductionPreview": {
+    "passed": true,
+    "hiddenByDefault": true,
+    "guardedDeepLinks": true,
+    "sessionVisibility": true,
+    "shortcutFiltering": true,
+    "blockedStorage": true,
+    "simulatedQuorum": true,
+    "exactBudgetSequence": true,
+    "bothDestinations": true,
+    "noOptimisticDebit": true,
+    "responsiveWidths": 4,
+    "transactionsSent": 0
+  },
+  "regressions": [
+    "historical request retirement requires both nonces at the same canonical safe block",
+    "missing or changed canonical block cannot establish request retirement",
+    "native zero-tip envelope preserved and closure priority computed"
+  ]
+}

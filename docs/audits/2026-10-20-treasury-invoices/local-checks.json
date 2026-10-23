@@ -1,0 +1,32 @@
+{
+  "contracts": {
+    "command": "npm run test:contracts",
+    "passed": 52,
+    "failed": 0,
+    "skipped": 0,
+    "fuzzCasesPerTest": 256,
+    "fuzzTests": 3
+  },
+  "dashboard": {
+    "command": "npm test",
+    "passed": 222,
+    "failed": 0,
+    "skipped": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "passed": true,
+    "warning": "existing bundle chunk over 500 kB"
+  },
+  "initialContractFailure": "Custom-error assertion expected selector instead of InvoiceNotOpen(id) encoded payload; corrected full suite passed.",
+  "initialTypeFailure": "Possibly absent block anchor; explicit missing-block rejection added.",
+  "scripts": {
+    "pythonAst": [
+      "scripts/run-treasury-integration.py",
+      "scripts/treasury-relay.py"
+    ],
+    "nodeSyntax": "scripts/treasury-invoices.mjs",
+    "forgeFmt": true,
+    "gitDiffCheck": true
+  }
+}

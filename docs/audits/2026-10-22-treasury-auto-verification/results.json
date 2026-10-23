@@ -1,0 +1,101 @@
+{
+  "build": "3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d",
+  "pins": {
+    "core": "855fe0602484750861b4c31502a1a91355d33ed6",
+    "safe": "bf943f80fec5ac647159d26161446ac5d716a294",
+    "modules": "c95f03900bff99be090dadb9de1c74b162365485"
+  },
+  "contractTypes": 19,
+  "factoryDependencies": 3,
+  "standardInputs": 22,
+  "dashboardHead": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "branch": "feat/treasury-demo",
+  "unitTests": {
+    "passed": 415,
+    "failed": 0
+  },
+  "contractTests": {
+    "passed": 204,
+    "failed": 0,
+    "skipped": 0
+  },
+  "verificationIntegration": {
+    "build": "3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d",
+    "scope": "isolated Anvil, real solc standard JSON recompilation, controlled explorer transport",
+    "transactions": [
+      "0x9e1a5d75aabacccb11cd2e36c4dc4d8f2230447f5159852231ce9fec4f776c60",
+      "0x777871dd060739277ced53eb82242dde2fa7e253e04037698c06a7f54f4ba00f",
+      "0x5664012c8850fdd11b56da7e1ade5655200b839e940b3c83ed127d2dc57dc5f2",
+      "0x4d30a5a084e925ba2e8b6bd53bae3aad2b8f1c3a98f42bb310511b64436a1d4a",
+      "0xd9984b34470b4c05b8f5686750b0ba3ed9a0f5026f2c793a9d2644ec9325ebbc"
+    ],
+    "verified": [
+      {
+        "address": "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
+        "name": "AllowanceModule",
+        "status": "verified"
+      },
+      {
+        "address": "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+        "name": "TreasuryBootstrap",
+        "status": "verified"
+      },
+      {
+        "address": "0x856e4424f806d16e8cbc702b3c0f2ede5468eae5",
+        "name": "TreasuryAliasReader",
+        "status": "verified"
+      },
+      {
+        "address": "0x0181ea37ea04077fd22c16d102fc85f17244b5e8",
+        "name": "SafeProxy",
+        "status": "verified"
+      },
+      {
+        "address": "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+        "name": "SafeProxyFactory",
+        "status": "verified"
+      },
+      {
+        "address": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+        "name": "Safe",
+        "status": "verified"
+      }
+    ],
+    "passed": true
+  },
+  "deployment": {
+    "runtimeConfigurationUnchanged": true,
+    "verificationReady": true,
+    "containers": [
+      {
+        "name": "/eez-rollup-ui-ui-1",
+        "image": "eez-rollup-ui:auto-sources-20261022",
+        "imageId": "sha256:d829a330d57e847b2adf9891eb9c0957f9c4367f330dda2de8ebf510ef615013",
+        "running": true
+      },
+      {
+        "name": "/eez-rollup-ui-verification-1",
+        "image": "eez-treasury-verification:auto-sources-20261022",
+        "imageId": "sha256:418379bda2ae9f82100f354336eec2585db9ee5edd0b41644ab624679b333605",
+        "running": true
+      }
+    ]
+  },
+  "liveCheck": {
+    "health": {
+      "ready": true
+    },
+    "unminedTransactionRejected": true,
+    "queuedLiveJobs": 0,
+    "build": "3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d"
+  },
+  "unchangedInputs": [
+    ".env",
+    "src/lib/treasury/deployment-artifacts.json",
+    "src/lib/treasury/mainnet-artifacts.json",
+    "src/lib/treasury/shared-network.json",
+    "src/lib/treasury/mainnet-network.json"
+  ],
+  "newLiveChainTransactions": 0,
+  "historicalBackfillJobs": 0
+}

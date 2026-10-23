@@ -75,7 +75,7 @@ export function startServer(env = process.env) {
   const cleanup = setInterval(() => store.sweep(), 5000);
   cleanup.unref();
   server.on("close", () => { clearInterval(cleanup); store.close(); });
-  server.listen(integer(config.tracePort, "EEZ_TRACE_PORT", 18081, 1, 65535), config.traceHost || "127.0.0.1");
+  server.listen(integer(config.tracePort, "EEZ_TRACE_PORT", 18082, 1, 65535), config.traceHost || "127.0.0.1");
   const stop = () => { store.close(); server.close(); server.closeAllConnections(); };
   process.once("SIGTERM", stop); process.once("SIGINT", stop);
   return server;

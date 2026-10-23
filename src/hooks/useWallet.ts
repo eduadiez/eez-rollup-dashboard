@@ -326,6 +326,7 @@ export function useWallet(log: Logger, configLoaded = false) {
 
   return {
     ...state,
+    provider: selectedProvider,
     ...composer,
     hasProvider,
     walletName: walletOptions.find((option) => option.provider === selectedProvider)?.name

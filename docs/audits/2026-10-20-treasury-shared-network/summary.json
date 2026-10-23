@@ -1,0 +1,183 @@
+{
+  "mode": "test",
+  "applicationSources": {
+    "scripts/treasury-relay.py": "7d0aa135004e134a170d872a9a9290c859e8a36577250ab89ef5c2ea92cf0c71",
+    "scripts/run-treasury-integration.py": "c5dbd16699f278b49019d20fca56ad3cf674e4b4615e11bf7c76d95d80f0ee6d",
+    "tests/integration/treasury_owners.rs": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00",
+    "tests/integration/treasury-owners.mjs": "2705a1efe5383b40da359f9e70f0cd5f24faba9d3f15c4dae14983ab848dfa7f",
+    "src/lib/treasury/safeTransactions.ts": "41353449bb09da7a788e68791c620caf90c223c5199c1d3f7ad8140c64cf28f3",
+    "contracts/src/L1Owners.sol": "1e967a3941c829fb07d79c2c5e5f3d8f1a20a740fadd07109f1cdd458514285d",
+    "contracts/test/fixtures/TreasuryOwnerAction.sol": "215bbf66fa5324f5607bef3f5068ce146aec2fbb30e4a6fd31be7eabc671154d",
+    "contracts/foundry.toml": "75f257c0bd4a6122f4bfc5f4eaa9abac47903fc2e388403e22c5ed35a61bae98",
+    "contracts/legacy/foundry.toml": "30bc96601ea3470d31853a90c41e57559545c5304dc1b3cb8ec2b4ec7afc8ebf",
+    "scripts/treasury-invoices.mjs": "0fb6722a4383b4ffb00b05efecf583c57db929af129d9f62f69e1b1223717c50",
+    "src/lib/treasury/invoices.ts": "484903cfd07a40a99cb4f0d4d5fde851ee44b74f5d31682313393c7fdab97806",
+    "tests/treasury-invoices.test.mjs": "6e5862696440689aaa09287fb20c5d751c805bdbf09c224dad8417e95ed19783",
+    "tests/integration/treasury-invoice-browser.mjs": "2fa51609afde4c9b29b34aabecf5c50d15b37a46d43964d031d282047aad7238",
+    "contracts/src/InvoiceMerchant.sol": "a27235cd5fe32d40fc238ff9168822d0c16d67ecbaeeb091685044afd595124f",
+    "contracts/src/TreasuryBridge.sol": "ef2273130ea2649cb1951d2875dc0380ea66ebd7a9951a184347655f74309907",
+    "contracts/src/TreasuryPolicy.sol": "cc60e354a8e183800176eaf5d759e6136bf6c59152a01d6f411701de3892546a",
+    "contracts/src/TreasuryAliasReader.sol": "f909840a4df05052d0e803d79faad3f24c5e65dd0a547edaf735ed05ebf179c7",
+    "contracts/test/TreasuryPolicy.t.sol": "f198ed460e878706df1e4ce3d01ce236a495713e3a7ef7fe9f3d7a7e20d8b438",
+    "contracts/test/helpers/OwnerFixture.sol": "14d7bf9b509c8f761a00f159de7054f06f0751b82e129fd22dd6e180edc69916",
+    "contracts/test/fixtures/DevnetUSDC.sol": "2e3f732d845f20c5120b98f0e017008fe8780e9fe50798ca06ab3d1cbdac9a2b",
+    "tests/integration/treasury-payments.mjs": "64e9d7243427664a472e612b2640c16d0b0ebe49e73b049b71f09fef69bd909d",
+    "tests/integration/treasury-payment-browser.mjs": "8a07274bafa88f038bfbf22650c25c490a87e54dc45f15dc6039f67dc54d1d8f",
+    "src/lib/treasury/payments.ts": "5393ed7b2ae7261b1854b7af971bdf57634c64ab1041347f5ca7d23590875c6f",
+    "tests/treasury-payments.test.mjs": "3cbdd409ff1a6846cf1d3b3362faf7ce2e85547832465aa4300b8526d378a342",
+    "tests/treasury-rules.test.mjs": "fd1b07224c9a4b7ba65fe74e5dcb28f2ffdc5457fde0968d4b6491cadcd653f3",
+    "scripts/treasury-composer.mjs": "ca36e2f282c18fa0b6fe44acb58012b6ea39f5d044ccc25ded345a14e326b40b",
+    "tests/treasury-composer.test.mjs": "4d9c79449d72c48d5bf1d25d6d57e26e86ba9dbf5bc0bd158d49da836a8a9768",
+    "src/lib/composerDiscovery.ts": "45ccb32407115d488b031cfd997661ada79e16127ffd17ef1c3c20ba2dba3fc4",
+    "scripts/treasury-devnet.mjs": "359548b3df7bc72e809b74912d72acd1e57ef79f272245733a460affc57ff06e",
+    "scripts/treasury-owner.mjs": "30c38787d2d26b2c21a1daa0fa90c7a485a182659f957cbbec6dc6171b616762",
+    "tests/integration/treasury-browser.mjs": "1fe8081f9d4f6e1615dbd58f36a145829599b868fd4d490742065b40f2a01a59",
+    "tests/treasury-client.test.mjs": "d23a1faa025c5072874ec2c470039e8e47f86c7e98036021d0489cdbee821a3f",
+    "src/lib/treasury/client.ts": "e842be7e25b4ef1b830d5753c49365700475dc610047089b984d0178fbee5b16",
+    "src/components/TreasuryConnected.tsx": "6d787dddcc4dc96a8a95079431e8e125f95e215d83eddc0986d88bac1080a5e8",
+    "src/components/TreasuryDemo.tsx": "9c1be42523abae6f8cc73d794f1d06a610a1a87d4b7de5f6a871d1c4fa077f9c",
+    "src/components/TreasuryDemo.module.css": "e4adea5118e33930f89551fe656245c4ffae63789c0ea9506c8e25216652aff6",
+    "src/hooks/useWallet.ts": "87bc15e86da83a8b0311f0373bc35e0205d278e2f1aaba9ad74161bea8532c46",
+    "src/hooks/useConfig.ts": "31007d0c17327b5e02b1e964816dc532ad74b851ebfac2d80846456ce68cef96",
+    "src/config.ts": "84d862a9b7b846c6991627b54733ca05f0f04448ef512f984a3c48301d06db9c",
+    "src/App.tsx": "c41983714e89ace8cb95ba95a090e23ac25e9b22672288eaf03909c0c6bab5ca",
+    "vite.config.ts": "f2c54c1457fb2304718e354f0946d85a66cfbbd197e82a4f47adfeecd42a7030",
+    "src/lib/treasury/owners.ts": "048245db42f92714135988b862dbb0b4a2d9eed65cb456f1933a7956ab619f92",
+    "src/components/TreasuryOwners.tsx": "f5e885bd99694cf0f5d0136d86e79faa1fa7e2bb47d01ddd877c0f9bcacc9af2",
+    "src/lib/fees/payment.mjs": "3a2e9dfcc0e926419442957a93626faef703216ed1c4aee1db1d18102eba1390",
+    "src/lib/fees/l2-fees.mjs": "16e477a0028166adb70efa583ce5f876ecf71667107962a7814feed3f58dbb0a",
+    "src/lib/treasury/history.ts": "60613bf3f4208f2ee8b1054f5a1a0c12bf239ecafb8fc3995bac3818724cdcc9",
+    "src/hooks/useTreasuryHistory.ts": "6ac843148cd40e7ccf4acc3f2e6a0504c0e8c541ad9c4b6141dc56cb68da8f9e",
+    "src/components/TreasuryPaymentHistory.tsx": "f242611b142106584f17722d82041166190602b76668919ee4ff767069303439",
+    "src/components/TreasuryOutcomeDetails.tsx": "700ebe5f5b882dcacca784e950f207754d559c53de67865e7519b274c1e09c35",
+    "tests/treasury-history.test.mjs": "5bd9a774a709625f2e66e06fa119087bfe72e39bfccf27f60b890a24df11d813",
+    "tests/integration/treasury-history-browser.mjs": "82443dd406e53be0946f7294c8073b0a3b8ea3454c4eed1775f13163522bd420",
+    "contracts/src/ConfiguredTreasuryBridge.sol": "2c5fa6237ad6517924de1e9e1c74550517ed02941a50a72c59e922ec3fa95fbc",
+    "contracts/test/ConfiguredTreasuryBridge.t.sol": "89ed8cf7b5b6bc72c5237a84a9fdf0049b61fbf6a32d4abde461f37d65893685",
+    "scripts/build-treasury-browser.mjs": "bfa0ca17900b3ea3e4a08d6744a8fad289776e7771165fbd41ae6fcc149e50a9",
+    "scripts/treasury-network.mjs": "e80a721d6ad122dec4376af23292d721d4fab557ff309e42b19da636ef55185c",
+    "src/lib/treasury/deployment.ts": "b76508b1f98323f59a3c5e93740e7efeee652f34310aa2de6b69c89dd5ab3db2",
+    "src/lib/treasury/deployment-artifacts.json": "b6248faf9984b701867e06d1529b15127e62a6ba322d3b48875248c803d8491d",
+    "src/lib/treasury/shared-network.json": "b768ba4b72abd355568eff985f1ca2152382102510be682d15417f390207a10e",
+    "src/components/TreasurySetup.tsx": "68ce385d073606712cc5aa2d35c59cbe966a57c8d9af043484ca8d8d69ef49c4",
+    "tests/treasury-deployment.test.mjs": "efc03822045eec9f16f1cb6620f63eb90139dde47cd77ce1b8f195e1573212ab",
+    "tests/treasury-owners.test.mjs": "b1b217a9317a11b4e975810cf9561641480a27313e32d952357739bad6de56d7"
+  },
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "steps": [
+    {
+      "name": "syntax-tests-integration-treasury-owners.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-treasury-invoices.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-invoices.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-integration-treasury-invoice-browser.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-integration-treasury-payments.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-integration-treasury-payment-browser.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-payments.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-rules.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-treasury-composer.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-composer.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-treasury-devnet.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-treasury-owner.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-integration-treasury-browser.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-client.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-src-lib-fees-payment.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-src-lib-fees-l2-fees.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-history.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-integration-treasury-history-browser.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-build-treasury-browser.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-scripts-treasury-network.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-deployment.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "syntax-tests-treasury-owners.test.mjs",
+      "exitCode": 0
+    },
+    {
+      "name": "dashboard-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "runtime-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "integration",
+      "exitCode": 0
+    }
+  ],
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "6061ac5b6fadcd2e138e50f995ee1c0d5165139c51fb3410d473273f8d766a2b",
+  "reusedArtifacts": {
+    "run": "20261020T154209-7sciw1sf",
+    "summarySha256": "0f370a2683016a22a826ed0d37de4615d76de84ef65893b242c18afd7b6adce3",
+    "nativeHarnessSourceSha256": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00"
+  }
+}

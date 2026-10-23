@@ -1,0 +1,35 @@
+.columns, .row {
+  grid-template-columns: minmax(170px, 1.5fr) 90px minmax(140px, 1fr) minmax(110px, .8fr) 122px 84px;
+}
+.detail { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 1000px) {
+  .row { grid-template-columns: minmax(0, 1fr) auto; }
+}
+.historyFilter { max-width: 250px; margin-bottom: 16px; }
+.paymentList { max-height: none; }
+.paymentEntry { border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.paymentEntry:last-child { border-bottom: 0; }
+.paymentColumns, .paymentRow { grid-template-columns: minmax(160px, 1.3fr) 140px minmax(170px, 1.3fr) minmax(140px, 1fr) 120px 54px 32px; gap: 12px; }
+.paymentRow { border: 0; }
+.paymentBadge { white-space: normal; text-transform: none; letter-spacing: 0; }
+.paymentRoute { white-space: normal; }
+.paymentSplit { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font: 12px/1.5 var(--mono); }
+.paymentTransaction { display: flex; flex-direction: column; gap: 2px; font: 13px/1.5 var(--mono); }
+.paymentTransaction > span { font-size: 12px; }
+.paymentTransaction + .paymentTransaction { margin-top: 6px; }
+@media (max-width: 1100px) {
+  .paymentColumns { display: none; }
+  .paymentRow { grid-template-columns: minmax(0, 1fr) auto; }
+  .paymentRow > :nth-child(1) { grid-column: 1; grid-row: 1; }
+  .paymentRow > :nth-child(2) { grid-column: 1; grid-row: 2; }
+  .paymentRow > :nth-child(3) { grid-column: 1; grid-row: 3; }
+  .paymentRow > :nth-child(4) { grid-column: 2; grid-row: 3; }
+  .paymentRow > :nth-child(5) { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+  .paymentRow > :nth-child(6) { grid-column: 2; grid-row: 2; text-align: right; }
+  .paymentRow > :nth-child(7) { grid-column: 1 / -1; grid-row: 4; justify-content: flex-start; }
+}
+@media (max-width: 640px) {
+  .paymentRow > :nth-child(3) { grid-column: 1 / -1; }
+  .paymentRow > :nth-child(4) { grid-column: 1 / -1; grid-row: 4; align-items: flex-start; }
+  .paymentRow > :nth-child(7) { grid-row: 5; }
+}

@@ -1,0 +1,48 @@
+{
+  "contracts": {
+    "url": "https://registry.npmjs.org/@safe-global/safe-contracts/-/safe-contracts-1.4.1.tgz",
+    "sha256": "8803f7cf26e2c58300b8136342faa7b8bce59436e300f52115fa25b095e0bf79"
+  },
+  "factory": {
+    "url": "https://registry.npmjs.org/@safe-global/safe-singleton-factory/-/safe-singleton-factory-1.0.44.tgz",
+    "sha256": "54b2f02faca5f0fbdb9e55d912d5cb76264c1104e295f2c88d6478a3f8bddbb1"
+  },
+  "deployments": [
+    {
+      "name": "MultiSend",
+      "address": "0x38869bf66a61cF6bDB996A6aE40D5853Fd43B526",
+      "codeHash": "0x0e4f7fc66550a322d1e7688e181b75e217e662a4f3f4d6a29b22bc61217c4b77",
+      "artifact": "build/artifacts/contracts/libraries/MultiSend.sol/MultiSend.json"
+    },
+    {
+      "name": "MultiSendCallOnly",
+      "address": "0x9641d764fc13c8B624c04430C7356C1C7C8102e2",
+      "codeHash": "0xecd5bd14a08c5d2122379900b2f272bdf107a7e92423c10dd5fe3254386c9939",
+      "artifact": "build/artifacts/contracts/libraries/MultiSendCallOnly.sol/MultiSendCallOnly.json"
+    },
+    {
+      "name": "CompatibilityFallbackHandler",
+      "address": "0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99",
+      "codeHash": "0x7c6007a5d711cea8dfd5d91f5940ec29c7f200fe511eb1fc1397b367af3c42f9",
+      "artifact": "build/artifacts/contracts/handler/CompatibilityFallbackHandler.sol/CompatibilityFallbackHandler.json"
+    },
+    {
+      "name": "CreateCall",
+      "address": "0x9b35Af71d77eaf8d7e40252370304687390A1A52",
+      "codeHash": "0x2b3060c55fcb8275653e99ad511a71f67ba76934ed66a7d74d6e68b52afff889",
+      "artifact": "build/artifacts/contracts/libraries/CreateCall.sol/CreateCall.json"
+    },
+    {
+      "name": "SignMessageLib",
+      "address": "0xd53cd0aB83D845Ac265BE939c57F53AD838012c9",
+      "codeHash": "0x525c754a46b79e05543a59bb61e8de3c9eee0d955a59352409cbe67ea1077528",
+      "artifact": "build/artifacts/contracts/libraries/SignMessageLib.sol/SignMessageLib.json"
+    },
+    {
+      "name": "SimulateTxAccessor",
+      "address": "0x3d4BA2E0884aa488718476ca2FB8Efc291A46199",
+      "codeHash": "0x91f82615581fc73b190b83d72e883608b25e392f72322035df1b13d51766cf8d",
+      "artifact": "build/artifacts/contracts/accessors/SimulateTxAccessor.sol/SimulateTxAccessor.json"
+    }
+  ]
+}

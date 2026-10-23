@@ -150,3 +150,28 @@ services:
       - ALL
     pids_limit: 128
     mem_limit: 768m
+
+  verification:
+    build:
+      context: .
+      target: verification
+    image: eez-treasury-verification:local
+    network_mode: "service:ui"
+    depends_on:
+      ui:
+        condition: service_healthy
+    volumes:
+      - treasury-verification:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 512m
+    restart: unless-stopped
+
+volumes:
+  treasury-verification:

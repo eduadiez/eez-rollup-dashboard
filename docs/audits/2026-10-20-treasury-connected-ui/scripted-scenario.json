@@ -1,0 +1,153 @@
+{
+  "cases": [
+    {
+      "actionValue": "0",
+      "compositionTrace": "0x22e62e7b7d0429f9c67bf83e1552630fb52054e0ba44240b6efab3b3aa2b5126-admission_execution-4155205-1792497675012398872-0.jsonl",
+      "disposition": "PoolDiscarded",
+      "l1SignatureError": {
+        "code": 3,
+        "data": "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000054753303236000000000000000000000000000000000000000000000000000000",
+        "message": "execution reverted: GS026"
+      },
+      "label": "C is not yet an L1 owner",
+      "safeNonce": "0",
+      "stage": "composition rejection",
+      "transaction": "0x22e62e7b7d0429f9c67bf83e1552630fb52054e0ba44240b6efab3b3aa2b5126"
+    },
+    {
+      "actionValue": "42",
+      "blockHash": "0xb47b3b51bcc561006d0bdb851799e0818d27ae7781e0fe808d40afee0cb75574",
+      "blockNumber": 65,
+      "l1Verification": {
+        "blockHash": "0x8c7b9eadf7454e5dedb54c0c052b5aa15448fbe42928434596d0315cacd9d782",
+        "blockNumber": 13,
+        "calldataHash": "0x6837142d8e12d67475e66eb6910b8fd24f31cd89dc2d9386368b245d0f68b664",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0xa020f2f03c9a6a0d5c3874e44effa57d3d85b57216f43ce81ba17ece1d9935e3",
+        "transaction": "0x336c00b5e608231e395892ca7ef9d40ec6032f4fffaf24cf9ad8fee55cd65753"
+      },
+      "label": "B+C after adding C on L1",
+      "safeHash": "0xa020f2f03c9a6a0d5c3874e44effa57d3d85b57216f43ce81ba17ece1d9935e3",
+      "safeNonce": "1",
+      "stage": "settled and independently replayed",
+      "transaction": "0x4272a78000291a8257634e57c86680c5672f988e231b76e8e060feeb01b1fe9e"
+    },
+    {
+      "actionValue": "42",
+      "compositionTrace": "0x2509c39601546eb20a7e848e86fd08072bf40a5568ded0059dd2766e173260ab-admission_execution-4155205-1792497690008928729-5.jsonl",
+      "disposition": "PoolDiscarded",
+      "l1SignatureError": {
+        "code": 3,
+        "data": "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000054753303236000000000000000000000000000000000000000000000000000000",
+        "message": "execution reverted: GS026"
+      },
+      "label": "Replayed Safe approval",
+      "safeNonce": "1",
+      "stage": "composition rejection",
+      "transaction": "0x2509c39601546eb20a7e848e86fd08072bf40a5568ded0059dd2766e173260ab"
+    },
+    {
+      "actionValue": "42",
+      "compositionTrace": "0x74e0bfa49d3f4f07d60e0bc82de0c424208947bedc3a8892e9cef275635cc1e3-admission_execution-4155205-1792497695008590504-6.jsonl",
+      "disposition": "PoolDiscarded",
+      "l1SignatureError": {
+        "code": 3,
+        "data": "0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000054753303236000000000000000000000000000000000000000000000000000000",
+        "message": "execution reverted: GS026"
+      },
+      "label": "C removed before verification",
+      "safeNonce": "1",
+      "stage": "composition rejection",
+      "transaction": "0x74e0bfa49d3f4f07d60e0bc82de0c424208947bedc3a8892e9cef275635cc1e3"
+    },
+    {
+      "actionValue": "43",
+      "blockHash": "0xb7b7c33571e256c110efd444f588bf45fa1388b6cc0776231247bd8e394d1954",
+      "blockNumber": 85,
+      "l1Verification": {
+        "blockHash": "0x7fc85517c074c764c815dc67f603f60f77aa82a5d16e6bee5ca4bd2a4e785dec",
+        "blockNumber": 17,
+        "calldataHash": "0x08201c57509c41e20030a0649b243165763ede379c227d15c92f7cbf8a11e4b6",
+        "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+        "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "safeTransactionHash": "0x8b3176a91d003e82376e22cda9bf0a6272c62d44466c07388b63bdefabae3509",
+        "transaction": "0x7026bcda435854b67de12e27de91cba827f2973d5aeae623b0aad60acf350151"
+      },
+      "label": "A+B remain authorized after removing C",
+      "safeHash": "0x8b3176a91d003e82376e22cda9bf0a6272c62d44466c07388b63bdefabae3509",
+      "safeNonce": "2",
+      "stage": "settled and independently replayed",
+      "transaction": "0x1059516998804df272b5e3f020149490074b2560d52cd1f0d2a4980c8533fa16"
+    }
+  ],
+  "contracts": {
+    "action": "0x1cfd8455f189c56a4fbd81eb7d4118db04616ba8",
+    "adapter": "0x82b769500e34362a76df81150e12c746093d954f",
+    "adapterAlias": "0x017d182bD3C160cC8381D51863E5b864A9783ad9",
+    "manager": "0x4b2760f84b83d6b3829e30a7573b0172b6d6402c",
+    "safeL1": "0x161A96E9b189d573560CCe2A5BeE72f10A8100F6",
+    "safeL2": "0x8236A0A16720511069Af4D406B8b2826bD8C0833"
+  },
+  "deployments": {
+    "l1:0x7ef8e99980da5bcedcf7c10f41e55f759f6a174b": {
+      "codeHash": "0x3b3c721001965f70a18fc113f8bbcaa323d307a078d92615178fce15df9347a5",
+      "transaction": "0x71a91620e5fdac625a2185382d6d3dbbb5e8f72f244ab9a8f1ca4b9bcad80762"
+    },
+    "l1:0x82b769500e34362a76df81150e12c746093d954f": {
+      "codeHash": "0x54fdc0f05ea1402773651d5de2a6692776f5ee2087d1ef57a2d625170082ed83",
+      "transaction": "0xae01a24f39881cdf0e5708361cfb22ac1019ce1508622e806f5b9c7d2cafed2c"
+    },
+    "l2:0x1cfd8455f189c56a4fbd81eb7d4118db04616ba8": {
+      "codeHash": "0x8c41117236185cc421a060005e6d95a57e1368191c20baa367254bd6db2bebd9",
+      "transaction": "0xdffd03a05dbd592a0a511eba4684fa8f3d57a401eb9a1914af51225ea379df37"
+    },
+    "l2:0x66db6d191cd163f56197b767928a507df8b47aa7": {
+      "codeHash": "0x54fdc0f05ea1402773651d5de2a6692776f5ee2087d1ef57a2d625170082ed83",
+      "transaction": "0x20452d300d01ef68f6bf65d4adb815de8cd5097bb5baaa24fd7534ca290d5c25"
+    },
+    "l2:0x77c7e3905c21177be97956c6620567596492c497": {
+      "codeHash": "0x3b3c721001965f70a18fc113f8bbcaa323d307a078d92615178fce15df9347a5",
+      "transaction": "0x9043a376edbccc84a3d60db02ee0126e0cc36522d72d04d01976272b6b01a101"
+    },
+    "l2:0x82b769500e34362a76df81150e12c746093d954f": {
+      "codeHash": "0xbd439d4de1bf4ce1ecdf994bd77eab1ef2227a278337847fdbf5ac383797e0d2",
+      "transaction": "0x0e4afad56f2ce27a0d14ad299ba3e5c814db3ee0bfdadfa2cb5833bedb7d33a0"
+    }
+  },
+  "independentReplay": {
+    "hash": "0xb7b7c33571e256c110efd444f588bf45fa1388b6cc0776231247bd8e394d1954",
+    "height": 85
+  },
+  "lastSuccessfulL2Block": 85,
+  "network": {
+    "attester": "0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc",
+    "deployBlock": 1,
+    "fixture": "eez-testkit native process devnet",
+    "follower": "http://127.0.0.1:43291",
+    "l1": {
+      "chainId": 1337,
+      "front": "http://127.0.0.1:46161",
+      "rpc": "http://127.0.0.1:38911"
+    },
+    "l2": {
+      "chainId": 1,
+      "front": "http://127.0.0.1:34149",
+      "rpc": "http://127.0.0.1:33843"
+    },
+    "registry": "0x71c95911e9a5d330f4d621842ec243ee1343292e",
+    "rollupId": 1,
+    "traceDirectory": "<local run>/composition-traces"
+  },
+  "ownerAddition": "0x619b3bfa60555cda8914e9d8f2ef51c6da8512cbaefcd6475f08298b03591baa",
+  "ownerRemoval": "0x87a3edec3d7bb43cb212a5bb7db566d823bd3b1ec50750772f6f3c5c8afd0dfa",
+  "owners": {
+    "A": "0xe05fcC23807536bEe418f142D19fa0d21BB0cfF7",
+    "B": "0x0376AAc07Ad725E01357B1725B5ceC61aE10473c",
+    "C": "0x96F4d4f7B947464111764d65f34A4751c888b01D",
+    "threshold": 2
+  },
+  "postedAttestationVerified": true,
+  "scenarioComplete": true,
+  "verified": true
+}

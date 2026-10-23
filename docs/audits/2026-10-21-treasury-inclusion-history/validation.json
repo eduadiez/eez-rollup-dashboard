@@ -1,0 +1,115 @@
+{
+  "unit": {
+    "tests": 317,
+    "passed": 317,
+    "failed": 0,
+    "skipped": 0
+  },
+  "anvil": {
+    "verified": true,
+    "scope": "single owned EVM with real contracts and read-through EEZ managers; chain IDs switched per phase, no Composer/proofs",
+    "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:50:55.527285345Z (1778226655)\nBuild Profile: dist",
+    "cases": [
+      "confirmed singleton retained; five remaining transaction phases",
+      "contractsBatchL1 exact canonical receipt and outputs recovered after reload",
+      "contractsBatchL2 exact canonical receipt and outputs recovered after reload",
+      "fundingBatchL1 exact canonical receipt and outputs recovered after reload",
+      "budgetBatchL2 exact canonical receipt and outputs recovered after reload",
+      "configureL1 exact canonical receipt and outputs recovered after reload",
+      "existing 2-of-2 Safes retain addresses and L1 owners; old EEZ-X quorum approves adoption; L1 quorum approves both new allowance batches",
+      "dedicated operator predeploys, seeds, seals and registers both bridges before treasury creation",
+      "both wallet-funded setups complete with current-state Safe reviews before the safe checkpoint",
+      "both treasuries reject unfunded wallets, then consume exact ERC20 approvals and wallet balances without minting",
+      "two wallets create independent treasuries sharing one sealed bridge pair and one Test USDC asset",
+      "110-token split payments in both directions preserve the other treasury and aggregate escrow backing",
+      "shared-budget rejection changes neither treasury, recipient balance nor allowance counter",
+      "300/150 balances, 100/100 allowances, wallet bridge admins, closed executors, no executor Safe authority or residual funds"
+    ],
+    "includedBeforeSafe": 14
+  },
+  "browser": {
+    "checkedAt": "2026-10-21T11:47:54.112Z",
+    "accounts": [
+      "0x000000000000000000000000000000000000a11c",
+      "0x000000000000000000000000000000000000b0b1"
+    ],
+    "url": "http://127.0.0.1:8080/dashboard",
+    "chains": [
+      10200,
+      906969
+    ],
+    "steps": 7,
+    "standardERC20Funding": true,
+    "noImplicitMintOrClaim": true,
+    "separateFaucetPreservesTreasury": true,
+    "sharedInfrastructureReused": true,
+    "sharedReuseUsesMockedReadonlyRpc": true,
+    "hiddenUntilShortcut": true,
+    "realNetworkChecks": true,
+    "wallet": "read-only injected provider; no extension or private key",
+    "selectedWallet": true,
+    "immutableSelectionAfterReview": true,
+    "choicesOnBothChains": true,
+    "invalidImportRejected": true,
+    "zeroGasStopsSubmission": true,
+    "noSubmission": true,
+    "reload": true,
+    "sameWalletRestart": true,
+    "restartOpensSafeChooser": true,
+    "noArchiveControls": true,
+    "selectionStorageFailurePreservedSetup": true,
+    "pendingRestartBlocked": true,
+    "crossTabLock": true,
+    "otherTabFollowedRestart": true,
+    "completedTreasuryRestart": true,
+    "paymentAndOwnerRestartBlocked": true,
+    "previousManifestIgnoredAfterReload": true,
+    "keyboardFocus": {
+      "tag": "SELECT",
+      "width": "2px",
+      "color": "rgb(59, 229, 126)",
+      "visible": true
+    },
+    "badgeStyle": {
+      "font": "12px",
+      "color": "rgb(154, 163, 179)"
+    },
+    "chainColors": [
+      "rgb(155, 166, 214)",
+      "rgb(181, 163, 238)"
+    ],
+    "reducedMotion": true,
+    "contextualSetupDetails": true,
+    "fundingAndBudgetSteps": true,
+    "confirmedJournalPreserved": true,
+    "pendingJournalUnchanged": true,
+    "automaticPendingStatus": true,
+    "chainExplorerLinks": true,
+    "orderedSetupHistory": true,
+    "historyInclusionFinalityAndFailure": true,
+    "historyDowngradesUnavailableRPC": true,
+    "manualRecoveryRemoved": true,
+    "discoveredHashPersisted": true,
+    "discoveryUsesMockedReadonlyRpc": true,
+    "mobileWidth": [
+      390,
+      390
+    ],
+    "methods": [
+      "eth_chainId",
+      "eth_getCode",
+      "eth_call",
+      "eth_getBlockByNumber",
+      "eth_getStorageAt",
+      "eth_getBalance",
+      "eth_getTransactionCount",
+      "eth_getTransactionReceipt"
+    ],
+    "walletMethods": [
+      "eth_requestAccounts",
+      "eth_chainId",
+      "eth_call",
+      "eth_accounts"
+    ]
+  }
+}

@@ -1,0 +1,373 @@
+{
+  "date": "2026-10-23",
+  "scope": "Direct new setup; one fixed-payment model; remove obsolete bridge wrappers; preserve existing treasuries and pending requests",
+  "branch": "codex/treasury-demo-release",
+  "dashboardHead": "a96bc5cd3e7df91ac585ce7cdf6303f82fc7bfb6",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "release": "026c1f779c5c3bed2cc56f91707bb7b9eca67c240ef7cfd47ca83017cb868df1",
+  "previousRelease": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+  "baselineJavaScriptTests": 440,
+  "checks": {
+    "javascript": {
+      "passed": 420,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".runtime/treasury-setup-simplification-20261023/js-final.log",
+      "sha256": "231715063272aded47ead6fa3de38a4f80569bc6bdc7249473e1712d7a35fd80"
+    },
+    "solidity": {
+      "passed": 134,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".runtime/treasury-setup-simplification-20261023/forge-test.log",
+      "sha256": "de8be1c7182f46ce4b75f7abab9a928e611400628a490c238497f29e8f4b8b30"
+    },
+    "build": {
+      "passed": true,
+      "log": ".runtime/treasury-setup-simplification-20261023/build-final-2.log",
+      "sha256": "8ff3c7badeffd9f6ed950dc2210fb089c6a8997e90c818c52d28f74cdc6223bf"
+    },
+    "release": {
+      "passed": true,
+      "artifacts": 18,
+      "log": ".runtime/treasury-setup-simplification-20261023/release-check-final.log",
+      "sha256": "3d658cee7e38ca51bf3e86a88f155cdbd75eb558f0bdc29a13e9716f0d30f2fc"
+    },
+    "setup": {
+      "passed": true,
+      "cases": 19,
+      "evidence": ".runtime/treasury-deployment-batches/anvil-Aipgfj/summary.json",
+      "sha256": "6f1e6477cbaf30098bb129f74572a75585fb4ebcc3fbe1d62cafa67fa933e677"
+    },
+    "sourceVerification": {
+      "passed": true,
+      "creations": 6,
+      "evidence": ".runtime/treasury-auto-verification-20261022/anvil-eLz1SA/summary.json",
+      "sha256": "570d66d3c0eaa106fd9d19a22204371817b2d5026fb4b92e0396a6205a46b8d0"
+    },
+    "walletBrowser": {
+      "passed": true,
+      "cases": 12,
+      "evidence": ".runtime/treasury-setup-simplification-20261023/wallet-browser-final/result.json",
+      "sha256": "c85693c7bea067fe3fbbc99dc24e91cce5fa0b95346520fffd3928a6b322d60b"
+    },
+    "setupBrowser": {
+      "passed": true,
+      "cases": 5,
+      "log": ".runtime/treasury-setup-simplification-20261023/setup-browser-final.log",
+      "sha256": "db44328b5c12ae25a7f12e5b4aa45365b5838366a45d08f3e73808a408fb535d"
+    },
+    "native": {
+      "fullBrowser": {
+        "path": ".runtime/treasury-integration/20261023T080028-ou6ud7ni",
+        "summarySha256": "ffbec94ae21c6df6e3b881cb0563da31ef2ca2d42e34dec8d7005df16128061a",
+        "scenarioSha256": "67011cd9d02c2011c431502594e9eeac93c549e7a6f11bd4079a38f448e45c0e",
+        "verified": true,
+        "cases": 9,
+        "independentReplay": {
+          "hash": "0x891a9d6f042d20181a85fbeef526c36c275fb1bca973a53e434ed26b1a1f807e",
+          "height": 605
+        },
+        "postedAttestationVerified": true,
+        "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+        "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+        "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+        "binaries": {
+          "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+          "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+          "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+        },
+        "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+        "recordedSourceDifferences": {
+          "src/lib/treasury/payments.ts": {
+            "tested": "0354dd34bfde0eabbeb8679d73fb71b137e9db3f3e416f8ef33ae44fd683661d",
+            "current": "02dd3fbb13da622ca1191f0d33ca7ce1a3e7d649e99cc965fdd4d21d1d7975de"
+          },
+          "src/components/TreasuryConnected.tsx": {
+            "tested": "93957defc19fe83c72cd3f095e90957f2c5feef0bd52db28ee4ac31656321eeb",
+            "current": "57d43fb24909db675142100dd2f3f93c213079f8e14b190c596c6b7733fd55b9"
+          },
+          "src/lib/treasury/deployment.ts": {
+            "tested": "6a2c466d5fb770a14159f0d9866ab037c6f851995cf60ae733c5fef6380cb767",
+            "current": "f8596cef41c759ccec0cfd5ded8501e5f7a9b5d6915527c377992cd89a2da322"
+          },
+          "src/components/TreasurySetup.tsx": {
+            "tested": "26f49e00b52f37d7a168943c73f7cd4eb91067f2e828ab41bb393fae559fb0b7",
+            "current": "cd16b00e9d3dbd9bfb7a393313b957fb401f518e7d07685ddec4a7111729ee2e"
+          },
+          "tests/treasury-deployment-batches.test.mjs": {
+            "tested": "6d596f46e4595f5561d2a3bba630c0ffc9f9bc17e861f2cd211a0216bf93a6bc",
+            "current": "c6fda5ab1a74f75cae5d4553b94b5b7a00bf6cafefb481cef278c2ff20073f27"
+          },
+          "tests/treasury-shared-infrastructure.test.mjs": {
+            "tested": "b21914b983782c42b25b87cc4c50ed2199422d20883cdc0ecaf929f88df9f6f7",
+            "current": "adbfe93f58a7239bf5bf4baf05d2a25feaeccd319490fb210c8c8951d7157c2d"
+          },
+          "tests/treasury-wallet-funding.test.mjs": {
+            "tested": "67b354c9c3c399c0cafc96e704cadb8cff13980d4ecacab0d7cbbe0240ab2fad",
+            "current": "a164cd1fc0899f9ec7a4c9d475890b649212a9dd6c3530499f196e15cc57f8e2"
+          },
+          "src/lib/treasury/release.ts": {
+            "tested": "729cf421047abae53691381dbb5e7d97a64dd3b6801f8965c401c60f82b76351",
+            "current": "fb10fc3fd7fefe88dd86cdf7f03d501674cba91148daa034ccc55d2b5bbf0b99"
+          },
+          "tests/fixtures/treasury-saved-setups.json": {
+            "tested": "0fa2b8d26480d0ed8ca3c6921a6d0e81165db715309bb8b3cf663f6f9132aca0",
+            "current": "987f46d032e4496f02ab3246cba9556ea92ec0130ed1313c0b7d3f1c56225aa8"
+          },
+          "tests/treasury-saved-payments.test.mjs": {
+            "tested": "1b55cde301562dd84b8486ec5732eb8867a7adb97d4f9494dd34a98bddece966",
+            "current": "47ca49df38c4ecd222b20b103c00ae95ca2d6630c858e96b42bb300dbc999145"
+          }
+        }
+      },
+      "standardBridge": {
+        "path": ".runtime/treasury-integration/20261023T080027-ucp2uo28",
+        "summarySha256": "a5487306e7576baa9c2a0e9ac7d4cf813c6e8ff838d63cfaff24a7e9eee5b8b3",
+        "scenarioSha256": "e6a7eb6afdf8d3d533147a12754e1ddc414ce43db11e8b7299b7e4e87a280ed9",
+        "verified": true,
+        "cases": 8,
+        "independentReplay": {
+          "hash": "0x377e1265166b432a5806a9b75fb1087854efb0064fc1c626d4f20bb36b2082b2",
+          "height": 265
+        },
+        "postedAttestationVerified": true,
+        "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+        "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+        "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+        "binaries": {
+          "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+          "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+          "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+        },
+        "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+        "recordedSourceDifferences": {
+          "src/lib/treasury/deployment.ts": {
+            "tested": "6a2c466d5fb770a14159f0d9866ab037c6f851995cf60ae733c5fef6380cb767",
+            "current": "f8596cef41c759ccec0cfd5ded8501e5f7a9b5d6915527c377992cd89a2da322"
+          },
+          "src/components/TreasurySetup.tsx": {
+            "tested": "26f49e00b52f37d7a168943c73f7cd4eb91067f2e828ab41bb393fae559fb0b7",
+            "current": "cd16b00e9d3dbd9bfb7a393313b957fb401f518e7d07685ddec4a7111729ee2e"
+          },
+          "tests/treasury-deployment-batches.test.mjs": {
+            "tested": "6d596f46e4595f5561d2a3bba630c0ffc9f9bc17e861f2cd211a0216bf93a6bc",
+            "current": "c6fda5ab1a74f75cae5d4553b94b5b7a00bf6cafefb481cef278c2ff20073f27"
+          },
+          "tests/treasury-shared-infrastructure.test.mjs": {
+            "tested": "b21914b983782c42b25b87cc4c50ed2199422d20883cdc0ecaf929f88df9f6f7",
+            "current": "adbfe93f58a7239bf5bf4baf05d2a25feaeccd319490fb210c8c8951d7157c2d"
+          },
+          "tests/treasury-wallet-funding.test.mjs": {
+            "tested": "67b354c9c3c399c0cafc96e704cadb8cff13980d4ecacab0d7cbbe0240ab2fad",
+            "current": "a164cd1fc0899f9ec7a4c9d475890b649212a9dd6c3530499f196e15cc57f8e2"
+          },
+          "src/lib/treasury/payments.ts": {
+            "tested": "0354dd34bfde0eabbeb8679d73fb71b137e9db3f3e416f8ef33ae44fd683661d",
+            "current": "02dd3fbb13da622ca1191f0d33ca7ce1a3e7d649e99cc965fdd4d21d1d7975de"
+          },
+          "src/components/TreasuryConnected.tsx": {
+            "tested": "93957defc19fe83c72cd3f095e90957f2c5feef0bd52db28ee4ac31656321eeb",
+            "current": "57d43fb24909db675142100dd2f3f93c213079f8e14b190c596c6b7733fd55b9"
+          },
+          "src/lib/treasury/release.ts": {
+            "tested": "729cf421047abae53691381dbb5e7d97a64dd3b6801f8965c401c60f82b76351",
+            "current": "fb10fc3fd7fefe88dd86cdf7f03d501674cba91148daa034ccc55d2b5bbf0b99"
+          },
+          "tests/fixtures/treasury-saved-setups.json": {
+            "tested": "0fa2b8d26480d0ed8ca3c6921a6d0e81165db715309bb8b3cf663f6f9132aca0",
+            "current": "987f46d032e4496f02ab3246cba9556ea92ec0130ed1313c0b7d3f1c56225aa8"
+          },
+          "tests/treasury-saved-payments.test.mjs": {
+            "tested": "1b55cde301562dd84b8486ec5732eb8867a7adb97d4f9494dd34a98bddece966",
+            "current": "47ca49df38c4ecd222b20b103c00ae95ca2d6630c858e96b42bb300dbc999145"
+          }
+        }
+      },
+      "finalNative": {
+        "path": ".runtime/treasury-integration/20261023T081216-fq63z53g",
+        "summarySha256": "f0f8060f90f9b749e9c2e357466f1554522e58d2ec1811d82cfe5c4a97595448",
+        "scenarioSha256": "031b599fc01853f81e1da18dfecfd5a0f9200196c6495f684f4cdb429b1e7159",
+        "verified": true,
+        "cases": 5,
+        "independentReplay": {
+          "hash": "0xdd8a1b9dd6839486deefd1f53620b0449b058e1bbb5b76a320d3ca36c3b5c5f0",
+          "height": 225
+        },
+        "postedAttestationVerified": true,
+        "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+        "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+        "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+        "binaries": {
+          "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+          "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+          "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+        },
+        "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+        "recordedSourceDifferences": {
+          "tests/treasury-deployment-batches.test.mjs": {
+            "tested": "6a3af701c73700b3f45920c8f5b3b4280cd672a644199d6b60f6a6b9dd34ea48",
+            "current": "c6fda5ab1a74f75cae5d4553b94b5b7a00bf6cafefb481cef278c2ff20073f27"
+          },
+          "tests/treasury-shared-infrastructure.test.mjs": {
+            "tested": "b21914b983782c42b25b87cc4c50ed2199422d20883cdc0ecaf929f88df9f6f7",
+            "current": "adbfe93f58a7239bf5bf4baf05d2a25feaeccd319490fb210c8c8951d7157c2d"
+          },
+          "tests/treasury-wallet-funding.test.mjs": {
+            "tested": "67b354c9c3c399c0cafc96e704cadb8cff13980d4ecacab0d7cbbe0240ab2fad",
+            "current": "a164cd1fc0899f9ec7a4c9d475890b649212a9dd6c3530499f196e15cc57f8e2"
+          },
+          "tests/fixtures/treasury-saved-setups.json": {
+            "tested": "0fa2b8d26480d0ed8ca3c6921a6d0e81165db715309bb8b3cf663f6f9132aca0",
+            "current": "987f46d032e4496f02ab3246cba9556ea92ec0130ed1313c0b7d3f1c56225aa8"
+          },
+          "tests/treasury-saved-payments.test.mjs": {
+            "tested": "bac887063331116e53aebd1e68bfe649704a414aeed3f7c9cd8c05d0f54809e4",
+            "current": "47ca49df38c4ecd222b20b103c00ae95ca2d6630c858e96b42bb300dbc999145"
+          }
+        }
+      }
+    }
+  },
+  "preservedBindings": {
+    "src/lib/treasury/deployment-artifacts.json": {
+      "sha256": "54dcabbb43b0c6313632e0fb03950517dfdb740ab457c1b39c27852009a19cbf",
+      "unchanged": true
+    },
+    "src/lib/treasury/mainnet-artifacts.json": {
+      "sha256": "c82a144f2c0a2be6020a96f0492a6768fbbbbea9087bd730e98f1b05a1d25979",
+      "unchanged": true
+    },
+    "src/lib/treasury/mainnet-network.json": {
+      "sha256": "a538a50d040d08db503d882ae108bd5b8186cd5a8770ccc2c6ac8540c1887896",
+      "unchanged": true
+    },
+    "src/lib/treasury/shared-network.json": {
+      "sha256": "b768ba4b72abd355568eff985f1ca2152382102510be682d15417f390207a10e",
+      "unchanged": true
+    },
+    "src/lib/treasury/mainnet-shared-contracts.json": {
+      "sha256": "f9320ea2c913fe4141d06f17d2cb250699a792c1847922d9cbc2a31fdc8229d5",
+      "unchanged": true
+    },
+    "src/lib/treasury/official-safe-deployments.json": {
+      "sha256": "443457764595db92ec19d77bf1b24174f61e3a88e0f9d916d2cb4699abd24e94",
+      "unchanged": true
+    }
+  },
+  "changedContractBytes": [
+    "SharedTreasuryBridge"
+  ],
+  "sourceSha256": {
+    "tests/treasury-transfers.test.mjs": "8d529193ea9ea1f1482b70808693dfb843541b636cb7528c88cda24a5de94a44",
+    "tests/treasury-bidirectional.test.mjs": "65897fcc718df095616afa03ec5e9496cc5a506c607318e8992ac528691b3583",
+    "tests/integration/treasury-standard-bridge.mjs": "4811bf9618303dc82dd079550dd672b41ddb6ce2012640d1437da575232aa6e7",
+    "src/lib/treasury/client.ts": "14252c4e884adfa940fbb30ec8f4d29b9aa22defc88df4a35f522b534280a8c2",
+    "tests/treasury-mainnet.test.mjs": "c307c1674c127718055b64905deb2b0e856b07aa029638591a754bb440ab8169",
+    "docs/proposals/one-treasury-two-safes.md": "94a48ad3dff6b5ca5ea4062babce4781eb71cc47745d036b700a943772a96dd1",
+    "tests/treasury-standard-bridge.test.mjs": "695db471005496458fc69e67c002c032e5866fd0c3da32849057515275e8e0e3",
+    "src/components/TreasuryConnected.tsx": "57d43fb24909db675142100dd2f3f93c213079f8e14b190c596c6b7733fd55b9",
+    "src/lib/treasury/mainnet.ts": "2e15af67b7e03ed6fb3db49561dbc8ddaf1f577e43e7e0b6c11989e10439dee2",
+    "src/lib/treasury/mainnetSetup.ts": "05382167baf36350d90a63a96161ae340efc1ff1b3b0c60a81786d5fdc456df4",
+    "contracts/src/SharedTreasuryBridge.sol": "c52fe022edf2eab38476a86895201eab0a5fa1c7c584e80e4965eb32103cf65e",
+    "tests/treasury-deployment.test.mjs": "201e13031b81d29e5eff4dcd03b6da7b64eb5ff13665c371aaa59402c6a2d06c",
+    "tests/treasury-invoices.test.mjs": "ca5d8854fd471d1b319d9b64aef44092d2ac9042a09aece29b97fdb0260e689b",
+    "src/lib/treasury/payments.ts": "02dd3fbb13da622ca1191f0d33ca7ce1a3e7d649e99cc965fdd4d21d1d7975de",
+    "tests/fixtures/treasury-setup-completion-browser.tsx": "fb603b7f8078b6e43b16bd18cef4e501c9c80c9d2950d51d7e53347142d0a1de",
+    "tests/treasury-history.test.mjs": "9342b634157e551081c05edc40946c14bb08628dcacfe5617651e84a01bb7424",
+    "src/lib/treasury/history.ts": "229cc918b03fd6cad19544176f564cbca8ba156621b3953d55f32dae1d653856",
+    "tests/integration/treasury-setup.mjs": "ed85e944d5a482544c36aa6d71362b7f2dbccdc20992095921136060c417cba6",
+    "tests/integration/treasury-bidirectional.mjs": "fd4e392dd0ddb418f02e2e66f669a7db04bdbf828a0f8bd9a574fa25ad6f131b",
+    "tests/integration/README.md": "fa3dcd0b80de6e308d4003c5aee130b7ff98adb7dc7339fb0f4171a2456f4361",
+    "docs/runbooks/treasury-mainnet.example.json": "a8902e9a2da5bd25a4898fb4c81bca57e1df4a8bc49de08a43afc4e9e8a463be",
+    "tests/integration/treasury-deployment-batches.mjs": "b4ffda85349e1dac256fd1ed33dbfae69fca6a3c9716d2b2d4e33a2329e4e7b3",
+    "src/lib/treasury/runtimeCode.ts": "6d99e6650ab8f36e3f3bca756bfce701b4d4366b9f54f18350ecaec4e1348e97",
+    "tests/integration/treasury-payments.mjs": "25b9940e9eec9d6f4bae127e8d3851f451a564fb60ed8a82924be00fe273eaba",
+    "tests/treasury-deployment-batches.test.mjs": "c6fda5ab1a74f75cae5d4553b94b5b7a00bf6cafefb481cef278c2ff20073f27",
+    "scripts/run-treasury-integration.py": "0acdbc0b061a39d948f0309527a83cb6381dd5d2f0feda46b5c01b2a2a9205df",
+    "src/lib/treasury/current-build.json": "051e7f4b2252a0dc09a29fe10673c21dde42da2d2bb61fb32d17203abcb96ba8",
+    "docs/runbooks/treasury-shared-network.md": "840612d0d8b26b497b79f408fa02c79a0f4f972b6e0e6fdc6c39e23ae6ba059f",
+    "src/lib/treasury/assetInfrastructure.ts": "7ad9c51ba975ac7584fa22223ebfd9f77b90eeb1a467296d2afe2dcbe23e991e",
+    "tests/treasury-wallet-browser.mjs": "41ac065da4ba818a13458abba020dd2dd3a5ce611cf9bbf6fc09fcd6404d1bb4",
+    "tests/treasury-payments.test.mjs": "3e12790d4c0ae4c258daa9c33cf008383c38c9f75f4fbdcfb90245e986e50981",
+    "tests/integration/treasury-payment-browser.mjs": "4956cea10d6ba66e5ad086cff505a1ff3ea786623ea6757f648dd81227788371",
+    "src/lib/treasury/sharedInfrastructure.ts": "602d47abf88d198151b45a8dd995c6d0fbdc9a11d4db6946181675e6eab5fdb6",
+    "src/lib/treasury/deploymentGroups.ts": "ea9aeed60f148adbcfc545da09e2410a350a09d0e01b18b817bbabceca626a7e",
+    "src/lib/treasury/upgrade.ts": "aca3f673a6fb4871a067245d7291e3f4bf9c15afdaa5c3b5ecc6be3a7328d4b8",
+    "src/components/TreasurySetup.tsx": "cd16b00e9d3dbd9bfb7a393313b957fb401f518e7d07685ddec4a7111729ee2e",
+    "tests/treasury-client.test.mjs": "c884cbb4f5c7ef1fa6e9fcd8596e019c29ff9158a5cb18c9a4b8cb10f7a856d0",
+    "tests/treasury-shared-infrastructure.test.mjs": "adbfe93f58a7239bf5bf4baf05d2a25feaeccd319490fb210c8c8951d7157c2d",
+    "tests/treasury-wallet-funding.test.mjs": "a164cd1fc0899f9ec7a4c9d475890b649212a9dd6c3530499f196e15cc57f8e2",
+    "tests/integration/treasury-invoice-browser.mjs": "59ce8d9a4c69097c4850e475bd129e5444942bde1b06147d1e3a578163ce1eaf",
+    "src/lib/treasury/deployment.ts": "f8596cef41c759ccec0cfd5ded8501e5f7a9b5d6915527c377992cd89a2da322",
+    "src/lib/treasury/l1Payments.ts": "87a393437515cc65cfda0ab7175acab2c6c972ed402e6c331a5a0a0ff2f97d82",
+    "docs/runbooks/treasury-mainnet.md": "400320d9128f806789b985a479c403aa72ff9df341b3d5b2723beb388772f6f5",
+    "src/lib/treasury/savedDeployment.ts": "ae4e51afbda2af1c2b731fe2c36be3fd9d3b1492e2b6406e0d5d9a55c6bd81f2",
+    "src/lib/treasury/savedPayments.ts": "186495a56ec101b9f6501483a55806cb0b5f4a39e42cb9bf149bea1f7100c61f",
+    "src/lib/treasury/saved-shared-bridges.json": "abe3790a67f427fb8d5b9e1c4e2ed4d0c16ddd473296e5d4c23952c1a625e051",
+    "contracts/test/SharedTreasuryBridge.t.sol": "7f35659e481c07ce42497124f0f47d153ed2217c3507abbd7392ca3659f7739b",
+    "tests/fixtures/treasury-saved-setups.json": "987f46d032e4496f02ab3246cba9556ea92ec0130ed1313c0b7d3f1c56225aa8",
+    "tests/treasury-saved-payments.test.mjs": "47ca49df38c4ecd222b20b103c00ae95ca2d6630c858e96b42bb300dbc999145",
+    "src/lib/treasury/builds/026c1f779c5c3bed2cc56f91707bb7b9eca67c240ef7cfd47ca83017cb868df1.json": "0af12f0566108c7bf1e7060b0cc06d6abd18cb94c268a61a778b1757a9e5354a",
+    "verification/builds/026c1f779c5c3bed2cc56f91707bb7b9eca67c240ef7cfd47ca83017cb868df1/manifest.json": "06ff65ee570b61a7845eec5c7877245258b64d50c30514596cadd5a582e3b04e"
+  },
+  "removedFiles": [
+    "contracts/src/BootstrapTreasuryBridge.sol",
+    "contracts/src/ConfiguredTreasuryBridge.sol",
+    "contracts/test/ConfiguredTreasuryBridge.t.sol"
+  ],
+  "savedSetupVectors": {
+    "sourceSha256": {
+      "src/lib/treasury/deployment.ts": "8f6d0ed25625533a66538a6a4e79001d9f1b62e687cb7a90c7c830fe6e7bdba6",
+      "src/lib/treasury/deploymentGroups.ts": "1efac55b823fca1ef168175bbed9fc72fa58a844a44bdbccc04a6a2da62c40a9"
+    },
+    "versions": [
+      3,
+      4,
+      6,
+      8,
+      9,
+      10
+    ],
+    "checks": [
+      "original step order",
+      "original calldata hash",
+      "original action commitments and output identities",
+      "reload without rewriting",
+      "no resend while pending"
+    ]
+  },
+  "retainedDiagnostics": [
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/native-ui.log",
+      "sha256": "4e80549f8fd3cad46ec4b40d08a84fa9670b4bd5de6faac8e50249370d0cfa0b"
+    },
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/native-standard.log",
+      "sha256": "bdf5f882eb3d87a2efd72def32d7873aaa7df9cf15cfa0ed03f6d8abe3a97aa3"
+    },
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/wallet-browser.log",
+      "sha256": "b202e1e6860b7112c4bbdb39e1ca3be4e098d8cc97d2b3388d7cf1381a9d583f"
+    },
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/recovery-first-failures.log",
+      "sha256": "1d309454788177f68a103e98f26a8c83d9f2abfe5ca47858a776256af6b95c04"
+    },
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/recovery-fixed.log",
+      "sha256": "b970e1f8b1238fde9defd9dbdae3cbe53e15114a11ee891ba9f838c11629f5ad"
+    },
+    {
+      "path": ".runtime/treasury-setup-simplification-20261023/js-final-2.log",
+      "sha256": "6dd65ccc7b2ed9d179b4cfa4597908e00a1f3938b8187cc25c74d153ef704dff"
+    }
+  ],
+  "limits": [
+    "Ignored .runtime evidence and snapshots are local-only.",
+    "No public broadcast, explorer publication, .env changes, shared service restart or user browser storage edits.",
+    "Standard bridge rehearsal uses retained public runtime bytes and new isolated state, not a fresh mainnet fork.",
+    "Anvil setup and focused browser RPC fixtures are controlled; native execution independently verifies settlement and replay.",
+    "No real wallet-extension/Safe-app acceptance or independent security audit."
+  ]
+}

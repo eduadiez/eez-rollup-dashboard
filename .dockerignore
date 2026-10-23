@@ -6,3 +6,9 @@ npm-debug.log*
 
 .env
 .env.*
+
+# Solidity sources and dependencies are built separately from the dashboard.
+contracts/
+
+__pycache__/
+*.py[cod]

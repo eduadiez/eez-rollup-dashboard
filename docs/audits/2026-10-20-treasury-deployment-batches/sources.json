@@ -1,0 +1,23 @@
+{
+  "dashboardHead": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "branch": "feat/treasury-demo",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "safe": "bf943f80fec5ac647159d26161446ac5d716a294",
+  "allowances": "c95f03900bff99be090dadb9de1c74b162365485",
+  "files": {
+    "contracts/src/TreasuryBootstrap.sol": "f411ad99359f03d8891f3dbc530dfbbcb87a92273aede9a08a5f0503e504e6d2",
+    "contracts/src/BootstrapTreasuryBridge.sol": "2a6a4c4b407a90a373313f6884703cffd1ba1d3ccf33c99034cc0881f22ddb87",
+    "contracts/test/TreasuryBootstrap.t.sol": "209d6836dbd75b8d76b46c035fb6733afbfa6574b70de3ebe66dc76dbc35bb2b",
+    "src/lib/treasury/deployment.ts": "bb445c08aa670ca2ae1124105ed489a1f50c91e6ebab593365d74e08352ceb96",
+    "src/lib/treasury/deploymentGroups.ts": "42d762b88eb5bd698cc32767025c3cc588c9be72b6ccbfdf992a1fa8f50002e2",
+    "src/lib/treasury/deployment-artifacts.json": "e789ed47a683b588f5997f55859ef62daf509d4d64403314fe7dc11d069bd0bb",
+    "src/components/TreasurySetup.tsx": "7ec7295834b2dda611c23f2fb3b2256dfdf790c9c99de55bd7d94ef62815eee7",
+    "scripts/build-treasury-browser.mjs": "0b758ff33b410f67eb5aa66ffbe93f82c47b7d1ab952dfcc89b4120ddeb9c88a",
+    "scripts/run-treasury-integration.py": "3fb82f0b27521b8fdeae8da0ccb9004a33fd4f934bb769317550644f48b13dd7",
+    "tests/treasury-deployment-batches.test.mjs": "732a0b50b5b9892121cc34430b886fc9819da8367efe9e4d28012e3c91887cca",
+    "tests/integration/treasury-deployment-batches.mjs": "d9bb64b2d88501e9975810a823db0eb6452d7b46754e1ee063d046683f315c0c",
+    "tests/integration/treasury-payments.mjs": "9a858c6bf652c68a4e82353bc0f38fe8e38f289554c6c22ca0c4099aa6027393",
+    "tests/treasury-shared-browser.mjs": "2453b3e24b769e126dc57e5ec52323a2f443f407fddac4bc3013c516ab671de1",
+    "tests/integration/treasury-browser.mjs": "433a2fb3485a562644b6d29c424e43359e1d6708ecac3a3355845553572cd086"
+  }
+}

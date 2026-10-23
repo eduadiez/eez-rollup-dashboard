@@ -1,0 +1,30 @@
+{
+  "run": ".runtime/treasury-integration/20261020T135223-if4s3eqk",
+  "ports": [
+    {
+      "port": 33981,
+      "open": false
+    },
+    {
+      "port": 46167,
+      "open": false
+    },
+    {
+      "port": 34381,
+      "open": false
+    },
+    {
+      "port": 42227,
+      "open": false
+    },
+    {
+      "port": 43357,
+      "open": false
+    },
+    {
+      "port": 37863,
+      "open": false
+    }
+  ],
+  "stop": "recorded stop file; normal fixture cleanup"
+}

@@ -1,0 +1,42 @@
+{
+  "run": ".runtime/treasury-integration/20261020T143356-blh2sl33",
+  "url": "http://127.0.0.1:33753/dashboard/#/treasury-demo",
+  "readOnly": true,
+  "invoiceCapability": true,
+  "nonce": "3",
+  "balanceL1": "300000000",
+  "balanceL2": "150000000",
+  "allowanceL1": [
+    "100000000",
+    "0",
+    "10",
+    "29875110",
+    "1"
+  ],
+  "allowanceL2": [
+    "100000000",
+    "0",
+    "10",
+    "29875110",
+    "1"
+  ],
+  "spent": "0",
+  "unsignedInvoice": {
+    "safeHash": "0xc0018b88d3edd46c58f352c1d099c3d5309608f3df21ec009483dd5fb4d0d909",
+    "method": "payInvoice",
+    "funding": {
+      "fromL1": "100000000",
+      "fromL2": "10000000"
+    }
+  },
+  "noHorizontalOverflow": [
+    1440,
+    390,
+    320
+  ],
+  "pageErrors": [],
+  "unauthorizedFixtureRequests": [
+    403,
+    403
+  ]
+}

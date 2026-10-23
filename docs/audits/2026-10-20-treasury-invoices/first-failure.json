@@ -1,0 +1,22 @@
+{
+  "run": "20261020T142619-bg23lfji",
+  "verified": false,
+  "steps": [
+    {
+      "name": "dashboard-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "runtime-contracts",
+      "exitCode": 0
+    },
+    {
+      "name": "integration",
+      "exitCode": 101
+    }
+  ],
+  "failure": "locator.waitFor: Timeout 150000ms exceeded.\nCall log:\n  - waiting for getByRole('region', { name: 'Connected treasury demo', exact: true }).getByRole('heading', { name: 'Rollback verified', exact: true }) to be visible\n\n    at invoiceBrowser (/home/edu/Development/eez-rollup-dashboard/tests/integration/treasury-invoice-browser.mjs:27:77)\n    at async browserScenario (/home/edu/Development/eez-rollup-dashboard/tests/integration/treasury-browser.mjs:185:5)\n    at async file:///home/edu/Development/eez-rollup-dashboard/scripts/treasury-devnet.mjs:87:5",
+  "fixtureCause": "Viem rejected the five-field Osaka blob wrapper before invoice closure insertion. The unchanged original post was released; no rollback evidence was claimed.",
+  "retainedLocalEnvelopeSha256": "3ae8d348cfc62d0127998ed218b49ad3c528ef3de77f3071c70eab092b9622c7",
+  "initialControllerSha256": "0a09f80d75719a386d75662e2019288ff73deb6f881d682059510f36875b2a4d"
+}

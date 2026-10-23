@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-20T17:15:38.233133+00:00",
+  "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "uiImage": "sha256:31446c3ec7af59e54ea5720a82f2bf62068991d13a80f5c5e297649fb2d70a61",
+  "onlyUiContainerReplaced": true,
+  "othersUnchanged": [
+    "node",
+    "signer",
+    "monitor"
+  ]
+}

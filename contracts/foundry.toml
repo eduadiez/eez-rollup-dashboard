@@ -1,0 +1,34 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+libs = ["lib"]
+solc = "0.8.34"
+optimizer = true
+optimizer_runs = 1
+via_ir = true
+auto_detect_remappings = false
+remappings = [
+  "@openzeppelin/contracts/=lib/eez-core-protocol/lib/openzeppelin-contracts/contracts/",
+  "eez-core-protocol/=lib/eez-core-protocol/",
+  "forge-std/=lib/eez-core-protocol/lib/forge-std/src/",
+]
+fs_permissions = [
+  { access = "read", path = "./legacy/out" },
+  { access = "read", path = "./test/fixtures" },
+]
+
+[fmt]
+line_length = 120
+multiline_func_header = "all"
+
+[profile.default.fuzz]
+runs = 256
+
+# Explicit opt-in: this suite requires a real Ethereum fork and a funded USDC holder.
+# It is excluded from the ordinary devnet test path, never silently skipped.
+[profile.mainnet]
+test = "mainnet-test"
+out = "out-mainnet"
+cache_path = "cache-mainnet"

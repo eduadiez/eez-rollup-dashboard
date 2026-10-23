@@ -1,7 +1,9 @@
 // Browser regression with mocked API/RPC data. Does not send transactions.
-// Requires an already-running dashboard and Playwright; not run during implementation.
+// Starts an isolated dashboard unless EEZ_UI_URL selects an existing test server.
 const assert = require("node:assert/strict");
 const { chromium } = require("playwright");
+const { mkdirSync, writeFileSync } = require("node:fs");
+const { resolve } = require("node:path");
 const hash = "0x" + "ab".repeat(32), address = "0x" + "11".repeat(20);
 const jobId = "11111111-1111-4111-8111-111111111111";
 const model = {
@@ -28,9 +30,25 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
   matchingNotes: [{ code: "ambiguous-remote-occurrence", message: "Repeated calls could not be paired." }],
 };
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const directory = resolve(process.env.EEZ_UI_EVIDENCE || ".runtime/trace-details");
+  mkdirSync(`${directory}/tmp`, { recursive: true });
+  process.env.TMPDIR = `${directory}/tmp`;
+  let server, browser;
   try {
+    let url = process.env.EEZ_UI_URL;
+    if (!url) {
+      const { createServer } = await import("vite");
+      const { default: react } = await import("@vitejs/plugin-react");
+      server = await createServer({ configFile: false, envFile: false, plugins: [react()],
+        base: "/dashboard/", server: { host: "127.0.0.1", port: 0, hmr: false } });
+      await server.listen();
+      url = `http://127.0.0.1:${server.httpServer.address().port}/dashboard/`;
+    }
+    browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    page.setDefaultTimeout(15000);
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
     let creates = 0;
     await page.route("**/config.json", route => route.fulfill({ json: { networkName: "EEZ test", l1RpcUrl: "/rpc/l1", l2RpcUrl: "/rpc/l2" } }));
     await page.route("**/rpc/*", route => {
@@ -48,7 +66,6 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
       }
       return route.fulfill({ json: { apiVersion: 1, id: jobId, state: "complete", progress: "Trace decoded", error: null, errorCode: null } });
     });
-    const url = process.env.EEZ_UI_URL || "http://127.0.0.1:8080/dashboard/";
     await page.goto(url + "#/visualizer?mode=trace&chain=l2&tx=" + hash);
     await page.getByRole("heading", { name: "Counter.increment()" }).waitFor();
     assert.equal(await page.locator("iframe").count(), 0);
@@ -74,5 +91,9 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     const inspector = page.getByRole("link", { name: "Blocks & settlement →" });
     assert.ok((await inspector.getAttribute("href")).includes("mode=inspect"));
-  } finally { await browser.close(); }
+    assert.deepEqual(errors, []);
+    writeFileSync(`${directory}/result.json`, JSON.stringify({ passed: true,
+      scope: "Native trace navigation, linked/recorded views, details, refresh, and mobile layout with mocked API/RPC; no wallet or chain writes" }, null, 2) + "\n");
+    console.log("Native trace browser regression passed");
+  } finally { await browser?.close(); await server?.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

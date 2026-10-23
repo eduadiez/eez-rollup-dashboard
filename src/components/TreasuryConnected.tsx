@@ -1,0 +1,438 @@
+import { verifiesL1Initiation } from "../lib/treasury/savedPayments";
+import { parseTransferAmount, transferRollup, verifyTransferHelper } from "../lib/treasury/transfers";
+import { treasuryExplorer } from "../lib/treasury/mainnet";
+import type { TreasuryActionGuard } from "../lib/treasury/setupState";
+import { TreasuryOwners } from "./TreasuryOwners";
+import { attemptId } from "../lib/treasury/history";
+import { useTreasuryHistory } from "../hooks/useTreasuryHistory";
+import { TreasuryPaymentHistory } from "./TreasuryPaymentHistory";
+import { TreasuryOutcomeDetails } from "./TreasuryOutcomeDetails";
+import { TreasuryChainLink } from "./TreasuryPaymentFlow";
+import { invoiceControl } from "../lib/treasury/invoices";
+import { checkedPayment, parseUSDC, formatUSDC, paymentTransaction, paymentState, fundingPreview, defaultSplit, remaining } from "../lib/treasury/payments";
+import type { Payment, PaymentState } from "../lib/treasury/payments";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { formatUnits } from "viem";
+import type { Address, Hex } from "viem";
+import type { useWallet } from "../hooks/useWallet";
+import { actionTransaction, readIntent, TreasuryClient, unchanged } from "../lib/treasury/client";
+import type { Approval, Intent, Outcome, Snapshot, TreasuryConfig } from "../lib/treasury/client";
+import { safeTransactionHash } from "../lib/treasury/safeTransactions";
+import type { ReviewedSafeTransaction } from "../lib/treasury/safeTransactions";
+import { TreasuryFundingSplit } from "./TreasuryFundingSplit";
+import { config } from "../config";
+import styles from "./TreasuryDemo.module.css";
+
+export type TreasuryWallet = Pick<ReturnType<typeof useWallet>, "provider" | "address" | "chainId" | "walletOptions" | "connect" | "switchToL1" | "switchToL2">;
+type Review = { transaction: ReviewedSafeTransaction; snapshot: Snapshot; value: string; payment?: Payment; funding?: { fromL1: bigint; fromL2: bigint } };
+const message = (error: unknown) => error instanceof Error ? error.message : String(error);
+const terminal = (outcome: Outcome | null) => outcome?.kind === "settled" || outcome?.kind === "rejected";
+
+function SafeIdentity({ address, name, explorer, safeAppUrl }: { address: Address; name: string; explorer: string; safeAppUrl?: string }) {
+  const [copy, setCopy] = useState<"" | "copied" | "unavailable">("");
+  useEffect(() => {
+    if (!copy) return;
+    const timer = setTimeout(() => setCopy(""), 2500);
+    return () => clearTimeout(timer);
+  }, [copy]);
+  return <div className={styles.safeIdentity}>
+    <div className={styles.safeLinks}>
+      {explorer ? <a className={styles.safeAddress} href={`${explorer.replace(/\/$/, "")}/address/${address}`} target="_blank" rel="noopener noreferrer" title={address} aria-label={`${name} Safe ${address}`}>{address.slice(0, 8)}…{address.slice(-6)}</a>
+        : <code className={styles.safeAddress} title={address}>{address.slice(0, 8)}…{address.slice(-6)}</code>}
+      <button type="button" className={styles.copyIcon} title={copy === "copied" ? "Copied" : "Copy address"} aria-label={`Copy ${name} Safe address`} onClick={async () => {
+        try { await navigator.clipboard.writeText(address); setCopy("copied"); }
+        catch { setCopy("unavailable"); }
+      }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">{copy === "copied" ? <path d="m5 12 4 4L19 6" /> : <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V4H4v12h4" /></>}</svg></button>
+      {safeAppUrl && <a href={safeAppUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${name} Safe app`}>Safe app ↗</a>}
+    </div>
+    <span className={styles.copyStatus} role="status">{copy === "copied" ? `${name} Safe address copied` : ""}</span>
+    {copy === "unavailable" && <p className={styles.hint} role="status">Copy this address: {address}</p>}
+  </div>;
+}
+
+export function TreasuryConnected({ deployment, wallet, payments = false, guardAction }: { deployment: TreasuryConfig; wallet: TreasuryWallet; payments?: boolean; guardAction?: TreasuryActionGuard }) {
+  const [client] = useState(() => new TreasuryClient(deployment));
+  const storageKey = `eez:treasury:submission:${deployment.instance}`;
+  const [restored] = useState(() => {
+    try { return { intent: readIntent(deployment, localStorage.getItem(storageKey)), error: "" }; }
+    catch (error) { return { intent: null, error: message(error) }; }
+  });
+  const history = useTreasuryHistory(client, restored.intent, payments);
+  const { remember, observe, cancel, reject } = history;
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [healthy, setHealthy] = useState(false);
+  const [ownerRead, setOwnerRead] = useState<"loading" | "current" | "unavailable">("loading");
+  const [ownerRevision, setOwnerRevision] = useState(0);
+  // A reloaded submission remains locked; display its signed fields while the
+  // client reconciles it instead of showing the next payment's defaults.
+  const savedPayment = payments ? restored.intent?.payment : undefined;
+  const [value, setValue] = useState(savedPayment ? formatUSDC(BigInt(savedPayment.amount)) : payments ? "40" : restored.intent?.value ?? "42");
+  const [kind, setKind] = useState<"fixed" | "invoice" | "transfer">(savedPayment?.kind ?? "fixed");
+  const [invoiceId] = useState<Hex | undefined>(savedPayment?.kind === "invoice" ? savedPayment.invoiceId : undefined);
+  const [recipient, setRecipient] = useState<string>(savedPayment?.recipient ?? deployment.payments?.recipient ?? "");
+  const walletSource: "l1" | "l2" | undefined = payments && wallet.address && wallet.chainId
+    ? BigInt(wallet.chainId) === BigInt(deployment.l1.chainId) && (deployment.payments && verifiesL1Initiation(deployment.payments)) ? "l1"
+      : BigInt(wallet.chainId) === BigInt(deployment.l2.chainId) ? "l2" : undefined
+    : undefined;
+  const [source, setSource] = useState<"l1" | "l2">(savedPayment?.source ?? (restored.intent ? "l2" : walletSource ?? "l2"));
+  const sourceChosen = useRef(!!restored.intent || !!walletSource);
+  const [destination, setDestination] = useState<"l1" | "l2">(savedPayment?.destination ?? "l2");
+  const [allocation, setAllocation] = useState<{ amount: bigint; fromL1: bigint } | null>(savedPayment && "fromL1" in savedPayment
+    ? { amount: BigInt(savedPayment.amount), fromL1: BigInt(savedPayment.fromL1!) } : null);
+  const [balances, setBalances] = useState<PaymentState | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
+  const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [intent, setIntent] = useState<Intent | null>(restored.intent);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState(restored.error);
+  const [notice, setNotice] = useState("");
+  const [fee, setFee] = useState<{ maximum: bigint; gas: string; price: string } | null>(null);
+  const [ownerChangePending, setOwnerChangePending] = useState(false);
+  const refs = useRef({ review, intent, busy: false, wallet, outcome });
+  refs.current.wallet = wallet;
+  refs.current.outcome = outcome;
+  // A wallet restored after mount may supply the initial default, but never
+  // rewrite an explicit selection, reviewed signing domain or saved request.
+  useEffect(() => {
+    if (sourceChosen.current || !walletSource || refs.current.review || refs.current.intent) return;
+    sourceChosen.current = true;
+    setSource(walletSource);
+  }, [walletSource]);
+  const selectSource = (next: "l1" | "l2") => { sourceChosen.current = true; setSource(next); };
+  const clearReview = useCallback(() => { refs.current.review = null; setReview(null); setApprovals([]); }, []);
+  const saveIntent = useCallback((next: Intent | null) => {
+    // Storage failure must prevent the send, not silently lose recovery identity.
+    if (next) { if (next.payment) remember(next); localStorage.setItem(storageKey, JSON.stringify(next)); }
+    else localStorage.removeItem(storageKey);
+    refs.current.intent = next;
+    setIntent(next);
+  }, [storageKey, remember]);
+  const acceptSnapshot = useCallback((next: Snapshot) => {
+    setSnapshot(next);
+    setOwnerRead("current");
+    if (refs.current.review && !refs.current.intent && !unchanged(refs.current.review.snapshot, next)) {
+      clearReview();
+      setNotice("Owners or Safe nonce changed. Review the action again; previous approvals were cleared.");
+    }
+  }, [clearReview]);
+  const acceptPayments = useCallback((next: PaymentState) => {
+    setBalances(next);
+    if (!refs.current.intent && refs.current.review?.payment && refs.current.review.payment.kind !== "transfer" && BigInt(refs.current.review.payment.epoch) !== next.epoch) {
+      clearReview(); setNotice("The budget period changed. Review again; previous approvals were cleared.");
+    }
+  }, [clearReview]);
+  const ownersChanged = useCallback(() => {
+    // Restart polling so an older in-flight snapshot cannot replace the owner
+    // set read after inclusion (or after that inclusion becomes uncertain).
+    setOwnerRead("loading");
+    setHealthy(false);
+    setOwnerRevision(revision => revision + 1);
+  }, []);
+  const refresh = useCallback(async () => {
+    let ownersRead = false;
+    try {
+      await client.validate();
+      const next = await client.snapshot(payments ? source : "l2");
+      acceptSnapshot(next);
+      ownersRead = true;
+      if (payments) acceptPayments(await paymentState(client));
+      setHealthy(true);
+      return next;
+    } catch (failure) {
+      if (!ownersRead) setOwnerRead("unavailable");
+      setHealthy(false);
+      throw failure;
+    }
+  }, [client, acceptSnapshot, acceptPayments, payments, source]);
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      let ownersRead = false;
+      try {
+        await client.validate();
+        const next = await client.snapshot(payments ? source : "l2");
+        if (!active) return;
+        acceptSnapshot(next);
+        ownersRead = true;
+        const amounts = payments ? await paymentState(client) : null;
+        const current = refs.current.intent;
+        const result = current ? await client.outcome(current) : null;
+        if (!active) return;
+        if (amounts) acceptPayments(amounts);
+        setHealthy(true);
+        setError(previous => (previous.startsWith("Connection check failed:") || (terminal(result) && previous.startsWith("Submission response uncertain:"))) ? "" : previous);
+        if (current === refs.current.intent) {
+          if (current && result) {
+            const tracked = result.hash && current.hash !== result.hash ? { ...current, hash: result.hash } : current;
+            const saved = readIntent(deployment, localStorage.getItem(storageKey));
+            if (saved && (attemptId(saved) !== attemptId(tracked) || saved.data !== tracked.data))
+              throw new Error("Another payment is being tracked in this browser. Reload to verify it.");
+            if (terminal(result)) {
+              // Keep the request identity in history before releasing the pending
+              // slot. Continue observing it until the next review, so a changed
+              // canonical result restores the lock without an automatic send.
+              if (tracked.payment) remember(tracked);
+              localStorage.removeItem(storageKey);
+              refs.current.intent = tracked; setIntent(tracked);
+              clearReview();
+            } else saveIntent(tracked);
+            observe(tracked, result);
+          }
+          setOutcome(result);
+        }
+      } catch (failure) {
+        if (!active) return;
+        if (!ownersRead) setOwnerRead("unavailable");
+        setHealthy(false);
+        if (refs.current.intent) {
+          try {
+            const saved = readIntent(deployment, localStorage.getItem(storageKey));
+            if (!saved || attemptId(saved) === attemptId(refs.current.intent) && saved.data === refs.current.intent.data) saveIntent(refs.current.intent);
+          } catch { /* Preserve a corrupt or conflicting journal for recovery. */ }
+          const unresolved: Outcome = { kind: "unknown", detail: "Payment verification is temporarily unavailable. Retrying automatically." };
+          setOutcome(unresolved); observe(refs.current.intent, unresolved);
+        }
+        setError(`Connection check failed: ${message(failure)}. Submitted work remains unresolved until verified.`);
+      } finally { if (active) timer = setTimeout(poll, 2500); }
+    };
+    void poll();
+    return () => { active = false; clearTimeout(timer); };
+  }, [client, acceptSnapshot, acceptPayments, payments, source, saveIntent, observe, remember, clearReview, deployment, storageKey, ownerRevision]);
+
+  const run = async (label: string, action: () => Promise<void>) => {
+    if (refs.current.busy) return;
+    refs.current.busy = true; setBusy(label); setError(""); setNotice("");
+    try { await (guardAction ? guardAction(action) : action()); } catch (failure) { setError(message(failure)); }
+    finally { refs.current.busy = false; setBusy(""); }
+  };
+  const contribution = (state: PaymentState, amount: bigint) => allocation
+    ? allocation.fromL1 * amount / allocation.amount : defaultSplit(state, amount, destination);
+  const reviewing = async () => {
+    if (refs.current.intent && !terminal(refs.current.outcome)) return;
+    if (refs.current.intent) { saveIntent(null); setOutcome(null); setFee(null); }
+    sourceChosen.current = true;
+    const latest = await refresh();
+    let next: Review;
+    if (payments) {
+      const amounts = await paymentState(client);
+      const identity = { source, recipient: recipient as Address, destination, epoch: String(amounts.epoch) };
+      if (kind === "transfer") await verifyTransferHelper(client);
+      const payment = checkedPayment(kind === "transfer"
+        ? { ...identity, kind: "transfer", source: "l1", destination: "l2", recipient: deployment.safeL2, amount: String(parseTransferAmount(value)), rollupId: await transferRollup(client) }
+        : kind === "invoice"
+        ? { ...identity, kind: "invoice", invoiceId: invoiceId!, destination: "l1", amount: String(parseUSDC(value)) }
+        : { ...identity, amount: String(parseUSDC(value)), fromL1: String(contribution(amounts, parseUSDC(value))) });
+      let contributions;
+      try { contributions = fundingPreview(amounts, payment); }
+      catch (failure) {
+        // This is a local funding check after a valid review and fresh reads,
+        // not a submitted transaction or evidence of a chain rollback.
+        reject(payment, message(failure));
+        throw failure;
+      }
+      if ("fromL1" in payment) setAllocation({ amount: BigInt(payment.amount), fromL1: BigInt(payment.fromL1!) });
+      next = { transaction: paymentTransaction(deployment, payment, latest.nonce), snapshot: latest, value, payment, funding: contributions };
+    } else next = { transaction: actionTransaction(deployment, value, latest.nonce), snapshot: latest, value };
+    refs.current.review = next; setReview(next); setApprovals([]);
+  };
+  const ensureReviewedNetwork = async (current: Review, selected: TreasuryWallet, nextStatus: string, submitting = false) => {
+    if (!selected.provider || !selected.address) throw new Error("Connect a wallet first");
+    const chain = submitting ? client.submissionSource(current.transaction) : client.transactionSource(current.transaction);
+    const chainId = BigInt(deployment[chain].chainId);
+    const network = chain === "l1" ? deployment.l1.chainId === 10200 ? "Chiado" : "Ethereum" : "EEZ-X";
+    if (BigInt(await selected.provider.request({ method: "eth_chainId" }) as string) !== chainId) {
+      setBusy(`Switching wallet to ${network}…`);
+      if (!await (chain === "l1" ? selected.switchToL1() : selected.switchToL2()))
+        throw new Error("Wallet network change cancelled. You can try again.");
+      if (BigInt(await selected.provider.request({ method: "eth_chainId" }) as string) !== chainId)
+        throw new Error(`Wallet is still on another network. Select ${network} and try again.`);
+    }
+    if (refs.current.review !== current || refs.current.intent || refs.current.wallet.provider !== selected.provider
+      || refs.current.wallet.address?.toLowerCase() !== selected.address.toLowerCase())
+      throw new Error("The wallet or reviewed action changed while switching networks. Try again.");
+    setBusy(nextStatus);
+  };
+  const signing = async () => {
+    const selected = refs.current.wallet;
+    const current = refs.current.review;
+    if (!current || !selected.provider || !selected.address) throw new Error("Connect an owner wallet first");
+    await ensureReviewedNetwork(current, selected, "Waiting for owner signature…");
+    const latest = await refresh();
+    if (!unchanged(current.snapshot, latest)) throw new Error("Owners or Safe nonce changed. Review the action again.");
+    if (current.payment) fundingPreview(await paymentState(client), current.payment);
+    if (approvals.some(a => a.owner.toLowerCase() === selected.address!.toLowerCase())) throw new Error("This owner has already approved");
+    const approval = await client.approve(selected.provider, current.transaction, latest, selected.address as Address);
+    const after = await refresh();
+    if (refs.current.review !== current || !unchanged(current.snapshot, after)
+      || refs.current.wallet.provider !== selected.provider || refs.current.wallet.address?.toLowerCase() !== selected.address.toLowerCase())
+      throw new Error("The wallet or reviewed action changed while signing. Try again.");
+    setApprovals(existing => [...existing, approval]);
+  };
+  const submitting = async () => {
+    const current = refs.current.review;
+    const selected = refs.current.wallet;
+    if (!current || !selected.provider || refs.current.intent) return;
+    await ensureReviewedNetwork(current, selected, "Waiting for wallet submission…", true);
+    if (current.payment) fundingPreview(await paymentState(client), current.payment);
+    const next = await client.prepare(selected.provider, current.transaction, current.snapshot, approvals, current.payment);
+    if (refs.current.review !== current || refs.current.wallet.provider !== selected.provider
+      || refs.current.wallet.address?.toLowerCase() !== next.intent.sender.toLowerCase()) throw new Error("The wallet or review changed. Review again.");
+    if (next.expiresAt) {
+      const price = next.request.gasPrice ?? next.request.maxFeePerGas!;
+      setFee({ maximum: BigInt(next.request.gas!) * BigInt(price), gas: next.request.gas!, price });
+    }
+    if (current.payment?.kind === "invoice") await invoiceControl(deployment, "arm", next.intent);
+    if (next.expiresAt && BigInt(next.expiresAt) * 1000n <= BigInt(Date.now())) throw new Error("Fee quote expired. Submit again to request fresh fees.");
+    saveIntent(next.intent);
+    setOutcome({ kind: "unknown", detail: "Awaiting the wallet submission response. Keep this tab open until the wallet finishes." });
+    try {
+      const hash = await selected.provider.request({ method: "eth_sendTransaction", params: [next.request] });
+      if (typeof hash !== "string" || !/^0x[\da-f]{64}$/i.test(hash)) throw new Error("Wallet did not return a transaction hash");
+      saveIntent({ ...next.intent, hash: hash as Hex });
+      setOutcome({ kind: "pending", hash: hash as Hex, detail: "Submitted to Composer. Waiting for canonical settlement." });
+    } catch (failure) {
+      if ((failure as { code?: number })?.code === 4001) {
+        if (current.payment?.kind === "invoice") await invoiceControl(deployment, "cancel", { invoiceId: current.payment.invoiceId });
+        if (next.intent.payment) cancel(next.intent);
+        saveIntent(null); setOutcome(null);
+        throw new Error("Wallet submission cancelled. No transaction was authorized.");
+      }
+      throw new Error(`Submission response uncertain: ${message(failure)}. Tracking the saved action; do not resubmit it.`);
+    }
+  };
+  const currentOwner = snapshot?.owners.some(owner => owner.toLowerCase() === wallet.address?.toLowerCase());
+  const alreadySigned = approvals.some(a => a.owner.toLowerCase() === wallet.address?.toLowerCase());
+  const nextChain = review && approvals.length >= review.snapshot.threshold ? client.submissionSource(review.transaction) : payments ? source : "l2";
+  const correctChain = wallet.chainId && BigInt(wallet.chainId) === BigInt(deployment[nextChain].chainId);
+  const locked = !!busy || !!intent && !terminal(outcome) || !!restored.error || ownerChangePending;
+  const displayStatus = busy || outcome?.detail || (review ? "Collect owner approvals, then submit once." : "Review an action to collect owner approvals.");
+  const l1Name = deployment.l1.chainId === 10200 ? "Chiado" : "Ethereum";
+  let split: { amount: bigint; fromL1: bigint; fromL2: bigint; error: string } | undefined;
+  if (payments && balances && kind === "fixed") {
+    try {
+      const amount = parseUSDC(value);
+      const fromL1 = contribution(balances, amount);
+      let capacityError = "";
+      try { fundingPreview(balances, { amount: String(amount), recipient: recipient as Address, destination,
+        epoch: String(balances.epoch), fromL1: String(fromL1) }); }
+      catch (e) { capacityError = message(e); }
+      split = { amount, fromL1, fromL2: amount - fromL1, error: capacityError };
+    } catch { /* Amount validation is shown when reviewing the draft. */ }
+  }
+  return <section className={styles.treasury} aria-label="Connected treasury demo">
+    <div className={styles.heading}>
+      <div><p className="eez-eyebrow">[ {l1Name} + EEZ-X · {payments ? "TREASURY PAYMENTS" : "OWNER VERIFICATION"} ]</p><h2>{payments ? "One treasury, two Safes" : "One owner set, two Safes"}</h2>
+        <p>{payments && (deployment.payments && verifiesL1Initiation(deployment.payments)) ? "Start from either Safe and pay on either chain, using one owner set and one shared budget." : `Approve on EEZ-X. The Safe verifies your authority against the current ${l1Name} owners.`}</p></div>
+      <div className={styles.owners}><span className={styles.badge} data-positive={healthy}>{healthy ? "Network ready" : "Checking network"}</span>
+        <span className={styles.badge}>{deployment.environment === "isolated-devnet" ? "Isolated devnet" : deployment.environment === "ethereum-mainnet" ? "Ethereum + EEZ-X" : "Chiado + EEZ-X testnet"}</span></div>
+    </div>
+    <div className={payments ? styles.balanceSummary : styles.overview}>
+      {payments && <section className={styles.card} aria-label="Live shared budget"><h3>Shared budget remaining</h3>
+        <strong className={styles.amount}>{balances ? formatUSDC(balances.globalLimit - balances.spent) : "—"} <span>USDC</span></strong>
+        {balances ? <><p><span data-testid="global-spent">{formatUSDC(balances.spent)}</span> / 150 spent · resets at {new Date(balances.resetsAt * 1000).toLocaleTimeString()}</p>
+          <progress aria-label="Shared budget used" value={Number(balances.spent)} max={Number(balances.globalLimit)} /></> : <p className={styles.hint}>Reading the shared budget…</p>}
+      </section>}
+      {(["l1", "l2"] as const).map(chain => {
+        const name = chain === "l1" ? l1Name : "EEZ-X";
+        const allowance = balances && (chain === "l1" ? balances.allowanceL1 : balances.allowanceL2);
+        const explorer = treasuryExplorer(deployment, chain, chain === "l1" ? config.l1Explorer : config.l2Explorer);
+        return <section className={styles.card} key={chain} aria-label={`${chain === "l1" ? l1Name : "EEZ-X"} Safe funds`}>
+          <h3 className={styles.chainLabel} data-chain={chain}>{name} Safe</h3>
+          <SafeIdentity address={chain === "l1" ? deployment.safeL1 : deployment.safeL2} name={name} explorer={explorer} safeAppUrl={chain === "l1" ? deployment.safeAppUrl : undefined} />
+          {payments && <><strong className={styles.amount}>{balances ? formatUSDC(chain === "l1" ? balances.balanceL1 : balances.balanceL2) : "—"} <span>USDC</span></strong>
+            {allowance ? <><p>{formatUSDC(remaining(allowance))} available under this Safe’s limit</p>
+              <p className={styles.hint}><span data-testid={`${chain}-spent`}>{formatUSDC(allowance[1]!)}</span> / {formatUSDC(allowance[0]!)} spent this period</p></> : <p className={styles.hint}>Reading this Safe’s balance…</p>}</>}
+        </section>;
+      })}
+    </div>
+    {!payments && <section className={styles.card} aria-label="Current Safe action"><h3>Settled demonstration value</h3>
+      <strong className={styles.amount} data-testid="action-value">{snapshot?.value.toString() ?? "—"}</strong>
+    </section>}
+    <div className={styles.workflow}>
+      <section className={styles.card} aria-label="Review Safe action"><h3>{payments ? kind === "transfer" ? "Move funds between Safes" : "Review a payment" : "Review an action"}</h3>
+        <fieldset className={styles.fields} disabled={locked || !!review}>
+          {payments && <><label htmlFor="treasury-source">Start from</label>
+            <select id="treasury-source" value={source} disabled={kind === "invoice" || kind === "transfer"} onChange={e => selectSource(e.target.value as "l1" | "l2")}>
+              <option value="l2">EEZ-X Safe</option><option value="l1" disabled={!(deployment.payments && verifiesL1Initiation(deployment.payments))}>{l1Name} Safe</option>
+            </select></>}
+          {payments && <><label htmlFor="treasury-kind">Payment type</label>
+            <select id="treasury-kind" value={kind} onChange={e => { const next = e.target.value as "fixed" | "invoice" | "transfer"; setKind(next); if (next === "transfer") { selectSource("l1"); setDestination("l2"); setRecipient(deployment.safeL2); setAllocation(null); } else if (kind === "transfer") { setRecipient(deployment.payments!.recipient); setValue("40"); } if (next === "invoice") { selectSource("l2"); setValue("110"); setDestination("l1"); setRecipient(deployment.payments!.recipient); } }}>
+              <option value="fixed">Fixed amount</option>{deployment.l1.front && (!deployment.fees || deployment.fees.l1MaxTotalWei) && <option value="transfer">Move to EEZ-X Safe</option>}{invoiceId && <option value="invoice">Invoice with required acceptance</option>}
+            </select></>}
+          <label htmlFor="treasury-value">{payments ? "Amount (USDC)" : "New demonstration value"}</label>
+          <input id="treasury-value" readOnly={kind === "invoice"} inputMode={payments ? "decimal" : "numeric"} autoComplete="off" value={value} maxLength={78} onChange={e => setValue(e.target.value)} />
+          {payments && <>
+            <label htmlFor="treasury-recipient">Recipient address</label><input id="treasury-recipient" readOnly={kind === "invoice" || kind === "transfer"} value={recipient} onChange={e => setRecipient(e.target.value)} />
+            <label htmlFor="treasury-destination">Recipient chain</label><select id="treasury-destination" disabled={kind === "invoice" || kind === "transfer"} value={destination} onChange={e => { const chain = e.target.value as "l1" | "l2"; setDestination(chain); setAllocation(null); }}><option value="l2">EEZ-X</option><option value="l1">{l1Name}</option></select>
+            {kind === "transfer" && <p className={styles.hint}>Move USDC from your {l1Name} Safe to your EEZ-X Safe through the shared bridge. Owners approve this internal transfer directly; it does not use the payment budget.</p>}
+            {kind === "fixed" && <TreasuryFundingSplit l1Name={l1Name} split={split}
+              onChange={fromL1 => { if (split) setAllocation({ amount: split.amount, fromL1 }); }}
+              onReset={() => setAllocation(null)} />}
+            {kind === "invoice" && <div className={styles.notice} aria-label="Invoice scenario">
+              <p>Invoice <code>{invoiceId}</code> · 110 USDC to {l1Name}.</p>
+              <p>After you approve, the isolated fixture closes this invoice immediately before the proved payment executes. The payment bridges 10 from EEZ-X, transfers 100 from {l1Name}, then requires the merchant's acceptance.</p>
+              <p>The result is verified from the execution trace and canonical balances. The invoice closure remains committed; network fees are separate.</p>
+            </div>}
+          </>}
+        </fieldset>
+        {!payments && <p className={styles.hint}>Updates the demonstration value on EEZ-X.</p>}
+        {review && <div className={styles.route} aria-label="Reviewed Safe transaction"><p>Initiating Safe: {review.payment?.source === "l1" ? l1Name : "EEZ-X"}</p><h4>{review.payment ? `${formatUSDC(BigInt(review.payment.amount))} USDC → ${review.payment.destination === "l1" ? l1Name : "EEZ-X"}` : `Set value to ${review.value}`}</h4>
+          {review.payment && review.funding && <><p>Recipient: <code>{review.payment.recipient}</code></p><p data-testid="funding-preview">{formatUSDC(review.funding.fromL1)} from {l1Name} + {formatUSDC(review.funding.fromL2)} from EEZ-X</p>
+            {review.payment.kind === "transfer" ? <p>Internal transfer: the payment budget and spending allowances stay unchanged. The batch approves exactly this amount for the bridge and clears the approval.</p> : <details className={styles.disclosure}><summary>How this payment is funded</summary><p>{review.payment.destination === "l1" && review.funding.fromL2 > 0n ? `EEZ-X Safe → policy → bridge burn → ${l1Name} escrow release → recipient. The ${l1Name} Safe pays its contribution directly.` : review.payment.destination === "l2" && review.funding.fromL1 > 0n ? `The EEZ-X Safe pays its contribution directly. ${l1Name} Safe → ${deployment.payments?.bridgeKind === "standard" ? "funding delegate" : "policy alias"} → bridge escrow; matching wrapped USDC is minted to the recipient on EEZ-X.` : "The Safe allowance module transfers directly to the recipient."}</p></details>}</>}
+          <details className={styles.disclosure}><summary>Transaction details</summary><p>{review.payment?.source === "l1" ? l1Name : "EEZ-X"} Safe nonce {review.transaction.message.nonce.toString()} · chain {review.transaction.domain.chainId.toString()}</p><p>Target: <code>{review.transaction.message.to}</code></p>
+            <p>Safe transaction hash: <code data-testid="safe-hash">{safeTransactionHash(review.transaction)}</code></p><p>{review.payment?.kind === "transfer" ? "Verified call-only batch" : "Call"} · native value 0 · Safe gas refund 0</p></details>
+        </div>}
+        {!review && (!intent || terminal(outcome)) && <button className="btn btn-solid" disabled={locked || !healthy} onClick={() => void run("Reading owners and Safe nonce…", reviewing)}>{payments ? kind === "transfer" ? "Review transfer" : "Review payment" : "Review action"}</button>}
+        {review && !intent && <button className="btn btn-outline" disabled={!!busy} onClick={() => { clearReview(); setNotice("Action unlocked. Review again to collect fresh approvals."); }}>{payments ? kind === "transfer" ? "Edit transfer" : "Edit payment" : "Edit action"}</button>}
+
+        {!terminal(outcome) && <div className={styles.approvalStep}>
+          <h4>{payments ? kind === "transfer" ? "Transfer approvals" : "Payment approvals" : "Action approvals"}</h4>
+          <strong className={styles.quorum} data-testid="quorum">{intent ? "Owner approvals collected" : `${approvals.length} of ${snapshot?.threshold ?? "—"} approvals`}</strong>
+          {review && <p>Approve this {payments ? kind === "transfer" ? "transfer" : "payment" : "action"} with the shared owners.</p>}
+          {!wallet.address ? <div className={styles.owners}>{wallet.walletOptions.map(option => <button className="btn btn-outline" key={option.id} onClick={() => void wallet.connect(option.id)}>Connect {option.name}</button>)}
+            {!wallet.walletOptions.length && <p>Connect a browser wallet to sign.</p>}</div> : <>
+            {review && !currentOwner && <p className={styles.notice}>Select one of this Safe’s owners in your wallet to approve.</p>}
+            <button className={`btn ${review && approvals.length < review.snapshot.threshold ? "btn-solid" : "btn-outline"}`} disabled={locked || !healthy || !review || !currentOwner || alreadySigned || approvals.length >= (snapshot?.threshold ?? Infinity)}
+              onClick={() => void run("Waiting for owner signature…", signing)}>{alreadySigned ? "Owner approved" : "Sign approval"}</button>
+            {review && alreadySigned && approvals.length < review.snapshot.threshold && <p className={styles.hint}>Switch accounts in your wallet to collect another owner’s approval.</p>}
+          </>}
+          {review && !intent && !correctChain && wallet.address && (approvals.length >= review.snapshot.threshold || currentOwner && !alreadySigned)
+            && <p className={styles.hint}>Your wallet will ask to switch to {nextChain === "l1" ? l1Name : "EEZ-X"} before {approvals.length >= review.snapshot.threshold ? "submission" : "signing"}.</p>}
+          {review && deployment.payments?.bridgeKind === "standard" && source === "l2" && <p className={styles.hint}>Approve for your EEZ-X Safe, then submit on {l1Name}. EEZ verifies the current shared owners and completes the payment across both chains.</p>}
+          {review && !intent && <button className={`btn ${approvals.length >= review.snapshot.threshold ? "btn-solid" : "btn-outline"}`} disabled={locked || !healthy || !wallet.address || approvals.length < review.snapshot.threshold}
+            onClick={() => void run("Waiting for wallet submission…", submitting)}>Submit Safe transaction</button>}
+        </div>}
+      </section>
+      <section className={styles.card} aria-labelledby="treasury-shared-owners-title">
+        <div className={styles.heading}><h3 id="treasury-shared-owners-title">Shared owners</h3><button className="btn btn-sm btn-ghost" disabled={!!busy} onClick={() => void run("Refreshing owners…", async () => { await refresh(); })}>Refresh owners</button></div>
+        <p className={styles.safeExplanation}>Manage owners and the approval threshold on {l1Name}. EEZ-X reads them through EEZ when verifying each transaction, so <strong>both Safes stay in sync automatically.</strong></p>
+        <dl className={styles.limitSummary} aria-live="polite"><div><dt>Approval threshold</dt><dd data-testid="shared-threshold">{snapshot ? `${snapshot.threshold} of ${snapshot.owners.length} ${snapshot.owners.length === 1 ? "owner" : "owners"}` : "—"}</dd></div></dl>
+        {ownerRead !== "current" && <p className={styles.hint} role="status">{ownerRead === "loading" ? `Reading owners from ${l1Name}…` : snapshot ? "Couldn’t refresh owners. Showing the last verified list; retrying automatically." : "Couldn’t read the shared owners. Retrying automatically."}</p>}
+        <ul className={styles.ownerList}>{snapshot?.owners.map(owner => {
+          const label = deployment.ownerLabels?.[owner.toLowerCase()];
+          const connected = wallet.address?.toLowerCase() === owner.toLowerCase();
+          return <li key={owner} data-owner={owner.toLowerCase()}>
+            <span><strong>{label && label !== "Deployment wallet" ? label : "Owner"}</strong>{connected && <> · <span className={styles.hint}>Connected wallet</span></>} <code>{owner}</code></span>
+            {approvals.some(a => a.owner.toLowerCase() === owner.toLowerCase()) && <span className={styles.badge} data-positive="true">Approved</span>}
+          </li>;
+        })}</ul>
+        <TreasuryOwners guardAction={guardAction} client={client} wallet={wallet} currentThreshold={snapshot?.threshold} paymentPending={!!intent && !terminal(outcome)} onPendingChange={setOwnerChangePending} onOwnersChanged={ownersChanged} />
+
+      </section>
+    </div>
+    {notice && <p className={styles.notice}>{notice}</p>}
+    {error && <p className={styles.error} role="alert">{error}</p>}
+    {(busy || intent || outcome) && <section className={styles.card} aria-label="Safe transaction status"><h3 aria-live="polite">{outcome?.rollback ? "Rollback verified" : outcome?.kind === "settled" ? `Settled on ${l1Name}` : "Transaction status"}</h3>
+      {(!terminal(outcome) || (outcome?.kind === "rejected" && !outcome.rollback)) && <p role="status" aria-live="polite">{displayStatus}</p>}
+      {fee && !terminal(outcome) && <p>Quoted network fee ceiling: {formatUnits(fee.maximum, 18)} {deployment.l1.chainId === 10200 ? "xDAI" : "ETH"}. The wallet submits these fees separately from the Safe’s USDC payment.</p>}
+      {intent?.payment && outcome?.kind !== "settled" && <p>{formatUSDC(BigInt(intent.payment.amount))} USDC to <code>{intent.payment.recipient}</code> on {intent.payment.destination === "l1" ? l1Name : "EEZ-X"}</p>}
+      <TreasuryOutcomeDetails outcome={outcome} deployment={deployment} intent={intent ?? undefined} settlement={history.settlementFor(outcome)} />
+      {intent && <>
+        {(intent.hash || outcome?.hash) && (!intent.payment || outcome?.kind !== "settled") && <div className={styles.hint}><TreasuryChainLink deployment={deployment} chain={intent.submissionChain ?? intent.payment?.source ?? "l2"} value={(intent.hash || outcome?.hash)!} testId="submitted-hash">Submitted {(intent.submissionChain ?? intent.payment?.source) === "l1" ? l1Name : "EEZ-X"} transaction</TreasuryChainLink></div>}
+        {!terminal(outcome) && <p>You can reload this page. The saved request will be checked again before another action is enabled.</p>}</>}
+    </section>}
+    {payments && <TreasuryPaymentHistory history={history} deployment={deployment} />}
+  </section>;
+}

@@ -1,0 +1,8 @@
+{
+  "scope": "Treasury storage keys denied; unrelated dashboard storage remains available",
+  "errorReported": true,
+  "reviewDisabled": true,
+  "uncaughtErrors": [],
+  "transactionsSent": 0,
+  "instance": "0xa22d0a9203853cb5bb87e07d3e80f69762e998e5c3a63ba627ca2a83ab8983cd"
+}

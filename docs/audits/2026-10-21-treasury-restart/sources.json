@@ -1,0 +1,15 @@
+{
+  "dashboardHead": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "files": {
+    "src/components/TreasuryDemo.tsx": "e5605823dfe4ac1e883729a0cf2d347943bf12cc48662ae60f257c1f2ce55453",
+    "src/components/TreasurySetup.tsx": "b1b786b99cd4cf10d4c16a988512f1e1ebdb94ba4e6adc2854d28ea0c2faaf1f",
+    "src/components/TreasuryRestart.tsx": "db42df2e569d176818cac7d6770727265157a74931ccaa80ee1e9c0f636dbdcf",
+    "src/components/TreasuryConnected.tsx": "76bcf0c21c07412806311e0c8ce7254e7ed64c862522d168e037e52ed6e667fd",
+    "src/components/TreasuryOwners.tsx": "b26ac816e1d8120b6bbc21bc834406f1c0fdcf47829b29379fe4f1e77c332674",
+    "src/lib/treasury/deployment.ts": "37802f699d7ba97bf7d7b5c9a48c138eaa74a932dd6221e7b7ed8e82f5a5d637",
+    "src/lib/treasury/setupArchive.ts": "4404f280f650b18ba8fa3a073eb2291ae2c2d842f66fd2b14fe7ae0e4da5231a",
+    "tests/treasury-setup-archive.test.mjs": "fd7182c6a16f1c455f46babd5b3cf3dd8510a24e0f8870818dd8591ce89e2aa3",
+    "tests/treasury-shared-browser.mjs": "c6c77275c0f4a43c447052858b5df1540ae6af50f54211644deca002c8a278c6",
+    "scripts/run-treasury-integration.py": "b70a4b9e1b4ce6172b38b672c20c439b869f5a2fe9965902dc1ef2a5d9cbad12"
+  }
+}

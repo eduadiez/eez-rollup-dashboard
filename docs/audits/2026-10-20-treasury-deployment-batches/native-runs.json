@@ -1,0 +1,36 @@
+{
+  "flaky-result": "fail",
+  "latestRun": "20261020T214323-i3_i1id1",
+  "latestRunVerified": true,
+  "priorRun": "20261020T212800-1de1exb_",
+  "priorRunVerified": false,
+  "priorError": "Browser rule review showed Failed to fetch after the natural budget reset; funding-preview locator timed out. Exact failed request unavailable.",
+  "priorPassedCases": [
+    "Browser B+C approval, submission and reload reconciliation",
+    "Browser A+B after removing C",
+    "Invoice rejected after two L1 transfers; rollback verified",
+    "Closed invoice rejected during preparation",
+    "Pay 40 on EEZ-X",
+    "Split 110 to L1",
+    "Extra 1 rejected by the independent global budget"
+  ],
+  "priorDeploymentBatches": [
+    {
+      "chain": "l1",
+      "executor": "0x973Adb9DE34C974C3A421A870203C5be9059E9Fa",
+      "phase": "funding",
+      "hash": "0xf5712bff748b8430ebb0882d7428118bb41bf17bc31f9c4421b8e86c08c6fa83",
+      "gasUsed": "475131"
+    },
+    {
+      "chain": "l2",
+      "executor": "0x8476FC408B2dF4d03E9705FC2768d9179B62800c",
+      "phase": "deploy policy and configure Safe",
+      "hash": "0x36821a60a885e8a2acd2229f5054ab61b44fc10092183d5e04a25239959059cd",
+      "gasUsed": "7432126"
+    }
+  ],
+  "changeBeforeRerun": "Request-failure and console diagnostics only; no transport behavior fix, assertion weakening or automatic retries. Wallet deployment address preparation added separately.",
+  "scope": "Owned isolated native Composer/signer/follower plus browser with public fixture signatures. No shared-chain wallet broadcast.",
+  "localDiagnostics": ".runtime/treasury-integration/20261020T212800-1de1exb_"
+}

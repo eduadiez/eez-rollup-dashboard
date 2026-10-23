@@ -1,9 +1,9 @@
 # EEZ Rollup UI
 
 Standalone Docker-first web interface for an EEZ rollup network. This repository
-contains the UI and its read-only telemetry/trace services; protocol contracts,
-the node, and Kurtosis topology remain
-in the rollup repository.
+contains the UI, read-only telemetry and trace services, treasury application
+contracts, deployment tooling and demo documentation. Pinned protocol contracts
+are a dependency; the node and Kurtosis topology remain in the rollup repository.
 
 The source baseline is the earlier
 [`eez-association/sync-rollups-poc`](https://github.com/eez-association/sync-rollups-poc)
@@ -18,14 +18,79 @@ The application preserves the original sync-rollups POC screens:
 - Aggregator
 - Network monitor (heads, blobs, commitments, and settlement correlations)
 - Execution visualizer
+- Quote debugger with direct simulation and verified contract decoding
 
-The top navigation is **Dashboard → Monitor → Visualizer**. The read-only
+The top navigation is **Dashboard → Monitor → Visualizer → Debug**. The read-only
 [network monitor](src/monitor/README.md) lives at `/monitor/` (legacy `#/monitor`
 links still open it) and shares
 the dashboard layout, header, footer, and theme. The monitor page mounts inside
 the React application, with no embedded page. Its API-only Python collector runs
 as an internal Compose service, reached through `/monitor/` on the same origin,
 including live WebSockets.
+
+**Debug** opens at `/dashboard/#/debug` (or `#/debug` under a custom build base).
+Enter the source chain, sender, target, calldata and value in wei, then choose
+**Simulate fee quote**. Gas and nonce are optional; numeric fields accept decimal
+or hex. The dashboard sends one unsigned `eez_debugQuoteFee` request with
+`{"trace":"calls"}` to that chain's configured Composer front and opens the
+result directly. Legacy, EIP-1559 or both formats are available. This does not
+sign or broadcast a transaction and requires no wallet. Cancel stops the browser
+request; it does not guarantee an already-running Composer calculation stops.
+
+Saved JSON results can still be imported or pasted locally. The nested L1/L2 call
+tree has separate runs for gas probes and validation. A failure summary links
+recorded failed frames and the last child of a failed frame, without asserting
+that child caused the failure. Returned calls rolled back by ancestors are
+marked separately. Truncation identifies shortened fields and omitted calls/runs.
+A [recorded nested-revert example](public/quote-trace/examples/nested-revert.json)
+is included for trying the viewer.
+
+The dashboard embeds the same versioned viewer as RollupX in a sandbox without
+access to the parent page or its storage. Its content policy blocks network
+connections. A private MessageChannel connects it to the same-origin dashboard.
+The dashboard fetches verified ABIs from the configured L1/L2 Blockscout APIs
+using only chain and observed code address, then decodes names, arguments,
+return values and custom errors locally. Delegate calls use their captured code
+address, not an explorer's current proxy implementation. Imports are not uploaded;
+only metadata lookups send their contract addresses. Explorer failures, foreign
+chains, failed RPC chain-ID discovery, unverified contracts and incomplete bytes
+keep raw data visible. Wallet development defaults do not select an explorer.
+Explorer verification is not a historical bytecode match for this simulation.
+Assets are bundled locally; there is no runtime CDN dependency.
+The [source record](public/quote-trace/SOURCE.md) pins their upstream revision.
+The small sync script prevents the two repositories' viewers from diverging.
+
+```bash
+COMPOSER_RPC='https://YOUR_HOST/composer/l2'
+TX='{"from":"0x1111111111111111111111111111111111111111","to":"0x2222222222222222222222222222222222222222","data":"0x","value":"0x0"}'
+cast rpc --rpc-url "$COMPOSER_RPC" eez_debugQuoteFee "$TX" \
+  '{"transactionTypes":["0x2"],"trace":"calls"}' > quote-trace.json
+```
+
+Use `/composer/l1` for an L1 source. Request `"0x0"` for legacy transactions,
+or omit `transactionTypes` to simulate both formats. Capture requires a
+Composer with RollupX PR #97; older versions reject the trace option.
+The dashboard can be upgraded before Composer and still import saved traces.
+No fee opt-in, contract, node or protocol change is needed for the form and ABI
+decoding. Publish the dashboard and bundled viewer assets together: older viewer
+assets do not support the private channel. Rolling back removes direct quoting
+and decoding without affecting chain state. Operational error-envelope traces
+also need the updated Composer support described in the pinned viewer README.
+
+Imports are limited to 8 MiB. Truncated execution is marked explicitly.
+Metadata reads are limited to four concurrent requests and 128 distinct code
+addresses per selected run, with an eight-second timeout and 1 MiB response cap.
+Changing runs/imports or leaving Debug cancels obsolete work. Quote responses
+are limited to 8 MiB with a two-minute browser timeout; form calldata to 128 KiB.
+Unknown custom errors retain their raw selectors. Source maps, executed source
+lines and ABI uploads are outside this version. Traces describe simulations, not mined transactions.
+Revisiting Debug starts a fresh import; trace contents are not persisted.
+
+Run `npm test` and `npm run test:debug` to validate decoding and the built dashboard
+in Chromium, including direct quotes, metadata, cancellation and local imports.
+Set `EEZ_UI_BASE_PATH=/` to also check a root deployment. The test mocks the
+dashboard's RPCs and never broadcasts; `EEZ_TEST_LOG_DIR` can point to a RollupX
+tracing process run to additionally import all its `quote-traces/*.json` exports.
 
 Dashboard combines asset transfers on the left with proxy creation and cross-chain calls
 on the right, followed by shared transaction history. Smaller screens stack
@@ -80,6 +145,106 @@ are shown as failures. Proxy calls use the source Composer's raw gas estimate,
 the selected wallet, and the shared collapsed gas controls and transaction popup.
 Missing source proxies can be created from the demo; existing proxies are
 verified before use. Cross-chain history records the actual call direction.
+
+An experimental **Treasury Demo** is hidden from the normal dashboard. Press
+**Ctrl+Alt+Shift+T** (or **Cmd+Option+Shift+T** on macOS), outside an editable field,
+to reveal its tab beside Counter Demo and open it. Press the same shortcut again
+to hide it; an open treasury view returns to Counter Demo. Visibility is kept in
+`sessionStorage` for this browser tab's session and survives reloads. A fresh
+session starts hidden, and `#/treasury-demo` alone does not enable it. This is a
+navigation preference, not access control: anyone who knows the shortcut can
+open the example, and its code ships with the application.
+
+On the configured **Chiado 10200 / EEZ-X 906969** dashboard, this tab opens
+wallet-approved setup when no shared manifest is saved. **Start setup** connects
+an existing verified Chiado Safe (Safe / SafeL2 1.3.0 or 1.4.1) and deploys or
+connects its EEZ-X mirror. The Chiado owner set and threshold are retained. Setup
+uses the predeployed shared Test USDC and bridge pair; it does not fund the Safes.
+Transaction calls are visible at each setup step. The connected view provides
+payment review, a funding split, shared owners and payment history.
+
+The normal wallet integration collects approvals and submits named transactions.
+Progress survives reloads. Add an owner by entering its address in Shared owners;
+the current Chiado quorum approves the change. Limits remain 100 per Safe and
+150 shared per ten minutes. See the
+[shared-network runbook](docs/runbooks/treasury-shared-network.md).
+
+On the existing Ethereum-backed network, the treasury asks for the user's
+**Ethereum Safe address**, then deploys or connects its EEZ-X mirror with the
+selected wallet. Six transactions batch application deployment and allowance
+configuration, reusing the existing bridge and Circle USDC. Mainnet setup has its
+own browser journal and application artifact bundle; Chiado remains unchanged.
+No new `.env` variables, automatic funding or token minting are used. An explicit
+runtime `treasury` manifest remains an optional import for existing deployments.
+The [mainnet runbook](docs/runbooks/treasury-mainnet.md) covers setup, exact code
+bindings, isolated native/browser rehearsal, real-USDC fork checks and remaining
+production requirements. These checks are not a production security audit.
+
+Simulation is no longer offered. Supported networks without treasury bindings show the Safe chooser;
+other networks show a configuration prompt. **Get Test USDC** is available only for configured Chiado
+treasuries; it is hidden on Ethereum. To fund the mirror from the existing Chiado
+Safe, choose **Move to EEZ-X Safe** in payment review. This owner-approved internal
+transfer uses the shared bridge and does not consume the policy's payment budgets.
+See the [transfer procedure](docs/runbooks/treasury-shared-network.md#moving-funds-to-the-mirror-safe).
+
+The [shared-network setup](docs/runbooks/treasury-shared-network.md) reuses verified
+Safe infrastructure and batches application deployment and Safe configuration.
+Existing Safes retain their quorum requirements. Reloading preserves confirmed
+deployments and pending requests; each batch shows its contracts and calls before
+approval. Setup does not fund either Safe.
+**Start new treasury** returns to the Safe chooser with the same connected wallet:
+enter an existing L1 Safe and deploy or connect its EEZ-X mirror. There is no
+archive collection or download step. Pending setup, payment and owner-change
+requests must be resolved first. See the
+[restart procedure](docs/runbooks/treasury-shared-network.md#start-a-new-treasury-with-the-same-wallet).
+
+The [isolated treasury launcher](tests/integration/README.md#connected-treasury-ui)
+opens **Payments** in the same hidden tab. Its fixture deploys and funds both
+Safes, the owner adapter, payment policy, official allowance modules and a test
+bridge pair. Each Safe grants 100 USDC per ten minutes; the policy enforces 150
+across both. The UI reads actual holdings and counters, collects EIP-712 owner
+approvals and submits through Composer. **Start from** selects the Safe signing
+domain and nonce; the split control sets each Safe's contribution.
+
+Enter the rehearsal sequence in the form: pay 40 on EEZ-X, pay 110 to the L1
+recipient with 100 from its local Safe and 10 from EEZ-X, then try another 1.
+After the next reset, a 10% rule pays 30 from the remaining combined 300; a
+110-USDC payment to EEZ-X then uses 100 locally and 10 from L1. Rule approvals
+bind the percentage, and the UI distinguishes estimates from execution results.
+These fixtures use six-decimal test tokens with bridge backing. Their funding
+belongs to the isolated harness, not normal dashboard setup.
+
+**Owner demo** retains the fixture's value-setting action. The invoice test
+requires explicit merchant acceptance after both payment legs and compares
+rollback evidence. **Payment history** retains this browser's payment attempts
+across reloads, including settled payments, preparation rejections, verified
+rollbacks and unresolved requests. Expanded entries show the actual split and
+transaction/block links. Submitted outcomes are rechecked on reload; missing
+evidence remains unresolved. See the
+[history scope and validation](docs/audits/2026-10-20-treasury-history/README.md).
+Use `npm run dev:treasury -- --runtime /path/to/rollupX` and follow the printed
+URL and linked wallet/setup instructions. This launcher keeps its private chain
+state separate from the normal dashboard networks.
+
+For the full wallet and Safe-app walkthrough, use the
+[treasury rehearsal runbook](docs/runbooks/treasury-rehearsal.md).
+`npm run treasury:safe -- start "$TREASURY_RUN/ui-session.json"` attaches a
+pinned local Safe application and indexer to that devnet. The dashboard remains
+the payment/signing interface; **Open L1 Safe** handles owner administration.
+
+The [One treasury, two Safes proposal](docs/proposals/one-treasury-two-safes.md)
+contains the full design, demo script and development plan. Treasury demo
+application contracts and tooling live alongside the UI in this repository;
+the runtime and core protocol remain external dependencies at the revisions
+recorded in the proposal.
+
+The [contract project](contracts/README.md) includes `L1Owners`, `TreasuryPolicy`, `TreasuryBridge`,
+pinned Safe/AllowanceModule/EEZ sources, contract tests and frontend signature
+helpers. Run `npm run test:contracts` after initializing its submodules. The
+[isolated browser integration](tests/integration/README.md#browser-integration)
+checks owner verification, the 40 / 110 / rejected 1 sequence, a next-period
+10% rule paying 30, and a 110-USDC split to EEZ-X through the real Composer, proof
+signer and independent follower. The invoice scenario additionally checks an actual L1 inclusion failure and a distinct preparation rejection; see its [validation record](docs/audits/2026-10-20-treasury-invoices/README.md). See the [rule validation and remaining limits](docs/audits/2026-10-20-treasury-rules/README.md).
 
 Transaction history uses network logos for the route, labels transaction links
 “L1 tx:” and “L2 tx:”, and shows linked L1/L2 blocks in their own column.
@@ -174,7 +339,7 @@ without a chain ID are not offered. Selection still runs the bridge's on-chain
 metadata, balance, approval, and gas checks. A token appearing in the list does
 not guarantee that the deployed bridge supports it.
 
-One root `.env` and Compose project configure all three services; the monitor reuses
+One root `.env` and Compose project configure all four services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head
 updates; without them, the collector uses HTTP head polling. Settlement and
@@ -189,18 +354,22 @@ Transactions require a connected browser wallet such as Rabby or MetaMask.
 
 ## Deployment architecture
 
-The application uses three containers in one Compose project:
+The application uses four containers in one Compose project:
 
 - `ui` serves the single React application and proxies requests through nginx.
 - `monitor` runs the Python telemetry collector and API on the internal network.
   It has no published port or separate frontend.
 - `trace-decoder` runs the Node.js read-only decoder API on the internal network.
   The React transaction detail view reaches it through the UI proxy.
+- `verification` publishes exact treasury contract sources from retained builds.
+  It shares the UI's network namespace and uses a persistent job volume; nginx
+  exposes its bounded API without another public port. See the
+  [source-verification runbook](docs/runbooks/treasury-shared-network.md#automatic-contract-source-verification).
 
 Keep these services separate for production. Their dependencies, health checks,
 logs, and restart lifecycles remain independent. A collector restart temporarily
 interrupts monitoring while the dashboard and visualizer remain available.
-All three services use the root `.env` and deploy with one `docker compose up -d --build`
+The services reuse the root `.env` and runtime configuration and deploy with one `docker compose up -d --build`
 command. The existing gateway provides the public HTTPS endpoint.
 
 ## Docker Compose
@@ -247,10 +416,10 @@ When the target node binds its RPC and Composer ports to the Docker host's
 `127.0.0.1` (as in a host-network Chiado node), set
 `COMPOSE_FILE=docker-compose.yml:docker-compose.host-rpc.yml` in this repository's
 `.env` and use `http://127.0.0.1:<port>` for the four upstream URLs. Run the usual
-`docker compose up -d --build`. This overlay places the UI and monitor in the
+`docker compose up -d --build`. This overlay places the services in the
 host network: the UI listens at `127.0.0.1:8080`, the monitor at
-`127.0.0.1:18080`, and the trace API at `127.0.0.1:18081`. All three services can
-then reach the node's loopback RPCs.
+`127.0.0.1:18080`, treasury verification at `127.0.0.1:18081`, and the trace API at
+`127.0.0.1:18082`. They can then reach the node's loopback RPCs.
 
 ### Single-domain path gateway
 
@@ -316,6 +485,12 @@ prebuilt image, set `EEZ_SKIP_UI_BUILD=1` and configure `eez.ui_image` in the
 Kurtosis arguments file.
 
 ## Local Vite development
+
+Use the Node version in `.nvmrc` (also pinned in both Node Docker stages and
+used by CI). With nvm installed, run `nvm install` and `nvm use` from this
+repository before installing dependencies. Keep these pins aligned when applying
+Node security updates; rebuilding both the UI and verification images is required
+to update an existing deployment.
 
 With a Kurtosis enclave running:
 
@@ -415,10 +590,13 @@ is below the cap. Disabling a direction restores its ordinary wallet path; it
 does not disable backend fee enforcement.
 
 The SDK and its tests in `src/lib/fees/l2-fees.*` are copied byte-for-byte from
-RollupX `51ef1ba08d5c506c8909bc8be2e16e8d25c0a7a8` (`sdk/l2-fees.*`);
+RollupX `8d03af4f78cb1c2bde36a64cc1fa09d4af288950` (`sdk/l2-fees.*`);
 despite the file name, they support both directions. Keep these copies aligned
-with the backend contract. `payment.mjs` normalizes dashboard requests and binds
-the SDK to the selected wallet. The Kurtosis Vite configuration helper also
+with the backend contract. This revision allows up to 64 KiB of decoded calldata,
+including the treasury budget deployment batch. The request hash still binds all
+bytes, and the server remains authoritative for admission. Older Composers may
+reject larger requests; no unquoted or truncated fallback is used. `payment.mjs`
+normalizes dashboard requests and binds the SDK to the selected wallet. The Kurtosis Vite configuration helper also
 accepts the same four fee environment variables:
 
 ```bash
@@ -453,7 +631,7 @@ transaction without including unrelated triggers that share its settlement batch
 The browser calls `BASE_URL + "trace/api"`; nginx forwards this to the internal
 service. A gateway that already strips `/dashboard/` needs no new public route.
 For local development, start `node trace-decoder/service/server.mjs` separately
-once its dependencies are available; Vite proxies to `127.0.0.1:18081` by default
+once its dependencies are available; Vite proxies to `127.0.0.1:18082` by default
 (override with exported `EEZ_TRACE_UPSTREAM`). No service starts from `npm run dev`.
 
 Jobs report progress, share active work across viewers, and cancel when the last
@@ -527,7 +705,7 @@ npm ci
 npm run build
 npm run test:visualizer
 docker compose config --quiet
-# With the combined app running (Node 22+):
+# With the combined app running and the Node version from .nvmrc:
 node src/monitor/tests/test_proxy.mjs
 docker build -t eez-rollup-ui:local .
 ```
@@ -536,9 +714,12 @@ Monitor regression checks and optional telemetry settings are documented in
 `src/monitor/README.md`.
 
 With Playwright installed and a production preview running, run
-`node tests/counter-demo.cjs` and `node tests/cross-chain-calls.cjs` for mocked
+`node tests/counter-demo.cjs`, `node tests/cross-chain-calls.cjs` and
+`node tests/treasury-demo.cjs` for mocked
 wallet/RPC coverage. They default to `http://127.0.0.1:8083/dashboard`; override
 that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
+The treasury check covers hidden navigation and direct URLs, shortcut/session
+behavior, simulated approvals and budget arithmetic, and responsive layout.
 
 Transaction result pop-ups include **Follow this call** links to the native trace
 detail view. Its **Blocks & settlement** link opens the existing execution

@@ -1,0 +1,27 @@
+{
+  "dashboardHead": "0d26cf24d2fa23de31021d1a508f137e24804efd",
+  "branch": "feat/treasury-demo",
+  "files": {
+    "src/lib/treasury/deployment.ts": "c1a7d08762947fa6ce59f4555c5dd9a2ea858a338578bf1f3f2a73654e8761c0",
+    "src/lib/treasury/safeSetup.ts": "194bc12a82be87e2632d88094100de99cd3dcba3be68a15f322546a7b868fc25",
+    "src/lib/treasury/client.ts": "eb036d06b66a2d4a8de720148b370cb123e7a7e54025ab7d425d0f7f32955d72",
+    "src/lib/treasury/official-safe-deployments.json": "443457764595db92ec19d77bf1b24174f61e3a88e0f9d916d2cb4699abd24e94",
+    "src/lib/treasury/deployment-artifacts.json": "4692f26d63b6d8c1eb6f8dcb189c20edd09dddc777d0c324ad83cc7929d6f335",
+    "src/components/TreasurySetup.tsx": "5f7ef19c42ab238818cb66d48e544b0e377c6af31389e4e6db99a1af92bc1051",
+    "contracts/src/TreasuryPolicy.sol": "4e4166785d6d6703c5a23f5cfa80c5e61f3172f3bb14bbe5d239bca94ea681da",
+    "contracts/test/TreasuryPolicy.t.sol": "2f0f94cffe30fc7d7d0352418f315d2b5e196c0afa006ad823e980ca69288fa1",
+    "tests/treasury-deployment.test.mjs": "3864d706fb5bc0222a480b9e1e2de0bf10df9e53f8cf04c4dbfdf24dce86333c",
+    "tests/treasury-client.test.mjs": "6edc68c66c7edf78665379efdf1bb626b2629e5c4c3926c4d6577dc4743a8d1b",
+    "tests/treasury-shared-browser.mjs": "420fad3cb75b755cb0877f1a8039ea81224149ab03bfb75cbab65f73c2741424",
+    "tests/integration/treasury-setup.mjs": "46b92918e3cad756b548030d104c03c94b36c065e2c27b111993812435fd02b3",
+    "tests/integration/treasury-payments.mjs": "bb4170a89e03b629805eda2b68d1b7b85e440b7d454455e3bb1b5f2be39f6621",
+    "tests/fixtures/official-safe-runtime.json": "d6f817b93823f1a9666eef6dd374eedaabbea912c249dc136dd96abb450d8ed8",
+    "tests/fixtures/treasury-policy-v2.json": "e31dcf32437501241c445e7e4c73c50fc5aed28fb8c1fd1ed9f62f1898421b62",
+    "scripts/run-treasury-integration.py": "17219421364bc6e99c72c0d11f41cb428d7a205943eb06153ddcda5b14652492"
+  },
+  "nativeRun": ".runtime/treasury-integration/20261020T204749-57y6wz2v",
+  "changesAfterNativeRun": [
+    "src/lib/treasury/deployment.ts",
+    "tests/treasury-deployment.test.mjs"
+  ]
+}

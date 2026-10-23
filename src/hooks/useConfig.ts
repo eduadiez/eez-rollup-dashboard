@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { config, setConfig, L1_CHAIN, L2_CHAIN } from "../config";
+import { config, setConfig, L1_CHAIN, L2_CHAIN, DISCOVERED_CHAIN_IDS } from "../config";
 import { rpcCall } from "../rpc";
 import { registerConfiguredContracts } from "../lib/addressBook";
 import { l1Identity, nativeCurrency } from "../lib/networkIdentity";
 
 type RuntimeConfig = {
+  treasury?: unknown;
   networkName?: string;
   l1NetworkName?: string;
   l1NetworkLogoUrl?: string;
@@ -73,6 +74,7 @@ export function useConfigLoader() {
           const l1ProxyRpc = absoluteUrl(runtime.l1FrontUrl);
           const l2ProxyRpc = absoluteUrl(runtime.l2FrontUrl);
           setConfig({
+            treasury: runtime.treasury ?? null,
             ...(l1NameOverride ? { l1NetworkName: l1NameOverride } : {}),
             ...(runtime.l1NetworkLogoUrl ? { l1NetworkLogoUrl: absoluteUrl(runtime.l1NetworkLogoUrl)! } : {}),
             ...(runtime.l1ExplorerApiUrl ? { l1ExplorerApi: absoluteUrl(runtime.l1ExplorerApiUrl)! } : {}),
@@ -128,12 +130,15 @@ export function useConfigLoader() {
       registerConfiguredContracts(config);
 
       // Auto-detect chain IDs from RPCs
+      DISCOVERED_CHAIN_IDS.l1 = null;
+      DISCOVERED_CHAIN_IDS.l2 = null;
       try {
         const l1ChainId = (await rpcCall(
           config.l1Rpc,
           "eth_chainId",
         )) as string;
         L1_CHAIN.chainId = l1ChainId;
+        if (typeof l1ChainId === "string" && /^0x[0-9a-f]+$/i.test(l1ChainId)) DISCOVERED_CHAIN_IDS.l1 = l1ChainId;
         const identity = l1Identity(l1ChainId);
         L1_CHAIN.nativeCurrency = nativeCurrency(l1ChainId);
         L2_CHAIN.nativeCurrency = nativeCurrency(l1ChainId);
@@ -148,6 +153,7 @@ export function useConfigLoader() {
           "eth_chainId",
         )) as string;
         L2_CHAIN.chainId = l2ChainId;
+        if (typeof l2ChainId === "string" && /^0x[0-9a-f]+$/i.test(l2ChainId)) DISCOVERED_CHAIN_IDS.l2 = l2ChainId;
         L2_CHAIN.chainName = config.rollupName;
       } catch {
         /* keep defaults */

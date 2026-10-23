@@ -1,0 +1,38 @@
+[
+  {
+    "run": "20261020T145049-pqh8y7r5",
+    "portsChecked": [
+      44911,
+      39103,
+      42609,
+      39443,
+      42561,
+      33907
+    ],
+    "openPorts": [],
+    "logsAndDatadirsRetained": true
+  },
+  {
+    "run": "20261020T150512-ygfgfbp0",
+    "portsChecked": [
+      38273,
+      37473,
+      35143,
+      44483,
+      37859,
+      46513
+    ],
+    "openPorts": [
+      44483
+    ],
+    "logsAndDatadirsRetained": true,
+    "reusedPort": {
+      "port": 44483,
+      "pid": 566308,
+      "ownedRunPaths": [
+        "/home/edu/Development/eez-rollup-dashboard/.runtime/treasury-integration/20261020T151314-jv8fnjqm/fixture/scripts/builder-stub.py"
+      ],
+      "action": "Preserved; this is a new run resource, not evidence of a failed-run leak"
+    }
+  }
+]

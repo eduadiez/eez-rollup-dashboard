@@ -1,0 +1,246 @@
+{
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "6061ac5b6fadcd2e138e50f995ee1c0d5165139c51fb3410d473273f8d766a2b",
+  "run": ".runtime/treasury-integration/20261021T084140-gsj55c8g",
+  "sourceStabilityChecked": true,
+  "applicationSourceCount": 78,
+  "applicationSources": {
+    "scripts/treasury-relay.py": "7d0aa135004e134a170d872a9a9290c859e8a36577250ab89ef5c2ea92cf0c71",
+    "scripts/run-treasury-integration.py": "c8af53ac8ee0b1870f22f94a19946049a84e6c61364539f3bb24ae8c9b3198a6",
+    "tests/integration/treasury_owners.rs": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00",
+    "tests/integration/treasury-owners.mjs": "2705a1efe5383b40da359f9e70f0cd5f24faba9d3f15c4dae14983ab848dfa7f",
+    "src/lib/treasury/safeTransactions.ts": "8dc40ae9da3a42fa321282c471f19e778a128126481bd33f53e07c2d4bbd7c40",
+    "contracts/src/L1Owners.sol": "1e967a3941c829fb07d79c2c5e5f3d8f1a20a740fadd07109f1cdd458514285d",
+    "contracts/test/fixtures/TreasuryOwnerAction.sol": "215bbf66fa5324f5607bef3f5068ce146aec2fbb30e4a6fd31be7eabc671154d",
+    "contracts/foundry.toml": "75f257c0bd4a6122f4bfc5f4eaa9abac47903fc2e388403e22c5ed35a61bae98",
+    "contracts/legacy/foundry.toml": "30bc96601ea3470d31853a90c41e57559545c5304dc1b3cb8ec2b4ec7afc8ebf",
+    "scripts/treasury-invoices.mjs": "0fb6722a4383b4ffb00b05efecf583c57db929af129d9f62f69e1b1223717c50",
+    "src/lib/treasury/invoices.ts": "484903cfd07a40a99cb4f0d4d5fde851ee44b74f5d31682313393c7fdab97806",
+    "tests/treasury-invoices.test.mjs": "6e5862696440689aaa09287fb20c5d751c805bdbf09c224dad8417e95ed19783",
+    "tests/integration/treasury-invoice-browser.mjs": "e2a5cbbcbd435eea5a5e253dbf8289ea5e142c2d63b290866a01f716f0bf327a",
+    "contracts/src/InvoiceMerchant.sol": "a27235cd5fe32d40fc238ff9168822d0c16d67ecbaeeb091685044afd595124f",
+    "contracts/src/TreasuryBridge.sol": "ef2273130ea2649cb1951d2875dc0380ea66ebd7a9951a184347655f74309907",
+    "contracts/src/TreasuryPolicy.sol": "4e4166785d6d6703c5a23f5cfa80c5e61f3172f3bb14bbe5d239bca94ea681da",
+    "contracts/src/TreasuryAliasReader.sol": "f909840a4df05052d0e803d79faad3f24c5e65dd0a547edaf735ed05ebf179c7",
+    "contracts/test/TreasuryPolicy.t.sol": "2f0f94cffe30fc7d7d0352418f315d2b5e196c0afa006ad823e980ca69288fa1",
+    "contracts/test/helpers/OwnerFixture.sol": "14d7bf9b509c8f761a00f159de7054f06f0751b82e129fd22dd6e180edc69916",
+    "contracts/test/fixtures/DevnetUSDC.sol": "2e3f732d845f20c5120b98f0e017008fe8780e9fe50798ca06ab3d1cbdac9a2b",
+    "tests/integration/treasury-payments.mjs": "9a858c6bf652c68a4e82353bc0f38fe8e38f289554c6c22ca0c4099aa6027393",
+    "tests/integration/treasury-payment-browser.mjs": "da71f203dc79aedc6774b2df3c68bb98f7c75ae6744f89d06b92bca4ec77cc92",
+    "src/lib/treasury/payments.ts": "5393ed7b2ae7261b1854b7af971bdf57634c64ab1041347f5ca7d23590875c6f",
+    "tests/treasury-payments.test.mjs": "3cbdd409ff1a6846cf1d3b3362faf7ce2e85547832465aa4300b8526d378a342",
+    "tests/treasury-rules.test.mjs": "fd1b07224c9a4b7ba65fe74e5dcb28f2ffdc5457fde0968d4b6491cadcd653f3",
+    "scripts/treasury-composer.mjs": "ca36e2f282c18fa0b6fe44acb58012b6ea39f5d044ccc25ded345a14e326b40b",
+    "tests/treasury-composer.test.mjs": "4d9c79449d72c48d5bf1d25d6d57e26e86ba9dbf5bc0bd158d49da836a8a9768",
+    "src/lib/composerDiscovery.ts": "45ccb32407115d488b031cfd997661ada79e16127ffd17ef1c3c20ba2dba3fc4",
+    "scripts/treasury-devnet.mjs": "359548b3df7bc72e809b74912d72acd1e57ef79f272245733a460affc57ff06e",
+    "scripts/treasury-owner.mjs": "30c38787d2d26b2c21a1daa0fa90c7a485a182659f957cbbec6dc6171b616762",
+    "tests/integration/treasury-browser.mjs": "d99a712be7f493853e7c2419f793c69ad0f99fdc33c7af385765a8bbf1d737be",
+    "tests/treasury-client.test.mjs": "6edc68c66c7edf78665379efdf1bb626b2629e5c4c3926c4d6577dc4743a8d1b",
+    "src/lib/treasury/client.ts": "eb036d06b66a2d4a8de720148b370cb123e7a7e54025ab7d425d0f7f32955d72",
+    "src/components/TreasuryConnected.tsx": "4114663437a88d008fba50e7a0baa3312e19c1e708729ee04c73233461799092",
+    "src/components/TreasuryDemo.tsx": "397f5f2d178eebd342807ae49f5083473b16a071b4d91e5072b2518d6f430774",
+    "src/components/TreasuryDemo.module.css": "df5cc85a53bbbdef146fc6df43ea1868a14b79ec0c46c45deb5f6339158d3eb4",
+    "src/hooks/useWallet.ts": "87bc15e86da83a8b0311f0373bc35e0205d278e2f1aaba9ad74161bea8532c46",
+    "src/hooks/useConfig.ts": "31007d0c17327b5e02b1e964816dc532ad74b851ebfac2d80846456ce68cef96",
+    "src/config.ts": "84d862a9b7b846c6991627b54733ca05f0f04448ef512f984a3c48301d06db9c",
+    "src/App.tsx": "c41983714e89ace8cb95ba95a090e23ac25e9b22672288eaf03909c0c6bab5ca",
+    "vite.config.ts": "f2c54c1457fb2304718e354f0946d85a66cfbbd197e82a4f47adfeecd42a7030",
+    "src/lib/treasury/owners.ts": "048245db42f92714135988b862dbb0b4a2d9eed65cb456f1933a7956ab619f92",
+    "src/components/TreasuryOwners.tsx": "3c5027422b391e97dea04a008a69fcf87ac6062beb5634c3061f1df7227758dc",
+    "src/lib/fees/payment.mjs": "3a2e9dfcc0e926419442957a93626faef703216ed1c4aee1db1d18102eba1390",
+    "src/lib/fees/l2-fees.mjs": "16e477a0028166adb70efa583ce5f876ecf71667107962a7814feed3f58dbb0a",
+    "src/lib/treasury/history.ts": "60613bf3f4208f2ee8b1054f5a1a0c12bf239ecafb8fc3995bac3818724cdcc9",
+    "src/hooks/useTreasuryHistory.ts": "6ac843148cd40e7ccf4acc3f2e6a0504c0e8c541ad9c4b6141dc56cb68da8f9e",
+    "src/components/TreasuryPaymentHistory.tsx": "307ec97f28a2cfce07176049bbd1b49de1e50be3ba3f69effb5b7c6561d67b3a",
+    "src/components/TreasuryOutcomeDetails.tsx": "53539b89bb5b23fdcb2bc8c6294553fa3570c3f61d13943142419781d99a4938",
+    "tests/treasury-history.test.mjs": "5bd9a774a709625f2e66e06fa119087bfe72e39bfccf27f60b890a24df11d813",
+    "tests/integration/treasury-history-browser.mjs": "82443dd406e53be0946f7294c8073b0a3b8ea3454c4eed1775f13163522bd420",
+    "contracts/src/ConfiguredTreasuryBridge.sol": "2c5fa6237ad6517924de1e9e1c74550517ed02941a50a72c59e922ec3fa95fbc",
+    "contracts/test/ConfiguredTreasuryBridge.t.sol": "89ed8cf7b5b6bc72c5237a84a9fdf0049b61fbf6a32d4abde461f37d65893685",
+    "scripts/build-treasury-browser.mjs": "0b758ff33b410f67eb5aa66ffbe93f82c47b7d1ab952dfcc89b4120ddeb9c88a",
+    "scripts/treasury-network.mjs": "e80a721d6ad122dec4376af23292d721d4fab557ff309e42b19da636ef55185c",
+    "src/lib/treasury/deployment.ts": "37802f699d7ba97bf7d7b5c9a48c138eaa74a932dd6221e7b7ed8e82f5a5d637",
+    "src/lib/treasury/deployment-artifacts.json": "e789ed47a683b588f5997f55859ef62daf509d4d64403314fe7dc11d069bd0bb",
+    "src/lib/treasury/shared-network.json": "b768ba4b72abd355568eff985f1ca2152382102510be682d15417f390207a10e",
+    "src/components/TreasurySetup.tsx": "7cf379e9b5c223bf6a103eec6f5c4024976011c6bce66b06ba42d5e72daba69a",
+    "tests/treasury-deployment.test.mjs": "3864d706fb5bc0222a480b9e1e2de0bf10df9e53f8cf04c4dbfdf24dce86333c",
+    "tests/treasury-owners.test.mjs": "b1b217a9317a11b4e975810cf9561641480a27313e32d952357739bad6de56d7",
+    "src/lib/treasury/safeSetup.ts": "194bc12a82be87e2632d88094100de99cd3dcba3be68a15f322546a7b868fc25",
+    "tests/integration/treasury-setup.mjs": "46b92918e3cad756b548030d104c03c94b36c065e2c27b111993812435fd02b3",
+    "tests/treasury-shared-browser.mjs": "2a59a0a1fe1929961f43bd550c47dbf388a613a0e0b48836def0eaabba35c27a",
+    "contracts/legacy/src/Artifacts.sol": "b860c44f077f8d7ffb2e91aeee0eb57305aa80c05b4a59e89e43c8f09d49ff17",
+    "tests/treasury-signatures.test.mjs": "516be5685c2335066c800be193a2e6943eb8bd9388ac16b237ffe522530c578a",
+    "src/lib/treasury/official-safe-deployments.json": "443457764595db92ec19d77bf1b24174f61e3a88e0f9d916d2cb4699abd24e94",
+    "tests/fixtures/official-safe-runtime.json": "d6f817b93823f1a9666eef6dd374eedaabbea912c249dc136dd96abb450d8ed8",
+    "tests/fixtures/treasury-policy-v2.json": "e31dcf32437501241c445e7e4c73c50fc5aed28fb8c1fd1ed9f62f1898421b62",
+    "contracts/src/TreasuryBootstrap.sol": "f411ad99359f03d8891f3dbc530dfbbcb87a92273aede9a08a5f0503e504e6d2",
+    "contracts/src/BootstrapTreasuryBridge.sol": "2a6a4c4b407a90a373313f6884703cffd1ba1d3ccf33c99034cc0881f22ddb87",
+    "contracts/test/TreasuryBootstrap.t.sol": "209d6836dbd75b8d76b46c035fb6733afbfa6574b70de3ebe66dc76dbc35bb2b",
+    "src/lib/treasury/deploymentGroups.ts": "42d762b88eb5bd698cc32767025c3cc588c9be72b6ccbfdf992a1fa8f50002e2",
+    "tests/treasury-deployment-batches.test.mjs": "732a0b50b5b9892121cc34430b886fc9819da8367efe9e4d28012e3c91887cca",
+    "tests/integration/treasury-deployment-batches.mjs": "d9bb64b2d88501e9975810a823db0eb6452d7b46754e1ee063d046683f315c0c",
+    "src/lib/treasury/setupState.ts": "3ac45e20c9190dad95bf7cffe4f5136ed2ee88afa196bc5aa23f9c26031cb903",
+    "src/components/TreasuryRestart.tsx": "122ca3261134699c6cbbf53eb3112a1c8cf523ba40a55ee97bb200faceb0e9e5",
+    "tests/treasury-setup-state.test.mjs": "0bcd27f700f2a95a2ed4a6653238f6399c709e5293c6b7268d72b069ec7b2ac5"
+  },
+  "scenarioComplete": true,
+  "independentReplay": {
+    "hash": "0xadb86b7679acc3adca8e0f3d81665867ddac872056b9f056f84bc8032d85d585",
+    "height": 515
+  },
+  "postedAttestationVerified": true,
+  "browserChecks": [
+    "hidden navigation",
+    "live owners and threshold",
+    "network switch",
+    "non-owner blocked",
+    "wallet signature rejection",
+    "duplicate approval blocked",
+    "incomplete quorum blocked",
+    "edit clears signatures",
+    "owner addition clears stale review",
+    "removal clears stale review",
+    "EIP-712 approvals",
+    "one submission per action",
+    "wallet submission cancellation",
+    "reload reconciliation",
+    "lost-response recovery",
+    "canonical Safe success",
+    "independent follower",
+    "mobile layout"
+  ],
+  "paymentChecks": [
+    "40 local",
+    "110 split",
+    "same L1 transaction receives both legs",
+    "global rejection despite 50 L2 allowance remaining",
+    "actual Composer policy rejection",
+    "unchanged state on rejection",
+    "bridge backing",
+    "no residual policy custody",
+    "independent follower",
+    "payment reload recovery",
+    "10% of 200 L1 + 100 L2 pays 30",
+    "rule fraction edits invalidate approvals",
+    "rule reload recovers signed fraction",
+    "RulePaid observations and Paid funding agree",
+    "actual 30 token transfer on L1",
+    "percentage rule independently replayed",
+    "110 to EEZ-X: 100 local + 10 L1",
+    "terminal L1 lock in canonical batch",
+    "exact approval consumed",
+    "nonce-bound lock and mint",
+    "both contributions in the same L2 receipt",
+    "reverse payment reload recovery",
+    "natural period reset with idle L2",
+    "reverse state independently replayed",
+    "16-USDC rule preview rejected with only 10 global remaining"
+  ],
+  "historyChecks": {
+    "automaticResubmissions": 0,
+    "counts": {
+      "pending": 0,
+      "preparation": 3,
+      "rejected": 0,
+      "rollback": 1,
+      "settled": 4
+    },
+    "expiredQueueDiagnosticsHandled": true,
+    "missingDiagnosticInjectedOnReload": true,
+    "ownerActionsExcluded": true,
+    "preparation": [
+      "closed invoice at Composer",
+      "1 USDC local budget check",
+      "16 USDC rule local budget check"
+    ],
+    "queueExpiredNaturally": true,
+    "responsiveWidths": [
+      390,
+      320
+    ],
+    "retainedAcrossReload": true,
+    "rollbackTraceAndStateDetails": true,
+    "unavailableReadsDowngrade": true,
+    "verifiedFunding": [
+      "40 local EEZ-X",
+      "110 split L1",
+      "30 percentage rule",
+      "110 split EEZ-X"
+    ]
+  },
+  "wallet": "Test EIP-1193 provider; genuine fixture-key signatures and real RPC submission. No wallet extension automation.",
+  "cases": [
+    {
+      "label": "Browser B+C approval, submission and reload reconciliation",
+      "transaction": "0x261299b92838f23c6c8973f729c58a8a6e9a8156b1b9b1724d8233e1b7f1e394"
+    },
+    {
+      "label": "Browser A+B after removing C",
+      "transaction": "0xe78905ac9c0369515e9cd6e5196166d147555820f0f250fa2447931e7cd99a13"
+    },
+    {
+      "label": "Invoice rejected after two L1 transfers; rollback verified",
+      "transaction": "0x84fbbbe3f9c9c319bd5ff84b8b094ffcbf658cace76e9c266236aeaff829d281"
+    },
+    {
+      "label": "Closed invoice rejected during preparation",
+      "transaction": "0xfe8abd2450c2e8313fdeaed60249caa850b682d02a661e6a612a57517306bf62"
+    },
+    {
+      "label": "Pay 40 on EEZ-X",
+      "transaction": "0xe3561c7e3a786b410643c024a9cc35173be9e84f93e2b8c9b82ef6764f416af3"
+    },
+    {
+      "label": "Split 110 to L1",
+      "transaction": "0x40bde3902f519b2244ed59217797a82078126ed90dd4d86bd635eeeb4a7e5896"
+    },
+    {
+      "label": "Extra 1 rejected by the independent global budget",
+      "transaction": "0x51792e91cf7602058045ed7763c03460bf27a92bc5fa12a1a1242e095ce280ef"
+    },
+    {
+      "label": "Pay 10% of holdings",
+      "transaction": "0x68a0146a7cb6ca201b12a43a4bf9e39b21bdc91e293b2ef670932aeb59bebf54"
+    },
+    {
+      "label": "Split 110 to EEZ-X",
+      "transaction": "0x8687f8598ab6fa456b090a42250ff39d9019ad65a0870d230d11bc60ac504a54"
+    }
+  ],
+  "logs": [
+    {
+      "path": ".runtime/treasury-integration/20261021T084140-gsj55c8g/summary.json",
+      "sha256": "4a734cf6e1e132a1cc50870fe13aea93844fd28205a03e5e7d9519693df31e88"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261021T084140-gsj55c8g/scenario.json",
+      "sha256": "f6f5d311993c272ceadb976671ef35eda3a6fe026f8a6b25e6ce23f6425a0547"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261021T084140-gsj55c8g/integration.log",
+      "sha256": "87627794382b2e633edf55906675bb17cb4e348bc040f2a4b2fee3eefac0173e"
+    }
+  ],
+  "previousAttempts": [
+    {
+      "run": ".runtime/treasury-integration/20261021T082015-dbj5zieb",
+      "verified": false,
+      "reason": "Old tab selector remained in the running browser after labels changed; first failure retained."
+    },
+    {
+      "run": ".runtime/treasury-integration/20261021T082357-pr5d0c_e",
+      "verified": false,
+      "browserAssertionsPassed": true,
+      "reason": "Runner rejected application source changes during the run; not counted as certified coverage."
+    }
+  ]
+}

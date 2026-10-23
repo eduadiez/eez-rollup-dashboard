@@ -1,0 +1,13 @@
+[
+  {
+    "mode": "corrupt-history",
+    "errors": []
+  },
+  {
+    "mode": "blocked-storage",
+    "errors": [
+      "Storage blocked"
+    ],
+    "failure": "locator.waitFor: Timeout 4000ms exceeded."
+  }
+]

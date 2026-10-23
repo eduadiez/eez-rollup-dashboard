@@ -1,0 +1,119 @@
+{
+  "source": "https://mainnet.eez.dev/dashboard/",
+  "scope": "Read-only public configuration, chain identity, Composer discovery, bridge bindings and token-origin checks. No signatures, quotes, deployments or transactions.",
+  "chains": [
+    {
+      "chain": "l1",
+      "method": "eth_chainId",
+      "result": 1,
+      "errorCode": null
+    },
+    {
+      "chain": "l1",
+      "method": "eth_getBlockByNumber",
+      "result": {
+        "number": "0x1908601",
+        "hash": "0x9841d845afd0eadbd43195862dd5a350c77289eb7f20e5ae31c2d9bc9828edc7",
+        "timestamp": "0x6ada1b3b"
+      },
+      "errorCode": null
+    },
+    {
+      "chain": "l2",
+      "method": "eth_chainId",
+      "result": 696990,
+      "errorCode": null
+    },
+    {
+      "chain": "l2",
+      "method": "eth_getBlockByNumber",
+      "result": {
+        "number": "0xb59f7",
+        "hash": "0xe906761b6e1267ce5cd84b970c6b4385b0c56772a31320fd2e8390dbe41277ac",
+        "timestamp": "0x6ada1b45"
+      },
+      "errorCode": null
+    }
+  ],
+  "bridges": [
+    {
+      "chain": "l1",
+      "bridge": "0x1d6a3bfe0a302bb2df5fdfdb8eaf5b78b91a5fba",
+      "observedBlock": 26248710,
+      "blockHash": "0x2c1706553e44205a428752892cd4e0c0e5b0487fe1e498bd9e4d9eb2d4a09ede",
+      "blockUnchanged": true,
+      "codeBytes": 9602,
+      "runtimeHash": "0xf1c7221a57ab87e4bcc478feae7ffddd84952880e8fea4574ab1218416b28dab",
+      "matchesPinnedFixtureRuntime": false,
+      "matchesPinnedFixtureExecutable": false,
+      "reads": {
+        "manager": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+        "rollupId": "0",
+        "canonicalBridgeAddress": "0xBEF1406984A3e7b2889376d29D6BbD9f6ed9695a",
+        "canonicalToken": {
+          "unavailable": true,
+          "error": "RPC 3"
+        },
+        "treasuryRollupId": {
+          "unavailable": true,
+          "error": "RPC 3"
+        }
+      },
+      "composer": {
+        "status": "detected",
+        "chainId": "0x1",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "chain": "l2",
+      "bridge": "0xBEF1406984A3e7b2889376d29D6BbD9f6ed9695a",
+      "observedBlock": 743954,
+      "blockHash": "0x9ce4780b931e53c881b0e305ad79b04e1c3131a72e44703a94aae2532f3b9902",
+      "blockUnchanged": true,
+      "codeBytes": 9602,
+      "runtimeHash": "0xf1c7221a57ab87e4bcc478feae7ffddd84952880e8fea4574ab1218416b28dab",
+      "matchesPinnedFixtureRuntime": false,
+      "matchesPinnedFixtureExecutable": false,
+      "reads": {
+        "manager": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+        "rollupId": "1",
+        "canonicalBridgeAddress": "0x1D6A3bFe0A302Bb2df5FDfDB8eAF5b78B91A5fBa",
+        "canonicalToken": {
+          "unavailable": true,
+          "error": "RPC 3"
+        },
+        "treasuryRollupId": {
+          "unavailable": true,
+          "error": "RPC 3"
+        },
+        "getWrappedToken": "0x787f00f5e0f0b9C8CC4e5E31d3c8a7Db83159dd9"
+      },
+      "composer": {
+        "status": "detected",
+        "chainId": "0xaa29e",
+        "version": "0.1.0"
+      }
+    }
+  ],
+  "wrappedUSDC": {
+    "wrapped": "0x787f00f5e0f0b9C8CC4e5E31d3c8a7Db83159dd9",
+    "observedBlock": 743986,
+    "blockHash": "0xbfe7825486220f290604d3b3be5720d3e1dc83bbc731df5274792d0b844a312e",
+    "blockUnchanged": true,
+    "metadata": {
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "decimals": 6,
+      "BRIDGE": "0xBEF1406984A3e7b2889376d29D6BbD9f6ed9695a",
+      "wrappedTokenInfo": [
+        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "0"
+      ]
+    },
+    "hasCode": true,
+    "runtimeHash": "0x81f5cf0072610885aba07218865d9b59ccb15ac8b384c9a4472b40a542d7879f",
+    "canonicalOriginMatches": true,
+    "bridgeAuthorityMatches": true
+  }
+}

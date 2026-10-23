@@ -5,7 +5,7 @@ import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
-const runtimeConfigPath = path.resolve(rootDir, ".runtime/config.json");
+const runtimeConfigPath = path.resolve(rootDir, process.env.EEZ_UI_RUNTIME_CONFIG || ".runtime/config.json");
 
 type RuntimeFile = {
   browser?: Record<string, unknown>;
@@ -44,7 +44,7 @@ export default defineConfig(() => {
   const proxy = runtime.proxy ?? {};
   const base = process.env.EEZ_UI_BASE_PATH || "/dashboard/";
   const traceProxy = (prefix: string): ProxyOptions => ({
-    target: process.env.EEZ_TRACE_UPSTREAM || "http://127.0.0.1:18081",
+    target: process.env.EEZ_TRACE_UPSTREAM || "http://127.0.0.1:18082",
     changeOrigin: false,
     rewrite: (url: string) => "/api" + url.slice(prefix.length),
   });
@@ -58,6 +58,8 @@ export default defineConfig(() => {
         ws: true,
         rewrite: (url: string) => url.replace(/^\/monitor(?=\/|$)/, "") || "/",
       },
+      "/dashboard/treasury-verification": { target: "http://127.0.0.1:18081", changeOrigin: false, rewrite: (url: string) => url.replace(/^\/dashboard\/treasury-verification/, "") },
+      "/treasury-verification": { target: "http://127.0.0.1:18081", changeOrigin: false, rewrite: (url: string) => url.replace(/^\/treasury-verification/, "") },
       "/rpc/l1": rpcProxy(proxy.l1Rpc),
       "/rpc/l2": rpcProxy(proxy.l2Rpc),
       "/composer/l1": rpcProxy(proxy.l1Front),

@@ -1,0 +1,61 @@
+{
+  "run": "20261020T151413-q72r2wk7",
+  "url": "http://127.0.0.1:46735/dashboard/#/treasury-demo",
+  "instance": "0xf84bf49e3f84c1c53be72bb72cb65e1a6899aff95e4a1a9aaff2661cd18a87b4",
+  "sourceFileCount": 46,
+  "sourceDifferencesFromCandidate": [
+    "scripts/run-treasury-integration.py",
+    "tests/integration/treasury-history-browser.mjs"
+  ],
+  "genesisAndCodeBindingsVerified": true,
+  "safeNonce": "3",
+  "safeBalances": [
+    "300000000",
+    "150000000"
+  ],
+  "allowanceSpent": [
+    "0",
+    "0"
+  ],
+  "globalSpent": "0",
+  "historyVisible": true,
+  "emptyHistory": true,
+  "hiddenByDefault": true,
+  "responsiveWidths": [
+    390,
+    320
+  ],
+  "pageErrors": [],
+  "transactionsSent": 0,
+  "normalDashboardConfigSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+  "normalDashboardHasTreasury": false,
+  "deploymentSourceDifferences": [],
+  "candidate": "20261020T154209-7sciw1sf",
+  "finalReadinessUTC": "2026-10-20T15:51:17.826612+00:00",
+  "listeners": [
+    {
+      "port": 42041,
+      "open": true
+    },
+    {
+      "port": 46145,
+      "open": true
+    },
+    {
+      "port": 37743,
+      "open": true
+    },
+    {
+      "port": 40731,
+      "open": true
+    },
+    {
+      "port": 45107,
+      "open": true
+    },
+    {
+      "port": 46735,
+      "open": true
+    }
+  ]
+}

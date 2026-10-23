@@ -1,0 +1,97 @@
+{
+  "run": "20261020T134955-m641cbjr",
+  "verified": false,
+  "testResult": "0 passed; 1 failed",
+  "failure": "Checksum formatting mismatch in RulePaid expected token address after successful 30-USDC rule settlement and reload recovery.",
+  "correction": "Normalize expected addresses with viem.getAddress before strict event comparison. Address identity and all other event fields remain required.",
+  "failedTestSourceSha256": "7c165c28e418bd96723d947ab89b4763cbaa349e33e8a3758dcb9da467fc70a6",
+  "failureExcerpt": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    amount: 30000000n,\n    balanceL1: 200000000n,\n    balanceL2: 100000000n,\n    bps: 1000,\n...\n    recipient: '0x0000000000000000000000000000000000001234',\n+   token: '0x591b594f01ae53BFf6Fb44C5dA0a16a62c2f3f6c'\n-   token: '0x591b594f01ae53bff6fb44c5da0a16a62c2f3f6c'\n  }\n\n    at paymentBrowser (file:///home/edu/Development/eez-rollup-dashboard/tests/integration/treasury-payment-browser.mjs:175:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async browserScenario (file:///home/edu/Development/eez-rollup-dashboard/tests/integration/treasury-browser.mjs:185:5)\n    at async file:///home/edu/Development/eez-rollup-dashboard/scripts/treasury-devnet.mjs:83:5 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [Object],\n  expected: [Object],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n",
+  "reachedCases": [
+    "Browser B+C approval, submission and reload reconciliation",
+    "Browser A+B after removing C",
+    "Pay 40 on EEZ-X",
+    "Split 110 to L1",
+    "Extra 1 rejected by the independent global budget",
+    "Pay 10% of holdings"
+  ],
+  "remainingAtFailure": [
+    "Independent rule replay assertion",
+    "Reverse payment after rule",
+    "Final native attestation/convergence checks"
+  ],
+  "localDiagnostics": ".runtime/treasury-integration/20261020T134955-m641cbjr",
+  "retryClassification": "Test assertion corrected; new source identity requires a full rerun. The failed run is retained, not counted as passing.",
+  "launcherExitCode": 143,
+  "launcherNote": "The foreground command ended with signal status 143 during failure cleanup; its summary remained incomplete and verified false. The retained native log contains the specific assertion and 0 passed / 1 failed result.",
+  "ownedListenersAfterFailure": [
+    {
+      "port": 33533,
+      "closed": true
+    },
+    {
+      "port": 37705,
+      "closed": true
+    },
+    {
+      "port": 38345,
+      "closed": true
+    },
+    {
+      "port": 40285,
+      "closed": true
+    },
+    {
+      "port": 40727,
+      "closed": true
+    },
+    {
+      "port": 44983,
+      "closed": true
+    }
+  ],
+  "settledRuleBeforeAssertion": {
+    "label": "Pay 10% of holdings",
+    "transaction": "0xdbcdf9c6d50520a993aee1e0ea74f463e65d0c100c74d62243f85fa123a4c6bc",
+    "safeHash": "0x949020b375b7598b20b1bbd5f775407995f2a342ac955d28a09f2262ad7b287e",
+    "blockNumber": 615,
+    "blockHash": "0x9256ebeecfc30a67387d6b6f4b06c4ab53497d07da1fe9af0ce97fb6bcf4f201",
+    "l1Verification": {
+      "transaction": "0x2fa83e7ca72062527b7cbfa4ab19ffa15c5768baf7845330e21a6286000e9dce",
+      "blockNumber": 123,
+      "blockHash": "0xf1b12fd29cbcf6bee549cb5a4d9d29557683f605ae2fc9fa4f220b296396bc5a",
+      "callerAlias": "0x017d182bd3c160cc8381d51863e5b864a9783ad9",
+      "safe": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+      "safeTransactionHash": "0x949020b375b7598b20b1bbd5f775407995f2a342ac955d28a09f2262ad7b287e",
+      "calldataHash": "0xf6ca11d46e695abc016b1e7c8366d649ffeb20add2783934a3018a8d49110e76"
+    },
+    "snapshot": {
+      "epoch": "2987508",
+      "balanceL1": "170000000",
+      "balanceL2": "100000000",
+      "recipientL1": "140000000",
+      "recipientL2": "40000000",
+      "escrow": "140000000",
+      "supply": "140000000",
+      "policyBalance": "0",
+      "aliasBalance": "0",
+      "allowanceL1": [
+        "100000000",
+        "30000000",
+        "10",
+        "29875080",
+        "3"
+      ],
+      "allowanceL2": [
+        "100000000",
+        "0",
+        "10",
+        "29875080",
+        "3"
+      ],
+      "spent": "30000000",
+      "aliasApproval": "0",
+      "depositNonce": "0",
+      "safeNonce": "8"
+    }
+  }
+}

@@ -1,0 +1,338 @@
+{
+  "complete": true,
+  "sourceHashes": {
+    "contracts/src/BidirectionalTreasuryPolicy.sol": "17144ca6f2ab671d1ffa115e46dc24c278fc6cbed155eb89ca0fd3d001421c7c",
+    "contracts/src/TreasuryPolicy.sol": "9c737f63be98dfe67bee86bc239de7c8e4d72ceb4d872021c549ee31644632bb",
+    "contracts/legacy/artifacts/TreasuryPolicy.json": "156dc67895a0c05af250d22aaba5d6f09ffe75702d2d267952e17e92199dff7d",
+    "contracts/test/BidirectionalTreasuryPolicy.t.sol": "9f87f22226c174ebead81b42b8240fc08890f04fb9cc032a685b1f83b6f36afe",
+    "src/lib/treasury/client.ts": "eee83197f6139e1875e8a51267e4d8fd4e3ad10bce96d4b13692328d4c63f4d3",
+    "src/lib/treasury/l1Payments.ts": "9a7f46b63fd907dd79f2bb1b74baeaf4d3366f5171f33bd13571d58ea0fa572d",
+    "src/lib/treasury/payments.ts": "006f2d58885d8746b1de9579e3f608c2c73cee8bb79f03c8df23b0faf0f9ab02",
+    "src/lib/treasury/deployment.ts": "56a6f384567d52c485a6a01f21aa5e42c0c4e6f58202645f0c68fabbd0a50934",
+    "src/lib/treasury/deploymentGroups.ts": "bcb8f14c2cac676c771bda1a11759238e1aedf36a74e4a56885270275fd5cdbf",
+    "src/lib/treasury/deployment-artifacts.json": "fb4f222e92c583e192617218af9b55ea7a818520dba2add67a57a4c81d44a643",
+    "src/components/TreasuryConnected.tsx": "cf3c1a461a9527b50b256cbd96fc46d84a95ad9187cd89905d7a418b9975d3b2",
+    "src/components/TreasurySetup.tsx": "3d952c469e2d759b2084700d26a0e489c8f89f20897011cb55527ba8c5466492",
+    "tests/treasury-bidirectional.test.mjs": "9ec2bece48581ca8ec44d74720c2e624f5f9fb728e8b8099b509f76b9ed69f01",
+    "tests/integration/treasury-bidirectional.mjs": "ff0a2ebb1defbf500b26e70fa8964c0b8635e8f2623be4f3b00420f39345105e",
+    "tests/integration/treasury-bidirectional-browser.mjs": "9ef2202c9f67d04f0333e31bde14f011b84ff557bee0b757e7c8462a8c772b52",
+    "scripts/treasury-composer.mjs": "25f411f71d43b45d23bff6d68db2ff03304e94b161c30953e49d364da5b887a3",
+    "scripts/run-treasury-integration.py": "aa26baf4ac2d2b1449b28f0f570a8edba124802acb26f76930931952e865fad8",
+    "tests/integration/treasury_owners.rs": "33649f6bcbcc5610f6ce6378d3cdb342a93eb956ffa9ebe225299ca4fd2d47bc",
+    "tests/integration/README.md": "5bbedcc52089ec1c20f92a356e54ab381cb2b3bd529d39ed02b651a5fed0c968"
+  },
+  "localDeployment": {
+    "before": {
+      "eez-rollup-ui-ui-1": {
+        "id": "a0cfff6a69ae1b823d60e45c5d58f3581740acd28e710101326f433baeaaaf81",
+        "image": "sha256:a44501cb470b41f9ba6f09bd6b40150973b1a1a628f86618e4e0b6355d173ab5"
+      },
+      "eez-rollup-ui-monitor-1": {
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546"
+      },
+      "eez-node-chiado": {
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95"
+      },
+      "eez-proof-signer-chiado": {
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6"
+      }
+    },
+    "configSha256": "d74e6c1f7d909f128efb55e1ce4d3fbd8d31131ef084da6253cf96e6ba9ada71",
+    "imageOnlyComposeChange": true,
+    "after": {
+      "eez-rollup-ui-ui-1": {
+        "id": "75d74670940cba0d087477604baaab75b67af2289e2495578cc69bd98cc501c2",
+        "image": "sha256:f597391c9525f95ddc24b7e2716ad0d6de74f45b2627ee14ab772ffb6b00307d"
+      },
+      "eez-rollup-ui-monitor-1": {
+        "id": "b1d7bae9296307e3d8e6347d6594c0ad3d43636eefeeb602d36fc1656520b1f6",
+        "image": "sha256:1e5c08119a6d7021208ab225c527114bc02e229c95da907f4b781d4365bd3546"
+      },
+      "eez-node-chiado": {
+        "id": "02300e756f3ee480d4e6192494c1b8deec166652f4ea23eaf87e08914fcf41b9",
+        "image": "sha256:c8725a8da26888b51d455daade29a894228da8ca9eae2226e85d6a82c731dd95"
+      },
+      "eez-proof-signer-chiado": {
+        "id": "8aeb2151dc137ec9de8c34aaed6106f8c3adc4cba5506cbbc672d98d19da36ef",
+        "image": "sha256:93587f2bd43865adff58ee322dc43fb27e738aa8660d1f121711e2ec191ffbf6"
+      }
+    },
+    "configurationPreserved": true,
+    "otherServicesPreserved": true,
+    "servedAssetsMatchBuild": true,
+    "imageTag": "eez-rollup-ui:treasury-bidirectional-20261021"
+  },
+  "unitTests": 327,
+  "contractTests": 100,
+  "nativeFinalRun": "20261021T151317-pm9a4npo",
+  "browserFinalRun": "20261021T151104-tnjmam44",
+  "native": {
+    "verified": true,
+    "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+    "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+    "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+    "binaries": {
+      "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+      "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+      "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+    },
+    "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+    "summarySha256": "15981a0df24267965b3503120ee8bb59c21c8e710c00baaf9512791e3dbdecb8",
+    "postedAttestationVerified": true,
+    "independentReplay": {
+      "hash": "0xc821226eb728cc10050fff188f88394b38f0c298d37bc99f041fd55aed4f0f70",
+      "height": 190
+    },
+    "payments": [
+      {
+        "amount": "110000000",
+        "block": "175",
+        "contributions": {
+          "fromL1": "10000000",
+          "fromL2": "100000000"
+        },
+        "destination": "l2",
+        "hash": "0xba53ff02dc7115ed9dfee65d859f8670bda44c447d954557c41fb83b5efd3c10",
+        "independentReplay": true,
+        "safeHash": "0x7ac2fe090568920243ad8767954ee107e7bdc1f917ba2568fc2bdf443a447e94",
+        "source": "l1",
+        "spent": "110000000"
+      },
+      {
+        "amount": "10000000",
+        "block": "180",
+        "contributions": {
+          "fromL1": "10000000",
+          "fromL2": "0"
+        },
+        "destination": "l1",
+        "hash": "0x4baeff1c6fc30d145ed6989f711a0bbe0be782cac71582111e38d6c34729379f",
+        "independentReplay": true,
+        "safeHash": "0x989659952804c8e98da43b29513424ef92442506a966b04d036d945a2ffc532f",
+        "source": "l1",
+        "spent": "120000000"
+      },
+      {
+        "amount": "10000000",
+        "block": "185",
+        "contributions": {
+          "fromL1": "10000000",
+          "fromL2": "0"
+        },
+        "destination": "l1",
+        "hash": "0x32e9d3e1a8ce86bc5fe1c9b47657afb331f07cbbce325b3fa22a25a487b21da1",
+        "independentReplay": true,
+        "safeHash": "0x12f11fd7f7284d713a498c2d67746eba102df242cdec5dc71c1015fec909272c",
+        "source": "l2",
+        "spent": "130000000"
+      },
+      {
+        "amount": "20000000",
+        "block": "190",
+        "contributions": {
+          "fromL1": "20000000",
+          "fromL2": "0"
+        },
+        "destination": "l2",
+        "hash": "0x8b219a185a46a18cb46d038f33b6cabf0ecdc0b0981a3514bdefb4a4388200e2",
+        "independentReplay": true,
+        "safeHash": "0x49724d3d483c30317974ea5970111c4875126b5c63dbb62159953b6267006bae",
+        "source": "l2",
+        "spent": "150000000"
+      },
+      {
+        "hash": "0xaed9540685ca65d6bb1583b8e9cf4af6c46ef265b0b79403f5e8e2241713a93e",
+        "label": "L1 shared budget rejects despite remaining L1 allowance",
+        "stage": "preparation rejected",
+        "unchanged": true
+      },
+      {
+        "hash": "0x2be7e9d7ca252ad021fed9e0726c22cad02773310f7986b2a8bfa9c2d48d41de",
+        "label": "L1 Safe signature replay rejected",
+        "stage": "ordinary L1 signature rejection",
+        "unchanged": true
+      },
+      {
+        "hash": "0xdf94ed2b66ba6c1968eec660a726da3665a3e67356f1086199a4f035a31ebe0c",
+        "label": "EOA cannot impersonate the L1 Safe through its policy proxy",
+        "stage": "preparation rejected",
+        "unchanged": true
+      }
+    ],
+    "harnessReused": false,
+    "postingMinimumPriorityFeeWei": "2000000000"
+  },
+  "browserSetup": {
+    "checkedAt": "2026-10-21T14:49:57.724Z",
+    "accounts": [
+      "0x000000000000000000000000000000000000a11c",
+      "0x000000000000000000000000000000000000b0b1"
+    ],
+    "url": "http://127.0.0.1:8080/dashboard",
+    "chains": [
+      10200,
+      906969
+    ],
+    "steps": 6,
+    "existingL1SafeRequired": true,
+    "ownersPreserved": true,
+    "standardERC20Funding": true,
+    "noImplicitMintOrClaim": true,
+    "separateFaucetPreservesTreasury": true,
+    "sharedInfrastructureReused": true,
+    "sharedReuseUsesMockedReadonlyRpc": true,
+    "hiddenUntilShortcut": true,
+    "realNetworkChecks": true,
+    "wallet": "read-only injected provider; no extension or private key",
+    "selectedWallet": true,
+    "immutableSelectionAfterReview": true,
+    "choicesOnBothChains": true,
+    "invalidImportRejected": true,
+    "zeroGasStopsSubmission": true,
+    "noSubmission": true,
+    "reload": true,
+    "sameWalletRestart": true,
+    "restartOpensSafeChooser": true,
+    "noArchiveControls": true,
+    "selectionStorageFailurePreservedSetup": true,
+    "pendingRestartBlocked": true,
+    "crossTabLock": true,
+    "otherTabFollowedRestart": true,
+    "completedTreasuryRestart": true,
+    "paymentAndOwnerRestartBlocked": true,
+    "previousManifestIgnoredAfterReload": true,
+    "keyboardFocus": {
+      "tag": "INPUT",
+      "width": "2px",
+      "color": "rgb(59, 229, 126)",
+      "visible": true
+    },
+    "badgeStyle": {
+      "font": "12px",
+      "color": "rgb(154, 163, 179)"
+    },
+    "chainColors": [
+      "rgb(155, 166, 214)",
+      "rgb(181, 163, 238)"
+    ],
+    "reducedMotion": true,
+    "contextualSetupDetails": true,
+    "fundingAndBudgetSteps": true,
+    "confirmedJournalPreserved": true,
+    "pendingJournalUnchanged": true,
+    "automaticPendingStatus": true,
+    "chainExplorerLinks": true,
+    "orderedSetupHistory": true,
+    "historyInclusionFinalityAndFailure": true,
+    "historyDowngradesUnavailableRPC": true,
+    "manualRecoveryRemoved": true,
+    "discoveredHashPersisted": true,
+    "discoveryUsesMockedReadonlyRpc": true,
+    "mobileWidth": [
+      390,
+      390
+    ],
+    "methods": [
+      "eth_chainId",
+      "eth_getCode",
+      "eth_call",
+      "eth_getBlockByNumber",
+      "eth_getStorageAt",
+      "eth_getBalance",
+      "eth_getTransactionCount",
+      "eth_getTransactionReceipt"
+    ],
+    "walletMethods": [
+      "eth_requestAccounts",
+      "eth_chainId",
+      "eth_call",
+      "eth_accounts"
+    ]
+  },
+  "orderingDiagnostic": {
+    "run": "20261021T150853-g288ycw4",
+    "sha256": "419acce45ab7f26e021fc58a21f2891a29f258ab0858bfaeddddd2b85f289059",
+    "sourceHash": "0xe235b0fc4895d9e9445ef55e9c98faf580b5f20df1e2d11767356856d74bae31",
+    "block": "0x1d",
+    "sourceStatus": "0x0",
+    "sourceIndex": "0x0",
+    "transactions": [
+      {
+        "hash": "0xe235b0fc4895d9e9445ef55e9c98faf580b5f20df1e2d11767356856d74bae31",
+        "index": "0x0",
+        "priorityFee": "0x12a05f200",
+        "to": "0x161a96e9b189d573560cce2a5bee72f10a8100f6",
+        "status": "0x0"
+      },
+      {
+        "hash": "0x3bc25d4a976ca0a9fe87e4ff53cd83d2a3f79910c5df9f575ecd4e32f75f0b1e",
+        "index": "0x1",
+        "priorityFee": "0x3b9aca00",
+        "to": "0x71c95911e9a5d330f4d621842ec243ee1343292e",
+        "status": "0x1"
+      }
+    ],
+    "changedObservationFields": [
+      "observedL1"
+    ],
+    "treasuryBalancesAndCountersUnchanged": true,
+    "boundary": "Native development relay inserts into a fee-ordered mempool; this diagnostic deliberately offers a 5 gwei source tip above the 1 gwei post tip."
+  },
+  "browserFailedRun": "20261021T144842-0t4vwwq_",
+  "nativePriorVerifiedRun": "20261021T144842-yr8i0bgy",
+  "browser": {
+    "verified": true,
+    "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+    "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+    "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+    "binaries": {
+      "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+      "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+      "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+    },
+    "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+    "summarySha256": "c012df316909c53563f06ec546f566074b7869a917031ebdb069d61d39773766",
+    "scenarioSha256": "8004494a1f071d1f6982b66f10f82ced78c0ee1cd0456b73971c6cf64f9276b5",
+    "postedAttestationVerified": true,
+    "independentReplay": {
+      "hash": "0xaa3105a61d9c59fe69d23b70128f33fc0bd09f27a706f5441de2e8919b361c5e",
+      "height": 490
+    },
+    "bidirectionalPayment": {
+      "block": "490",
+      "destination": "l2",
+      "hash": "0xd8b3c483d1054fa978adf2c5a888347d57d0f9973cb77ea871d9f236c40c9384",
+      "independentReplay": true,
+      "l1Block": "0x62",
+      "postIndex": 0,
+      "reloadRecovery": true,
+      "signaturesInvalidatedOnSourceChange": true,
+      "source": "l1",
+      "sourceIndex": "0x1"
+    },
+    "browserChecks": [
+      "hidden navigation",
+      "live owners and threshold",
+      "network switch",
+      "non-owner blocked",
+      "wallet signature rejection",
+      "duplicate approval blocked",
+      "incomplete quorum blocked",
+      "edit clears signatures",
+      "owner addition clears stale review",
+      "removal clears stale review",
+      "EIP-712 approvals",
+      "one submission per action",
+      "wallet submission cancellation",
+      "reload reconciliation",
+      "lost-response recovery",
+      "canonical Safe success",
+      "independent follower",
+      "mobile layout"
+    ],
+    "wallet": "Test EIP-1193 provider; genuine fixture-key signatures and real RPC submission. No wallet extension automation."
+  }
+}

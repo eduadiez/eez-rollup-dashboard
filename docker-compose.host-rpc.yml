@@ -6,7 +6,7 @@ services:
     environment:
       EEZ_UI_LISTEN: "127.0.0.1:8080"
       EEZ_UI_MONITOR_UPSTREAM: "127.0.0.1:18080"
-      EEZ_UI_TRACE_UPSTREAM: "127.0.0.1:18081"
+      EEZ_UI_TRACE_UPSTREAM: "127.0.0.1:18082"
   monitor:
     network_mode: host
     environment:
@@ -18,4 +18,4 @@ services:
     network_mode: host
     environment:
       EEZ_TRACE_HOST: "127.0.0.1"
-      EEZ_TRACE_PORT: "18081"
+      EEZ_TRACE_PORT: "18082"

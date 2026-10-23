@@ -1,0 +1,89 @@
+{
+  "verified": true,
+  "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+  "binaries": {
+    "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+    "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+    "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+  },
+  "testExecutableSha256": "6061ac5b6fadcd2e138e50f995ee1c0d5165139c51fb3410d473273f8d766a2b",
+  "reusedArtifacts": {
+    "run": "20261021T084140-gsj55c8g",
+    "summarySha256": "4a734cf6e1e132a1cc50870fe13aea93844fd28205a03e5e7d9519693df31e88",
+    "nativeHarnessSourceSha256": "9fcea1cc5f7504eeda0a38bca1d3730fcf5170f905f99e5efd04cc3777d96c00"
+  },
+  "run": ".runtime/treasury-integration/20261021T100301-lxuzi2wh",
+  "scenarioSha256": "25b490a3af348791a70443c881186674b40b2bc84aa17379efbaad0919ec1ffe",
+  "contracts": {
+    "contracts/src/SharedTestUSDC.sol": "d9e264fa05683cdf1453f72714faf5ce1a1a89b19a13f0bc653656775ae73016",
+    "contracts/src/SharedTreasuryBridge.sol": "1e52aa86bda422460e70af7cee9c57a07a648339bd94f9acce1ead56874811d0",
+    "contracts/src/TreasuryPolicy.sol": "4e4166785d6d6703c5a23f5cfa80c5e61f3172f3bb14bbe5d239bca94ea681da",
+    "contracts/src/TreasuryBridge.sol": "ef2273130ea2649cb1951d2875dc0380ea66ebd7a9951a184347655f74309907"
+  },
+  "postedAttestationVerified": true,
+  "independentReplay": {
+    "hash": "0x1c44be2a4846b230ee5200abde53942c1c125216ddae9fb4b8058aa08110e0aa",
+    "height": 435
+  },
+  "paymentChecks": [
+    "40 local",
+    "110 split",
+    "same L1 transaction receives both legs",
+    "global rejection despite 50 L2 allowance remaining",
+    "actual Composer policy rejection",
+    "unchanged state on rejection",
+    "bridge backing",
+    "no residual policy custody",
+    "independent follower",
+    "payment reload recovery",
+    "10% of 200 L1 + 100 L2 pays 30",
+    "rule fraction edits invalidate approvals",
+    "rule reload recovers signed fraction",
+    "RulePaid observations and Paid funding agree",
+    "actual 30 token transfer on L1",
+    "percentage rule independently replayed",
+    "110 to EEZ-X: 100 local + 10 L1",
+    "terminal L1 lock in canonical batch",
+    "exact approval consumed",
+    "nonce-bound lock and mint",
+    "both contributions in the same L2 receipt",
+    "reverse payment reload recovery",
+    "natural period reset with idle L2",
+    "reverse state independently replayed",
+    "16-USDC rule preview rejected with only 10 global remaining"
+  ],
+  "historyChecks": {
+    "automaticResubmissions": 0,
+    "counts": {
+      "pending": 0,
+      "preparation": 3,
+      "rejected": 0,
+      "rollback": 1,
+      "settled": 4
+    },
+    "expiredQueueDiagnosticsHandled": true,
+    "missingDiagnosticInjectedOnReload": true,
+    "ownerActionsExcluded": true,
+    "preparation": [
+      "closed invoice at Composer",
+      "1 USDC local budget check",
+      "16 USDC rule local budget check"
+    ],
+    "queueExpiredNaturally": false,
+    "responsiveWidths": [
+      390,
+      320
+    ],
+    "retainedAcrossReload": true,
+    "rollbackTraceAndStateDetails": true,
+    "unavailableReadsDowngrade": true,
+    "verifiedFunding": [
+      "40 local EEZ-X",
+      "110 split L1",
+      "30 percentage rule",
+      "110 split EEZ-X"
+    ]
+  }
+}
