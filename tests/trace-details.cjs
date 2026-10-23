@@ -69,7 +69,11 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
     await page.goto(url + "#/visualizer?mode=trace&chain=l2&tx=" + hash);
     await page.getByRole("heading", { name: "Counter.increment()" }).waitFor();
     assert.equal(await page.locator("iframe").count(), 0);
-    await page.getByRole("button", { name: /Counter.*CALL/ }).click();
+    assert.equal(await page.getByRole("button", { name: "Call map", exact: true }).getAttribute("aria-pressed"), "true");
+    const call = page.getByRole("region", { name: "Call map canvas" })
+      .getByRole("button", { name: /Counter.*increment\(\)/ });
+    await call.click();
+    assert.equal(await call.getAttribute("aria-pressed"), "true");
     await page.getByLabel("Selected call details").getByText("amount", { exact: false }).waitFor();
     await page.getByRole("button", { name: "Sequence", exact: true }).click();
     await page.getByRole("columnheader", { name: "Return / status" }).waitFor();
@@ -80,7 +84,7 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
     assert.deepEqual(await recordedRows.locator("td:first-child").allTextContents(), ["1", "1"]);
     await page.getByText("Call association notes (1)", { exact: true }).click();
     await page.getByText("Repeated calls could not be paired.", { exact: false }).waitFor();
-    await page.getByRole("button", { name: "Call flow", exact: true }).click();
+    await page.getByRole("button", { name: "Lanes", exact: true }).click();
     await page.getByText("Prepared table response", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Linked flow", exact: true }).click();
     await page.getByText("Logical call order across both chains.", { exact: false }).waitFor();
