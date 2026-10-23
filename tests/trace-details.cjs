@@ -85,6 +85,7 @@ model.recordedView = { ...model, mode: "physical", recordedView: null,
     await page.getByText("Call association notes (1)", { exact: true }).click();
     await page.getByText("Repeated calls could not be paired.", { exact: false }).waitFor();
     await page.getByRole("button", { name: "Lanes", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Compact cards", exact: true }).uncheck();
     await page.getByText("Prepared table response", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Linked flow", exact: true }).click();
     await page.getByText("Logical call order across both chains.", { exact: false }).waitFor();
