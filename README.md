@@ -1,5 +1,10 @@
 # EEZ Rollup UI
 
+The self-contained cross-chain CoW Light demo lives in
+[`demos/cow-light`](demos/cow-light/README.md). It keeps deployment, the
+wallet UI, the signed-order API, and the inventory-free Composer solver
+separate from the main dashboard and does not include runtime state or keys.
+
 Standalone Docker-first web interface for an EEZ rollup network. This repository
 contains the UI, read-only telemetry and trace services, treasury application
 contracts, deployment tooling and demo documentation. Pinned protocol contracts
