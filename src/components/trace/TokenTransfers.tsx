@@ -30,7 +30,10 @@ export function TokenNotes({ model, chain, transfers, compact = false }: {
   model: TraceModel; chain: TraceChain; transfers: TraceTokenTransfer[]; compact?: boolean;
 }) {
   if (!transfers.length) return null;
-  if (compact) return <span className={styles.chip} data-kind={transfers.length === 1 ? transfers[0]!.kind : "transfer"}>◉ {transfers.length}</span>;
+  if (compact) {
+    const label = transfers.length + (transfers.length === 1 ? " token transfer" : " token transfers");
+    return <span className={styles.chip} data-kind={transfers.length === 1 ? transfers[0]!.kind : "transfer"} role="img" aria-label={label} title={label}>◉ {transfers.length}</span>;
+  }
   return <span className={styles.notes}>
     {transfers.slice(0, 2).map(transfer => <span key={transfer.eventId} className={styles.note} data-kind={transfer.kind}>
       <span className={styles.title}>◉ {action[transfer.kind]} · {transfer.symbol || partyName(model, chain, transfer.token) || short(transfer.token)}</span>

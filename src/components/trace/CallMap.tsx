@@ -158,7 +158,8 @@ export function CallMap({ model, rows, steps, physical, selected, onSelect, coll
   }, [rows, steps, model, physical, tokens]);
 
   const { items, edges, badges, bands, bandTop, bandHeight, boundary, width, height } = layout;
-  const scale = zoom ?? Math.min(1, (viewportWidth ? Math.max(1, viewportWidth - 2) : width) / width);
+  // Fit never shrinks below 40%, where labels stop being readable; wider maps scroll instead.
+  const scale = zoom ?? Math.max(0.4, Math.min(1, (viewportWidth ? Math.max(1, viewportWidth - 2) : width) / width));
   const fit = () => {
     setZoom(null);
     scroller.current?.scrollTo({ left: 0, top: 0 });
@@ -228,7 +229,7 @@ export function CallMap({ model, rows, steps, physical, selected, onSelect, coll
               {node.children.length > 0 && <button className={styles.fold} data-chain={node.chain}
                 style={{ left: item.x + item.w - 34, top: item.y + item.h - 30 }} aria-expanded={!collapsed.has(node.id)}
                 aria-label={(collapsed.has(node.id) ? "Show the calls made by " : "Fold the calls made by ") + node.contract + " " + node.fn}
-                onClick={() => onToggle(node.id)}>{collapsed.has(node.id) ? "+" + node.children.length : "−"}</button>}
+                onClick={() => onToggle(node.id)}>{collapsed.has(node.id) ? "+" : "−"}</button>}
             </div>;
           })}
           {boundary !== null && badges.map(({ x, edges: group }) => {
