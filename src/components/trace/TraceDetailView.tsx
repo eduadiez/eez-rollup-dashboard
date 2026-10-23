@@ -3,7 +3,8 @@ import { useDecodedTrace } from "../../hooks/useDecodedTrace";
 import { config } from "../../config";
 import { ExplorerLink } from "../ExplorerLink";
 import { TraceDiagram, textValue } from "./TraceDiagram";
-import type { TraceChain, TraceGas, TraceNode, TraceResult, TraceSource } from "../../../trace-decoder/service/types";
+import { TokenDetails } from "./TokenTransfers";
+import type { TraceChain, TraceGas, TraceModel, TraceNode, TraceResult, TraceSource } from "../../../trace-decoder/service/types";
 import styles from "./TraceDetailView.module.css";
 import visualizerStyles from "../visualizer/ExecutionDebugger.module.css";
 
@@ -13,7 +14,7 @@ function download(result: TraceResult) {
   link.href = url; link.download = result.model.txHash + ".trace.json"; link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function CallInspector({ node }: { node: TraceNode | undefined }) {
+function CallInspector({ node, model, tokens }: { node: TraceNode | undefined; model: TraceModel; tokens: boolean }) {
   if (!node) return <aside className={styles.inspector}><h2>Call details</h2><p className={styles.muted}>Select a call to inspect its arguments, return value, and cross-chain evidence.</p></aside>;
   const chain = node.chain === "L1" ? "l1" : "l2", crossing = node.crossing || node.outgoing;
   return <aside className={styles.inspector} aria-label="Selected call details">
@@ -36,6 +37,7 @@ function CallInspector({ node }: { node: TraceNode | undefined }) {
     </div>) : <p className={styles.muted}>No decoded arguments.</p>}
     <h3>Return value</h3><p className={node.ret.status === "revert" ? styles.failure : styles.muted}>{node.ret.reason || node.ret.status}</p>
     {node.ret.items?.map((item, index) => <pre key={index}>{item.name ? item.name + ": " : ""}{textValue(item.value)}</pre>)}
+    {tokens && <TokenDetails model={model} chain={node.chain} transfers={node.tokenTransfers ?? []} />}
     {crossing && <><h3>Cross-chain execution</h3><p>{crossing.from} → {crossing.to} · {crossing.status}</p>
       {crossing.remoteTx && <ExplorerLink value={crossing.remoteTx} type="tx" chain={crossing.to === "L1" ? "l1" : "l2"} />}
       {crossing.evidence.length > 0 && <ul>{crossing.evidence.map((evidence, index) => <li key={index}>{evidence}</li>)}</ul>}
@@ -80,10 +82,12 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
   const trace = useDecodedTrace(hash, source, ready);
   const [query, setQuery] = useState(hash);
   const [chain, setChain] = useState<TraceSource>(source);
-  const [view, setView] = useState<"flow" | "sequence" | "raw">("flow");
+  const [view, setView] = useState<"map" | "flow" | "sequence" | "raw">("map");
   const [transaction, setTransaction] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [recorded, setRecorded] = useState(false);
+  // Experimental token notes stay off until the viewer opts in.
+  const [tokens, setTokens] = useState(false);
   const linkedModel = trace.result?.model;
   const model = recorded && linkedModel?.recordedView ? linkedModel.recordedView : linkedModel;
   const gas = model?.gas ?? linkedModel?.gas;
@@ -159,12 +163,12 @@ export function TraceDetailView({ hash, source, ready, onBack }: {
       {!!model.matchingNotes?.length && <details><summary>Call association notes ({model.matchingNotes.length})</summary>
         <ul>{model.matchingNotes.map((item, index) => <li key={index}><code>{item.code}</code>: {item.message}</li>)}</ul>
       </details>}
-      <nav className={styles.tabs} aria-label="Trace views">{(["flow", "sequence", "raw"] as const).map(item =>
+      <nav className={styles.tabs} aria-label="Trace views">{(["map", "flow", "sequence", "raw"] as const).map(item =>
         <button key={item} className={"btn btn-sm " + (view === item ? "btn-solid" : "btn-outline")} aria-pressed={view === item} onClick={() => setView(item)}>
-          {item === "flow" ? "Call flow" : item === "sequence" ? "Sequence" : "Decoded data"}</button>)}</nav>
+          {item === "map" ? "Call map" : item === "flow" ? "Lanes" : item === "sequence" ? "Sequence" : "Decoded data"}</button>)}</nav>
       {view === "raw" ? <section className={styles.raw}><h2>Decoded flow model</h2><pre>{JSON.stringify(model, null, 2)}</pre></section>
-        : <div className={styles.workspace}><TraceDiagram key={model.mode || "combined"} model={model} view={view} transaction={transaction} selected={selected} onSelect={setSelected} />
-          <CallInspector node={selected === null ? undefined : model.nodes[selected]} /></div>}
+        : <div className={styles.workspace}><TraceDiagram key={model.mode || "combined"} model={model} view={view} transaction={transaction} selected={selected} onSelect={setSelected} tokens={tokens} onTokens={setTokens} />
+          <CallInspector node={selected === null ? undefined : model.nodes[selected]} model={model} tokens={tokens} /></div>}
       {gas && <GasSummary gas={gas} />}
     </>}
   </main>;
