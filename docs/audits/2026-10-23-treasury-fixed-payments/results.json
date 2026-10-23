@@ -1,0 +1,311 @@
+{
+  "date": "2026-10-23",
+  "scope": "Remove percentage-of-holdings payments; retain exact split and all other treasury features",
+  "dashboardHead": "a96bc5cd3e7df91ac585ce7cdf6303f82fc7bfb6",
+  "branch": "codex/treasury-demo-release",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "release": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+  "previousRelease": "9b7548e5819f28db77942f4ae00401d38f6cdd8e35e08673e3261af8ca506178",
+  "baselineJavaScriptTests": 47,
+  "checks": {
+    "javascript": {
+      "passed": 440,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "d5f7de0cb2730fb3d714732fa1ccbbc52f57a7ad4b45b7374e536a42a5d9faaf"
+    },
+    "solidity": {
+      "passed": 134,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "3f2403da39d69005d812b640d261a03d541d3c78948ccdb003b536dfa79eaa8d"
+    },
+    "build": {
+      "passed": true,
+      "logSha256": "30c337712677bcf86cb09574432aa4a50fb70e46d664155df8a41cb517385d6f"
+    },
+    "release": {
+      "passed": true,
+      "contracts": 18,
+      "logSha256": "79c2aaf9ed0a5d92b8cdb5c057b40ee5775516fc00aa23de8967e23a7e844d25"
+    },
+    "setup": {
+      "passed": true,
+      "scenarios": 19,
+      "path": ".runtime/treasury-deployment-batches/anvil-xCHqu8/summary.json",
+      "summarySha256": "d40c42173ff14aeb710597ce04254ad8186250c8ce9bd2da4b17595d906823c5",
+      "testedScriptSha256": "ea209cc7e10615cdd5bc12e11644f718bd3dfa0bc07dc8cda4d21ced22823d3c",
+      "firstFailure": {
+        "path": ".runtime/treasury-deployment-batches/anvil-rDAoIo/summary.json",
+        "logSha256": "46f0805700921454b1d477802ea558040b2375b734fc6c7e1c312e855af5522d",
+        "cause": "Old assertion required deployment calldata above 12288 bytes; the smaller policy falls below it. Corrected check validates full creation bytes, exact request binding and upper bound."
+      }
+    },
+    "sourceVerification": {
+      "passed": true,
+      "deployments": 6,
+      "path": ".runtime/treasury-auto-verification-20261022/anvil-FB6ceD/summary.json",
+      "summarySha256": "b8641e1444a6af93bcf4491a852d92bd31928ffab0e93cfc9be13a7a6fa9ba0c"
+    },
+    "native": {
+      "browser": {
+        "path": ".runtime/treasury-integration/20261023T071752-3wuebt7f",
+        "summarySha256": "e825552c5259eef17f6d8dd09fcf752212a6fc58a9b8c024545b4b5e469ee79e",
+        "scenarioSha256": "909816c84392f0064108f1423940c80231ea2e474f5aadcca24333a9ca2d4332",
+        "summaryVerified": true,
+        "scenarioVerified": true,
+        "postedAttestationVerified": true,
+        "lastSuccessfulL2Block": 770,
+        "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+        "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+        "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+        "binaries": {
+          "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+          "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+          "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+        },
+        "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+        "finalSourceDifferences": [
+          "tests/integration/treasury-deployment-batches.mjs"
+        ],
+        "history": {
+          "automaticResubmissions": 0,
+          "counts": {
+            "pending": 0,
+            "preparation": 3,
+            "rejected": 0,
+            "rollback": 1,
+            "settled": 4
+          },
+          "expiredQueueDiagnosticsHandled": true,
+          "missingDiagnosticInjectedOnReload": true,
+          "omittedDiagnostics": 2,
+          "ownerActionsExcluded": true,
+          "preparation": [
+            "closed invoice at Composer",
+            "1 USDC local budget check",
+            "16 USDC fixed local budget check"
+          ],
+          "queueExpiredNaturally": true,
+          "responsiveWidths": [
+            390,
+            320
+          ],
+          "retainedAcrossReload": true,
+          "rollbackTraceAndStateDetails": true,
+          "unavailableReadsDowngrade": true,
+          "verifiedFunding": [
+            "40 local EEZ-X",
+            "110 split L1",
+            "30 fixed payment",
+            "110 split EEZ-X"
+          ]
+        },
+        "paymentChecks": [
+          "40 local",
+          "110 split",
+          "same L1 transaction receives both legs",
+          "global rejection despite 50 L2 allowance remaining",
+          "actual Composer policy rejection",
+          "unchanged state on rejection",
+          "bridge backing",
+          "no residual policy custody",
+          "independent follower",
+          "payment reload recovery",
+          "fixed 30 USDC payment",
+          "amount edits invalidate approvals",
+          "reload recovers exact amount and split",
+          "Paid event agrees with exact contributions",
+          "actual 30 token transfer on L1",
+          "fixed payment independently replayed",
+          "110 to EEZ-X: 100 local + 10 L1",
+          "terminal L1 lock in canonical batch",
+          "exact approval consumed",
+          "nonce-bound lock and mint",
+          "both contributions in the same L2 receipt",
+          "reverse payment reload recovery",
+          "natural period reset with idle L2",
+          "reverse state independently replayed",
+          "16-USDC fixed payment rejected with only 10 global remaining"
+        ]
+      },
+      "standardBridge": {
+        "path": ".runtime/treasury-integration/20261023T072359-9qpxe94a",
+        "summarySha256": "a03c375bc46ec7863e90d26e8ca2446159e63943c81c7e544e1936b9c63eb466",
+        "scenarioSha256": "9fc4a8cd196ef79ac8989decfd334163ee9692637a3ca3c6049c9be01a7957ed",
+        "summaryVerified": true,
+        "scenarioVerified": true,
+        "postedAttestationVerified": true,
+        "lastSuccessfulL2Block": 260,
+        "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+        "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+        "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+        "binaries": {
+          "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+          "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+          "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+        },
+        "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+        "finalSourceDifferences": [
+          "tests/integration/treasury-deployment-batches.mjs"
+        ],
+        "browser": {
+          "block": "260",
+          "contributions": {
+            "fromL1": "5000000",
+            "fromL2": "5000000"
+          },
+          "hash": "0x87a577d9d04b9e06ac2223c1bf6e19b040a52876cd4d59798f09e87bbb6b556e",
+          "reloadAndLostResponseRecovery": true,
+          "signingChain": "l2",
+          "singleBroadcast": true,
+          "submissionChain": "l1",
+          "wallet": "Test EIP-1193 provider with genuine fixture signatures and real RPCs"
+        },
+        "rollback": {
+          "after": {
+            "aliasBalance": "0",
+            "allowanceL1": [
+              "100000000",
+              "25000000",
+              "10",
+              "29879000",
+              "6"
+            ],
+            "allowanceL2": [
+              "100000000",
+              "51000000",
+              "10",
+              "29879000",
+              "7"
+            ],
+            "approval": "0",
+            "bridgeApproval": "0",
+            "escrow": "145000000",
+            "executorBalance": "0",
+            "nonceL1": "6",
+            "nonceL2": "8",
+            "policyBalance": "0",
+            "recipientL1": "130000000",
+            "recipientL2": "96000000",
+            "safeL1": "175000000",
+            "safeL2": "49000000",
+            "spent": "76000000",
+            "supply": "145000000"
+          },
+          "before": {
+            "aliasBalance": "0",
+            "allowanceL1": [
+              "100000000",
+              "25000000",
+              "10",
+              "29879000",
+              "6"
+            ],
+            "allowanceL2": [
+              "100000000",
+              "51000000",
+              "10",
+              "29879000",
+              "7"
+            ],
+            "approval": "0",
+            "bridgeApproval": "0",
+            "escrow": "145000000",
+            "executorBalance": "0",
+            "nonceL1": "6",
+            "nonceL2": "8",
+            "policyBalance": "0",
+            "recipientL1": "130000000",
+            "recipientL2": "96000000",
+            "safeL1": "175000000",
+            "safeL2": "49000000",
+            "spent": "76000000",
+            "supply": "145000000"
+          },
+          "blacklistHash": "0x2fde1fad3344424dedbbc4cce827a9d3d5ac64a1d4c09f1fee03e6d3b125bd4c",
+          "block": "0x36",
+          "earlierSuccessfulRelease": true,
+          "hash": "0xfe5ed414527f5817a563536f222ec50781e42a86afbbe24bcd0a43c350e8a6b8",
+          "laterBlacklistedTransfer": true,
+          "originalProofAndBlobCommitmentsUnchanged": true,
+          "postHash": "0xd1fa4be74b4d5747fb50488dca44de268efeff28f65ec98cfe0961169a8f6a8e",
+          "postStatus": "0x1",
+          "sourceStatus": {
+            "blocking": null,
+            "direction": "inbound",
+            "hash": "0xfe5ed414527f5817a563536f222ec50781e42a86afbbe24bcd0a43c350e8a6b8",
+            "lifecycle": "terminal",
+            "nonce": 40,
+            "ownerGeneration": 25,
+            "ownership": {
+              "canonical": {
+                "hash": "0x78dce52d73c0b2cc1a790583fcdebd4603f883a85555e4cf93d43f753009472b",
+                "number": 54
+              },
+              "reason": "SourceReverted",
+              "state": "terminal"
+            },
+            "sender": "0x976ea74026e726554db657fa54763abd0c3a0aa9"
+          },
+          "sourceStatusCode": "0x0",
+          "stage": "L1 inclusion"
+        }
+      }
+    }
+  },
+  "runtimeBytes": {
+    "TreasuryPolicy": {
+      "before": 10141,
+      "after": 5983
+    },
+    "StandardBridgeTreasuryPolicy": {
+      "before": 8412,
+      "after": 4959
+    }
+  },
+  "sourceSha256": {
+    "src/components/TreasuryOutcomeDetails.tsx": "b9d7dc0feea71087f3ba82b164a4f26c5369306cf381428a1d95b7b81671e1da",
+    "src/components/TreasuryConnected.tsx": "af9f90fbf55fe1152db60e3a0433b52000ecca3e58e5893c7163c9cc92cb429f",
+    "src/components/TreasuryPaymentHistory.tsx": "0dd812d4b2f32ad22e8d3a351dbb001b99efa848325136f18c63701238f7c8a0",
+    "src/lib/treasury/current-build.json": "4fb6e95d3edf16488701572f608a46172e1841508b19b8f606654fef4c7cf8db",
+    "src/lib/treasury/mainnetSetup.ts": "c2932e3433a442ea95e3ae66f4bd84ad816892bea046cb2d8c82f3565d135a9d",
+    "src/lib/treasury/deployment.ts": "8f6d0ed25625533a66538a6a4e79001d9f1b62e687cb7a90c7c830fe6e7bdba6",
+    "src/lib/treasury/client.ts": "27c1420aa7c9dd68354329aa9663a17ab60c380c7fa1b6617bd8f2904a889a2b",
+    "src/lib/treasury/mainnet.ts": "96f088331f633025d9e684bc61f3cc6daa0edd3fe4769c35968e19f71f14248d",
+    "src/lib/treasury/payments.ts": "7648d9148d5f6c65ed94130e91b38cdb80c04ff33232a550eb96e089f8cd997c",
+    "contracts/src/TreasuryPolicyBase.sol": "ceedcce64c4ebdc4c0bbca54bd830657cc5d18c6919d5a5a0c13642cc3ca1347",
+    "contracts/test/TreasuryPolicy.t.sol": "34caeb465e48a9f012b8960445874e5402bbae0d2ceee3387155463f1e3b7ebe",
+    "contracts/test/fixtures/InvoiceTreasuryPolicy.sol": "6cb3a60a6bf3f4d5918abfed251bd980547fe92a42f4cbad33565231735eaf5e",
+    "scripts/run-treasury-integration.py": "fa2e983402b5f683d2dc4fa73b66a71711081c13351dbe75132d7c898571f216",
+    "tests/treasury-verification.test.mjs": "6246b0ef7f923f019d88e0d6227ebeb225429b2074929dc0fcd39b26c16ef5a0",
+    "tests/treasury-mainnet.test.mjs": "f50211c8d0e18ddab4dd240551ee4cec8db910df4af469e4a5e746ffdae0dbb8",
+    "tests/treasury-upgrade.test.mjs": "a5d69083a6888b53d6c1e6b926f2610512765d6827a97e185317d14fb5ea52a2",
+    "tests/treasury-payments.test.mjs": "3a632d302d8d9c491aac9f1011f21fcc8abe9383952318d8b0c233d9de845438",
+    "tests/treasury-client.test.mjs": "caaff7a106b5a289d7e780a61fd548fc876aaddad71bcfd1c28ba69bfbb578bd",
+    "tests/integration/treasury-standard-browser.mjs": "4f72e07f257f2390cffa0059f63e483d6cf5054f28af21d09fc5eeb86504a69a",
+    "tests/integration/README.md": "0cb5a5732318033ccc0184e617a7c371c6bd4ae09aa5f08f96d3fb6b524f3c2a",
+    "tests/integration/treasury-history-browser.mjs": "9bece94ff87da2d9f0136de84ab2795d54beff0e45f31e14f14e5fbd95cb26fe",
+    "tests/integration/treasury-payment-browser.mjs": "9e6c17691988f95abcc7d49274cf2ad54f1e3bba5eb733a80764dcd693afd3de",
+    "tests/integration/treasury-standard-bridge.mjs": "54372301520690cdd74b19e1ee02ebd5a6c6e88d1558e0e57157ca6231b3e9aa",
+    "tests/integration/treasury-deployment-batches.mjs": "ea209cc7e10615cdd5bc12e11644f718bd3dfa0bc07dc8cda4d21ced22823d3c",
+    "tests/integration/treasury-payments.mjs": "a68de1e298cb97f397ba7f10bc279f3e16cbccc27c997fd81a40d00554385649",
+    "docs/runbooks/treasury-shared-network.md": "14080723dab2e2a50144c8e10520c149cea556dfd16583a4d72b0aad235d5e9c",
+    "docs/runbooks/treasury-mainnet.md": "3362911b75eb71c00c4340cca51351f5677097e5bb63c02aba4bfdb275b63c8f",
+    "docs/runbooks/treasury-rehearsal.md": "807a55329ffed64045c68100cc255c48266c4db86cba36822aa061f0429b1516",
+    "docs/runbooks/treasury-mainnet.example.json": "224949d790695d0dda7a16bf5a499e37555ae6176c27ac4d54735c6a8fa8ebc2",
+    "docs/proposals/one-treasury-two-safes.md": "a06f3085f894702c551daaeb23d80235e06bb27d8c47440bb82105c417586550",
+    "contracts/README.md": "ce147cb49bcf0ddf89e75b530e86bf8e797aa852e7dffb778496eb3a1219bad2"
+  },
+  "removedFiles": [
+    "tests/treasury-rules.test.mjs"
+  ],
+  "limits": [
+    "All broadcasts used owned isolated devnets; no live network deployments or funds.",
+    "Mainnet rehearsal used retained deployed bridge/USDC runtime snapshot with fresh isolated state; no fresh public fork.",
+    "Browser wallets use genuine fixture signatures through a test EIP-1193 provider; no browser-extension or official Safe app acceptance.",
+    "Full logs/datadirs are local ignored artifacts, unavailable from another checkout.",
+    "Native source manifests precede the standalone Anvil size-assertion correction; every executed native application source and artifact matches the final tree.",
+    "Retained old build archives and browser journals were not rewritten; pending removed-rule intents require their original release."
+  ]
+}

@@ -1,0 +1,300 @@
+{
+  "baseline": "a96bc5cd3e7df91ac585ce7cdf6303f82fc7bfb6",
+  "branch": "codex/treasury-demo-release",
+  "build": "facdeca2712465daf5ea77052c6d4b71547d454ae83ad6b78aa9c03c11f77424",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "baselineTests": {
+    "javascript": 449,
+    "solidity": 236
+  },
+  "javascript": {
+    "passed": 445,
+    "failed": 0,
+    "skipped": 0
+  },
+  "solidity": {
+    "passed": 141,
+    "failed": 0,
+    "skipped": 0
+  },
+  "removedTests": {
+    "executableUpgradeJavascript": 4,
+    "obsoleteUpgradeSoliditySuite": 39,
+    "duplicateInheritedSolidityCases": 56
+  },
+  "sourceLines": {
+    "before": 822,
+    "after": 375
+  },
+  "runtimeBytes": {
+    "TreasuryPolicy": {
+      "before": 10683,
+      "after": 11147
+    },
+    "StandardBridgeTreasuryPolicy": {
+      "before": 10238,
+      "after": 8737
+    }
+  },
+  "logSha256": {
+    ".runtime/treasury-simplification-20261023/baseline-js.log": "be6ea4bfda924f27e9ec3413a4667881d4af2ef4585a86ebafcfe041fa17cb20",
+    ".runtime/treasury-simplification-20261023/baseline-solidity.log": "e894abcf60fb05b214db522db03b067538309b345da84c6aa2960162f794a90d",
+    ".runtime/treasury-simplification-20261023/build.log": "718c503aba433d9626daccadb154a6d42ce637d4df652f9af6d94d1cd357f9a3",
+    ".runtime/treasury-simplification-20261023/first-build.log": "1ba75f5ad5e4597fef262b3c8d1385ffbf98f1834892b6c4e98614e76fa7e469",
+    ".runtime/treasury-simplification-20261023/js.log": "f8bf90db98b544ac78006268f93d63e115d23f8f793a08988b31897403fd0696",
+    ".runtime/treasury-simplification-20261023/solidity.log": "b97564886f81c002de6a078a63e3e1f6a861c7da773f2175f4e2bf5c7273c345",
+    ".runtime/treasury-simplification-20261023/ui-build.log": "de81ec157b5cf1983c0ebe7c7aa086db0ffe215005a25d8277d7c2f559f82dec",
+    ".runtime/treasury-simplification-20261023/ui-build-final.log": "c489cecff5f4666887d47e2e991e3fae732b7c1a60d99b7e7678e43610c048d8",
+    ".runtime/treasury-simplification-20261023/js-final.log": "ec47a7450733960090dea5bd785e82da61673e1cb1571b49934b986ed6edaec8"
+  },
+  "setup": {
+    "path": ".runtime/treasury-deployment-batches/anvil-JDwJ08/summary.json",
+    "verified": true,
+    "cases": 19,
+    "scope": "real contracts on one Anvil with two logical chains",
+    "sha256": "d0d55acfacdd4fba5432ed2dd4a0b8a6296937bc965867ac4df2ee25c8af471a"
+  },
+  "sourceVerification": {
+    "path": ".runtime/treasury-auto-verification-20261022/anvil-lqEEme/summary.json",
+    "passed": true,
+    "deployments": 6,
+    "scope": "real compiler and deployments; controlled explorer transport",
+    "sha256": "3cf5b5e15641538546730618bc280ae820484946fb519c3061a4619cbb3abd55"
+  },
+  "setupBrowser": {
+    "passed": true,
+    "scope": "controlled EIP-1193 provider, selected Safes, mainnet faucet hidden, Chiado journals preserved"
+  },
+  "failedNativeAttempts": [
+    {
+      "path": ".runtime/treasury-integration/20261022T221958-xopjgxa0",
+      "verified": false,
+      "reason": "Chromium crashed after scripted payment cases; cleanup obscured first error; owned hanging scenario terminated.",
+      "integrationLogSha256": "f2cfcdc880a8ab7fa7b1a7d6fd31210a0857be9c907571f7ef9e3dc4979e49f8",
+      "summarySha256": "efbc839e0db8c357be028ef727413d760da7589688ba99c662e768884562e6f0"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T222431-amjlwwn9",
+      "verified": false,
+      "reason": "Setup settlement timeout under host memory pressure; did not reach treasury payments.",
+      "integrationLogSha256": "5ab0d202169ed930eebc18f2acdcbc90b088d2a129d49a463016a853cba544cb",
+      "summarySha256": "33cb4c9798beda1ef739c0aa3f0f4b296f6d1d6e5a2d19d889683f53d591a271"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T223703-budf067q",
+      "verified": false,
+      "reason": "Intentionally stopped during setup after static review found an obsolete pay selector in the later scripted GlobalLimit rejection; fixed to paySplit before clean rerun.",
+      "integrationLogSha256": "2575fb84240895b74ca2c1d249aab8bfd2d7261b226110a5bfadd480e1345566",
+      "summarySha256": "b2a6ee609b28359b5271b8a9f1f23a09b5e525273054e2e74c6698e21b00a42a"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T223824-ij_587ur",
+      "verified": false,
+      "reason": "First browser owner action settled; an unexpected reload preceded failure. Route teardown threw Route is already handled and obscured the original assertion. Test-only HMR and route cleanup corrected.",
+      "integrationLogSha256": "4fc68dfabcf3697c81efbbb371acb02c1960cd60fc1d3254a3825f24aae8788f",
+      "summarySha256": "013ca5ed263efb8a7e6d5e5eecfef354ee624b3ec78ac7c2cb0511a976bef0e3"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T224333-4a87gn12",
+      "verified": false,
+      "reason": "Owner additions/removals and genuine signatures passed; invoice helper asserted the payment button was enabled immediately after opening a view that performs asynchronous deployment/balance reads. Changed to a bounded readiness wait.",
+      "integrationLogSha256": "89e8d736040e543c87db5c0fdbeb06a3d1a7102daf5dc789e7f14d1f62a60296",
+      "summarySha256": "0015560dfabbc92c39fe88e901efdaf1eff510437259d0f501439e4ad358ad1f"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T224730-x7tfxybx",
+      "verified": false,
+      "reason": "Real invoice rollback and closed-invoice Composer rejection passed, but the main status card hid terminal rejection details. Restored the rejection explanation; kept the failing visibility assertion unchanged.",
+      "integrationLogSha256": "e63e1932e2912a5800f29766c7445e6345c6e8e2c04bc919daf7630cb3b99f5e",
+      "summarySha256": "b86d351294f135c089e890cf5b121b60e148cede7127eb7bb50ffb949c81e9f2"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T225300-g62b3kpl",
+      "verified": false,
+      "reason": "Rejection display, invoice rollback and payment settlement passed; reload check still requested the removed Funding selector. Replaced it with exact split-slider values and amount text. Static review also corrected the wallet count to seven and explicitly resets available-funds allocation for the final L1-origin payment.",
+      "integrationLogSha256": "7089b23eb488a7689ee84262e9fc6c1beb14e49dc6abdc67118217f8e94d1290",
+      "summarySha256": "79b15893b975beb5056b052ed5d986ef36ce26f7f69f4eeb38f4c9c244d0c43e"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T225903-edn4uv63",
+      "verified": false,
+      "reason": "Both owner actions, invoice rollback, four payments, and budget/rule rejections passed. History stayed unresolved after diagnostic retention expired: fixture invoices used a separate sender whose canonical source nonce never advanced. Fixture now uses the later browser sender; canonical retirement requirements remain unchanged. Diagnostic omission also targets the Composer endpoint and asserts it was exercised.",
+      "integrationLogSha256": "314aacbbfc8dd426cf6c0ef380d2b5e62783ec02967e3d52e3e9854b5c97a9f1",
+      "summarySha256": "75fe664a487a5d97e303b8d0913415e9e160a1bb49f59e6366e667ac2ac1d2c6"
+    },
+    {
+      "path": ".runtime/treasury-integration/20261022T231508-kvjr3oyj",
+      "verified": false,
+      "reason": "Rollback with the browser sender passed. The preparation-rejection trace wait failed because the native diagnostic filter traces only the dedicated fixture sender. Retained terminal PoolDiscarded and absent receipt evidence; restored that sender for the preparation case, keeping the browser sender only for the rollback-history case.",
+      "integrationLogSha256": "60aba116a9a402717f1a580f5394e5197b3878f2d8e200432b6324a7378f1268",
+      "summarySha256": "c1bf3fff0220f1cca6bb26d1b7a2e4f59c0f4e707a2b20ea1e9bb4f3b8e1a588"
+    }
+  ],
+  "publicChainBroadcasts": false,
+  "environmentFilesChanged": false,
+  "historicalBuildFilesUnchanged": 6,
+  "native": {
+    "standardBridge": {
+      "path": ".runtime/treasury-integration/20261022T223230-n4c03kfm",
+      "verified": true,
+      "retryOnlyPass": true,
+      "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+      "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+      "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+      "binaries": {
+        "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+        "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+        "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+      },
+      "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+      "applicationSourcesSha256": "c6bdc0cfd9d553812700abd6a815abdeb2595a35199c04e584062d75f26d4b27",
+      "snapshotSha256": "bdb885590bbee086263328a8ab02fdc196ade917616ff78660697e4b4f4ad253",
+      "summarySha256": "11ec67862178d150f48f48d57936832dd1a910bb3887017e4eadc70fa2596332",
+      "scenarioSha256": "a1e73f6b22f6184dc8b02d95d962d7a5ad35028f30b5847a20b1ff0fb1e640ba",
+      "integrationLogSha256": "0f89f23288ccae74a4d5b3833747ccf7a0f37c34fd01c14899bf4670e2799a79",
+      "sourceIntegrityChecksPassed": true,
+      "scriptedCases": 8,
+      "independentReplay": {
+        "hash": "0x337c18ad593a27c25b9bb11b76e0d84be98438d1ff2d21234985e263157b8317",
+        "height": 260
+      },
+      "postedAttestationVerified": true,
+      "browser": {
+        "contributions": {
+          "fromL1": "5000000",
+          "fromL2": "5000000"
+        },
+        "reloadAndLostResponseRecovery": true,
+        "singleBroadcast": true,
+        "signingChain": "l2",
+        "submissionChain": "l1"
+      },
+      "rollback": {
+        "stage": "L1 inclusion",
+        "earlierSuccessfulRelease": true,
+        "laterBlacklistedTransfer": true,
+        "originalProofAndBlobCommitmentsUnchanged": true
+      },
+      "publicBroadcasts": false
+    },
+    "chiadoBridge": {
+      "path": ".runtime/treasury-integration/20261022T232301-x9nfvso5",
+      "verified": true,
+      "retryOnlyPass": true,
+      "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+      "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+      "runtimeSourcesSha256": "359f9056090bac43ef4a2efc1754dc9d9ff9480d3f257446070ed43153fac71d",
+      "binaries": {
+        "eez-composer": "6f00f388fb30a27b4d4ca935845298905b97553180e67633a245c2a00ff66f1c",
+        "eez-follower": "799332591d7d1b2f44ae34b7527a4efe47b8e1cb76d7dd439d57db6b6e55c9b4",
+        "eez-proof-signer": "5e2b9fe86e9e14d296572bbbca8f13d95c213bc7b58e6b4e5f838be15f9d459e"
+      },
+      "testExecutableSha256": "b69a1cc198dbd44782fbd79b50f52933c4dc348c580f2d26a512b1f999a1d1ed",
+      "applicationSourcesSha256": "ece1f9023d17fb7dcd1c7aaf72b04c1f33857d3e788a4a9ab6c98f9958b8bc34",
+      "summarySha256": "dd81915ca971e82b7237c0196eef002e3b82a8157242a7413e148f251dd8c7be",
+      "scenarioSha256": "362eadad98ab08284e5902e91c92f5a00e611049337f69c06974ee1f683419ac",
+      "integrationLogSha256": "99e3c27a881a1136e7e5de5ec97b5627b05d9167d0717646a8cc68fe62135579",
+      "sourceIntegrityChecksPassed": true,
+      "scriptedCases": 9,
+      "browserChecks": [
+        "hidden navigation",
+        "live owners and threshold",
+        "network switch",
+        "non-owner blocked",
+        "wallet signature rejection",
+        "duplicate approval blocked",
+        "incomplete quorum blocked",
+        "edit clears signatures",
+        "owner addition clears stale review",
+        "removal clears stale review",
+        "EIP-712 approvals",
+        "one submission per action",
+        "wallet submission cancellation",
+        "reload reconciliation",
+        "lost-response recovery",
+        "canonical Safe success",
+        "independent follower",
+        "mobile layout"
+      ],
+      "paymentChecks": [
+        "40 local",
+        "110 split",
+        "same L1 transaction receives both legs",
+        "global rejection despite 50 L2 allowance remaining",
+        "actual Composer policy rejection",
+        "unchanged state on rejection",
+        "bridge backing",
+        "no residual policy custody",
+        "independent follower",
+        "payment reload recovery",
+        "10% of 200 L1 + 100 L2 pays 30",
+        "rule fraction edits invalidate approvals",
+        "rule reload recovers signed fraction",
+        "RulePaid observations and Paid funding agree",
+        "actual 30 token transfer on L1",
+        "percentage rule independently replayed",
+        "110 to EEZ-X: 100 local + 10 L1",
+        "terminal L1 lock in canonical batch",
+        "exact approval consumed",
+        "nonce-bound lock and mint",
+        "both contributions in the same L2 receipt",
+        "reverse payment reload recovery",
+        "natural period reset with idle L2",
+        "reverse state independently replayed",
+        "16-USDC rule preview rejected with only 10 global remaining"
+      ],
+      "history": {
+        "automaticResubmissions": 0,
+        "counts": {
+          "pending": 0,
+          "preparation": 3,
+          "rejected": 0,
+          "rollback": 1,
+          "settled": 4
+        },
+        "expiredQueueDiagnosticsHandled": true,
+        "missingDiagnosticInjectedOnReload": true,
+        "omittedDiagnostics": 2,
+        "ownerActionsExcluded": true,
+        "preparation": [
+          "closed invoice at Composer",
+          "1 USDC local budget check",
+          "16 USDC rule local budget check"
+        ],
+        "queueExpiredNaturally": false,
+        "responsiveWidths": [
+          390,
+          320
+        ],
+        "retainedAcrossReload": true,
+        "rollbackTraceAndStateDetails": true,
+        "unavailableReadsDowngrade": true,
+        "verifiedFunding": [
+          "40 local EEZ-X",
+          "110 split L1",
+          "30 percentage rule",
+          "110 split EEZ-X"
+        ]
+      },
+      "l1InitiatedPayment": {
+        "block": "460",
+        "destination": "l2",
+        "hash": "0x94b2fefd078bbae721a6cd54f74490c627abe146770dd12af80d16f12a46b662",
+        "independentReplay": true,
+        "l1Block": "0x5c",
+        "postIndex": 0,
+        "reloadRecovery": true,
+        "signaturesInvalidatedOnSourceChange": true,
+        "source": "l1",
+        "sourceIndex": "0x1"
+      },
+      "independentReplay": {
+        "hash": "0x2d34f48007c9b3b2e5e6864c91496938027b2688b327c7f0f886383d2341db09",
+        "height": 460
+      },
+      "postedAttestationVerified": true,
+      "wallet": "Test EIP-1193 provider; genuine fixture-key signatures and real RPC submission. No wallet extension automation.",
+      "publicBroadcasts": false
+    }
+  }
+}

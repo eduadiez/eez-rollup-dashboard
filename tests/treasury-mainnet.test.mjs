@@ -18,8 +18,8 @@ function config() {
     safeAppUrl: `https://app.safe.global/home?safe=eth:${a(4)}`,
     mainnet: { rollupId: 7, usdcImplementation: implementation, bridgeImplementations: { l1: { kind: 'immutable' }, l2: { kind: 'immutable' } } },
     payments: { bridgeKind: "standard", safeL2Alias: a(26), bridgeExecutorL1: a(27), policy: a(11), alias: a(12), tokenL1: ETHEREUM_USDC, tokenL2: a(14), moduleL1: a(15), moduleL2: a(16), bridgeL1: a(17), bridgeL2: a(18),
-      aliasReaderL1: a(19), recipient: a(20), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'USDC',
-      combinedL2: true, l1Initiation: true, exactSplits: true, percentageRules: true } };
+      recipient: a(20), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'USDC',
+      combinedL2: true, l1Initiation: true, exactSplits: true } };
   c.code = [['l1', [2, 4, 7, 9, 12, 15, 17, 19, 23, 26, 27]], ['l2', [3, 5, 6, 8, 10, 11, 14, 16, 18]]]
     .flatMap(([chain, addresses]) => addresses.map(n => ({ chain, address: a(n), hash: keccak256('0x6000600055') })));
   c.code.push({ chain: 'l1', address: ETHEREUM_USDC, hash: keccak256('0x6000600055') });
@@ -28,7 +28,7 @@ function config() {
 
 test('explicit mainnet manifests preserve both Safe signing domains and exact split calldata', () => {
   const c = parseTreasuryConfig(config());
-  const p = { recipient: a(20), destination: 'l2', amount: '110000000', fromL1: '100000000', funding: 'split', epoch: '2' };
+  const p = { recipient: a(20), destination: 'l2', amount: '110000000', fromL1: '100000000', epoch: '2' };
   const l1 = paymentTransaction(c, { ...p, source: 'l1' }, 4n), l2 = paymentTransaction(c, { ...p, source: 'l2' }, 4n);
   assert.equal(l1.domain.chainId, 1n); assert.equal(l2.domain.chainId, 700001n);
   assert.equal(l1.domain.verifyingContract, c.safeL1); assert.equal(l2.domain.verifyingContract, c.safeL2);
@@ -132,7 +132,7 @@ test('code changes, paused USDC, wrong asset origin, mint authority and reorg al
 
 test('mainnet validation failure prevents asking the wallet to sign', async () => {
   const f = fixture(); f.client.validate = async () => { throw new Error('production bridge not verified'); };
-  const p = { recipient: a(20), destination: 'l1', amount: '1000000', fromL1: '1000000', funding: 'split', epoch: '2' };
+  const p = { recipient: a(20), destination: 'l1', amount: '1000000', fromL1: '1000000', epoch: '2' };
   await assert.rejects(f.client.approve({ request() { assert.fail('wallet must not be called'); } }, paymentTransaction(f.c, p, 0n), {}, a(100)), /production bridge/);
 });
 

@@ -43,6 +43,24 @@ contract L1OwnersTest is OwnerFixture {
         assertEq(safeL2.getOwners()[0], address(adapter));
     }
 
+    function testSharedAdapterKeepsMirrorSignatureDomainsSeparate() public {
+        ISafe other = _safeForAdapter(adapter);
+        bytes memory data = abi.encodeCall(OwnerTestTarget.setValue, (8));
+        bytes memory first = _outer(adapter, _signTwo(keccak256(_preimage(safeL2, address(target), data, 0)), A, B));
+        vm.expectRevert("GS026");
+        _execute(other, address(target), data, 0, first);
+        assertTrue(_execute(safeL2, address(target), data, 0, first));
+        bytes memory second = _outer(adapter, _signTwo(keccak256(_preimage(other, address(target), data, 0)), A, B));
+        assertTrue(_execute(other, address(target), data, 0, second));
+        assertEq(safeL2.nonce(), 1);
+        assertEq(other.nonce(), 1);
+        _adminL1(abi.encodeCall(ISafe.changeThreshold, (1)));
+        bytes memory single = _outer(adapter, _sign(A, keccak256(_preimage(other, address(target), data, 0))));
+        assertTrue(_execute(other, address(target), data, 0, single));
+        single = _outer(adapter, _sign(A, keccak256(_preimage(safeL2, address(target), data, 0))));
+        assertTrue(_execute(safeL2, address(target), data, 0, single));
+    }
+
     function testAddedOwnerAndSubsequentRemoval() public {
         bytes memory data = abi.encodeCall(OwnerTestTarget.setValue, (9));
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL2, address(target), data, 0)), B, C);

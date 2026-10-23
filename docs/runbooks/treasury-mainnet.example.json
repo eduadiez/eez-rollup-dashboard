@@ -76,13 +76,10 @@
     "decimals": 6,
     "period": 600,
     "globalLimit": "150000000",
-    "combinedL2": true,
-    "l1Initiation": true,
-    "exactSplits": true,
-    "percentageRules": true,
     "bridgeKind": "standard",
     "safeL2Alias": "REPLACE_MIRROR_SAFE_L1_ALIAS",
-    "bridgeExecutorL1": "REPLACE_STANDARD_BRIDGE_FUNDING_DELEGATE"
+    "bridgeExecutorL1": "REPLACE_STANDARD_BRIDGE_FUNDING_DELEGATE",
+    "version": 2
   },
   "code": [
     {

@@ -1,0 +1,57 @@
+{
+  "dashboardHead": "a96bc5cd3e7df91ac585ce7cdf6303f82fc7bfb6",
+  "branch": "codex/treasury-demo-release",
+  "core": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "runtime": "fa916b13254a36423cad130080dde367bb18a7d6",
+  "build": "9b7548e5819f28db77942f4ae00401d38f6cdd8e35e08673e3261af8ca506178",
+  "baseline": {
+    "javascript": 39,
+    "solidity": 65
+  },
+  "tests": {
+    "javascript": 448,
+    "solidity": 143,
+    "setupCases": 19,
+    "verifiedLocalCreations": 6
+  },
+  "native": {
+    "standard": {
+      "run": "20261023T065350-er20ywi2",
+      "verified": true,
+      "lastSuccessfulL2Block": 275,
+      "scenarioVerified": true,
+      "independentReplay": {
+        "hash": "0x4302007493f2baba18b00cccb239a1a48d2fc380224b1ec37b5674e2c3a0e97a",
+        "height": 275
+      },
+      "postedAttestationVerified": true,
+      "summarySha256": "2b5a53c650767a0aca189ffb5fc2781d22142ce038a81053b2eeb434fe0d56ff",
+      "scenarioSha256": "0898a402157daf6ea3124136973298379762c000c724767491838886d2e63a63"
+    },
+    "chiado": {
+      "run": "20261023T065842-2nkwzxjy",
+      "verified": true,
+      "lastSuccessfulL2Block": 200,
+      "scenarioVerified": true,
+      "independentReplay": {
+        "hash": "0x42a2c043bf12455b64bbff211ff0919a67dc60c3c68690073465e014eeacf37e",
+        "height": 200
+      },
+      "postedAttestationVerified": true,
+      "summarySha256": "b19dbc729a45bc718d4dd3ff7a24d745e87cd71c6036fe0005b5c5c8ad6c2b68",
+      "scenarioSha256": "b33faca5770c1418f6a997dcba6f663a8bd89d26d47bb7345fd07dfb57fae371"
+    }
+  },
+  "publicDeployment": false,
+  "files": {
+    "contracts/src/TreasuryPolicyBase.sol": "3343dcdaa980f80cadc88f005bc8ac878287a08ed431884206145e91e278e9a2",
+    "contracts/src/TreasuryBootstrap.sol": "efc73157f9b21b927417a7619fda7cb92f337873a4d76c69fcb50f525b6ad37f",
+    "contracts/src/L1Owners.sol": "3150a43225f53ea280e135b77b9d9438df1e271a2c34feb19f067d784cd49be8",
+    "src/lib/treasury/payments.ts": "83c3d5f157545c5cf00295aa74606fd0344ea7c998be87a75fc194e20abce50e",
+    "src/lib/treasury/client.ts": "1f6a4a98a1e1cced243bbc613ec46241b7592c1475ef574e148b207a3fa4b1bf",
+    "src/lib/treasury/safeInfrastructure.ts": "6b647a87cef7a6f9296e38f42c0643c12b961f2a1ebf6fe5e329e2cf28d76f92",
+    "src/lib/treasury/deployment.ts": "d1917ea2731437d50009fbaf8e73613dd8278e3012708fcfe83d2fa4e6ec772d",
+    "src/lib/treasury/deploymentGroups.ts": "1efac55b823fca1ef168175bbed9fc72fa58a844a44bdbccc04a6a2da62c40a9",
+    "src/lib/treasury/mainnetSetup.ts": "2fd3520ae0b252f69cd646893db1ca3742fa6e916db2b3b0e7990abe9d2dbaab"
+  }
+}

@@ -19,12 +19,14 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
           cache: npm
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.7.1
       - run: npm ci
+      - name: Dependency security advisories
+        run: npm audit --audit-level=high
       - name: Verify pinned source release
         run: npm run check:treasury-release
       - name: Unit and contract checks

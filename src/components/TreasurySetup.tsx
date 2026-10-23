@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getAddress } from "viem";
 import type { Address, Hex } from "viem";
 import { TreasuryDeployment, loadDeployment, saveDeployment, sharedDeploymentKey, sharedManifestKey } from "../lib/treasury/deployment";
-import type { DeploymentState, DeploymentTarget } from "../lib/treasury/deployment";
+import type { DeploymentState, DeploymentTarget, DeploymentPending } from "../lib/treasury/deployment";
 import type { TreasuryConfig } from "../lib/treasury/client";
 import type { TreasuryWallet } from "./TreasuryConnected";
 import styles from "./TreasuryDemo.module.css";
@@ -25,7 +25,7 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   const active = useRef(false), selectedWallet = useRef(wallet); selectedWallet.current = wallet;
-  const persist = (next: DeploymentState) => { saveDeployment(localStorage, next); setState(next); };
+  const persist = (next: DeploymentState, walletRejected?: DeploymentPending) => { saveDeployment(localStorage, next, walletRejected); setState(next); };
   const locked = async (fn: (saved: DeploymentState | null) => Promise<void>, optional = false) => {
     if (!navigator.locks) throw new Error("Deployment requires a browser with Web Locks support.");
     await navigator.locks.request(sharedDeploymentKey, { ifAvailable: true }, async lock => {
@@ -68,13 +68,9 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
           const reconciled = tracked.pending?.hash ? await deployer.reconcile(tracked) : tracked;
           if (reconciled !== saved && alive) setError("");
           if (reconciled !== saved && alive) persist(reconciled);
-          const simplified = await deployer.simplify(reconciled);
-          const grouped = await deployer.group(simplified);
-          const prepared = await deployer.prepareWallet(await deployer.useExistingAsset(grouped));
+          const next = reconciled;
           if (!alive) return;
-          if (prepared !== reconciled) persist(prepared);
-          const next = deployer.withoutFunding(prepared);
-          if (next !== prepared) persist(next); else setState(prepared);
+          setState(next);
           if (next !== saved) setError("");
           if (next.pending?.hash) setStatus("Checking transaction…");
           else if (next.pending) setStatus("Waiting for the wallet transaction…");
@@ -112,10 +108,7 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
     try { await fn(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { active.current = false; setBusy(false); }
   };
-  const awaitingAsset = !!state && state.version < 6 && !state.pending && !state.review && !state.addresses.bootstrapL1
-    && (!state.addresses.tokenL1 || !!state.shared?.binding);
-  const updatingPlan = state?.version === 6 && !state.pending && !state.review && !state.completed.includes("fundingBatchL1");
-  const step = state && !awaitingAsset && !updatingPlan ? steps[state.completed.length] : undefined;
+  const step = state ? steps[state.completed.length] : undefined;
   const withoutFunding = !!state && state.version >= 7;
   const review = state?.review;
   const currentOwner = review?.owners.some(owner => same(owner, wallet.address));
@@ -178,20 +171,18 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
         if (saved) throw new Error("Another tab has already selected a setup. Review the saved progress.");
         const selected = selectedWallet.current;
         if (!selected.address) throw new Error("Connect the deployment wallet");
-        const next = deployer!.withoutFunding(await deployer!.prepareWallet(await deployer!.useExistingAsset(await deployer!.group(await deployer!.configure(getAddress(selected.address), getAddress(safeAddresses.l1), existing.l2 ? getAddress(safeAddresses.l2) : undefined)))));
+        const next = await deployer!.configure(getAddress(selected.address), getAddress(safeAddresses.l1), existing.l2 ? getAddress(safeAddresses.l2) : undefined);
         if (!same(selectedWallet.current.address, selected.address) || selectedWallet.current.provider !== selected.provider) throw new Error("Wallet changed during setup. Start setup again.");
         persist(next); setStatus("Setup reviewed. Approve each named transaction when ready.");
       }))}>Start setup</button> : <div className={styles.owners}>{wallet.walletOptions.map((option, index) => <button className={`btn ${index === 0 ? "btn-solid" : "btn-outline"}`} key={option.id} onClick={() => void wallet.connect(option.id)}>Connect {option.name}</button>)}
         {!wallet.walletOptions.length && <p>Open this dashboard in a browser with your wallet extension.</p>}</div>}
     </section>}
     {state && <section className={styles.card}>
-      <div className={styles.setupProgress}><h3 className={styles.stepCount}>{awaitingAsset ? "Waiting for shared infrastructure" : updatingPlan ? "Updating setup…" : `Deployment ${state.completed.length} / ${steps.length}`}</h3>
+      <div className={styles.setupProgress}><h3 className={styles.stepCount}>{`Deployment ${state.completed.length} / ${steps.length}`}</h3>
         <progress aria-label="Setup progress" value={state.completed.length} max={steps.length || 1} /></div>
-      {awaitingAsset && <p>Your confirmed setup is saved. The shared token and bridge pair must be predeployed before continuing.</p>}
       {step && <div className={styles.heading}>
         <h3>{stepTitle}</h3><span className={styles.chainLabel} data-chain={step.chain}>{step.chain === "l1" ? "Chiado" : "EEZ-X"}</span>
       </div>}
-      {state.version < 3 && !state.pending && !state.review && <p>Checking the remaining setup…</p>}
       {step && <div className={styles.stepContext} aria-label="About this step">
         {createsL1 && <p>Your wallet <code>{state.deployer}</code> will be the only owner (1 of 1).</p>}
         {createsL2 && <p>This mirror Safe uses your Chiado Safe’s current owners and approval threshold.</p>}
@@ -237,8 +228,6 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
       {step && !state.pending && <button className={`btn ${step.safe && !readyToSend ? "btn-outline" : "btn-solid"}`} disabled={busy || !healthy || !planReady || !readyToSend || !hasGas}
         onClick={() => void run(() => locked(async saved => {
           if (!saved || saved.pending || saved.salt !== state.salt || saved.completed.length !== state.completed.length) throw new Error("Deployment progress changed. Wait for the current transaction.");
-          const shared = await deployer!.useExistingAsset(saved);
-          if (shared !== saved) { persist(shared); saved = shared; }
           const selected = await switchNetwork(step.chain);
           setStatus(`Preparing: ${step.label}`);
           const prepared = await deployer!.prepare(saved, selected.provider!);
@@ -250,7 +239,7 @@ export function TreasurySetup({ wallet, target, onComplete }: { wallet: Treasury
             if (typeof hash !== "string" || !/^0x[\da-f]{64}$/i.test(hash)) throw new Error("No transaction hash returned");
             persist({ ...saved, pending: { ...prepared.pending, hash: hash as Hex } }); setStatus("");
           } catch (e) {
-            if ((e as { code?: number }).code === 4001) { persist(saved); setStatus("Wallet cancelled. No transaction was authorized."); }
+            if ((e as { code?: number }).code === 4001) { persist(saved, prepared.pending); setStatus("Wallet cancelled. No transaction was authorized."); }
             else throw new Error(`Wallet response uncertain: ${String(e)}. We’ll keep checking the network automatically.`);
           }
         }))}>{busy ? "Waiting for wallet…" : step.safe ? "Submit approved Safe step" : "Approve next deployment step"}</button>}

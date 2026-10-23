@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
-/// @notice Controlled invoice fixture for the isolated treasury demonstration.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Controlled invoice fixture for the isolated treasury demonstration.
 /// @dev Closing an invoice is a separate committed transaction. Acceptance is a
 ///      required final leg of the payment and authenticates the policy's L1 alias.
 contract InvoiceMerchant {

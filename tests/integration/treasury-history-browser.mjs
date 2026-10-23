@@ -19,10 +19,13 @@ export async function historyBrowser(f, page, ui, directory) {
   assert.equal(await canonicalRequestRetired(client, invoiceReport.intent), true, 'both canonical nonces prevent replay of the old attempt');
   // Diagnostic retention has no fixed expiry deadline. Omit only this old
   // lookup on reload; all receipts, nonces, traces and state remain real RPCs.
-  await page.route(config.l2.rpc, async route => {
+  let omittedDiagnostics = 0;
+  await page.route(config.l2.front, async route => {
     const body = route.request().postDataJSON();
-    if (body.method === 'eez_getCrossChainTransaction' && body.params?.[0] === invoice.transaction)
+    if (body.method === 'eez_getCrossChainTransaction' && body.params?.[0] === invoice.transaction) {
+      omittedDiagnostics++;
       return route.fulfill({ json: { jsonrpc: '2.0', id: body.id, result: null } });
+    }
     return route.fallback();
   });
   const saved = JSON.parse(await page.evaluate(key => localStorage.getItem(key), key));
@@ -34,13 +37,13 @@ export async function historyBrowser(f, page, ui, directory) {
   assert.equal(saved.entries.filter(e => e.intent?.payment?.kind === 'invoice').length, 2, 'failed invoices share a Safe nonce but keep separate identities');
   await page.reload();
   await complete();
+  assert(omittedDiagnostics > 0, 'reconciliation queried the omitted Composer diagnostic');
   assert.deepEqual(JSON.parse(await page.evaluate(key => localStorage.getItem(key), key)), saved, 'reload reconciles without appending or modifying attempts');
   const filter = panel.getByLabel('Filter history', { exact: true });
   await filter.selectOption('settled'); assert.equal(await rows.count(), 4);
-  const rule = rows.filter({ hasText: 'Percentage rule' });
-  await rule.getByRole('button', { name: 'Show payment details', exact: true }).click();
-  assert.match(await rule.getByTestId('history-rule-result').textContent(), /Paid 30 USDC: 10% × \(200 Ethereum \+ 100 EEZ-X\)/);
-  assert.match(await rule.getByTestId('history-settled-funding').textContent(), /Paid 30 from Ethereum \+ 0 from EEZ-X/);
+  const fixed = rows.filter({ hasText: '30 USDC → Ethereum' });
+  await fixed.getByRole('button', { name: 'Show payment details', exact: true }).click();
+  assert.match(await fixed.getByTestId('history-settled-funding').textContent(), /Paid 30 from Ethereum \+ 0 from EEZ-X/);
   const l1 = rows.filter({ hasText: '110 USDC → Ethereum' });
   await l1.getByRole('button', { name: 'Show payment details', exact: true }).click();
   assert.match(await l1.getByTestId('history-settled-funding').textContent(), /Paid 100 from Ethereum \+ 10 from EEZ-X/);
@@ -86,9 +89,9 @@ export async function historyBrowser(f, page, ui, directory) {
   await complete();
   await page.screenshot({ path: resolve(directory, 'treasury-history-desktop.png'), fullPage: true });
   const report = { counts: expected, retainedAcrossReload: true, ownerActionsExcluded: true,
-    verifiedFunding: ['40 local EEZ-X', '110 split L1', '30 percentage rule', '110 split EEZ-X'],
-    preparation: ['closed invoice at Composer', '1 USDC local budget check', '16 USDC rule local budget check'],
-    rollbackTraceAndStateDetails: true, expiredQueueDiagnosticsHandled: true, queueExpiredNaturally: queueObservation === null, missingDiagnosticInjectedOnReload: true, unavailableReadsDowngrade: true, responsiveWidths: [390, 320], automaticResubmissions: 0 };
+    verifiedFunding: ['40 local EEZ-X', '110 split L1', '30 fixed payment', '110 split EEZ-X'],
+    preparation: ['closed invoice at Composer', '1 USDC local budget check', '16 USDC fixed local budget check'],
+    rollbackTraceAndStateDetails: true, expiredQueueDiagnosticsHandled: true, queueExpiredNaturally: queueObservation === null, missingDiagnosticInjectedOnReload: true, omittedDiagnostics, unavailableReadsDowngrade: true, responsiveWidths: [390, 320], automaticResubmissions: 0 };
   writeFileSync(resolve(directory, 'history-evidence.json'), `${JSON.stringify(report, null, 2)}\n`);
   f.evidence.historyChecks = report; f.checkpoint();
   console.log('Payment history passed: four settlements, three preparation rejections, one verified rollback, reload and unavailable-read recovery');

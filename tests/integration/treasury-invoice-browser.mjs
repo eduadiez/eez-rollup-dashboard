@@ -9,24 +9,27 @@ import { encodeSafeExecution, packOwnerApprovals, safeTransactionHash } from '..
 export async function invoiceBrowser(f, page, ui, waitText, directory) {
   const { treasury: c } = JSON.parse(readFileSync(resolve(directory, 'ui-session.json'))), client = new TreasuryClient(c);
   await page.getByRole('button', { name: 'Payments', exact: true }).click();
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
+  // Opening this view validates the deployment and reads live balances first.
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
   await f.until('invoice has time in its natural budget period', async () => {
     const block = await f.rpc(f.network.l1.rpc, 'eth_getBlockByNumber', ['latest', false]);
     return BigInt(block.timestamp) % 600n < 470n;
   }, 180);
   // Invoice creation is an isolated fixture operation. The regular payment
   // form no longer contains rehearsal shortcuts; verify its restored outcome.
+  // Use the later browser submitter for this rollback attempt so successful
+  // payments advance both nonces before history omits its queue diagnostic.
   const opened = await f.invoices.open(false), openState = await paymentState(client), openSnapshot = await client.snapshot();
   const openPayment = { kind: 'invoice', invoiceId: opened.invoiceId, recipient: opened.recipient, amount: opened.amount,
-    destination: 'l1', funding: 'combined', epoch: String(openState.epoch) };
+    destination: 'l1', epoch: String(openState.epoch) };
   const openTx = paymentTransaction(c, openPayment, openSnapshot.nonce);
   const openApprovals = await Promise.all([f.A, f.B].map(async owner => ({ owner: owner.address, signature: await owner.signTypedData(openTx) })));
   const openData = encodeSafeExecution(openTx, await packOwnerApprovals(openTx, c.adapter, openSnapshot.owners, openSnapshot.threshold, openApprovals));
   const intent = { version: 1, instance: c.instance, payment: openPayment, value: '0', nonce: String(openSnapshot.nonce), safeHash: safeTransactionHash(openTx),
-    data: openData, sender: f.submitter.address, sourceNonce: await f.rpc(f.network.l2.rpc, 'eth_getTransactionCount', [f.submitter.address, 'pending']),
+    data: openData, sender: f.B.address, sourceNonce: await f.rpc(f.network.l2.rpc, 'eth_getTransactionCount', [f.B.address, 'pending']),
     startBlock: await f.rpc(f.network.l2.rpc, 'eth_blockNumber') };
   await invoiceControl(c, 'arm', intent);
-  const hash = intent.hash = await f.submit(f.network.l2, c.safeL2, openData);
+  const hash = intent.hash = await f.submit(f.network.l2, c.safeL2, openData, 0n, f.B);
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [`eez:treasury:submission:${c.instance}`, JSON.stringify(intent)]);
   await page.reload();
   await ui.getByRole('heading', { name: 'Rollback verified', exact: true }).waitFor({ timeout: 150_000 });
@@ -61,9 +64,10 @@ export async function invoiceBrowser(f, page, ui, waitText, directory) {
   await page.setViewportSize({ width: 1440, height: 1100 });
   // Known failure: real signed source reaches Composer while the invoice is
   // already closed. It must not be presented as the settlement demonstration.
+  // Keep the source account selected by the native admission-trace filter.
   const closed = await f.invoices.open(true), s = await paymentState(client), snapshot = await client.snapshot();
   const payment = { kind: 'invoice', invoiceId: closed.invoiceId, recipient: closed.recipient, amount: closed.amount,
-    destination: 'l1', funding: 'combined', epoch: String(s.epoch) };
+    destination: 'l1', epoch: String(s.epoch) };
   const tx = paymentTransaction(c, payment, snapshot.nonce);
   const approvals = await Promise.all([f.A, f.B].map(async owner => ({ owner: owner.address, signature: await owner.signTypedData(tx) })));
   const packed = await packOwnerApprovals(tx, c.adapter, snapshot.owners, snapshot.threshold, approvals);

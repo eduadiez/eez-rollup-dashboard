@@ -1,9 +1,10 @@
+import { recordedPaymentTransaction } from "./savedPayments.ts";
 import { transferOutcome } from "./transfers.ts";
 import { encodeEventTopics, keccak256 } from "viem";
 import type { Address, Hex } from "viem";
 import type { Intent, Outcome, TreasuryClient } from "./client.ts";
 import { decodeSafeExecution, safeExecutionTopics } from "./safeEvents.ts";
-import { paymentAbi, paymentTransaction, settledPayment } from "./payments.ts";
+import { paymentAbi, settledPayment } from "./payments.ts";
 import { safeTransactionHash } from "./safeTransactions.ts";
 
 type Log = { address: Address; data: Hex; topics: [Hex, ...Hex[]]; transactionHash: Hex; blockHash: Hex; blockNumber: Hex };
@@ -19,7 +20,7 @@ function check(value: unknown, message: string): asserts value { if (!value) thr
 export async function l1PaymentOutcome(client: TreasuryClient, intent: Intent): Promise<Outcome> {
   const c = client.config, p = intent.payment;
   check(p?.source === "l1" && intent.l2StartBlock && c.l1.front, "Missing L1 payment tracking identity");
-  const reviewed = paymentTransaction(c, p, BigInt(intent.nonce));
+  const reviewed = recordedPaymentTransaction(c, p, BigInt(intent.nonce));
   check(safeTransactionHash(reviewed) === intent.safeHash, "L1 Safe transaction does not match the reviewed payment");
   let hash = intent.hash;
   if (!hash) {

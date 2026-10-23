@@ -128,7 +128,6 @@ Use a fresh treasury setup. **Payment split** shows both Safe percentages and
 exact token amounts immediately. Drag it to choose a contribution, or use
 **Use available funds** for the scripted destination-first allocation. No
 separate activation or upgrade is required.
-Percentage-of-holdings rules keep automatic funding.
 
 For each payment: enter the amount and recipient chain, choose **Use available
 funds**, review its recipient and funding, sign as B, switch to C and sign, then
@@ -171,25 +170,24 @@ transfer to a reverting fallback or a rejection during preparation.
 The rollback remains in history. If the UI cannot verify the trace and canonical
 state, leave it unresolved and stop this act; missing evidence is not rollback.
 
-## Act 4 A percentage rule and the reverse route
+## Act 4 Fixed payments and the reverse route
 
-Choose **Percentage of combined Safe holdings** and enter **10** for the rule.
-For the reverse payment, choose **Fixed amount**, enter **110**, select **EEZ-X**
-as the recipient chain and choose **Use available funds**. Continue in the same
-second period while sufficient time remains:
+Choose **Fixed amount**, enter **30**, select the base chain as recipient chain,
+and choose **Use available funds**. Then enter **110**, select **EEZ-X** and
+choose **Use available funds** again. Continue in the same second period while
+sufficient time remains:
 
 | Action | L1 balance | EEZ-X balance | L1 spent | EEZ-X spent | Global spent |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Pay 10% of holdings to L1: 10% × (200 + 100) = 30 | 170 | 100 | 30 | 0 | 30 |
+| Pay 30 to L1, entirely from its Safe | 170 | 100 | 30 | 0 | 30 |
 | Split 110 to EEZ-X: 100 local + 10 from L1 | 160 | 0 | 40 | 100 | 140 |
-| Optional: review another 10% = 16 | 160 | 0 | 40 | 100 | 140 |
+| Optional: review another 16 to L1 | 160 | 0 | 40 | 100 | 140 |
 
-The rule signs the percentage, recipient and period; execution recomputes the
-amount from both Safe balances. Show the actual observed balances and result.
-Bridge escrow is backing, not another treasury holding. The reverse payment
-locks the 10-USDC L1 contribution and mints its backed representation on EEZ-X,
-within the same payment entry. The optional final rule fails because only 10
-of global budget remains; the policy does not reduce the percentage to fit.
+The owners approve each exact amount and split. Editing either clears existing
+approvals. The reverse payment locks the 10-USDC L1 contribution and mints its
+backed representation on EEZ-X within the same payment entry. The optional final
+payment fails because only 10 of global budget remains; the signed amount is
+never reduced to fit.
 
 History now has four settlements and the initial local preparation rejection,
 plus the verified rollback when the isolated fixture act was run; the optional final review adds another rejection. Filter

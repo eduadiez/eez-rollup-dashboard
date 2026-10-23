@@ -1,29 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
+import {TreasuryPolicyBase} from "../src/TreasuryPolicyBase.sol";
 import {BidirectionalTreasuryPolicyTest} from "./BidirectionalTreasuryPolicy.t.sol";
 import {TreasuryPolicy} from "../src/TreasuryPolicy.sol";
-import {SplitTreasuryPolicy} from "../src/SplitTreasuryPolicy.sol";
 import {TreasuryAliasReader} from "../src/TreasuryAliasReader.sol";
 import {IEEZProxyRegistry} from "../src/interfaces/IEEZProxyRegistry.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract TreasurySplitTest is BidirectionalTreasuryPolicyTest {
-    function _newPolicy() internal override returns (TreasuryPolicy) {
-        return new SplitTreasuryPolicy(
-            address(safeL1),
-            address(safeL2),
-            IEEZProxyRegistry(address(l2)),
-            address(new TreasuryAliasReader(IEEZProxyRegistry(address(l1)))),
-            address(module1),
-            module2,
-            address(usdc),
-            bridge2,
-            address(merchant)
-        );
-    }
-
     function _splitData(bool onL1, uint256 amount, uint256 fromL1) internal view returns (bytes memory) {
-        return abi.encodeCall(policy.paySplit, (address(usdc), recipient, amount, onL1, block.timestamp / 600, fromL1));
+        return abi.encodeCall(policy.paySplit, (recipient, amount, onL1, block.timestamp / 600, fromL1));
     }
 
     function testFuzzExactSplitBothSourcesAndDestinations(
@@ -53,15 +39,15 @@ contract TreasurySplitTest is BidirectionalTreasuryPolicyTest {
     function testExactSplitDoesNotRebalanceOrExceedGlobal() public {
         _callL2(address(policy), _splitData(false, 100 * U, 0));
         vm.startPrank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.Capacity.selector);
-        policy.paySplit(address(usdc), recipient, U, true, block.timestamp / 600, 0);
-        vm.expectRevert(TreasuryPolicy.InvalidAmount.selector);
-        policy.paySplit(address(usdc), recipient, U, true, block.timestamp / 600, U + 1);
+        vm.expectRevert(TreasuryPolicyBase.Capacity.selector);
+        policy.paySplit(recipient, U, true, block.timestamp / 600, 0);
+        vm.expectRevert(TreasuryPolicyBase.InvalidAmount.selector);
+        policy.paySplit(recipient, U, true, block.timestamp / 600, U + 1);
         vm.stopPrank();
         _fromL1(_splitData(false, 50 * U, 50 * U));
         vm.prank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.GlobalLimit.selector);
-        policy.paySplit(address(usdc), recipient, U, true, block.timestamp / 600, U);
+        vm.expectRevert(TreasuryPolicyBase.GlobalLimit.selector);
+        policy.paySplit(recipient, U, true, block.timestamp / 600, U);
         assertEq(_spent(true), 50 * U);
         assertEq(_spent(false), 100 * U);
     }

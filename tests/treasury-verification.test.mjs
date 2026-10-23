@@ -90,7 +90,17 @@ test('the worker admits only retained builds, configured chains and transaction 
 test('release bundles retain compiler inputs for every new deployment artifact',()=>{
   const builds=loadBuilds('verification/builds');const current=JSON.parse(readFileSync('src/lib/treasury/current-build.json')).build;
   const bundle=JSON.parse(readFileSync(`src/lib/treasury/builds/${current}.json`));
-  assert.equal(Object.keys(bundle.contracts).length,19);
+  assert.equal(Object.keys(bundle.contracts).length,18);
+  assert.equal(bundle.contracts.InvoiceMerchant, undefined);
+  for (const name of ['TreasuryPolicy','StandardBridgeTreasuryPolicy']) {
+    const abi=bundle.contracts[name].abi;
+    assert.equal(abi.find(x=>x.type==='constructor').inputs.length,8);
+    assert(abi.some(x=>x.name==='paySplit'));
+    assert(!abi.some(x=>['payRule','RulePaid','BPS_DENOMINATOR','InvalidFraction'].includes(x.name)));
+    assert(!abi.some(x=>x.name==='pay' || x.name==='payRouted'));
+    assert(!abi.some(x=>/invoice/i.test(x.name??'')));
+    if(name==='StandardBridgeTreasuryPolicy')assert(!abi.some(x=>/aliasReader/i.test(x.name??'')));
+  }
   for(const [name,a] of Object.entries(bundle.contracts)){const v=builds[current].contracts[name];assert.equal(a.runtime,v.runtime);assert.equal(a.bytecode,v.bytecode);assert(builds[current].inputs[v.input]);}
   assert(bundle.contracts.SafeProxyFactory.runtime.includes(bundle.contracts.SafeProxy.bytecode.slice(2)));
   assert(Object.values(builds[current].inputs).every(i=>Object.keys(i.sources).every(p=>!p.startsWith('/'))),'source paths must be portable');

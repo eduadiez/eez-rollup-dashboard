@@ -9,7 +9,8 @@ const directory = process.env.EEZ_UI_EVIDENCE || '.runtime/treasury-faucet-amoun
 await mkdir(`${directory}/tmp`, { recursive: true }); process.env.TMPDIR = resolve(directory, 'tmp');
 const address = n => getAddress(toHex(n, { size: 20 })), hash = s => keccak256(toHex(s));
 const fixture = { owner: address(100), faucet: address(110), hash: hash('request'), asset: { tokenL1: address(101), tokenL2: address(102), bridgeL1: address(103), bridgeL2: address(104), tokenCodeHash: hash('token') } };
-const server = await createServer({ configFile: false, envFile: false, plugins: [react()], server: { host: '127.0.0.1', port: 0 }, base: '/' });
+// This fixture tests explicit reload recovery; HMR reconnects must not reload it mid-assertion.
+const server = await createServer({ configFile: false, envFile: false, plugins: [react()], server: { host: '127.0.0.1', port: 0, hmr: false }, base: '/' });
 await server.listen(); const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });

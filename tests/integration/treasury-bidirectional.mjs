@@ -9,8 +9,8 @@ import { paymentState, paymentTransaction, tokenAbi } from '../../src/lib/treasu
 import { packEOAApprovals, packOwnerApprovals, encodeSafeExecution, safeTransactionHash } from '../../src/lib/treasury/safeTransactions.ts';
 
 export async function runBidirectionalPayments(f) {
-  const setup = await setupPayments(f, { legacy: true }), n = f.network;
-  let p = setup.payments;
+  const setup = await setupPayments(f), n = f.network;
+  const p = setup.payments;
   const code = [...setup.code];
   for (const [chain, address] of [['l1', f.safeL1], ['l2', f.safeL2], ['l2', f.adapter]])
     code.push({ chain, address, hash: keccak256(await f.rpc(n[chain].rpc, 'eth_getCode', [address, 'latest'])) });
@@ -26,20 +26,17 @@ export async function runBidirectionalPayments(f) {
       l1ChainId: n.l1.chainId, l2ChainId: n.l2.chainId, registry: n.registry, manager: f.manager, statusRpc: n.l2.rpc });
     adapters.push(adapter); c[chain].front = adapter.url;
   }
-  let client = new TreasuryClient(c);
+  const client = new TreasuryClient(c);
   await client.validate();
   await f.until('bidirectional period has time remaining', async () => {
     const b = await f.rpc(n.l1.rpc, 'eth_getBlockByNumber', ['latest', false]);
     return BigInt(b.timestamp) % 600n < 400n;
   }, 250);
-  const { runPolicyUpgrade } = await import('./treasury-upgrade.mjs');
-  Object.assign(c, await runPolicyUpgrade(f, c, setup)); p = c.payments;
-  client = new TreasuryClient(c); await client.validate();
   const epoch = String((await paymentState(client)).epoch);
   const cases = f.evidence.bidirectional = [];
   let first;
   async function build(source, destination, amount, fromL1 = String(amount)) {
-    const payment = { source, destination, recipient: p.recipient, amount: String(amount), funding: 'split', fromL1, epoch };
+    const payment = { source, destination, recipient: p.recipient, amount: String(amount), fromL1, epoch };
     const snapshot = await client.snapshot(source);
     const tx = paymentTransaction(c, payment, snapshot.nonce);
     const approvals = await Promise.all([f.A, f.B].map(async owner => ({ owner: owner.address, signature: await owner.signTypedData(tx) })));
@@ -52,6 +49,7 @@ export async function runBidirectionalPayments(f) {
     return intent;
   }
   for (const [source, destination, amount, fromL1, fromL2, spent] of [
+    ['l2', 'l2', 40_000_000n, '0', '40000000', 40_000_000n],
     ['l1', 'l2', 70_000_000n, '35000000', '35000000', 110_000_000n],
     ['l1', 'l1', 10_000_000n, '0', '10000000', 120_000_000n],
     ['l2', 'l1', 10_000_000n, '10000000', '0', 130_000_000n],
@@ -62,7 +60,7 @@ export async function runBidirectionalPayments(f) {
     const beforeRecipient = await f.read(n[destination].rpc, recipientToken, tokenAbi, 'balanceOf', [p.recipient]);
     const intent = await build(source, destination, amount, fromL1);
     intent.hash = await f.submit(n[source], safe, intent.data);
-    if (!first) first = intent;
+    if (!first && source === 'l1') first = intent;
     const result = await f.until(`${source} to ${destination} canonical payment`, async () => {
       const outcome = await client.outcome(intent);
       if (outcome.kind === 'rejected') throw new Error(JSON.stringify(outcome));

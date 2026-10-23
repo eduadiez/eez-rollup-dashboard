@@ -1,5 +1,5 @@
 import type { Intent, Outcome, TreasuryConfig } from "../lib/treasury/client";
-import { formatUSDC, formatPercentage } from "../lib/treasury/payments";
+import { formatUSDC } from "../lib/treasury/payments";
 import { TreasuryPaymentFlow, TreasuryChainLink } from "./TreasuryPaymentFlow";
 import type { TreasurySettlement } from "../lib/treasury/settlement";
 import styles from "./TreasuryDemo.module.css";
@@ -8,7 +8,6 @@ export function TreasuryOutcomeDetails({ outcome, prefix = "", deployment, inten
   const l1Name = deployment.l1.chainId === 10200 ? "Chiado" : "Ethereum";
   return <>
       {outcome?.kind === "settled" && outcome.contributions && intent?.payment && <TreasuryPaymentFlow deployment={deployment} intent={intent} outcome={outcome} settlement={settlement} sourceTestId={prefix ? undefined : "submitted-hash"} />}
-      {outcome?.contributions?.rule && <p data-testid={`${prefix}rule-result`}>Paid {formatUSDC(BigInt(outcome.contributions.rule.amount))} USDC: {formatPercentage(BigInt(outcome.contributions.rule.bps))}% × ({formatUSDC(BigInt(outcome.contributions.rule.balanceL1))} {l1Name} + {formatUSDC(BigInt(outcome.contributions.rule.balanceL2))} EEZ-X) observed during execution.</p>}
       {outcome?.contributions && <p className={styles.copyStatus} data-testid={`${prefix}settled-funding`}>Paid {formatUSDC(BigInt(outcome.contributions.fromL1))} from {l1Name} + {formatUSDC(BigInt(outcome.contributions.fromL2))} from EEZ-X</p>}
       {outcome?.rollback && <div aria-label={`${prefix ? "Historical " : ""}Invoice rollback evidence`}>
         <ol><li>10 USDC released from the bridge on {l1Name}.</li><li>100 USDC transferred from the {l1Name} Safe.</li><li>Merchant rejected the closed invoice; both transfers reverted.</li></ol>

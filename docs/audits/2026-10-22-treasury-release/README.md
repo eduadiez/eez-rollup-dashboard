@@ -219,3 +219,81 @@ process tests, browser wallet acceptance or a real-USDC fork rehearsal. No publi
 transaction, Safe upgrade, contract deployment, service rollout or push was made.
 The updated dashboard must be published before the reported Safe works in the
 hosted setup form.
+
+## Shared Ethereum setup helpers
+
+From baseline `03dc986e5d8fc7810c28756f98826fd9e166a1ed`, new mainnet selections
+reuse the two contracts already deployed in the user's first setup:
+
+| Helper | Ethereum address | Full runtime hash |
+| --- | --- | --- |
+| TreasuryAliasReader | `0x0e51c6eB80B3AdA08A50152Dc87107d59e74B7A4` | `0x04a7d5cd0cc2125a8c9d1eefdb78ca772dc62833803fd1dfc8b639dadc3105f7` |
+| AllowanceModule | `0x60Ad1F4207F699dB32f966a48618F4f4b7B16DC5` | `0xc176516783a19611f61a3c0a45ea6c8cc534d06f06ca211d1074d69226233a27` |
+
+Read-only inspection at Ethereum block `0x1908e32`, hash
+`0x77cec561e97a1440f645ce9bb40706ee48ea07a6dac5b53c53c0d4d8c004d9ce`,
+matched both retained source runtimes and the alias reader's immutable registry
+`0x4B2760F84B83d6b3829E30A7573B0172B6d6402C`.
+The [shared bindings](../../../src/lib/treasury/mainnet-shared-contracts.json)
+are separate from the frozen network profile so existing browser keys do not
+change. New selections check exact code and registry at a fixed canonical block;
+missing code, changed code, transport errors and reorgs fail without deploying a
+fallback. Saved plans and pending transaction bytes retain their original helpers.
+
+The real production `MainnetSetup.configure` passed against the public dashboard's
+configured RPCs and Composer discovery for the reported Safe
+`0x1a38210B3330aa0B41267D605f14C699A7189b60`. Its unsigned first-step plan now
+contains only `TreasuryBootstrap` and `StandardBridgeDelegate`, using the already
+available official batch helper. This removes two contract deployments from that
+transaction; it does not reduce the six setup transaction confirmations. The
+preflight called only `eth_call`, `eth_chainId`, `eth_getBlockByNumber`,
+`eth_getCode` and `eth_getStorageAt`; no wallet or browser journal was modified.
+
+Safe setup skips `enableModule` when the selected module is already enabled.
+That observed state is bound into the signed batch hash; a change requires a new
+review. Older saved reviews without the optional observation retain the original
+batch. New delegates leave existing delegate allowances and counters intact.
+
+Source verification now completes on exact Sourcify matches independently of
+explorer publication. The worker continues publishing and the detailed links
+remain available. A pending job with no discovered contracts still prevents a
+false completion heading; existing delivery-error recovery is retained.
+
+Validation:
+
+- The setup regressions failed on the baseline for missing helper bindings,
+  redundant deployments and missing shared-code checks. The separate module
+  approval regression reached `currentReview` and reproduced the missing
+  invalidation. The browser reproduced the stale publishing heading after all
+  Sourcify matches. These same checks pass with the patch.
+- **444 JavaScript tests** pass. Ten focused setup cases cover both reuse and
+  saved-plan compatibility, code/registry/reorg/RPC rejection, exact delegate
+  constructor arguments, module enablement and approval invalidation.
+- **236 Solidity tests** pass with no failures or skips, including two new real
+  Safe/AllowanceModule cases separating Safe allowances and preserving an old
+  delegate when a new treasury delegate is added. EEZ managers in these cases
+  use the established read-through fixture, not proof validation.
+- **Five browser cases** pass with controlled verification responses: independent
+  delivery, automatic retry, Sourcify completion, unresolved discovery and final
+  explorer publication. No public wallet signing is claimed.
+- TypeScript/Vite build, Solidity formatting, immutable release checks, whitespace
+  and documentation links pass. Existing Vite import/chunk warnings remain.
+  All nine preserved operator/profile/artifact hashes and the contract build ID
+  `3069fa624a1ebaa01e6528033478c7f10d5263542f01c873a6043dfe0503a60d`
+  are unchanged.
+
+Detailed evidence is local-only under `.runtime/treasury-shared-helpers-20261022/`.
+Native Composer/proof/follower execution, a real-USDC fork rehearsal and public
+wallet acceptance were not repeated for this planner/UI change. Chiado setup,
+EEZ-X module deployment and existing treasury contracts are unchanged. No public
+broadcast, service rollout or push was performed; the hosted UI needs this update
+published before new treasuries use the shared Ethereum helpers.
+
+## Shared EEZ-X infrastructure and smaller policies
+
+The subsequent [contract simplification record](../2026-10-22-treasury-contract-simplification/README.md)
+covers connected-wallet preparation and cross-wallet reuse of EEZ-X Safe
+infrastructure, removal of the mainnet alias-reader dependency, and invoice
+fixtures excluded from both public policy variants. It supersedes the earlier
+shared-helper layout above for new deployments and identifies the new immutable
+source build and its validation.

@@ -44,6 +44,8 @@ export async function standardBrowser(f,c,directory) {
   const mount=async()=>{await page.goto(`${origin}/live-treasury`);await page.evaluate(async({config,addresses})=>{const m=await import('/tests/fixtures/treasury-live-browser.tsx');m.mount(config,addresses);},{config:c,addresses:{A:f.A.address,B:f.B.address}});};
   try {
     await mount();await f.until('shared owners in browser',async()=>await page.getByTestId('shared-threshold').textContent()==='2 of 2 owners');
+    assert(!(await page.locator('#treasury-kind option').allTextContents()).some(text => /percentage|holdings/i.test(text)));
+    assert.equal(await page.getByLabel('Percentage (%)', {exact:true}).count(),0);
     await page.getByLabel('Start from',{exact:true}).selectOption('l2');
     await page.getByLabel('Amount (USDC)',{exact:true}).fill('10');
     await page.getByLabel('Recipient chain',{exact:true}).selectOption('l2');
@@ -74,7 +76,14 @@ export async function standardBrowser(f,c,directory) {
     f.evidence.lastSuccessfulL2Block=Number(outcome.block);
     f.evidence.standardBrowser={hash:outcome.hash,block:outcome.block,contributions:outcome.contributions,signingChain:'l2',submissionChain:'l1',reloadAndLostResponseRecovery:true,singleBroadcast:true,wallet:'Test EIP-1193 provider with genuine fixture signatures and real RPCs',requests};f.checkpoint();
   }catch(error){
-    await page.screenshot({path:resolve(directory,'standard-browser-failure.png'),fullPage:true});
-    console.error('Browser rehearsal failure:',error.message,await page.locator('body').innerText());throw error;
-  }finally{await context.unrouteAll({behavior:'wait'});await browser.close();await server.close();}
+    // A crashed renderer cannot provide a screenshot or DOM. Preserve the first
+    // failure instead of replacing it with a diagnostic or cleanup exception.
+    await page.screenshot({path:resolve(directory,'standard-browser-failure.png'),fullPage:true}).catch(()=>{});
+    const body=await page.locator('body').innerText().catch(()=>'<browser unavailable>');
+    console.error('Browser rehearsal failure:',error.message,body);throw error;
+  }finally{
+    await context.unrouteAll({behavior:'ignoreErrors'}).catch(()=>{});
+    const cleanup=await Promise.allSettled([browser.close(),server.close()]);
+    for(const result of cleanup)if(result.status==='rejected')console.error('Browser cleanup failed:',result.reason);
+  }
 }

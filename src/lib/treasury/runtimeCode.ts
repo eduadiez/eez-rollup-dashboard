@@ -1,7 +1,7 @@
 import type { Hex } from "viem";
 import type { Artifact } from "./deployment.ts";
 
-export function matchesRuntime(code: Hex, artifact: Artifact) {
+export function matchesRuntime(code: Hex, artifact: Pick<Artifact, "runtime" | "immutables" | "immutableGroups">) {
   if (code.length !== artifact.runtime.length || code === "0x") return false;
   let normalized = code.toLowerCase(), expected = artifact.runtime.toLowerCase();
   for (const { start, length } of artifact.immutables) {

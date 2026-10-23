@@ -37,10 +37,11 @@ export function TreasurySourceVerification() {
   const entries = jobs.flatMap(({ chainId, job }) => job.contracts.map(c => ({ chainId, ...c })));
   const unique = [...new Map(entries.map(c => [`${c.chainId}:${c.address}`, c])).values()];
   const verified = unique.filter(c => ['verified','sourcify-verified'].includes(c.status)).length;
-  const pending = jobs.some(j => !['verified','reverted','not-applicable'].includes(j.job.status));
+  // Exact source verification can finish before the worker publishes to the explorer.
+  const pending = jobs.some(j => !['verified','sourcify-verified','reverted','not-applicable'].includes(j.job.status));
   if (!unique.length && !error) return null;
   return <details className={styles.hint} aria-label="Contract source verification">
-    <summary>{error ? 'Contract source verification will retry automatically' : pending ? `Publishing contract sources · ${verified} of ${unique.length} verified` : 'Contract sources verified'}</summary>
+    <summary>{error ? 'Contract source verification will retry automatically' : !pending ? 'Contract sources verified' : verified < unique.length ? `Publishing contract sources · ${verified} of ${unique.length} verified` : 'Verifying contract sources'}</summary>
     {error && <p role="status">{error}</p>}
     <ul>{unique.map(c => <li key={`${c.chainId}:${c.address}`}>
       <a href={`${(c.chainId === 1 ? 'https://eth.blockscout.com' : c.chainId === Number(BigInt(L1_CHAIN.chainId)) ? config.l1Explorer : config.l2Explorer).replace(/\/$/, '')}/address/${c.address}?tab=contract`} target="_blank" rel="noreferrer">{c.name ?? 'Contract'} · {c.address.slice(0, 8)}…{c.address.slice(-4)}</a>{' · '}

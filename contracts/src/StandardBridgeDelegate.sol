@@ -6,7 +6,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IStandardBridge} from "./interfaces/IStandardBridge.sol";
 import {IAllowanceModule} from "./interfaces/IAllowanceModule.sol";
 
-/// @notice Bounded Ethereum spending delegate controlled by one rollup policy.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Bounded Ethereum spending delegate controlled by one rollup policy.
 /// @dev The Safe binds its policy alias once and grants the official module's
 /// allowance separately. Transfer, approval and bridging share one L1 call so
 /// execution does not depend on several mutable L1 callback snapshots. No module

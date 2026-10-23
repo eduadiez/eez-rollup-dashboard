@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
 /// @dev Isolated rehearsal only: install captured runtime bytes with explicit
 /// proxy slots. All other state starts empty and is initialized using real APIs.
 /// This is not a deployment script or a claim to reproduce mainnet balances.

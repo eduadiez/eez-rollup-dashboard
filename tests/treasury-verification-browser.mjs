@@ -11,7 +11,7 @@ const requests = [1, 2, 3].map(n => ({ build: 'ab'.repeat(32), chainId: n === 1 
 const key = 'eez:treasury:source-outbox';
 const outbox = JSON.stringify({ sourceRequests: requests });
 const delivered = [], errors = [], passed = [];
-let unavailable = true, complete = false;
+let unavailable = true, complete = false, sourceOnly = false, undiscovered = false;
 const server = await createServer({ configFile: false, envFile: false, plugins: [react()], server: { host: '127.0.0.1', port: 0 }, base: '/' });
 await server.listen();
 const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
@@ -29,8 +29,8 @@ await context.route('**/*', async route => {
   assert(index >= 0); assert.deepEqual(request, requests[index]);
   delivered.push(index);
   if (unavailable && index === 0) return route.fulfill({ status: 400, json: { error: 'Wait for a successful canonical receipt' } });
-  const status = complete || index < 2 ? 'verified' : 'pending';
-  return route.fulfill({ json: { id: String(index + 1).repeat(64), status, contracts: [{ address: `0x${String(index + 1).repeat(40)}`, name: `Contract ${index + 1}`, status }] } });
+  const status = undiscovered && index === 2 ? 'pending' : sourceOnly ? 'sourcify-verified' : complete || index < 2 ? 'verified' : 'pending';
+  return route.fulfill({ json: { id: String(index + 1).repeat(64), status, contracts: undiscovered && index === 2 ? [] : [{ address: `0x${String(index + 1).repeat(40)}`, name: `Contract ${index + 1}`, status }] } });
 });
 try {
   await page.clock.install();
@@ -56,6 +56,19 @@ try {
   assert.equal(await details.getByRole('status').count(), 0);
   passed.push('the automatic retry recovers the original request and clears the transient error');
 
+  sourceOnly = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('treasury-source-request')));
+  await details.locator('summary').filter({ hasText: /^Contract sources verified$/ }).waitFor();
+  assert.equal(await details.getByRole('link', { name: 'Exact source verified' }).count(), 3);
+  assert.equal(await details.getByText('explorer publication pending', { exact: false }).count(), 3);
+  passed.push('exact Sourcify matches finish source verification while explorer publication stays in details');
+
+  undiscovered = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('treasury-source-request')));
+  await details.locator('summary').filter({ hasText: /^Verifying contract sources$/ }).waitFor();
+  passed.push('an unresolved deployment without discovered contracts is not reported as fully verified');
+
+  sourceOnly = false; undiscovered = false;
   complete = true;
   await page.evaluate(() => window.dispatchEvent(new Event('treasury-source-request')));
   await details.locator('summary').filter({ hasText: /^Contract sources verified$/ }).waitFor();

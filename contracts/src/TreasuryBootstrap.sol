@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
-/// @notice Wallet-owned executor used only to create and finish a test treasury.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Wallet-owned executor used only to create and finish a test treasury.
 /// @dev No delegatecall, Safe ownership, or module authority. Constructor calls
 ///      are atomic with deployment. Later calls require the original wallet and
 ///      exact sequence; closing permanently disables this executor. Do not send
@@ -27,9 +28,8 @@ contract TreasuryBootstrap {
     event Created(uint256 indexed index, address indexed target, bytes32 initHash);
     event Executed(uint256 indexed sequence, bytes32 actionsHash, bool closed);
 
-    constructor(address owner_, Action[] memory actions) {
-        if (owner_ == address(0) || owner_ != msg.sender) revert Unauthorized();
-        owner = owner_;
+    constructor(Action[] memory actions) {
+        owner = msg.sender;
         _execute(actions, false);
     }
 

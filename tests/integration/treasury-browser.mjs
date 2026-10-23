@@ -17,8 +17,18 @@ export async function browserScenario(f, session, directory) {
   // Host interface churn otherwise causes Chromium ERR_NETWORK_CHANGED even on
   // loopback. Responses still come from the actual Vite/RPC services, with no
   // synthetic results or retries (especially for transaction submission).
+  let closing = false;
+  const routeErrors = [];
   await context.route(`${new URL(session.url).origin}/**`, async route => {
-    await route.fulfill({ response: await route.fetch({ maxRetries: 0, maxRedirects: 0 }) });
+    try {
+      const response = await route.fetch({ maxRetries: 0, maxRedirects: 0 });
+      if (!closing) await route.fulfill({ response });
+    } catch (error) {
+      if (!closing) {
+        routeErrors.push(String(error));
+        await route.abort().catch(() => {});
+      }
+    }
   });
   const page = await context.newPage();
   page.setDefaultTimeout(25_000);
@@ -205,7 +215,10 @@ export async function browserScenario(f, session, directory) {
     await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
     await page.screenshot({ path: resolve(directory, 'treasury-connected-mobile.png'), fullPage: true });
     assert.deepEqual(errors, []);
-    assert.equal(calls.filter(c => c.method === 'eth_sendTransaction').length, 8, 'exactly one wallet send per reviewed action');
+    assert.deepEqual(routeErrors, [], 'all intercepted requests completed without retries');
+    // Two owner actions, four L2-origin payments and one L1-origin payment.
+    // Controlled invoice attempts use the fixture submitter outside the wallet.
+    assert.equal(calls.filter(c => c.method === 'eth_sendTransaction').length, 7, 'exactly one wallet send per reviewed action');
     assert(!calls.some(c => c.method === 'eth_estimateGas'), 'no ordinary estimateGas for cross-chain Safe signature checks');
     f.evidence.browserChecks = ['hidden navigation', 'live owners and threshold', 'network switch', 'non-owner blocked', 'wallet signature rejection',
       'duplicate approval blocked', 'incomplete quorum blocked', 'edit clears signatures', 'owner addition clears stale review', 'removal clears stale review',
@@ -214,13 +227,14 @@ export async function browserScenario(f, session, directory) {
     f.evidence.scenarioComplete = true; f.checkpoint();
     console.log('Connected treasury browser scenario passed');
   } catch (error) {
-    writeFileSync(resolve(directory, 'treasury-browser-requests.json'), JSON.stringify(requestFailures, null, 2) + '\n');
+    console.error('Browser rehearsal failure:', error.stack || error);
+    writeFileSync(resolve(directory, 'treasury-browser-requests.json'), JSON.stringify({ requestFailures, routeErrors }, null, 2) + '\n');
     await page.screenshot({ path: resolve(directory, 'treasury-browser-failure.png'), fullPage: true }).catch(() => {});
     throw error;
   } finally {
-    // Polling RPC callbacks use the request context until route.fetch/fulfill
-    // finishes. Drain them before disposing it, including on a failed assertion.
-    try { await context.unrouteAll({ behavior: 'wait' }); }
-    finally { await browser.close(); }
+    // Removing an active route can forward it while route.fetch is still in
+    // flight. Close the browser instead; do not replay an intercepted RPC.
+    closing = true;
+    await browser.close();
   }
 }

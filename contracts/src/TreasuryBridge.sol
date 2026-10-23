@@ -6,7 +6,8 @@ import {WrappedToken} from "eez-core-protocol/src/periphery/WrappedToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @notice Devnet bridge extension for L2-origin lock-then-mint deposits.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Devnet bridge extension for L2-origin lock-then-mint deposits.
 /// @dev Inherits the pinned TEST-ONLY bridge and its deployment/admin assumptions.
 ///      Use a fresh, configured pair and its own wrapped asset. Not a production bridge.
 contract TreasuryBridge is Bridge {

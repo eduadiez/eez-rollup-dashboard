@@ -164,6 +164,44 @@ contract AllowanceModuleTest is OwnerFixture {
         assertEq(allowance[1], 100 * UNIT);
     }
 
+    function testSharedModuleSeparatesEachSafeAllowance() public {
+        _adminL1(abi.encodeCall(ISafe.enableModule, (address(module))));
+        _configureL1(abi.encodeCall(IAllowanceModule.addDelegate, (address(delegate))));
+        _configureL1(
+            abi.encodeCall(
+                IAllowanceModule.setAllowance,
+                (address(delegate), address(token), 100 * UNIT, 10, uint32(block.timestamp / 60))
+            )
+        );
+        token.mint(address(safeL1), 300 * UNIT);
+        _pay(40 * UNIT);
+        assertEq(module.getTokenAllowance(address(safeL1), address(delegate), address(token))[1], 0);
+        delegate.pay(address(safeL1), address(token), recipient, 70 * UNIT);
+        assertEq(module.getTokenAllowance(address(safeL1), address(delegate), address(token))[1], 70 * UNIT);
+        assertEq(_allowance()[1], 40 * UNIT);
+        assertEq(token.balanceOf(address(safeL1)), 230 * UNIT);
+        assertEq(token.balanceOf(address(safeL2)), 110 * UNIT);
+    }
+
+    function testNewTreasuryDelegatePreservesExistingAllowance() public {
+        _pay(40 * UNIT);
+        uint256[5] memory previous = _allowance();
+        AllowanceTestDelegate next = new AllowanceTestDelegate(module);
+        _callL2(address(module), abi.encodeCall(IAllowanceModule.addDelegate, (address(next))));
+        _callL2(
+            address(module),
+            abi.encodeCall(
+                IAllowanceModule.setAllowance,
+                (address(next), address(token), 100 * UNIT, 10, uint32(block.timestamp / 60))
+            )
+        );
+        next.pay(address(safeL2), address(token), recipient, 25 * UNIT);
+        assertEq(abi.encode(_allowance()), abi.encode(previous));
+        assertEq(module.getTokenAllowance(address(safeL2), address(next), address(token))[1], 25 * UNIT);
+        assertEq(token.balanceOf(address(safeL2)), 85 * UNIT);
+        assertTrue(safeL2.isModuleEnabled(address(module)));
+    }
+
     function _configureL1(bytes memory data) private {
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, address(module), data, 0)), A, B);
         assertTrue(_execute(safeL1, address(module), data, 0, signatures));

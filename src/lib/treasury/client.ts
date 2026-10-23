@@ -1,3 +1,5 @@
+import { readPaymentDeployment, paymentVersion, recordedPaymentTransaction, verifiesL1Initiation, verifiesReverseFunding } from "./savedPayments.ts";
+import type { RecordedPayment } from "./savedPayments.ts";
 import { verifyTransferHelper, transferRollup } from "./transfers.ts";
 import { parseMainnetBindings, validateMainnet } from "./mainnet.ts";
 import type { MainnetBindings } from "./mainnet.ts";
@@ -79,13 +81,13 @@ export function parseTreasuryConfig(value: unknown): TreasuryConfig {
         && c.code.some(b => b.chain === chain && same(b.address, binding.proxy))
         && c.code.some(b => b.chain === chain && same(b.address, binding.implementation)), "Invalid protocol implementation binding");
     }
-    requireThat(c.payments?.invoiceControl === undefined, "Invoice fixture controls are isolated-devnet only");
+    requireThat(c.payments?.invoiceControl === undefined && c.payments?.invoiceMerchant === undefined, "Invoice fixture controls are isolated-devnet only");
   }
   if (c.safeImplementations) for (const chain of ["l1", "l2"] as const)
     requireThat(isAddress(c.safeImplementations[chain]) && c.code.some(b => b.chain === chain && same(b.address, c.safeImplementations![chain])), "Missing Safe implementation code binding");
   if (c.payments) {
-    const p = c.payments;
-    requireThat(c.environment === "isolated-devnet" || p.aliasReaderL1, "Shared-network payments require an L1 alias reader");
+    const p = readPaymentDeployment(c.payments);
+    requireThat(c.environment === "isolated-devnet" || p.bridgeKind === "standard" || p.aliasReaderL1, "Shared-network payments require an L1 alias reader");
     if (p.aliasReaderL1 !== undefined) requireThat(isAddress(p.aliasReaderL1) && BigInt(p.aliasReaderL1) !== 0n
       && c.code.some(b => b.chain === "l1" && same(b.address, p.aliasReaderL1!)), "Invalid alias reader identity");
     if (p.invoiceMerchant !== undefined) {
@@ -96,15 +98,11 @@ export function parseTreasuryConfig(value: unknown): TreasuryConfig {
       requireThat(p.invoiceMerchant && url.origin === new URL(c.l2.rpc).origin && url.pathname === "/treasury-fixture/invoices" && !url.search && !url.hash && !url.username && !url.password, "Invalid invoice fixture endpoint");
     }
     requireThat(p.bridgeKind === undefined || p.bridgeKind === "standard", "Unsupported bridge profile");
-    if (p.bridgeKind === "standard") requireThat(p.l1Initiation && p.combinedL2 && p.safeL2Alias && isAddress(p.safeL2Alias)
+    if (p.bridgeKind === "standard") requireThat(verifiesL1Initiation(p) && verifiesReverseFunding(p) && p.safeL2Alias && isAddress(p.safeL2Alias)
       && c.code.some(b => b.chain === "l1" && same(b.address, p.safeL2Alias!))
       && p.bridgeExecutorL1 && isAddress(p.bridgeExecutorL1) && c.code.some(b => b.chain === "l1" && same(b.address, p.bridgeExecutorL1!)), "Missing standard bridge relay/executor identity");
     else requireThat(p.safeL2Alias === undefined && p.bridgeExecutorL1 === undefined, "Unexpected mirror relay identity");
-    requireThat(p.l1Initiation === undefined || typeof p.l1Initiation === "boolean", "Invalid initiation capability");
-    if (p.l1Initiation) requireThat(c.l1.front && (!c.fees || /^[1-9]\d{0,77}$/.test(c.fees.l1MaxTotalWei ?? "")), "Missing L1 Composer or fee configuration");
-    requireThat(p.exactSplits === undefined || typeof p.exactSplits === "boolean", "Invalid custom split capability");
-    requireThat(p.percentageRules === undefined || typeof p.percentageRules === "boolean", "Invalid percentage rule capability");
-    requireThat(p.combinedL2 === undefined || typeof p.combinedL2 === "boolean", "Invalid reverse route capability");
+    if (verifiesL1Initiation(p)) requireThat(c.l1.front && (!c.fees || /^[1-9]\d{0,77}$/.test(c.fees.l1MaxTotalWei ?? "")), "Missing L1 Composer or fee configuration");
     requireThat(p.decimals === 6 && p.period === 600 && p.globalLimit === "150000000" && (c.environment === "isolated-devnet" ? p.assetLabel === "Devnet USDC" : c.environment === "ethereum-mainnet" ? p.assetLabel === "USDC" : p.assetLabel === "Test USDC"), "Unsupported payment configuration");
     for (const key of ["policy", "alias", "tokenL1", "tokenL2", "moduleL1", "moduleL2", "bridgeL1", "bridgeL2", "recipient"] as const)
       requireThat(isAddress(p[key]) && BigInt(p[key]) !== 0n, `Invalid payment ${key}`);
@@ -113,7 +111,7 @@ export function parseTreasuryConfig(value: unknown): TreasuryConfig {
   }
   requireThat(c.olderPayments === undefined || Array.isArray(c.olderPayments) && c.olderPayments.length <= 8 && c.previousPayments, "Invalid older policy history");
   if (c.previousPayments !== undefined || c.payments?.predecessor !== undefined) {
-    requireThat(c.previousPayments && c.payments?.l1Initiation
+    requireThat(c.previousPayments && (c.payments && verifiesL1Initiation(c.payments))
       && same(c.payments.predecessor ?? "", c.previousPayments.policy)
       && !same(c.payments.policy, c.previousPayments.policy), "Invalid previous policy binding");
     const policies = [c.payments, c.previousPayments, ...(c.olderPayments ?? [])];
@@ -142,14 +140,14 @@ export function requireDashboardTreasury(c: TreasuryConfig, dashboard: {
   if (c.environment === "isolated-devnet") return;
   requireThat(BigInt(c.l1.chainId) === BigInt(dashboard.l1ChainId) && BigInt(c.l2.chainId) === BigInt(dashboard.l2ChainId)
     && same(c.registry, dashboard.registry) && same(c.manager, dashboard.manager), "Treasury does not match the dashboard network");
-  for (const [actual, expected] of [[c.l1.rpc, dashboard.l1Rpc], [c.l2.rpc, dashboard.l2Rpc], [c.l2.front, dashboard.l2Front], ...(c.payments?.l1Initiation ? [[c.l1.front, dashboard.l1Front]] : [])])
+  for (const [actual, expected] of [[c.l1.rpc, dashboard.l1Rpc], [c.l2.rpc, dashboard.l2Rpc], [c.l2.front, dashboard.l2Front], ...((c.payments && verifiesL1Initiation(c.payments)) ? [[c.l1.front, dashboard.l1Front]] : [])])
     requireThat(new URL(actual!).href === new URL(expected!).href, "Treasury must use the dashboard RPC endpoints");
   requireThat(dashboard.feesEnabled && c.fees?.maxTotalWei === dashboard.maxTotalWei, "Treasury fees do not match the dashboard settings");
-  if (c.payments?.l1Initiation) requireThat(dashboard.l1FeesEnabled && c.fees?.l1MaxTotalWei === dashboard.l1MaxTotalWei, "Treasury L1 fees do not match the dashboard settings");
+  if ((c.payments && verifiesL1Initiation(c.payments))) requireThat(dashboard.l1FeesEnabled && c.fees?.l1MaxTotalWei === dashboard.l1MaxTotalWei, "Treasury L1 fees do not match the dashboard settings");
 }
 export type Snapshot = { source?: "l1" | "l2"; owners: Address[]; threshold: number; nonce: bigint; value: bigint; l1Block: string; fingerprint: string };
 export type Approval = { owner: Address; signature: Hex };
-export type Intent = { submissionChain?: "l1" | "l2"; version: 1; instance: string; value: string; nonce: string; safeHash: Hex; data: Hex; sender: Address; sourceNonce: Hex; startBlock: Hex; l2StartBlock?: Hex; hash?: Hex; payment?: Payment };
+export type Intent = { submissionChain?: "l1" | "l2"; version: 1; instance: string; value: string; nonce: string; safeHash: Hex; data: Hex; sender: Address; sourceNonce: Hex; startBlock: Hex; l2StartBlock?: Hex; hash?: Hex; payment?: RecordedPayment };
 export type Outcome = { kind: "pending" | "settled" | "rejected" | "unknown"; detail: string; rejectionStage?: "preparation" | "execution"; block?: string; sourceBlock?: string; hash?: Hex; execution?: { l1?: Hex; l2?: Hex }; contributions?: PaymentContributions; rollback?: Rollback };
 type Block = { number: Hex; hash: Hex; baseFeePerGas: Hex };
 type Receipt = { status: Hex; blockNumber: Hex; blockHash: Hex; transactionHash: Hex; logs: { address: Address; data: Hex; topics: [Hex, ...Hex[]] }[] };
@@ -168,7 +166,7 @@ export function readIntent(c: TreasuryConfig, text: string | null): Intent | nul
   requireThat(i.version === 1 && i.instance === c.instance && hash(i.safeHash) && (!i.hash || hash(i.hash)) && isAddress(i.sender)
     && /^0x[\da-f]+$/i.test(i.sourceNonce) && /^0x[\da-f]+$/i.test(i.startBlock) && /^0x(?:[\da-f]{2})+$/i.test(i.data)
     && /^\d{1,78}$/.test(i.nonce), "Saved submission is invalid; keep its wallet transaction hash for recovery");
-  requireThat(safeTransactionHash(i.payment ? paymentTransaction(c, i.payment, BigInt(i.nonce)) : actionTransaction(c, i.value, BigInt(i.nonce))) === i.safeHash, "Saved Safe transaction does not match this treasury deployment");
+  requireThat(safeTransactionHash(i.payment ? recordedPaymentTransaction(c, i.payment, BigInt(i.nonce)) : actionTransaction(c, i.value, BigInt(i.nonce))) === i.safeHash, "Saved Safe transaction does not match this treasury deployment");
   requireThat(!(i.payment?.source === "l1" || c.payments?.bridgeKind === "standard") || /^0x[\da-f]+$/i.test(i.l2StartBlock ?? ""), "Missing L2 observation for the saved L1 payment");
   const transport = c.payments?.bridgeKind === "standard" ? "l1" : i.payment?.source ?? "l2";
   requireThat(i.submissionChain === undefined || i.submissionChain === transport, "Saved submission network does not match this treasury");
@@ -253,7 +251,7 @@ export class TreasuryClient {
       requireThat(await contractRead(this, "l2", p.policy, paymentAbi, "active") === true
         && same(await contractRead(this, "l2", p.policy, paymentAbi, "previousPolicy") as string, p.predecessor), "Policy handover is not active");
     }
-    if (p.l1Initiation) {
+    if (verifiesL1Initiation(p)) {
       const registryAbi = parseAbi(["function computeCrossChainProxyAddress(address,uint64) view returns (address)", "function authorizedProxies(address) view returns (bool,address,uint64)"]);
       const proxy = await contractRead(this, "l2", p.policy, paymentAbi, "safeL1Proxy") as Address;
       const expected = await contractRead(this, "l2", c.manager, registryAbi, "computeCrossChainProxyAddress", [c.safeL1, 0n]) as Address;
@@ -269,6 +267,9 @@ export class TreasuryClient {
         requireThat(same(await contractRead(this, "l1", p.bridgeExecutorL1!, delegateAbi, name!) as string, expected!), "Ethereum funding delegate binding changed");
       const rollup = await contractRead(this, "l2", p.policy, paymentAbi, "rollupId") as bigint;
       requireThat(await contractRead(this, "l1", p.bridgeExecutorL1!, delegateAbi, "rollupId") === rollup, "Ethereum funding delegate rollup changed");
+      const policyAlias = await contractRead(this, "l1", c.registry, registryAbi, "computeCrossChainProxyAddress", [p.policy, rollup]) as Address;
+      const [policyRegistered, policyOriginal, policyOrigin] = await contractRead(this, "l1", c.registry, registryAbi, "authorizedProxies", [p.alias]) as [boolean, Address, bigint];
+      requireThat(same(policyAlias, p.alias) && policyRegistered && same(policyOriginal, p.policy) && policyOrigin === rollup, "Policy alias binding changed");
       const expected = await contractRead(this, "l1", c.registry, registryAbi, "computeCrossChainProxyAddress", [c.safeL2, rollup]) as Address;
       const [registered, original, origin] = await contractRead(this, "l1", c.registry, registryAbi, "authorizedProxies", [p.safeL2Alias!]) as [boolean, Address, bigint];
       requireThat(same(expected, p.safeL2Alias!) && registered && same(original, c.safeL2) && origin === rollup, "Mirror Safe relay binding changed");
@@ -285,9 +286,8 @@ export class TreasuryClient {
         && same(await contractRead(this, "l1", p.invoiceMerchant, invoiceAbi, "token") as string, p.tokenL1)
         && same(await contractRead(this, "l1", p.invoiceMerchant, invoiceAbi, "policyAlias") as string, p.alias), "Invoice merchant bindings changed");
     }
-    if (p.exactSplits) requireThat(await contractRead(this, "l2", p.policy, paymentAbi, "SPLIT_VERSION") === 1n, "Custom split configuration changed");
-    if (p.percentageRules) requireThat(await contractRead(this, "l2", p.policy, paymentAbi, "BPS_DENOMINATOR") === 10_000n, "Percentage rule configuration changed");
-    if (p.combinedL2) {
+    if (paymentVersion(p) > 0) requireThat(await contractRead(this, "l2", p.policy, paymentAbi, "SPLIT_VERSION") === BigInt(paymentVersion(p)), "Custom split configuration changed");
+    if (verifiesReverseFunding(p)) {
       requireThat(same(await contractRead(this, "l2", p.policy, paymentAbi, "bridgeL1") as string, p.bridgeL1), "Reverse route bridge changed");
       const rollup = await contractRead(this, "l2", p.policy, paymentAbi, "rollupId") as bigint;
       requireThat(rollup > 0n, "Invalid reverse route rollup");

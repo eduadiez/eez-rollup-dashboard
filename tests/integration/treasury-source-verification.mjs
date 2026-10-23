@@ -31,7 +31,7 @@ try {
   await send(encodeFunctionData({abi:artifacts.SafeProxyFactory.abi,functionName:'createProxyWithNonce',args:[safe,initializer,77n]}),factory);
   const nonce=BigInt(await rpc('eth_getTransactionCount',[owner,'latest'])),executor=getContractAddress({from:owner,nonce});
   const target=getContractAddress({from:executor,nonce:1n});
-  await deploy('TreasuryBootstrap',[owner,[{create:true,target,data:encodeDeployData({abi:artifacts.TreasuryAliasReader.abi,bytecode:artifacts.TreasuryAliasReader.bytecode,args:[safe]}),returnHash:toHex(0n,{size:32})}]]);
+  await deploy('TreasuryBootstrap',[[{create:true,target,data:encodeDeployData({abi:artifacts.TreasuryAliasReader.abi,bytecode:artifacts.TreasuryAliasReader.bytecode,args:[safe]}),returnHash:toHex(0n,{size:32})}]]);
   const verified=new Map(),compiled=new Map();
   const fetcher=async(url,options)=>{
     if(url===rpcUrl)return fetch(url,options);

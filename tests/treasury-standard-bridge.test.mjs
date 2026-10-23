@@ -11,7 +11,7 @@ const a=n=>toHex(n,{size:20}),h=s=>keccak256(toHex(s)),owner=privateKeyToAccount
 const c={instance:h('standard'),safeL1:a(1),safeL2:a(2),adapter:a(3),registry:a(4),manager:a(5),
  l1:{chainId:1,rpc:'l1',front:'front1'},l2:{chainId:696990,rpc:'l2',front:'front2'},
  payments:{bridgeKind:'standard',bridgeExecutorL1:a(14),safeL2Alias:a(6),policy:a(7),alias:a(8),tokenL1:a(9),tokenL2:a(10),bridgeL1:a(11),bridgeL2:a(12),l1Initiation:true,combinedL2:true,exactSplits:true}};
-const payment={source:'l2',destination:'l2',recipient:a(13),amount:'10000000',funding:'split',fromL1:'5000000',epoch:'100'};
+const payment={source:'l2',destination:'l2',recipient:a(13),amount:'10000000',fromL1:'5000000',epoch:'100'};
 const tx=paymentTransaction(c,payment,2n),intent={version:1,submissionChain:'l1',instance:c.instance,value:'0',nonce:'2',safeHash:safeTransactionHash(tx),data:'0x1234',sender:owner.address,sourceNonce:'0x3',startBlock:'0x10',l2StartBlock:'0x10',hash:h('relay'),payment};
 test('mirror approval keeps EEZ-X domain; preparation submits to its Ethereum alias and persists the network',async()=>{
  const client=new TreasuryClient(c),snapshot={source:'l2',owners:[owner.address],threshold:1,nonce:2n,fingerprint:'owners'};

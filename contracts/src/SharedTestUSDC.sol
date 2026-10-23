@@ -4,7 +4,8 @@ pragma solidity 0.8.34;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {TreasuryBridge} from "./TreasuryBridge.sol";
 
-/// @notice Permissionless six-decimal demo faucet shared by treasury setups.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Permissionless six-decimal demo faucet shared by treasury setups.
 /// @dev Not Circle USDC. The fixed claim is per caller, not a Sybil-resistant limit.
 contract SharedTestUSDC is ERC20 {
     uint256 public constant SETUP_FUNDS = 450_000_000;

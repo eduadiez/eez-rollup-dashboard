@@ -12,7 +12,8 @@ interface ITestUSDCBridge {
     function bridgeTokens(address token, uint256 amount, uint64 destination, address recipient) external;
 }
 
-/// @notice Exact, repeatable test-token deliveries through the existing bridge.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Exact, repeatable test-token deliveries through the existing bridge.
 /// @dev The immutable token issues fixed allocations. Fresh callers refill this
 ///      permissionless dispenser; excess stays here for later requests. No user
 ///      deposit, ownership privilege or treasury spending allowance is involved.

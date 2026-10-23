@@ -248,13 +248,14 @@ test('new setup requires an existing L1 Safe, preserves its owners, and selects 
   d.read = async (_chain, _target, _artifact, name) => ({ VERSION: '1.4.1', getOwners: owners, getThreshold: 2n, nonce: 8n,
     getModulesPaginated: [[], address(1)] })[name];
   await assert.rejects(d.configure(address(42)), /existing Chiado Safe address/);
+  d.findAssetInfrastructure = async () => ({ tokenL1: address(200), tokenL2: address(201), bridgeL1: address(202), bridgeL2: address(203), tokenCodeHash: hash('token') });
   const one = await d.configure(address(42), existing), two = await d.configure(address(43), existing);
   assert.notEqual(one.salt, two.salt);
   for (const state of [one, two]) {
-    assert.equal(state.bidirectional, true); assert.deepEqual(state.reuse.l1.owners, owners);
+    assert.equal(state.version, 11); assert.equal(state.grouping, undefined); assert.deepEqual(state.reuse.l1.owners, owners);
     assert.equal(state.reuse.l1.threshold, 2); assert.equal(state.addresses.safeL1, getAddress(existing));
     assert(!d.steps(state).some(step => ['singletonL1', 'factoryL1', 'safeL1'].includes(step.id)));
-    assert.equal(d.steps(state).find(step => step.id === 'policy').artifact, 'BidirectionalTreasuryPolicy');
+    assert.equal(d.steps(state).find(step => step.id === 'budgetBatchL2').group.actions.find(step => step.id === 'policy').artifact, 'TreasuryPolicy');
     assert.deepEqual(readDeployment(JSON.stringify(state)), state);
   }
 });
@@ -319,71 +320,15 @@ function infrastructure(d, present = true) {
   d.rpc = async (chain, method, params) => {
     calls.push({ chain, method, params });
     if (method === 'eth_getBlockByNumber') return { number: '0x42', hash: hash('infrastructure block') };
+    if (method === 'eth_chainId') return toHex(profile.chains[chain].chainId);
+    if (method === 'eth_getLogs') return [];
+    if (method === 'eth_getTransactionCount') return '0x0';
     if (method === 'eth_getCode') return chain === 'l1' && present
       ? Object.values(officialRuntime.contracts).find(item => item.address.toLowerCase() === params[0].toLowerCase())?.runtime ?? '0x' : '0x';
     assert.fail(`Unexpected RPC ${method}`);
   };
   return calls;
 }
-test('simplification keeps a confirmed singleton and reuses official Chiado factory and batching code', async () => {
-  const d = create(); d.validate = async () => {}; infrastructure(d);
-  const old = { ...empty(), completed: ['singletonL1'], transactions: [hash('confirmed')], addresses: { singletonL1: address(909) } };
-  const copy = structuredClone(old), next = await d.simplify(old);
-  assert.deepEqual(old, copy); assert.equal(next.version, 3);
-  for (const key of ['deployer', 'salt', 'identity', 'completed', 'transactions']) assert.deepEqual(next[key], old[key]);
-  assert.equal(next.addresses.singletonL1, old.addresses.singletonL1);
-  assert.equal(next.addresses.factoryL1, officialRuntime.contracts.factory.address);
-  assert.equal(next.addresses.multiSendL1, officialRuntime.contracts.multiSend.address);
-  const plan = d.steps(next);
-  assert.equal(plan.length, 23); assert.equal(plan[next.completed.length].id, 'safeL1');
-  assert(!plan.some(step => ['factoryL1', 'action', 'invoiceMerchant', 'merchantPolicy', 'alias'].includes(step.id)));
-  assert.deepEqual(plan.filter(step => step.batch).map(step => step.batch.map(call => call.id)),
-    [['alias', 'enableL1', 'delegateL1', 'limitL1'], ['enableL2', 'delegateL2', 'limitL2']]);
-  assert.deepEqual(readDeployment(JSON.stringify(next)), next);
-  const values = new Map([[sharedDeploymentKey, JSON.stringify(old)]]);
-  saveDeployment({ getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }, next);
-  assert.deepEqual(JSON.parse(values.get(`${previousDeploymentKey}:${old.salt}`)), old);
-  assert.equal(JSON.parse(values.get(sharedDeploymentKey)).version, 3);
-});
-test('every old completed prefix migrates without repeating completed configuration, including partial Safe batches', async () => {
-  for (let count = 0; count <= 31; count++) {
-    const d = create(); d.validate = async () => {}; infrastructure(d); d.policyAlias = async () => address(777);
-    const old = empty(), plan = d.steps(old);
-    for (const step of plan.slice(0, count)) if (step.output) old.addresses[step.output] = address(100 + Object.keys(old.addresses).length);
-    old.completed = plan.slice(0, count).map(step => step.id); old.transactions = old.completed.map(hash);
-    const next = await d.simplify(old), projected = d.steps(next);
-    assert.deepEqual(projected.slice(0, count).map(step => step.id), old.completed);
-    assert.deepEqual(next.transactions, old.transactions);
-    assert(projected.length <= 31, `extra transactions at old prefix ${count}`);
-    for (const call of projected.slice(count).flatMap(step => step.batch ?? [step])) assert(!old.completed.includes(call.id), `repeated ${call.id} at ${count}`);
-    if (old.addresses.invoiceMerchant) assert.equal(next.addresses.invoiceMerchant, old.addresses.invoiceMerchant);
-  }
-});
-test('pending wallet requests and collected Safe approvals retain their exact old plan until resolved', async () => {
-  for (const extra of [{ pending: { id: 'singletonL1', data: '0x1234', hash: hash('pending') } }, { review: { safeHash: hash('signed'), approvals: ['retained'] } }]) {
-    const d = create(); d.validate = () => assert.fail('must not migrate an unresolved request');
-    const state = { ...empty(), ...extra }; assert.equal(await d.simplify(state), state); assert.equal(d.steps(state).length, 31);
-  }
-});
-test('official infrastructure is pinned to its address, exact code and stable canonical observation', async () => {
-  const d = create(); d.validate = async () => {}; infrastructure(d);
-  const next = await d.simplify(empty()); await d.validateImports(next);
-  const changed = structuredClone(next); changed.addresses.factoryL1 = address(777);
-  assert.throws(() => readDeployment(JSON.stringify(changed)), /official Safe deployment binding/);
-  const original = d.rpc;
-  d.rpc = async (chain, method, params) => method === 'eth_getCode' ? '0x6000' : original(chain, method, params);
-  await assert.rejects(d.validateImports(next), /infrastructure changed/);
-  await assert.rejects(d.simplify(empty()), /unexpected bytecode/);
-  d.rpc = async (chain, method, params) => method === 'eth_getBlockByNumber' && params[0] !== 'latest'
-    ? { hash: hash('reorg') } : original(chain, method, params);
-  await assert.rejects(d.simplify(empty()), /changed during review/);
-});
-test('unavailable infrastructure falls back to local deployments, not a different Safe version', async () => {
-  const d = create(); d.validate = async () => {}; infrastructure(d, false);
-  const next = await d.simplify(empty()), plan = d.steps(next);
-  assert.equal(plan.length, 25); assert.deepEqual(next.simplification.official, {});
-  assert.equal(plan.find(step => step.id === 'singletonL1').artifact, 'Safe');
-});
 
 test('a pending old policy deployment confirms using its exact historical initcode identity', async () => {
   const old = JSON.parse(readFileSync(new URL('./fixtures/treasury-policy-v2.json', import.meta.url)));
@@ -396,34 +341,6 @@ test('a pending old policy deployment confirms using its exact historical initco
   assert.equal((await f.deployment.reconcile(f.state)).completed.at(-1), 'policy');
   f.state.pending.data = '0xff' + f.state.pending.data.slice(4); f.observed.tx.input = f.state.pending.data;
   await assert.rejects(f.deployment.reconcile(f.state), /bytecode does not match/);
-});
-
-test('a final single configuration call does not add a helper, while already-started older batches stay resumable', async () => {
-  const d = create(); d.validate = async () => {}; infrastructure(d); d.policyAlias = async () => address(777);
-  const old = empty(), plan = d.steps(old);
-  old.completed = plan.slice(0, 30).map(step => step.id); old.transactions = old.completed.map(hash);
-  for (const step of plan.slice(0, 30)) if (step.output) old.addresses[step.output] = address(100 + Object.keys(old.addresses).length);
-  const next = await d.simplify(old);
-  assert.equal(d.steps(next).length, 31); assert.equal(d.steps(next)[30].id, 'limitL2');
-  for (const pendingId of ['multiSendL2', 'configureL2']) {
-    const current = { ...next, pending: { id: pendingId } };
-    assert.deepEqual(d.steps(current).slice(30).map(step => step.id), ['multiSendL2', 'configureL2']);
-  }
-  const submitted = { ...next, addresses: { ...next.addresses, multiSendL2: address(999) },
-    completed: [...next.completed, 'multiSendL2'], transactions: [...next.transactions, hash('helper')] };
-  assert.equal(d.steps(submitted)[31].id, 'configureL2');
-});
-
-test('migration cannot overwrite confirmed progress or replace the journal when its archive cannot be saved', async () => {
-  const d = create(); d.validate = async () => {}; infrastructure(d);
-  const old = { ...empty(), completed: ['singletonL1'], transactions: [hash('confirmed')], addresses: { singletonL1: address(909) } };
-  const next = await d.simplify(old), raw = JSON.stringify(old), writes = [];
-  const full = { getItem: key => key === sharedDeploymentKey ? raw : null,
-    setItem: (key, value) => { writes.push(key); throw new Error('storage quota'); } };
-  assert.throws(() => saveDeployment(full, next), /storage quota/);
-  assert.deepEqual(writes, [`${previousDeploymentKey}:${old.salt}`]);
-  assert.equal(full.getItem(sharedDeploymentKey), raw);
-  assert.throws(() => saveDeployment(full, { ...next, addresses: { ...next.addresses, singletonL1: address(555) } }), /cannot replace confirmed/);
 });
 
 test('included setup transactions advance before the safe checkpoint', async () => {

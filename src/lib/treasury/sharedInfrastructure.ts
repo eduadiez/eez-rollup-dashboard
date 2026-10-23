@@ -1,8 +1,15 @@
+import savedBridges from "./saved-shared-bridges.json" with { type: "json" };
+import { matchesRuntime } from "./runtimeCode.ts";
 import { getAddress, isAddress, keccak256, toHex, zeroAddress } from "viem";
 import type { Address, Hex } from "viem";
 import type { TreasuryDeployment } from "./deployment.ts";
 import profile from "./shared-network.json" with { type: "json" };
 
+/** Only known full runtimes are accepted. Peer and immutable bindings are still
+ * checked independently at a canonical block before this identity permits reuse. */
+export function matchesSharedBridge(d: TreasuryDeployment, code: Hex) {
+  return d.runtimeMatches(code, "SharedTreasuryBridge") || savedBridges.some(artifact => matchesRuntime(code, { ...artifact, runtime: artifact.runtime as Hex }));
+}
 export type SharedInfrastructure = {
   tokenL1: Address; tokenL2: Address; bridgeL1: Address; bridgeL2: Address;
   registration: { blockNumber: Hex; blockHash: Hex; transactionHash: Hex; logIndex: Hex };
@@ -31,7 +38,7 @@ export async function verifySharedInfrastructure(d: TreasuryDeployment, binding:
     const peer = chain === "l1" ? binding.bridgeL2 : binding.bridgeL1;
     const expectedManager = chain === "l1" ? profile.registry : profile.manager;
     const code = await d.rpc<Hex>(chain, "eth_getCode", [bridge, block.number]);
-    check(d.runtimeMatches(code, "SharedTreasuryBridge"), "Shared bridge code is not confirmed or does not match this build");
+    check(matchesSharedBridge(d, code), "Shared bridge code is not confirmed or does not match this build");
     const read = <T>(name: string) => d.read<T>(chain, bridge, "SharedTreasuryBridge", name, [], block.number);
     const [token, manager, local, remote, admin, configuredPeer] = await Promise.all([
       read<Address>("canonicalToken"), read<Address>("manager"), read<bigint>("rollupId"), read<bigint>("treasuryRollupId"), read<Address>("admin"), read<Address>("canonicalBridgeAddress"),
@@ -85,7 +92,7 @@ export async function discoverSharedInfrastructure(d: TreasuryDeployment, fromBl
       if (!d.runtimeMatches(code, "SharedTestUSDC")) continue;
       const bridgeL1 = getAddress(`0x${log.topics[2]!.slice(-40)}`), bridgeL2 = getAddress(`0x${log.topics[3]!.slice(-40)}`);
       const localCode = await d.rpc<Hex>("l1", "eth_getCode", [bridgeL1, head.number]);
-      if (!d.runtimeMatches(localCode, "SharedTreasuryBridge")) continue;
+      if (!matchesSharedBridge(d, localCode)) continue;
       const [manager, rollup] = await Promise.all([
         d.read<Address>("l1", bridgeL1, "SharedTreasuryBridge", "manager", [], head.number),
         d.read<bigint>("l1", bridgeL1, "SharedTreasuryBridge", "treasuryRollupId", [], head.number),

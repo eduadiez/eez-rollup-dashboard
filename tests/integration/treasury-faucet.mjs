@@ -36,7 +36,7 @@ export async function runFaucetDeliveries(f, config, client, epoch) {
     if (destination === 'l2') assert.equal(await f.read(n.follower, token, tokenAbi, 'balanceOf', [recipient], settled.number), previous + amount);
     const after = await paymentState(client);
     assert.equal(after.balanceL1, before.balanceL1); assert.equal(after.balanceL2, before.balanceL2);
-    assert.equal(await f.read(n.l2.rpc, p.policy, f.artifact('out', 'SplitTreasuryPolicy').abi, 'spent', [BigInt(epoch)]), before.spent);
+    assert.equal(await f.read(n.l2.rpc, p.policy, f.artifact('out', 'TreasuryPolicy').abi, 'spent', [BigInt(epoch)]), before.spent);
     assert.equal(await f.read(n.l1.rpc, p.tokenL1, f.artifact('out', 'SharedTestUSDC').abi, 'allowance', [faucet, p.bridgeL1]), 0n);
     const wrappedSupply = await f.read(n.follower, p.tokenL2, f.artifact('out', 'WrappedToken').abi, 'totalSupply', [], settled.number);
     assert.equal(wrappedSupply, await f.read(n.l1.rpc, p.tokenL1, tokenAbi, 'balanceOf', [p.bridgeL1]));

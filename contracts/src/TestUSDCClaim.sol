@@ -8,7 +8,8 @@ interface ITestUSDCFaucet {
     function claim() external;
 }
 
-/// @notice Receive another faucet allocation of the existing Test USDC.
+/// @notice WARNING: Unaudited demo contract. Not ready for production use.
+/// Receive another faucet allocation of the existing Test USDC.
 /// @dev The deployed token limits claims by caller and cannot be upgraded. A
 ///      fresh claim contract forwards its allocation to the deploying wallet,
 ///      so repeated requests keep the same token and bridge bindings. This is

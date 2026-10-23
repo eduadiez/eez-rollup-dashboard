@@ -24,7 +24,8 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
       safeNonce: String(await read('l2', f.safeL2, f.safeArtifact.abi, 'nonce')) };
   };
   await page.getByRole('button', { name: 'Payments', exact: true }).click();
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
+  // Opening this view validates the deployment and reads live balances first.
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
   await waitText('global-spent', '0');
   // Leave enough natural period time for both reviewed payments and the forced
   // rejection. No clock/reset RPC mutates this private chain to manufacture state.
@@ -32,31 +33,32 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
     const block = await f.rpc(f.network.l1.rpc, 'eth_getBlockByNumber', ['latest', false]);
     return Number(BigInt(block.timestamp) % 600n) < 420;
   }, 240);
+  assert(!(await ui.locator('#treasury-kind option').allTextContents()).some(text => /percentage|holdings/i.test(text)));
+  assert.equal(await ui.getByLabel('Percentage (%)', { exact: true }).count(), 0);
   const initial = await state();
   assert.equal(initial.balanceL1, '300000000'); assert.equal(initial.balanceL2, '150000000');
   assert.equal(initial.escrow, '150000000'); assert.equal(initial.supply, initial.escrow);
   const events = (receipt, address, abi, name) => receipt.logs.filter(log => log.address.toLowerCase() === address.toLowerCase()).flatMap(log => {
     try { const event = decodeEventLog({ abi, ...log }); return event.eventName === name ? [event.args] : []; } catch { return []; }
   });
-  const approveAndSend = async (preset, expectedFunding, global, a1, a2, reload, expectedEpoch = initial.epoch, destination = 'l1', rule = false) => {
+  const approveAndSend = async (preset, expectedFunding, global, a1, a2, reload, expectedEpoch = initial.epoch, destination = 'l1', amount = preset === 'Pay 40 on EEZ-X' ? '40' : '110') => {
     const local = preset === 'Pay 40 on EEZ-X';
-    await ui.getByLabel('Payment type', { exact: true }).selectOption(rule ? 'rule' : 'fixed');
+    await ui.getByLabel('Payment type', { exact: true }).selectOption('fixed');
     await ui.getByLabel('Recipient chain', { exact: true }).selectOption(local ? 'l2' : destination);
-    await ui.getByLabel(rule ? 'Percentage (%)' : 'Amount (USDC)', { exact: true }).fill(rule ? '10' : local ? '40' : '110');
-    if (!rule) await ui.getByRole('button', { name: 'Use available funds', exact: true }).click();
+    await ui.getByLabel('Amount (USDC)', { exact: true }).fill(amount);
+    await ui.getByRole('button', { name: 'Use available funds', exact: true }).click();
     await ui.getByRole('button', { name: 'Review payment', exact: true }).click();
     await waitText('funding-preview', expectedFunding);
-    if (rule) {
-      await waitText('rule-preview', '10% × (200 Ethereum + 100 EEZ-X) = 30 USDC estimated');
+    if (amount === '30') {
       await sign('A'); await waitText('quorum', '1 of 2 approvals');
       const originalHash = await ui.getByTestId('safe-hash').textContent();
       await ui.getByRole('button', { name: 'Edit payment', exact: true }).click();
-      await ui.getByLabel('Percentage (%)', { exact: true }).fill('5');
+      await ui.getByLabel('Amount (USDC)', { exact: true }).fill('15');
       await ui.getByRole('button', { name: 'Review payment', exact: true }).click();
       await waitText('quorum', '0 of 2 approvals');
       assert.notEqual(await ui.getByTestId('safe-hash').textContent(), originalHash);
       await ui.getByRole('button', { name: 'Edit payment', exact: true }).click();
-      await ui.getByLabel('Percentage (%)', { exact: true }).fill('10');
+      await ui.getByLabel('Amount (USDC)', { exact: true }).fill('30');
       await ui.getByRole('button', { name: 'Review payment', exact: true }).click();
       await waitText('quorum', '0 of 2 approvals');
       assert.equal(await ui.getByTestId('safe-hash').textContent(), originalHash);
@@ -83,14 +85,14 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
     await waitText('global-spent', global); await waitText('l1-spent', a1); await waitText('l2-spent', a2);
     await waitText('settled-funding', `Paid ${expectedFunding}`);
     if (reload) {
-      if (rule) {
-        assert.equal(await ui.getByLabel('Payment type', { exact: true }).inputValue(), 'rule');
-        assert.equal(await ui.getByLabel('Percentage (%)', { exact: true }).inputValue(), '10');
-        await waitText('rule-result', 'Paid 30 USDC: 10% × (200 Ethereum + 100 EEZ-X) observed during execution.');
-      } else assert.equal(await ui.getByLabel('Amount (USDC)', { exact: true }).inputValue(), '110');
+      assert.equal(await ui.getByLabel('Amount (USDC)', { exact: true }).inputValue(), amount);
       assert.equal(await ui.getByLabel('Recipient address', { exact: true }).inputValue(), p.recipient);
       assert.equal(await ui.getByLabel('Recipient chain', { exact: true }).inputValue(), destination);
-      assert.equal(await ui.getByLabel('Funding', { exact: true }).inputValue(), 'combined');
+      const slider = ui.getByRole('slider', { name: 'EEZ-X share of payment', exact: true });
+      assert.equal(await slider.inputValue(), amount === '30' ? '0' : destination === 'l1' ? '909' : '9091');
+      assert.match(await slider.getAttribute('aria-valuetext'), amount === '30'
+        ? /Ethereum .*30 USDC; EEZ-X .*0 USDC$/ : destination === 'l1'
+        ? /Ethereum .*100 USDC; EEZ-X .*10 USDC$/ : /Ethereum .*10 USDC; EEZ-X .*100 USDC$/);
     }
     const receipt = await f.rpc(f.network.l2.rpc, 'eth_getTransactionReceipt', [hash]);
     const verification = await f.ownerVerificationOnL1({ hash: safeHash }, fromBlock);
@@ -104,7 +106,7 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
   const local = await approveAndSend('Pay 40 on EEZ-X', '0 from Ethereum + 40 from EEZ-X', '40', '0', '40', false);
   assert.equal(local.snapshot.recipientL2, '40000000'); assert.equal(local.snapshot.recipientL1, '0');
   assert.equal(local.snapshot.balanceL2, '110000000'); assert.equal(local.snapshot.balanceL1, '300000000');
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
   const split = await approveAndSend('Split 110 to Ethereum', '100 from Ethereum + 10 from EEZ-X', '150', '100', '50', true);
   assert.equal(split.snapshot.balanceL1, '200000000'); assert.equal(split.snapshot.balanceL2, '100000000');
   assert.equal(split.snapshot.recipientL1, '110000000'); assert.equal(split.snapshot.recipientL2, '40000000');
@@ -133,7 +135,7 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
     return true;
   });
   await page.screenshot({ path: resolve(directory, 'treasury-payments-desktop.png'), fullPage: true });
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
   await ui.getByLabel('Payment type', { exact: true }).selectOption('fixed');
   await ui.getByLabel('Recipient chain', { exact: true }).selectOption('l2');
   await ui.getByLabel('Amount (USDC)', { exact: true }).fill('1');
@@ -142,7 +144,7 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
   await ui.getByRole('alert').filter({ hasText: 'Shared budget exceeded: 0 USDC remains globally' }).waitFor();
   assert.equal(await ui.getByRole('button', { name: 'Submit Safe transaction', exact: true }).count(), 0);
   // Bypass the UI preflight deliberately: the actual policy must reject it too.
-  const payment = { recipient: p.recipient, amount: '1000000', destination: 'l2', funding: 'local', epoch: initial.epoch };
+  const payment = { recipient: p.recipient, amount: '1000000', destination: 'l2', fromL1: '0', epoch: initial.epoch };
   const tx = paymentTransaction(config, payment, BigInt(split.snapshot.safeNonce));
   let error;
   try { await f.rpc(f.network.l2.rpc, 'eth_call', [{ from: f.safeL2, to: p.policy, data: tx.message.data }, 'latest']); } catch (e) { error = e.rpcError; }
@@ -172,45 +174,42 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
   f.evidence.paymentChecks = ['40 local', '110 split', 'same L1 transaction receives both legs', 'global rejection despite 50 L2 allowance remaining',
     'actual Composer policy rejection', 'unchanged state on rejection', 'bridge backing', 'no residual policy custody', 'independent follower', 'payment reload recovery'];
   f.checkpoint();
-  console.log('Forward sequence passed; waiting for the next natural L1 budget period for the 10% rule and reverse payment');
+  console.log('Forward sequence passed; waiting for the next natural L1 budget period for the 30 USDC payment and reverse payment');
   const nextEpoch = await f.until('next L1 budget period', async () => {
     const head = await f.rpc(f.network.l1.rpc, 'eth_getBlockByNumber', ['latest', false]);
     const epoch = BigInt(head.timestamp) / 600n;
     return epoch > BigInt(initial.epoch) ? String(epoch) : false;
   }, 660);
   await waitText('global-spent', '0'); await waitText('l1-spent', '0'); await waitText('l2-spent', '0');
-  const rulePayment = await approveAndSend('Pay 10% of holdings', '30 from Ethereum + 0 from EEZ-X', '30', '30', '0', true, nextEpoch, 'l1', true);
-  assert.equal(rulePayment.snapshot.balanceL1, '170000000'); assert.equal(rulePayment.snapshot.balanceL2, '100000000');
-  assert.equal(rulePayment.snapshot.recipientL1, '140000000'); assert.equal(rulePayment.snapshot.recipientL2, '40000000');
-  assert.equal(rulePayment.snapshot.escrow, '140000000'); assert.equal(rulePayment.snapshot.supply, rulePayment.snapshot.escrow);
-  assert.equal(rulePayment.snapshot.policyBalance, '0'); assert.equal(rulePayment.snapshot.aliasBalance, '0');
-  assert.equal(rulePayment.snapshot.safeNonce, String(BigInt(initial.safeNonce) + 3n));
-  const rules = events(rulePayment.receipt, p.policy, policyArtifact.abi, 'RulePaid');
-  const payments = events(rulePayment.receipt, p.policy, policyArtifact.abi, 'Paid');
-  assert.equal(rules.length, 1); assert.equal(payments.length, 1);
-  assert.deepEqual(rules[0], { token: getAddress(p.tokenL1), recipient: getAddress(p.recipient), onL1: true, bps: 1000,
-    balanceL1: 200_000_000n, balanceL2: 100_000_000n, amount: 30_000_000n, epoch: BigInt(nextEpoch) });
-  assert.equal(payments[0].amount, rules[0].amount); assert.equal(payments[0].fromL1, 30_000_000n); assert.equal(payments[0].fromL2, 0n);
-  const rulePosted = await f.rpc(f.network.l1.rpc, 'eth_getTransactionReceipt', [rulePayment.verification.transaction]);
-  assert.equal(events(rulePosted, p.tokenL1, token.abi, 'Transfer').filter(t =>
+  const fixedPayment = await approveAndSend('Pay 30 on Ethereum', '30 from Ethereum + 0 from EEZ-X', '30', '30', '0', true, nextEpoch, 'l1', '30');
+  assert.equal(fixedPayment.snapshot.balanceL1, '170000000'); assert.equal(fixedPayment.snapshot.balanceL2, '100000000');
+  assert.equal(fixedPayment.snapshot.recipientL1, '140000000'); assert.equal(fixedPayment.snapshot.recipientL2, '40000000');
+  assert.equal(fixedPayment.snapshot.escrow, '140000000'); assert.equal(fixedPayment.snapshot.supply, fixedPayment.snapshot.escrow);
+  assert.equal(fixedPayment.snapshot.policyBalance, '0'); assert.equal(fixedPayment.snapshot.aliasBalance, '0');
+  assert.equal(fixedPayment.snapshot.safeNonce, String(BigInt(initial.safeNonce) + 3n));
+  const payments = events(fixedPayment.receipt, p.policy, policyArtifact.abi, 'Paid');
+  assert.equal(payments.length, 1);
+  assert.deepEqual(payments[0], { token: getAddress(p.tokenL1), recipient: getAddress(p.recipient), onL1: true,
+    amount: 30_000_000n, fromL1: 30_000_000n, fromL2: 0n, epoch: BigInt(nextEpoch) });
+  const fixedPosted = await f.rpc(f.network.l1.rpc, 'eth_getTransactionReceipt', [fixedPayment.verification.transaction]);
+  assert.equal(events(fixedPosted, p.tokenL1, token.abi, 'Transfer').filter(t =>
     t.from.toLowerCase() === f.safeL1.toLowerCase() && t.to.toLowerCase() === p.recipient.toLowerCase() && t.value === 30_000_000n).length, 1);
-  f.evidence.cases.at(-1).rule = Object.fromEntries(Object.entries(rules[0]).map(([key, value]) => [key, typeof value === 'bigint' ? String(value) : value]));
-  await f.until('follower independently replays the percentage rule', async () => {
+  await f.until('follower independently replays the fixed payment', async () => {
     const head = await f.rpc(f.network.follower, 'eth_getBlockByNumber', ['safe', false]);
-    if (BigInt(head.number) < BigInt(rulePayment.receipt.blockNumber)) return false;
-    const block = await f.rpc(f.network.follower, 'eth_getBlockByNumber', [rulePayment.receipt.blockNumber, false]);
-    assert.equal(block.hash, rulePayment.receipt.blockHash);
-    assert.equal(await f.read(f.network.follower, p.policy, policyArtifact.abi, 'spent', [BigInt(nextEpoch)], rulePayment.receipt.blockNumber), 30_000_000n);
-    assert.equal(await f.read(f.network.follower, f.safeL2, f.safeArtifact.abi, 'nonce', [], rulePayment.receipt.blockNumber), BigInt(initial.safeNonce) + 3n);
-    const receipt = await f.rpc(f.network.follower, 'eth_getTransactionReceipt', [rulePayment.receipt.transactionHash]);
-    assert(receipt); assert.deepEqual(events(receipt, p.policy, policyArtifact.abi, 'RulePaid'), rules);
+    if (BigInt(head.number) < BigInt(fixedPayment.receipt.blockNumber)) return false;
+    const block = await f.rpc(f.network.follower, 'eth_getBlockByNumber', [fixedPayment.receipt.blockNumber, false]);
+    assert.equal(block.hash, fixedPayment.receipt.blockHash);
+    assert.equal(await f.read(f.network.follower, p.policy, policyArtifact.abi, 'spent', [BigInt(nextEpoch)], fixedPayment.receipt.blockNumber), 30_000_000n);
+    assert.equal(await f.read(f.network.follower, f.safeL2, f.safeArtifact.abi, 'nonce', [], fixedPayment.receipt.blockNumber), BigInt(initial.safeNonce) + 3n);
+    const receipt = await f.rpc(f.network.follower, 'eth_getTransactionReceipt', [fixedPayment.receipt.transactionHash]);
+    assert(receipt); assert.deepEqual(events(receipt, p.policy, policyArtifact.abi, 'Paid'), payments);
     return true;
   });
-  f.evidence.paymentChecks.push('10% of 200 L1 + 100 L2 pays 30', 'rule fraction edits invalidate approvals', 'rule reload recovers signed fraction',
-    'RulePaid observations and Paid funding agree', 'actual 30 token transfer on L1', 'percentage rule independently replayed');
+  f.evidence.paymentChecks.push('fixed 30 USDC payment', 'amount edits invalidate approvals', 'reload recovers exact amount and split',
+    'Paid event agrees with exact contributions', 'actual 30 token transfer on L1', 'fixed payment independently replayed');
   f.checkpoint();
-  await page.screenshot({ path: resolve(directory, 'treasury-rule-desktop.png'), fullPage: true });
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
+  await page.screenshot({ path: resolve(directory, 'treasury-fixed-desktop.png'), fullPage: true });
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
   const reverse = await approveAndSend('Split 110 to EEZ-X', '10 from Ethereum + 100 from EEZ-X', '140', '40', '100', true, nextEpoch, 'l2');
   assert.equal(reverse.snapshot.balanceL1, '160000000'); assert.equal(reverse.snapshot.balanceL2, '0');
   assert.equal(reverse.snapshot.recipientL1, '140000000'); assert.equal(reverse.snapshot.recipientL2, '150000000');
@@ -253,14 +252,14 @@ export async function paymentBrowser(f, page, ui, sign, waitText, directory) {
     'nonce-bound lock and mint', 'both contributions in the same L2 receipt', 'reverse payment reload recovery', 'natural period reset with idle L2', 'reverse state independently replayed');
   f.checkpoint();
   await page.screenshot({ path: resolve(directory, 'treasury-reverse-desktop.png'), fullPage: true });
-  assert(await ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled(), 'completed payment unlocks automatically');
-  await ui.getByLabel('Payment type', { exact: true }).selectOption('rule');
+  await f.until('completed payment unlocks after live reads', () => ui.getByRole('button', { name: 'Review payment', exact: true }).isEnabled());
+  await ui.getByLabel('Payment type', { exact: true }).selectOption('fixed');
   await ui.getByLabel('Recipient chain', { exact: true }).selectOption('l1');
-  await ui.getByLabel('Percentage (%)', { exact: true }).fill('10');
+  await ui.getByLabel('Amount (USDC)', { exact: true }).fill('16');
   await ui.getByRole('button', { name: 'Review payment', exact: true }).click();
   await ui.getByRole('alert').filter({ hasText: 'Shared budget exceeded: 10 USDC remains globally' }).waitFor();
   assert.equal(await ui.getByRole('button', { name: 'Submit Safe transaction', exact: true }).count(), 0);
-  assert.deepEqual(await state(), reverse.snapshot, 'rejecting a 16-USDC rule preview does not change treasury state');
-  f.evidence.paymentChecks.push('16-USDC rule preview rejected with only 10 global remaining'); f.checkpoint();
-  console.log('Real USDC payment browser sequence passed: 40 / 110 to L1 / rejected 1 / next period 10% pays 30 / 110 to EEZ-X / rule budget rejection');
+  assert.deepEqual(await state(), reverse.snapshot, 'rejecting a 16-USDC fixed payment does not change treasury state');
+  f.evidence.paymentChecks.push('16-USDC fixed payment rejected with only 10 global remaining'); f.checkpoint();
+  console.log('Real USDC payment browser sequence passed: 40 / 110 to L1 / rejected 1 / next period fixed 30 / 110 to EEZ-X / fixed budget rejection');
 }

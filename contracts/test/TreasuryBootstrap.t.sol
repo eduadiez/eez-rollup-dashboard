@@ -32,7 +32,7 @@ contract TreasuryBootstrapTest is Test {
     }
 
     function testCreationAndLateFailureRollBackWholeBatch() public {
-        TreasuryBootstrap batch = new TreasuryBootstrap(address(this), one(abi.encodeCall(target.set, (1))));
+        TreasuryBootstrap batch = new TreasuryBootstrap(one(abi.encodeCall(target.set, (1))));
         address predicted = vm.computeCreateAddress(address(batch), 1);
         TreasuryBootstrap.Action[] memory actions = new TreasuryBootstrap.Action[](3);
         actions[0] = TreasuryBootstrap.Action(true, predicted, type(BootstrapTarget).creationCode, bytes32(0));
@@ -59,22 +59,27 @@ contract TreasuryBootstrapTest is Test {
     }
 
     function testOwnerAndSequenceCannotBeBypassed() public {
-        TreasuryBootstrap batch = new TreasuryBootstrap(address(this), one(abi.encodeCall(target.set, (1))));
+        TreasuryBootstrap batch = new TreasuryBootstrap(one(abi.encodeCall(target.set, (1))));
         vm.prank(address(0xbad));
         vm.expectRevert(TreasuryBootstrap.Unauthorized.selector);
         batch.execute(1, one(abi.encodeCall(target.set, (2))), false);
         vm.expectRevert(TreasuryBootstrap.InvalidSequence.selector);
         batch.execute(0, one(abi.encodeCall(target.set, (2))), false);
         assertEq(target.value(), 1);
+        assertEq(batch.owner(), address(this));
+        vm.prank(address(0xbad));
+        TreasuryBootstrap other = new TreasuryBootstrap(one(abi.encodeCall(target.set, (2))));
+        assertEq(other.owner(), address(0xbad));
         vm.expectRevert(TreasuryBootstrap.Unauthorized.selector);
-        new TreasuryBootstrap(address(0xbad), one(abi.encodeCall(target.set, (2))));
+        other.execute(1, one(abi.encodeCall(target.set, (3))), false);
+        assertEq(target.value(), 2);
     }
 
     function testFalseTokenResultRejectsBatch() public {
         TreasuryBootstrap.Action[] memory actions = one(abi.encodeCall(target.falseResult, ()));
         actions[0].returnHash = keccak256(abi.encode(true));
         vm.expectRevert(abi.encodeWithSelector(TreasuryBootstrap.InvalidAction.selector, 0));
-        new TreasuryBootstrap(address(this), actions);
+        new TreasuryBootstrap(actions);
     }
 
     TreasuryBootstrap private activeBatch;
@@ -84,7 +89,7 @@ contract TreasuryBootstrapTest is Test {
     }
 
     function testOwnerCallbackCannotReenter() public {
-        activeBatch = new TreasuryBootstrap(address(this), one(abi.encodeCall(target.set, (1))));
+        activeBatch = new TreasuryBootstrap(one(abi.encodeCall(target.set, (1))));
         TreasuryBootstrap.Action[] memory actions = one(abi.encodeCall(this.reenter, ()));
         actions[0].target = address(this);
         vm.expectRevert(
@@ -104,10 +109,10 @@ contract TreasuryBootstrapTest is Test {
         actions[0].create = true;
         actions[0].target = address(0xbad);
         vm.expectRevert(abi.encodeWithSelector(TreasuryBootstrap.InvalidAction.selector, 0));
-        new TreasuryBootstrap(address(this), actions);
+        new TreasuryBootstrap(actions);
         actions[0].create = false;
         actions[0].data = "";
         vm.expectRevert(abi.encodeWithSelector(TreasuryBootstrap.InvalidAction.selector, 0));
-        new TreasuryBootstrap(address(this), actions);
+        new TreasuryBootstrap(actions);
     }
 }

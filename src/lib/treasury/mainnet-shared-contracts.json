@@ -1,0 +1,10 @@
+{
+  "chainId": 1,
+  "registry": "0x4B2760F84B83d6b3829E30A7573B0172B6d6402C",
+  "contracts": {
+    "moduleL1": {
+      "address": "0x60Ad1F4207F699dB32f966a48618F4f4b7B16DC5",
+      "hash": "0xc176516783a19611f61a3c0a45ea6c8cc534d06f06ca211d1074d69226233a27"
+    }
+  }
+}
