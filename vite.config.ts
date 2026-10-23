@@ -42,8 +42,16 @@ function rpcProxy(target: string | undefined): ProxyOptions | undefined {
 export default defineConfig(() => {
   const runtime = loadRuntimeFile();
   const proxy = runtime.proxy ?? {};
+  const base = process.env.EEZ_UI_BASE_PATH || "/dashboard/";
+  const traceProxy = (prefix: string): ProxyOptions => ({
+    target: process.env.EEZ_TRACE_UPSTREAM || "http://127.0.0.1:18082",
+    changeOrigin: false,
+    rewrite: (url: string) => "/api" + url.slice(prefix.length),
+  });
   const proxies = Object.fromEntries(
     Object.entries({
+      "/trace/api": traceProxy("/trace/api"),
+      [base + "trace/api"]: traceProxy(base + "trace/api"),
       "/monitor/api": {
         target: process.env.EEZ_MONITOR_UPSTREAM || "http://127.0.0.1:18080",
         changeOrigin: false,
@@ -60,7 +68,7 @@ export default defineConfig(() => {
   );
 
   return {
-    base: process.env.EEZ_UI_BASE_PATH || "/dashboard/",
+    base,
     plugins: [react(), runtimeConfigPlugin(runtime)],
     server: {
       port: 8080,

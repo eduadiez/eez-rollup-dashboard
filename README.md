@@ -1,9 +1,9 @@
 # EEZ Rollup UI
 
 Standalone Docker-first web interface for an EEZ rollup network. This repository
-contains the UI, treasury application contracts, deployment tooling and demo
-documentation. Pinned protocol contracts are a dependency; the node and Kurtosis
-topology remain in the rollup repository.
+contains the UI, read-only telemetry and trace services, treasury application
+contracts, deployment tooling and demo documentation. Pinned protocol contracts
+are a dependency; the node and Kurtosis topology remain in the rollup repository.
 
 The source baseline is the earlier
 [`eez-association/sync-rollups-poc`](https://github.com/eez-association/sync-rollups-poc)
@@ -339,7 +339,7 @@ without a chain ID are not offered. Selection still runs the bridge's on-chain
 metadata, balance, approval, and gas checks. A token appearing in the list does
 not guarantee that the deployed bridge supports it.
 
-One root `.env` and Compose project configure both services; the monitor reuses
+One root `.env` and Compose project configure all four services; the monitor reuses
 `EEZ_UI_L1_RPC_UPSTREAM`, `EEZ_UI_L2_RPC_UPSTREAM`, registry, rollup ID, and explorer
 settings. Configure `EEZ_L1_WS_URL` and `EEZ_L2_WS_URL` for immediate node-head
 updates; without them, the collector uses HTTP head polling. Settlement and
@@ -354,11 +354,13 @@ Transactions require a connected browser wallet such as Rabby or MetaMask.
 
 ## Deployment architecture
 
-The application uses three containers in one Compose project:
+The application uses four containers in one Compose project:
 
 - `ui` serves the single React application and proxies requests through nginx.
 - `monitor` runs the Python telemetry collector and API on the internal network.
   It has no published port or separate frontend.
+- `trace-decoder` runs the Node.js read-only decoder API on the internal network.
+  The React transaction detail view reaches it through the UI proxy.
 - `verification` publishes exact treasury contract sources from retained builds.
   It shares the UI's network namespace and uses a persistent job volume; nginx
   exposes its bounded API without another public port. See the
@@ -414,9 +416,10 @@ When the target node binds its RPC and Composer ports to the Docker host's
 `127.0.0.1` (as in a host-network Chiado node), set
 `COMPOSE_FILE=docker-compose.yml:docker-compose.host-rpc.yml` in this repository's
 `.env` and use `http://127.0.0.1:<port>` for the four upstream URLs. Run the usual
-`docker compose up -d --build`. This overlay places the UI and monitor in the
-host network: the UI listens at `127.0.0.1:8080`, and the monitor listens at
-`127.0.0.1:18080`. Both services can then reach the node's loopback RPCs.
+`docker compose up -d --build`. This overlay places the services in the
+host network: the UI listens at `127.0.0.1:8080`, the monitor at
+`127.0.0.1:18080`, treasury verification at `127.0.0.1:18081`, and the trace API at
+`127.0.0.1:18082`. They can then reach the node's loopback RPCs.
 
 ### Single-domain path gateway
 
@@ -455,8 +458,9 @@ docker run --rm -p 8080:8080 \
   eez-rollup-ui:local
 ```
 
-The UI image alone provides Dashboard and Visualizer. For Monitor, use the
-root Compose project, which also starts the collector service.
+The UI image alone provides Dashboard and the existing block inspector. Use the
+root Compose project for Monitor and cross-chain transaction details; it also
+starts the Python collector and Node.js trace API.
 
 All contract addresses can be supplied as environment variables listed in
 `.env.example`. The container also supports the Kurtosis artifact mounts
@@ -601,6 +605,49 @@ EEZ_UI_L1_FEES_ENABLED=true EEZ_UI_L2_FEES_ENABLED=true \
   bash scripts/configure-kurtosis.sh
 ```
 
+## Cross-chain transaction details
+
+**Follow this call** and transaction-history inspection open the native React
+detail view at `#/visualizer?mode=trace&chain=l1|l2&tx=0x…`. The Visualizer also
+offers **Trace a transaction** for pasted hashes. The page shares the dashboard's
+layout, theme, and explorer links and renders call flow, logical sequence, call
+arguments/returns, related transactions, and observed L1 postings. It does not
+embed the standalone HTML viewer. **Blocks & settlement** opens the existing
+inspector for current settlement safety/finality and block-level evidence.
+
+The [decoder](trace-decoder/README.md) reuses the root `.env` RPC, Composer,
+contract, and explorer settings. Separate trace/archive endpoints are optional:
+`EEZ_UI_L1_TRACE_RPC_UPSTREAM` and `EEZ_UI_L2_TRACE_RPC_UPSTREAM` default to the
+matching read RPC. Provider keys and trace URLs stay server-side. Both chains
+must support call tracing; historical requests may need archive state.
+
+The decoder prefers exact source transaction links from the corresponding Composer
+frontend and verifies them against chain evidence. The default `auto` mode needs
+no additional environment setup and allows legacy settlement discovery when links
+are unsupported. Supported pending or invalid links remain
+partial instead of expanding the search. The default diagram follows the requested
+transaction without including unrelated triggers that share its settlement batch.
+
+The browser calls `BASE_URL + "trace/api"`; nginx forwards this to the internal
+service. A gateway that already strips `/dashboard/` needs no new public route.
+For local development, start `node trace-decoder/service/server.mjs` separately
+once its dependencies are available; Vite proxies to `127.0.0.1:18082` by default
+(override with exported `EEZ_TRACE_UPSTREAM`). No service starts from `npm run dev`.
+
+Jobs report progress, share active work across viewers, and cancel when the last
+viewer releases its lease. Limits include a 120-second default deadline, two
+workers, 16 jobs, bounded RPC concurrency/body sizes, and bounded result memory.
+`EEZ_TRACE_TIMEOUT_MS` and `EEZ_TRACE_CONCURRENCY` configure the deadline and worker
+count. Completed results are snapshots cached for 30 seconds (5 seconds for partial
+results); **Refresh** bypasses completed cache entries. The observation time is
+shown explicitly. A snapshot does not assert current finality.
+
+Missing traces, unknown matches, and unavailable settlement data remain visible.
+Cancelling or changing transactions never alters a wallet transaction. Calls are
+read-only; the API accepts transaction hashes and chain IDs, never arbitrary RPC
+URLs or private keys. The standalone CLI remains available and writes HTML/JSON
+under the ignored `.runtime/trace-decoder/` directory.
+
 ## Checks
 
 Install the pinned Playwright dependency and Chromium once with `npm ci` and
@@ -674,8 +721,9 @@ that URL with `EEZ_UI_URL`. These checks do not broadcast real transactions.
 The treasury check covers hidden navigation and direct URLs, shortcut/session
 behavior, simulated approvals and budget arithmetic, and responsive layout.
 
-Transaction result pop-ups include **Follow this call** links to the execution
-visualizer. Inspection refreshes every ten seconds and reports source execution
+Transaction result pop-ups include **Follow this call** links to the native trace
+detail view. Its **Blocks & settlement** link opens the existing execution
+inspector, which refreshes every ten seconds and reports source execution
 separately from L1 posting, safety, and finality. Canonical hashes and both node
 finality tags support positive settlement stages; reorgs or unavailable evidence
 clear those stages. The Monitor link opens the matching posting record directly.

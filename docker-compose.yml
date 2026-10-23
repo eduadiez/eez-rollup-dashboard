@@ -21,6 +21,7 @@ services:
       EEZ_UI_ENCLAVE: "${EEZ_UI_ENCLAVE:-standalone}"
       EEZ_UI_LISTEN: "8080"
       EEZ_UI_MONITOR_UPSTREAM: "monitor:8080"
+      EEZ_UI_TRACE_UPSTREAM: "trace-decoder:8080"
       EEZ_UI_PROTOCOL_COMMIT: "${EEZ_UI_PROTOCOL_COMMIT:-development}"
       EEZ_UI_L1_RPC_UPSTREAM: "${EEZ_UI_L1_RPC_UPSTREAM:-http://host.docker.internal:19545}"
       EEZ_UI_L2_RPC_UPSTREAM: "${EEZ_UI_L2_RPC_UPSTREAM:-http://host.docker.internal:19546}"
@@ -60,6 +61,8 @@ services:
       EEZ_UI_L2_EXPLORER_URL: "${EEZ_UI_L2_EXPLORER_URL:-}"
       EEZ_UI_L2_EXPLORER_API_URL: "${EEZ_UI_L2_EXPLORER_API_URL:-}"
     depends_on:
+      trace-decoder:
+        condition: service_started
       monitor:
         condition: service_healthy
     restart: unless-stopped
@@ -109,6 +112,44 @@ services:
     cap_drop:
       - ALL
     pids_limit: 128
+
+  trace-decoder:
+    build:
+      context: ./trace-decoder
+    image: eez-trace-decoder:local
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      EEZ_TRACE_HOST: "0.0.0.0"
+      EEZ_TRACE_PORT: "8080"
+      EEZ_TRACE_TIMEOUT_MS: "${EEZ_TRACE_TIMEOUT_MS:-120000}"
+      EEZ_TRACE_CONCURRENCY: "${EEZ_TRACE_CONCURRENCY:-2}"
+      EEZ_UI_L1_RPC_UPSTREAM: "${EEZ_UI_L1_RPC_UPSTREAM:-http://host.docker.internal:19545}"
+      EEZ_UI_L2_RPC_UPSTREAM: "${EEZ_UI_L2_RPC_UPSTREAM:-http://host.docker.internal:19546}"
+      EEZ_UI_L1_FRONT_UPSTREAM: "${EEZ_UI_L1_FRONT_UPSTREAM:-http://host.docker.internal:19547}"
+      EEZ_UI_L2_FRONT_UPSTREAM: "${EEZ_UI_L2_FRONT_UPSTREAM:-http://host.docker.internal:19548}"
+      EEZ_UI_L1_TRACE_RPC_UPSTREAM: "${EEZ_UI_L1_TRACE_RPC_UPSTREAM:-}"
+      EEZ_UI_L2_TRACE_RPC_UPSTREAM: "${EEZ_UI_L2_TRACE_RPC_UPSTREAM:-}"
+      EEZ_REGISTRY_ADDRESS: "${EEZ_REGISTRY_ADDRESS:-}"
+      EEZL2_ADDRESS: "${EEZL2_ADDRESS:-}"
+      EEZ_ROLLUP_MANAGER_ADDRESS: "${EEZ_ROLLUP_MANAGER_ADDRESS:-}"
+      EEZ_UI_L1_EXPLORER_URL: "${EEZ_UI_L1_EXPLORER_URL:-}"
+      EEZ_UI_L2_EXPLORER_URL: "${EEZ_UI_L2_EXPLORER_URL:-}"
+      EEZ_UI_L1_EXPLORER_API_URL: "${EEZ_UI_L1_EXPLORER_API_URL:-}"
+      EEZ_UI_L2_EXPLORER_API_URL: "${EEZ_UI_L2_EXPLORER_API_URL:-}"
+      EEZ_TRACE_L1_EXPLORER_API_KEY: "${EEZ_TRACE_L1_EXPLORER_API_KEY:-}"
+      EEZ_TRACE_L2_EXPLORER_API_KEY: "${EEZ_TRACE_L2_EXPLORER_API_KEY:-}"
+      EEZ_TRACE_ETHERSCAN_API_KEY: "${EEZ_TRACE_ETHERSCAN_API_KEY:-}"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 768m
 
   verification:
     build:

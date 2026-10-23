@@ -21,17 +21,26 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            trace-decoder/package-lock.json
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.7.1
-      - run: npm ci
+      - name: Install dashboard and decoder dependencies
+        run: |
+          npm ci
+          npm ci --prefix trace-decoder --ignore-scripts
       - name: Dependency security advisories
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --audit-level=high
+          npm audit --prefix trace-decoder --audit-level=high
       - name: Verify pinned source release
         run: npm run check:treasury-release
       - name: Unit and contract checks
         run: |
           npm test
+          npm test --prefix trace-decoder
           npm run test:contracts
           forge fmt --check --root contracts
           npm run build:treasury-release
@@ -46,12 +55,16 @@ jobs:
           node tests/treasury-mainnet-setup-browser.mjs
           node tests/treasury-faucet-browser.mjs
           node tests/treasury-verification-browser.mjs
-      - name: Frontend and both service images
+          node tests/trace-details.cjs
+      - name: Frontend, service images, and service coexistence
         run: |
           npm run build
           docker compose --env-file /dev/null config --quiet
+          docker compose --env-file /dev/null -f docker-compose.yml -f docker-compose.host-rpc.yml config --quiet
           docker build --target verification -t treasury-verification:check .
           docker build -t treasury-ui:check .
+          docker build -t eez-trace-decoder:check trace-decoder
+          node tests/trace-services.mjs
           git diff --exit-code
       - name: Preserve isolated test evidence
         if: always()
