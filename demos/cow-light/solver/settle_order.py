@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """Settle queued catalog-token orders through the canonical WETH/L1 route.
 
-This is intentionally a one-shot adapter used by the long-running worker. It
-does not invent a fill: it reads the signed order from ui-orders.jsonl, checks
-the live quote and balances, and submits one standard GPv2 settlement through
-the L2 composer. The settlement's pre-interactions perform the complete
-canonical L2->L1->L2 route before GPv2 pays the fresh wrapper token, so there
-is no pre-bridge, bootstrap reserve, or solver inventory.
+This is a one-shot adapter used by the long-running worker. It reads the signed
+order from ui-orders.jsonl, checks the live quote and balances, and submits one
+standard GPv2 settlement through the L2 composer. Settlement pre-interactions
+perform the complete canonical L2->L1->L2 route before GPv2 pays the wrapper
+token.
 """
 import json, os, time, fcntl, requests
 from pathlib import Path
@@ -97,9 +96,8 @@ def send(w,a,tx,chain,endpoint=None,timeout=1200):
             if m and attempt<2:
                 tx['nonce']=int(m.group(1)); continue
             raise
-    # Composer fronts can accept a source transaction before it is visible to
-    # the execution RPC.  Poll both views and surface the durable rejection
-    # reason instead of retrying the same nonce forever.
+    # Poll the execution RPC and Composer index until the transaction is
+    # canonical or a durable rejection is reported.
     deadline=time.monotonic()+timeout
     while time.monotonic()<deadline:
         try:
@@ -173,37 +171,25 @@ def main():
         return
     c2=L2.eth.contract(WETH_L2,abi=ERC20); user=to_checksum_address(order['receiver']); user_bal=c2.functions.balanceOf(user).call()
     settlement_allowance=c2.functions.allowance(user, RELAYER).call()
-    # Strict cross-chain mode: never consume a pre-existing wrapper reserve as
-    # a local fill.  A route is valid only when the solver has started the
-    # canonical L2->L1 leg and the resulting inbound token is observed.  This
-    # deliberately rejects the old inventory-backed fallback.
+    # A route is valid only when the user's WETH starts the canonical
+    # L2->L1 leg and the resulting inbound token is observed.
     if user_bal<amount or settlement_allowance<amount:
-        # Do not repeatedly consume/retry a route that cannot possibly start.
-        # The signed order's WETH remains in the user's account; it can only be
-        # pulled by GPv2 after the user grants its allowance.  Keep the worker
-        # alive and make this an observable readiness state instead of a noisy
-        # traceback every five seconds.
-        print(f'waiting: user WETH/allowance insufficient ({user_bal}/{settlement_allowance} < {amount}); no inventory-backed fill', flush=True)
+        # Keep the worker alive while the user funds the order and grants the
+        # GPv2 relayer allowance.
+        print(f'waiting: user WETH/allowance insufficient ({user_bal}/{settlement_allowance} < {amount})', flush=True)
         return
     predicted=to_checksum_address(order['buyToken'])
-    # The signed order is immutable.  Refuse stale UI addresses rather than
-    # pretending to settle against a different token (which would violate the
-    # EIP-712 signature and the atomic-fill invariant).
+    # The signed order is immutable. Reject a non-canonical wrapper address so
+    # the EIP-712 order and the atomic fill refer to the same token.
     canonical= L2.eth.contract(BRIDGE_L2,abi=BRIDGE_ABI).functions.getWrappedToken(token,0).call()
     if int(canonical,16) and predicted.lower()!=to_checksum_address(canonical).lower():
         reason=f'order buyToken {predicted} is not the canonical wrapper {to_checksum_address(canonical)} for {token}; resubmit after refreshing the quote'
         record_failure(item,reason); print('failed:',reason,flush=True); return
-    # Never bootstrap with solver inventory.  GPv2 pulls the user's WETH into
-    # settlement before the pre-interactions transfer that held amount to the
-    # universal route.  The route's first bridge therefore both funds the L1
-    # swap and causes the deterministic wrapper deployment.  If simulation
-    # cannot see that freshly-created wrapper, surface the composer diagnostic
-    # rather than falling back to an inventory-backed fill.
-    # One reusable L1 helper is deployed through the canonical deterministic
-    # factory; settlement never needs an L1-funded deployment EOA.
+    # GPv2 pulls the user's WETH into settlement before the pre-interactions
+    # transfer it to the universal route. The first bridge funds the L1 swap
+    # and creates the deterministic wrapper when needed. The reusable L1 helper
+    # is deployed through the canonical deterministic factory.
     universal_state=Path(os.getenv('ROUTE_MANIFEST',BASE/'runtime'/'route-deployment.json'))
-    if not universal_state.exists():
-        universal_state=Path(os.getenv('ROUTE_MANIFEST',BASE/'runtime'/'route-deployment.json'))
     if universal_state.exists():
         us=json.loads(universal_state.read_text())
         route_abi=json.loads((BASE/'contracts'/'out'/'L2UniversalV2Route.sol'/'L2UniversalV2Route.json').read_text())['abi']
@@ -230,10 +216,8 @@ def main():
             dbg=requests.post(L2_FRONT,json={'jsonrpc':'2.0','id':1,'method':'eez_debugQuoteFee',
                 'params':[intent,{'transactionTypes':['0x2'],'trace':'calls'}]},timeout=90).json()
             debug('composer_debug_quote',orderId=item.get('id'),intent=intent,response=dbg)
-            # Preserve the addresses observed in the composer call trace. This
-            # is especially important for first-bridge orders: the bridge may
-            # CREATE2 a wrapper whose address differs from a stale/local
-            # derivation, and GPv2 then reports only “not a contract”.
+            # Preserve addresses observed in the Composer call trace so the
+            # diagnostic contains the contracts created during the first bridge.
             trace=((dbg.get('result') or {}).get('diagnostics') or {}).get('trace') or {}
             created=[]
             for run in trace.get('runs',[]) or []:
@@ -267,10 +251,8 @@ def main():
         except Exception as exc:
             debug('composer_debug_quote_error',orderId=item.get('id'),intent=intent,error=str(exc))
         try:
-            # Actual canonical settlements on this route have used ~330k–380k
-            # L2 gas.  Keep a safety margin, but do not request the 5M tariff
-            # ceiling: admission charges the L1 settlement estimate against
-            # the source balance before it simulates the call.
+            # Use the observed route gas with a safety margin. Composer
+            # admission separately accounts for the L1 settlement estimate.
             fill_tx=st.functions.settle([WETH_L2,predicted],clearing_prices,[trade],interactions).build_transaction({'from':ACCT.address,'gas':settle_gas})
             fill_tx['_quotedTip']=quoted_tip; fill_tx['_quotedMaxFee']=quoted_max
             fill=send(L2,ACCT,fill_tx,L2_CHAIN,L2_FRONT)

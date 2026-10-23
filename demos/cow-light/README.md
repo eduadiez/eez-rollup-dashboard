@@ -50,9 +50,8 @@ settlement is performed by the worker.
    before using it. Verification is a deployment gate, not an optional
    follow-up.
 
-The final route consists of exactly two contracts: `L2UniversalV2Route` on L2
-and `L1UniversalV2BridgeHelper` on L1. There are no token-specific route
-contracts or inventory-backed fallback paths in this package.
+The route consists of exactly two contracts: `L2UniversalV2Route` on L2 and
+`L1UniversalV2BridgeHelper` on L1. The same contracts serve every catalog token.
 
 Both scripts are restart-safe: they query code/configuration first, persist
 receipts, and never print or commit private keys.

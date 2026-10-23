@@ -55,10 +55,8 @@ def quote(t,amount):
 def _live_wrapper_prefix():
     """Recover the creation-code prefix used by the deployed BridgeLive.
 
-    The public network's WrappedToken build predates this checkout, so using
-    local compiler bytecode would derive a wrong address.  A canonical first
-    WETH deployment trace gives us the exact CREATE2 init-code prefix.  The
-    result is cached and checked against the configured WETH address.
+    A canonical first WETH deployment trace supplies the exact CREATE2
+    init-code prefix used by the configured bridge. The result is cached.
     """
     global _wrapper_prefix
     if _wrapper_prefix is not None: return _wrapper_prefix
@@ -86,9 +84,7 @@ def wrapper(token):
     t=next((z for z in catalog() if z["address"].lower()==token.lower()),None)
     if not t: raise ValueError("token is not in the L1 catalog")
     # The bridge derives CREATE2 init code from the token's *on-chain* ERC20
-    # metadata.  Catalog labels are display-only and can differ (BLZ is
-    # "Bluzelle Token" on L1, while the catalog used "Bluzelle"), yielding a
-    # different address even when the salt is correct.
+    # metadata. Catalog labels are display-only.
     name=t.get("name") or t.get("symbol") or "Token"; symbol=t.get("symbol") or "TOK"; decimals=int(t.get("decimals",18))
     try:
         meta=l1.eth.contract(address=token,abi=TOKEN_META_ABI)
@@ -159,11 +155,8 @@ def crosschain_settlement(tx_hash):
             timeout=8,
         ).json()
         result=response.get("result") or {}
-        # Older settlements may predate the cross-chain transaction index. In
-        # that case the block-index endpoint still exposes the canonical L1
-        # settlement transaction. The caller supplies only a tx hash here, so
-        # this path is intentionally handled by order_debug using the stored
-        # L2 settlement block as a fallback.
+        # The block-index endpoint can provide the same settlement information
+        # when the transaction index has no record.
         if not result:
             return {}
         txs=result.get("transactions") or {}
@@ -180,8 +173,7 @@ def crosschain_settlement(tx_hash):
 def settlement_by_l2_block(block_number):
     """Resolve a canonical L1 settlement using the L2 block index.
 
-    This is a compatibility fallback for older successful orders for which
-    eez_getCrossChainTransaction returns null, while preserving the same
+    Resolve a settlement through the L2 block index while preserving the
     response shape used by the UI.
     """
     if block_number is None:
@@ -208,17 +200,13 @@ def settlement_by_l2_block(block_number):
 def order_debug(row, events):
     oid=row.get("id"); e=events.get(oid,{})
     # A worker-exit record is a lifecycle marker, not the cause. Keep the
-    # preceding solver event visible so a user sees e.g. wrapper bootstrap
-    # failure instead of an apparently healthy worker shutdown.
+    # preceding solver event visible so the user sees the actual failure.
     display=e.get("previous",e) if e.get("event")=="order_worker_exit" and e.get("previous") else e
     status=str(row.get("status","queued")).lower()
     event=display.get("event","")
     states={
         "order_pickup":"picked_up", "tx_submit_attempt":"submitting",
         "tx_submitted":"submitted", "tx_submit_error":"submission_failed",
-        "wrapper_bootstrap_start":"bootstrapping_wrapper",
-        "wrapper_bootstrap_complete":"wrapper_ready",
-        "wrapper_bootstrap_failed":"wrapper_bootstrap_failed",
         "composer_debug_quote":"quote_rejected",
         "order_worker_exception":"worker_error", "order_worker_exit":"worker_stopped",
     }
