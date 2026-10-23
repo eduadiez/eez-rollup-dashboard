@@ -137,7 +137,7 @@ export class MainnetSetup {
     }
     const again = await this.io.rpc<{ hash: Hex }>("l1", "eth_getBlockByNumber", [block.number, false]);
     check(again?.hash === block.hash, "Shared Ethereum contracts changed during inspection; try again");
-    const infrastructure = await discoverSafeInfrastructure(this.io, network.chains.l2.chainId, network.chains.l2.number as Hex);
+    const infrastructure = await discoverSafeInfrastructure(this.io, network.chains.l2.chainId, network.chains.l2.number as Hex, { manager: getAddress(network.manager), safeL1: addresses.safeL1! });
     for (const [key, binding] of Object.entries(infrastructure)) if (!addresses[key]) {
       addresses[key] = binding.address; code.push({ chain: "l2", ...binding });
     }
@@ -262,7 +262,7 @@ export class MainnetSetup {
       }
     }
     const closed = !create, actionsHash = keccak256(encodeAbiParameters(parseAbiParameters("(bool create,address target,bytes data,bytes32 returnHash)[]"), [actions]));
-    const data = create ? encodeDeployData({ abi: this.io.abi("TreasuryBootstrap"), bytecode: this.artifacts.contracts.TreasuryBootstrap!.bytecode, args: [s.deployer, actions] })
+    const data = create ? encodeDeployData({ abi: this.io.abi("TreasuryBootstrap"), bytecode: this.artifacts.contracts.TreasuryBootstrap!.bytecode, args: this.io.abi("TreasuryBootstrap").find(item => item.type === "constructor")?.inputs.length === 1 ? [actions] : [s.deployer, actions] })
       : encodeFunctionData({ abi: this.io.abi("TreasuryBootstrap"), functionName: "execute", args: [sequence, actions, closed] });
     check(!create || (data.length - 2) / 2 <= 49152, "Deployment batch exceeds the creation size limit");
     return { ...(create ? {} : { to: executor }), data, outputs, executor, actionsHash, sequence: String(sequence), closed };
@@ -323,7 +323,7 @@ export class MainnetSetup {
       payments: { bridgeKind: "standard", policy: a.policy, alias: a.alias, safeL2Alias: a.safeL2Alias, bridgeExecutorL1: a.bridgeExecutorL1,
         moduleL1: a.moduleL1, moduleL2: a.moduleL2, tokenL1: network.contracts.usdcProxy.address, tokenL2: network.contracts.wrappedUSDC.address,
         bridgeL1: network.contracts.bridgeL1.address, bridgeL2: network.contracts.bridgeL2.address, recipient: s.deployer,
-        l1Initiation: true, combinedL2: true, exactSplits: true, percentageRules: true, decimals: 6, period: 600, globalLimit: "150000000", assetLabel: "USDC" } });
+        version: this.artifacts.contracts.StandardBridgeTreasuryPolicy!.abi.some(item => item.type === "function" && item.name === "paySplit" && item.inputs.length === 5) ? 2 : 1, decimals: 6, period: 600, globalLimit: "150000000", assetLabel: "USDC" } });
     await new TreasuryClient(c).validate(); return c;
   }
 }

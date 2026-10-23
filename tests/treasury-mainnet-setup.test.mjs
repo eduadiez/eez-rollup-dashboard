@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decodeAbiParameters, decodeFunctionData, encodeAbiParameters, encodeEventTopics, parseAbi, getAddress, getContractAddress, keccak256, toHex, zeroAddress, zeroHash } from 'viem';
+import { decodeAbiParameters, encodeDeployData, decodeFunctionData, encodeAbiParameters, encodeEventTopics, parseAbi, getAddress, getContractAddress, keccak256, toHex, zeroAddress, zeroHash } from 'viem';
 import { MainnetSetup, mainnetSetupKey, mainnetManifestKey, mainnetSetupSteps, readMainnetSetup, isMainnetSetupTarget, loadMainnetManifest } from '../src/lib/treasury/mainnetSetup.ts';
 import { sharedDeploymentKey, sharedManifestKey } from '../src/lib/treasury/deployment.ts';
 const json=path=>JSON.parse(readFileSync(path));
@@ -42,8 +42,8 @@ test('selection preserves the entered Safe, its owner threshold and a different 
 test('Ethereum preparation deploys bounded authority without creating, funding or minting a Safe',async()=>{
  const {engine,safe,deployer}=fixture(),s=await engine.configure(deployer,safe),batch=await engine.batch(s,'0x4');
  const artifact=artifacts.contracts.TreasuryBootstrap;
- const [owner,actions]=decodeAbiParameters(artifact.abi.find(x=>x.type==='constructor').inputs,`0x${batch.data.slice(artifact.bytecode.length)}`);
- assert.equal(owner.toLowerCase(),deployer.toLowerCase());assert.equal(actions.length,2);assert(actions.every(x=>x.create));
+ const [actions]=decodeAbiParameters(artifact.abi.find(x=>x.type==='constructor').inputs,`0x${batch.data.slice(artifact.bytecode.length)}`);
+ assert.equal(actions.length,2);assert(actions.every(x=>x.create));
  assert.deepEqual(batch.outputs.map(x=>x.key),['bootstrapL1','multiSendL1','bridgeExecutorL1']);
  const funding=actions.at(-1),a=artifacts.contracts.StandardBridgeDelegate;
  const args=decodeAbiParameters(a.abi.find(x=>x.type==='constructor').inputs,`0x${funding.data.slice(a.bytecode.length)}`);
@@ -155,20 +155,25 @@ test('a first wallet prepares shared EEZ-X contracts; another wallet reuses the 
  const beforeBudget=engine.io.rpc;
  engine.io.rpc=(chain,method,params)=>method==='eth_getTransactionCount'?'0x5':beforeBudget(chain,method,params);
  const budget=await engine.batch(first,'0x5');
- const keys=['singletonL2','factoryL2','multiSendL2','moduleL2'],outputs=[...mirror.outputs,...budget.outputs].filter(o=>keys.includes(o.key));
- assert.equal(outputs.length,4);
+ const keys=['singletonL2','factoryL2','multiSendL2','moduleL2','adapter'],outputs=[...mirror.outputs,...budget.outputs].filter(o=>keys.includes(o.key));
+ assert.equal(outputs.length,5);
  const abi=parseAbi(['event Created(uint256 indexed index,address indexed target,bytes32 initHash)']);
  const logs=outputs.map((o,i)=>({topics:encodeEventTopics({abi,eventName:'Created',args:{index:BigInt(i),target:o.address}}),
-  data:encodeAbiParameters([{type:'bytes32'}],[keccak256(artifacts.contracts[o.artifact].bytecode)])}));
+  data:encodeAbiParameters([{type:'bytes32'}],[keccak256(o.key==='adapter' ? encodeDeployData({abi:artifacts.contracts.L1Owners.abi,bytecode:artifacts.contracts.L1Owners.bytecode,args:[network.manager,safe]}) : artifacts.contracts[o.artifact].bytecode)])}));
  const rpc=engine.io.rpc;
  engine.io.rpc=(chain,method,params)=>{
   if(chain==='l2'&&method==='eth_getBlockByNumber')return {number:network.chains.l2.number,hash:zeroHash};
   if(chain==='l2'&&method==='eth_getLogs')return logs;
   if(chain==='l2'&&method==='eth_getCode'){
+   if(params[0]===addr(800))return '0x6000';
    const o=outputs.find(o=>o.address.toLowerCase()===params[0].toLowerCase());if(o)return artifacts.contracts[o.artifact].runtime;
   }
   return rpc(chain,method,params);
  };
+ const originalRead=engine.io.read;
+ engine.io.read=(chain,address,name,method,args,tag)=>name==='L1Owners'||name==='Registry'
+  ? ({safeL1:safe,manager:network.manager,safeL1Proxy:addr(800),computeCrossChainProxyAddress:addr(800),authorizedProxies:[true,safe,0n]})[method]
+  : originalRead(chain,address,name,method,args,tag);
  const second=await engine.configure(addr(201),safe);
  for(const o of outputs)assert.equal(second.addresses[o.key],getAddress(o.address));
  const secondPrep=await engine.batch(second,'0x9');for(const o of secondPrep.outputs)second.addresses[o.key]=o.address;

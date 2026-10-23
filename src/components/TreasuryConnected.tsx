@@ -1,3 +1,4 @@
+import { verifiesL1Initiation } from "../lib/treasury/savedPayments";
 import { parseTransferAmount, transferRollup, verifyTransferHelper } from "../lib/treasury/transfers";
 import { treasuryExplorer } from "../lib/treasury/mainnet";
 import type { TreasuryActionGuard } from "../lib/treasury/setupState";
@@ -8,7 +9,7 @@ import { TreasuryPaymentHistory } from "./TreasuryPaymentHistory";
 import { TreasuryOutcomeDetails } from "./TreasuryOutcomeDetails";
 import { TreasuryChainLink } from "./TreasuryPaymentFlow";
 import { invoiceControl } from "../lib/treasury/invoices";
-import { checkedPayment, parseUSDC, formatUSDC, parsePercentage, formatPercentage, paymentAmount, paymentTransaction, paymentState, fundingPreview, defaultSplit, remaining } from "../lib/treasury/payments";
+import { checkedPayment, parseUSDC, formatUSDC, paymentTransaction, paymentState, fundingPreview, defaultSplit, remaining } from "../lib/treasury/payments";
 import type { Payment, PaymentState } from "../lib/treasury/payments";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatUnits } from "viem";
@@ -23,7 +24,7 @@ import { config } from "../config";
 import styles from "./TreasuryDemo.module.css";
 
 export type TreasuryWallet = Pick<ReturnType<typeof useWallet>, "provider" | "address" | "chainId" | "walletOptions" | "connect" | "switchToL1" | "switchToL2">;
-type Review = { transaction: ReviewedSafeTransaction; snapshot: Snapshot; value: string; payment?: Payment; funding?: { fromL1: bigint; fromL2: bigint }; estimate?: { amount: bigint; balanceL1: bigint; balanceL2: bigint; observedL1: string; observedL2: string } };
+type Review = { transaction: ReviewedSafeTransaction; snapshot: Snapshot; value: string; payment?: Payment; funding?: { fromL1: bigint; fromL2: bigint } };
 const message = (error: unknown) => error instanceof Error ? error.message : String(error);
 const terminal = (outcome: Outcome | null) => outcome?.kind === "settled" || outcome?.kind === "rejected";
 
@@ -65,19 +66,18 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
   // A reloaded submission remains locked; display its signed fields while the
   // client reconciles it instead of showing the next payment's defaults.
   const savedPayment = payments ? restored.intent?.payment : undefined;
-  const [value, setValue] = useState(savedPayment && savedPayment.kind !== "rule" ? formatUSDC(BigInt(savedPayment.amount)) : payments ? "40" : restored.intent?.value ?? "42");
-  const [kind, setKind] = useState<"fixed" | "rule" | "invoice" | "transfer">(savedPayment?.kind ?? "fixed");
+  const [value, setValue] = useState(savedPayment ? formatUSDC(BigInt(savedPayment.amount)) : payments ? "40" : restored.intent?.value ?? "42");
+  const [kind, setKind] = useState<"fixed" | "invoice" | "transfer">(savedPayment?.kind ?? "fixed");
   const [invoiceId] = useState<Hex | undefined>(savedPayment?.kind === "invoice" ? savedPayment.invoiceId : undefined);
-  const [percentage, setPercentage] = useState(savedPayment?.kind === "rule" ? formatPercentage(BigInt(savedPayment.bps)) : "10");
   const [recipient, setRecipient] = useState<string>(savedPayment?.recipient ?? deployment.payments?.recipient ?? "");
   const walletSource: "l1" | "l2" | undefined = payments && wallet.address && wallet.chainId
-    ? BigInt(wallet.chainId) === BigInt(deployment.l1.chainId) && deployment.payments?.l1Initiation ? "l1"
+    ? BigInt(wallet.chainId) === BigInt(deployment.l1.chainId) && (deployment.payments && verifiesL1Initiation(deployment.payments)) ? "l1"
       : BigInt(wallet.chainId) === BigInt(deployment.l2.chainId) ? "l2" : undefined
     : undefined;
   const [source, setSource] = useState<"l1" | "l2">(savedPayment?.source ?? (restored.intent ? "l2" : walletSource ?? "l2"));
   const sourceChosen = useRef(!!restored.intent || !!walletSource);
   const [destination, setDestination] = useState<"l1" | "l2">(savedPayment?.destination ?? "l2");
-  const [allocation, setAllocation] = useState<{ amount: bigint; fromL1: bigint } | null>(savedPayment?.funding === "split"
+  const [allocation, setAllocation] = useState<{ amount: bigint; fromL1: bigint } | null>(savedPayment && "fromL1" in savedPayment
     ? { amount: BigInt(savedPayment.amount), fromL1: BigInt(savedPayment.fromL1!) } : null);
   const [balances, setBalances] = useState<PaymentState | null>(null);
   const [review, setReview] = useState<Review | null>(null);
@@ -220,12 +220,10 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
       const identity = { source, recipient: recipient as Address, destination, epoch: String(amounts.epoch) };
       if (kind === "transfer") await verifyTransferHelper(client);
       const payment = checkedPayment(kind === "transfer"
-        ? { ...identity, kind: "transfer", source: "l1", destination: "l2", recipient: deployment.safeL2, amount: String(parseTransferAmount(value)), funding: "local", rollupId: await transferRollup(client) }
+        ? { ...identity, kind: "transfer", source: "l1", destination: "l2", recipient: deployment.safeL2, amount: String(parseTransferAmount(value)), rollupId: await transferRollup(client) }
         : kind === "invoice"
-        ? { ...identity, kind: "invoice", invoiceId: invoiceId!, destination: "l1", amount: String(parseUSDC(value)), funding: "combined" }
-        : kind === "rule"
-        ? { ...identity, kind: "rule", bps: String(parsePercentage(percentage)), funding: "combined" }
-        : { ...identity, amount: String(parseUSDC(value)), funding: "split", fromL1: String(contribution(amounts, parseUSDC(value))) });
+        ? { ...identity, kind: "invoice", invoiceId: invoiceId!, destination: "l1", amount: String(parseUSDC(value)) }
+        : { ...identity, amount: String(parseUSDC(value)), fromL1: String(contribution(amounts, parseUSDC(value))) });
       let contributions;
       try { contributions = fundingPreview(amounts, payment); }
       catch (failure) {
@@ -234,9 +232,8 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
         reject(payment, message(failure));
         throw failure;
       }
-      if (payment.funding === "split") setAllocation({ amount: BigInt(payment.amount), fromL1: BigInt(payment.fromL1!) });
-      next = { transaction: paymentTransaction(deployment, payment, latest.nonce), snapshot: latest, value, payment, funding: contributions,
-        ...(payment.kind === "rule" ? { estimate: { amount: paymentAmount(amounts, payment), balanceL1: amounts.balanceL1, balanceL2: amounts.balanceL2, observedL1: amounts.observedL1, observedL2: amounts.observedL2 } } : {}) };
+      if ("fromL1" in payment) setAllocation({ amount: BigInt(payment.amount), fromL1: BigInt(payment.fromL1!) });
+      next = { transaction: paymentTransaction(deployment, payment, latest.nonce), snapshot: latest, value, payment, funding: contributions };
     } else next = { transaction: actionTransaction(deployment, value, latest.nonce), snapshot: latest, value };
     refs.current.review = next; setReview(next); setApprovals([]);
   };
@@ -319,7 +316,7 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
       const fromL1 = contribution(balances, amount);
       let capacityError = "";
       try { fundingPreview(balances, { amount: String(amount), recipient: recipient as Address, destination,
-        epoch: String(balances.epoch), funding: "split", fromL1: String(fromL1) }); }
+        epoch: String(balances.epoch), fromL1: String(fromL1) }); }
       catch (e) { capacityError = message(e); }
       split = { amount, fromL1, fromL2: amount - fromL1, error: capacityError };
     } catch { /* Amount validation is shown when reviewing the draft. */ }
@@ -327,7 +324,7 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
   return <section className={styles.treasury} aria-label="Connected treasury demo">
     <div className={styles.heading}>
       <div><p className="eez-eyebrow">[ {l1Name} + EEZ-X · {payments ? "TREASURY PAYMENTS" : "OWNER VERIFICATION"} ]</p><h2>{payments ? "One treasury, two Safes" : "One owner set, two Safes"}</h2>
-        <p>{payments && deployment.payments?.l1Initiation ? "Start from either Safe and pay on either chain, using one owner set and one shared budget." : `Approve on EEZ-X. The Safe verifies your authority against the current ${l1Name} owners.`}</p></div>
+        <p>{payments && (deployment.payments && verifiesL1Initiation(deployment.payments)) ? "Start from either Safe and pay on either chain, using one owner set and one shared budget." : `Approve on EEZ-X. The Safe verifies your authority against the current ${l1Name} owners.`}</p></div>
       <div className={styles.owners}><span className={styles.badge} data-positive={healthy}>{healthy ? "Network ready" : "Checking network"}</span>
         <span className={styles.badge}>{deployment.environment === "isolated-devnet" ? "Isolated devnet" : deployment.environment === "ethereum-mainnet" ? "Ethereum + EEZ-X" : "Chiado + EEZ-X testnet"}</span></div>
     </div>
@@ -358,16 +355,14 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
         <fieldset className={styles.fields} disabled={locked || !!review}>
           {payments && <><label htmlFor="treasury-source">Start from</label>
             <select id="treasury-source" value={source} disabled={kind === "invoice" || kind === "transfer"} onChange={e => selectSource(e.target.value as "l1" | "l2")}>
-              <option value="l2">EEZ-X Safe</option><option value="l1" disabled={!deployment.payments?.l1Initiation}>{l1Name} Safe</option>
+              <option value="l2">EEZ-X Safe</option><option value="l1" disabled={!(deployment.payments && verifiesL1Initiation(deployment.payments))}>{l1Name} Safe</option>
             </select></>}
           {payments && <><label htmlFor="treasury-kind">Payment type</label>
-            <select id="treasury-kind" value={kind} onChange={e => { const next = e.target.value as "fixed" | "rule" | "invoice" | "transfer"; setKind(next); if (next === "transfer") { selectSource("l1"); setDestination("l2"); setRecipient(deployment.safeL2); setAllocation(null); } else if (kind === "transfer") { setRecipient(deployment.payments!.recipient); setValue("40"); } if (next === "invoice") { selectSource("l2"); setValue("110"); setDestination("l1"); setRecipient(deployment.payments!.recipient); } }}>
-              <option value="fixed">Fixed amount</option>{deployment.payments?.percentageRules && <option value="rule">Percentage of combined Safe holdings</option>}{deployment.l1.front && (!deployment.fees || deployment.fees.l1MaxTotalWei) && <option value="transfer">Move to EEZ-X Safe</option>}{invoiceId && <option value="invoice">Invoice with required acceptance</option>}
+            <select id="treasury-kind" value={kind} onChange={e => { const next = e.target.value as "fixed" | "invoice" | "transfer"; setKind(next); if (next === "transfer") { selectSource("l1"); setDestination("l2"); setRecipient(deployment.safeL2); setAllocation(null); } else if (kind === "transfer") { setRecipient(deployment.payments!.recipient); setValue("40"); } if (next === "invoice") { selectSource("l2"); setValue("110"); setDestination("l1"); setRecipient(deployment.payments!.recipient); } }}>
+              <option value="fixed">Fixed amount</option>{deployment.l1.front && (!deployment.fees || deployment.fees.l1MaxTotalWei) && <option value="transfer">Move to EEZ-X Safe</option>}{invoiceId && <option value="invoice">Invoice with required acceptance</option>}
             </select></>}
-          {payments && kind === "rule" ? <>
-            <label htmlFor="treasury-percentage">Percentage (%)</label><input id="treasury-percentage" inputMode="decimal" autoComplete="off" value={percentage} maxLength={6} onChange={e => setPercentage(e.target.value)} />
-          </> : <><label htmlFor="treasury-value">{payments ? "Amount (USDC)" : "New demonstration value"}</label>
-            <input id="treasury-value" readOnly={kind === "invoice"} inputMode={payments ? "decimal" : "numeric"} autoComplete="off" value={value} maxLength={78} onChange={e => setValue(e.target.value)} /></>}
+          <label htmlFor="treasury-value">{payments ? "Amount (USDC)" : "New demonstration value"}</label>
+          <input id="treasury-value" readOnly={kind === "invoice"} inputMode={payments ? "decimal" : "numeric"} autoComplete="off" value={value} maxLength={78} onChange={e => setValue(e.target.value)} />
           {payments && <>
             <label htmlFor="treasury-recipient">Recipient address</label><input id="treasury-recipient" readOnly={kind === "invoice" || kind === "transfer"} value={recipient} onChange={e => setRecipient(e.target.value)} />
             <label htmlFor="treasury-destination">Recipient chain</label><select id="treasury-destination" disabled={kind === "invoice" || kind === "transfer"} value={destination} onChange={e => { const chain = e.target.value as "l1" | "l2"; setDestination(chain); setAllocation(null); }}><option value="l2">EEZ-X</option><option value="l1">{l1Name}</option></select>
@@ -375,7 +370,6 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
             {kind === "fixed" && <TreasuryFundingSplit l1Name={l1Name} split={split}
               onChange={fromL1 => { if (split) setAllocation({ amount: split.amount, fromL1 }); }}
               onReset={() => setAllocation(null)} />}
-            {kind === "rule" && <p className={styles.hint}>Funding is allocated automatically from both Safes when the rule calculates the payment.</p>}
             {kind === "invoice" && <div className={styles.notice} aria-label="Invoice scenario">
               <p>Invoice <code>{invoiceId}</code> · 110 USDC to {l1Name}.</p>
               <p>After you approve, the isolated fixture closes this invoice immediately before the proved payment executes. The payment bridges 10 from EEZ-X, transfers 100 from {l1Name}, then requires the merchant's acceptance.</p>
@@ -384,11 +378,7 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
           </>}
         </fieldset>
         {!payments && <p className={styles.hint}>Updates the demonstration value on EEZ-X.</p>}
-        {review && <div className={styles.route} aria-label="Reviewed Safe transaction"><p>Initiating Safe: {review.payment?.source === "l1" ? l1Name : "EEZ-X"}</p><h4>{review.payment ? `${review.payment.kind === "rule" ? `${formatPercentage(BigInt(review.payment.bps))}% of holdings` : `${formatUSDC(BigInt(review.payment.amount))} USDC`} → ${review.payment.destination === "l1" ? l1Name : "EEZ-X"}` : `Set value to ${review.value}`}</h4>
-          {review.payment?.kind === "rule" && review.estimate && <>
-            <p data-testid="rule-preview">{formatPercentage(BigInt(review.payment.bps))}% × ({formatUSDC(review.estimate.balanceL1)} {l1Name} + {formatUSDC(review.estimate.balanceL2)} EEZ-X) = {formatUSDC(review.estimate.amount)} USDC estimated</p>
-            <p>You approve the percentage. The final amount is calculated from both Safe balances during execution, within the shared budget and Safe limits.</p>
-          </>}
+        {review && <div className={styles.route} aria-label="Reviewed Safe transaction"><p>Initiating Safe: {review.payment?.source === "l1" ? l1Name : "EEZ-X"}</p><h4>{review.payment ? `${formatUSDC(BigInt(review.payment.amount))} USDC → ${review.payment.destination === "l1" ? l1Name : "EEZ-X"}` : `Set value to ${review.value}`}</h4>
           {review.payment && review.funding && <><p>Recipient: <code>{review.payment.recipient}</code></p><p data-testid="funding-preview">{formatUSDC(review.funding.fromL1)} from {l1Name} + {formatUSDC(review.funding.fromL2)} from EEZ-X</p>
             {review.payment.kind === "transfer" ? <p>Internal transfer: the payment budget and spending allowances stay unchanged. The batch approves exactly this amount for the bridge and clears the approval.</p> : <details className={styles.disclosure}><summary>How this payment is funded</summary><p>{review.payment.destination === "l1" && review.funding.fromL2 > 0n ? `EEZ-X Safe → policy → bridge burn → ${l1Name} escrow release → recipient. The ${l1Name} Safe pays its contribution directly.` : review.payment.destination === "l2" && review.funding.fromL1 > 0n ? `The EEZ-X Safe pays its contribution directly. ${l1Name} Safe → ${deployment.payments?.bridgeKind === "standard" ? "funding delegate" : "policy alias"} → bridge escrow; matching wrapped USDC is minted to the recipient on EEZ-X.` : "The Safe allowance module transfers directly to the recipient."}</p></details>}</>}
           <details className={styles.disclosure}><summary>Transaction details</summary><p>{review.payment?.source === "l1" ? l1Name : "EEZ-X"} Safe nonce {review.transaction.message.nonce.toString()} · chain {review.transaction.domain.chainId.toString()}</p><p>Target: <code>{review.transaction.message.to}</code></p>
@@ -435,9 +425,9 @@ export function TreasuryConnected({ deployment, wallet, payments = false, guardA
     {notice && <p className={styles.notice}>{notice}</p>}
     {error && <p className={styles.error} role="alert">{error}</p>}
     {(busy || intent || outcome) && <section className={styles.card} aria-label="Safe transaction status"><h3 aria-live="polite">{outcome?.rollback ? "Rollback verified" : outcome?.kind === "settled" ? `Settled on ${l1Name}` : "Transaction status"}</h3>
-      {!terminal(outcome) && <p role="status" aria-live="polite">{displayStatus}</p>}
+      {(!terminal(outcome) || (outcome?.kind === "rejected" && !outcome.rollback)) && <p role="status" aria-live="polite">{displayStatus}</p>}
       {fee && !terminal(outcome) && <p>Quoted network fee ceiling: {formatUnits(fee.maximum, 18)} {deployment.l1.chainId === 10200 ? "xDAI" : "ETH"}. The wallet submits these fees separately from the Safe’s USDC payment.</p>}
-      {intent?.payment && outcome?.kind !== "settled" && <p>{intent.payment.kind === "rule" ? `${formatPercentage(BigInt(intent.payment.bps))}% of combined Safe holdings` : `${formatUSDC(BigInt(intent.payment.amount))} USDC`} to <code>{intent.payment.recipient}</code> on {intent.payment.destination === "l1" ? l1Name : "EEZ-X"}</p>}
+      {intent?.payment && outcome?.kind !== "settled" && <p>{formatUSDC(BigInt(intent.payment.amount))} USDC to <code>{intent.payment.recipient}</code> on {intent.payment.destination === "l1" ? l1Name : "EEZ-X"}</p>}
       <TreasuryOutcomeDetails outcome={outcome} deployment={deployment} intent={intent ?? undefined} settlement={history.settlementFor(outcome)} />
       {intent && <>
         {(intent.hash || outcome?.hash) && (!intent.payment || outcome?.kind !== "settled") && <div className={styles.hint}><TreasuryChainLink deployment={deployment} chain={intent.submissionChain ?? intent.payment?.source ?? "l2"} value={(intent.hash || outcome?.hash)!} testId="submitted-hash">Submitted {(intent.submissionChain ?? intent.payment?.source) === "l1" ? l1Name : "EEZ-X"} transaction</TreasuryChainLink></div>}

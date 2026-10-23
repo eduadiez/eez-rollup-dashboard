@@ -2,28 +2,14 @@
 pragma solidity 0.8.34;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {TreasuryPolicyTest} from "./TreasuryPolicy.t.sol";
+import {TreasuryPolicyFixture} from "./TreasuryPolicy.t.sol";
 import {TreasuryPolicy} from "../src/TreasuryPolicy.sol";
-import {BidirectionalTreasuryPolicy} from "../src/BidirectionalTreasuryPolicy.sol";
 import {TreasuryAliasReader} from "../src/TreasuryAliasReader.sol";
 import {IEEZProxyRegistry} from "../src/interfaces/IEEZProxyRegistry.sol";
 
-contract BidirectionalTreasuryPolicyTest is TreasuryPolicyTest {
-    function _newPolicy() internal virtual override returns (TreasuryPolicy) {
-        return new BidirectionalTreasuryPolicy(
-            address(safeL1),
-            address(safeL2),
-            IEEZProxyRegistry(address(l2)),
-            address(new TreasuryAliasReader(IEEZProxyRegistry(address(l1)))),
-            address(module1),
-            module2,
-            address(usdc),
-            bridge2
-        );
-    }
-
+contract BidirectionalTreasuryPolicyTest is TreasuryPolicyFixture {
     function _l1Data(bool onL1, uint256 amount) internal view returns (bytes memory) {
-        return abi.encodeCall(policy.payRouted, (address(usdc), recipient, amount, onL1, block.timestamp / 600));
+        return _paymentData(true, onL1, amount);
     }
 
     function _fromL1(bytes memory data) internal {

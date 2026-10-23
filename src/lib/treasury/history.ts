@@ -1,3 +1,5 @@
+import { checkedRecordedPayment } from "./savedPayments.ts";
+import type { RecordedPayment } from "./savedPayments.ts";
 import { readIntent } from "./client.ts";
 import type { Intent, Outcome, TreasuryConfig } from "./client.ts";
 import { checkedPayment } from "./payments.ts";
@@ -15,7 +17,7 @@ export function historyConfig(config: TreasuryConfig, intent: Intent): TreasuryC
 }
 export type HistoryEntry = { id: string; recordedAt: string } & (
   { kind: "submitted"; intent: Intent } |
-  { kind: "preparation"; payment: Payment; detail: string }
+  { kind: "preparation"; payment: RecordedPayment; detail: string }
 );
 export type HistoryObservation = { outcome?: Outcome; checkedAt?: string; error?: string; checking?: boolean };
 export type HistoryStatus = "settled" | "preparation" | "rollback" | "pending" | "rejected";
@@ -58,7 +60,7 @@ export class PaymentHistoryStore {
       }
       if (entry.kind !== "preparation" || !/^[a-f0-9-]{36}$/i.test(entry.id) || typeof entry.detail !== "string" || entry.detail.length > 2000)
         throw new Error("Invalid preparation history entry");
-      return { id: entry.id, recordedAt: entry.recordedAt, kind: entry.kind, payment: checkedPayment(entry.payment), detail: entry.detail };
+      return { id: entry.id, recordedAt: entry.recordedAt, kind: entry.kind, payment: checkedRecordedPayment(entry.payment), detail: entry.detail };
     });
   }
   private write(entries: HistoryEntry[]) {

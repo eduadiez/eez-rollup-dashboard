@@ -4,7 +4,7 @@ import type { TreasuryConfig } from "../lib/treasury/client";
 import { treasuryTransactions } from "../lib/treasury/settlement";
 import { historyLabels, historyStatus } from "../lib/treasury/history";
 import type { HistoryStatus } from "../lib/treasury/history";
-import { formatUSDC, formatPercentage } from "../lib/treasury/payments";
+import { formatUSDC } from "../lib/treasury/payments";
 import { TreasuryOutcomeDetails } from "./TreasuryOutcomeDetails";
 import { TreasuryChainLink } from "./TreasuryPaymentFlow";
 import { NetworkIcon } from "./NetworkIcon";
@@ -35,7 +35,7 @@ export function TreasuryPaymentHistory({ history, deployment }: { history: Retur
       const status = historyStatus(entry, observation), intent = entry.kind === "submitted" ? entry.intent : undefined;
       const payment = entry.kind === "submitted" ? entry.intent.payment! : entry.payment;
       const actual = status === "settled" && outcome?.contributions;
-      const amount = actual ? formatUSDC(BigInt(actual.fromL1) + BigInt(actual.fromL2)) : payment.kind !== "rule" ? formatUSDC(BigInt(payment.amount)) : undefined;
+      const amount = actual ? formatUSDC(BigInt(actual.fromL1) + BigInt(actual.fromL2)) : formatUSDC(BigInt(payment.amount));
       const source = payment.source ?? "l2", hash = outcome?.hash ?? intent?.hash;
       const settlement = history.settlementFor(outcome);
       const transactions = treasuryTransactions(intent, outcome, settlement);
@@ -44,8 +44,8 @@ export function TreasuryPaymentHistory({ history, deployment }: { history: Retur
       const badge = status === "settled" ? styles.confirmed : status === "pending" ? styles.pending : styles.failed;
       return <li key={entry.id} className={layout.paymentEntry} data-testid="history-entry" data-status={status} data-safe-hash={intent?.safeHash}>
         <div className={`${styles.row} ${layout.paymentRow}`}>
-          <div className={styles.actionCol}><strong className={styles.typeLabel}>{amount ? `${amount} USDC` : `${formatPercentage(BigInt(payment.kind === "rule" ? payment.bps : 0))}% of holdings`} → {names[payment.destination]}</strong>
-            <span className={styles.detail}>{payment.kind === "invoice" ? "Invoice" : payment.kind === "transfer" ? "Transfer between Safes" : payment.kind === "rule" ? "Percentage rule" : "Fixed payment"}</span>
+          <div className={styles.actionCol}><strong className={styles.typeLabel}>{amount} USDC → {names[payment.destination]}</strong>
+            <span className={styles.detail}>{payment.kind === "invoice" ? "Invoice" : payment.kind === "transfer" ? "Transfer between Safes" : "Fixed payment"}</span>
             {actual && <div className={layout.paymentSplit} aria-label="Actual funding split"><span><span className={treasury.chainLabel} data-chain="l1">{names.l1}</span> {formatUSDC(BigInt(actual.fromL1))} USDC</span><span><span className={treasury.chainLabel} data-chain="l2">EEZ-X</span> {formatUSDC(BigInt(actual.fromL2))} USDC</span></div>}</div>
           <div className={`${styles.routeCol} ${layout.paymentRoute}`}><NetworkIcon chain={source} decorative /><span>{names[source]} → {names[payment.destination]}</span></div>
           <div className={styles.transactionCol} role="group" aria-label="Transaction links">{transactions.length ? transactions.map(tx =>

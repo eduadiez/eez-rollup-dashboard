@@ -33,6 +33,20 @@ the time; the dashboard verifies the selected treasury before opening it.
 The simplified contract build targets fresh treasury setups. It does not migrate
 existing policy contracts or preserve earlier constructor layouts.
 
+New setups also reuse a verified owner adapter when another mirror follows the
+same original Safe on the same EEZ manager. Otherwise the normal batch creates
+it. No wallet address or new environment setting is needed. The selected adapter
+must match both bindings and its registered Safe proxy; a discovery RPC failure
+requires retrying the read, not assuming that a new deployment is needed.
+
+Current policies omit the token argument from fixed payments;
+the signed policy address fixes the asset. Their manifests record `abiVersion: 2`
+and verify `SPLIT_VERSION = 2`. Existing manifests retain their original ABI, and
+unfinished setups retain their source build and bootstrap constructor. Deploy the
+matching dashboard and immutable verification bundle together; updating the UI
+does not change an installed policy or convert outstanding approvals.
+
+
 ## Shared EEZ-X Safe infrastructure
 
 New treasuries reuse the Safe implementation, proxy factory, call-only batch
@@ -188,39 +202,29 @@ Explicit Ethereum manifest support and real-USDC fork checks are covered by the
 Ethereum-anchored rollup remain required; changing the token address alone does
 not enable a mainnet treasury. No new `.env` variables are needed.
 
-New setups use version 8. Unsubmitted version-6 setups automatically remove
-funding while preserving the selected wallet, Safes, asset and confirmed
-transactions. The connection transaction registers the owner verifier's Chiado
-alias and closes the existing setup executor. Finish the budget and spending
-approvals normally. Contract verification accepts actual Safe balances, including
-zero, while still checking the configured allowances and counters. The shared
-bridge backs the aggregate wrapped supply; each treasury has its own policy and
-Safe allowances. Reusing a Safe does not revoke its existing permissions.
+New setups use a flat version-11 journal. Selecting an existing Chiado Safe
+inspects it, discovers verified reusable infrastructure and the predeployed
+asset, and freezes one deployment plan before the first wallet request. It does
+not run earlier setup migrations, create tokens or bridges, approve token funding,
+or transfer balances. The owner-connection transaction registers the verifier's
+Chiado alias and closes the executor; budget and allowance configuration follow.
+Balances may be zero. Obtain tokens and fund either Safe separately.
 
-The complete prior journal is stored under `:before-skipping-funding:<salt>`.
-A confirmed token approval remains in history, but the new plan never uses it:
-closing the executor permanently disables further batches. Pending requests and
-signed reviews keep their exact calldata until resolved. No migration creates a
-fake transaction or changes token balances. Version-7 optional-skip journals
-remain readable. Older builds reject versions 8 and 9; do not restore an old funding
-plan after continuing.
+Saved versions keep their original plan and immutable artifact build. Their
+addresses, salt, recorded receipts, signed reviews and pending calldata are never
+converted to current creation bytes. Historical funding and private-bridge calls
+are reconstructed only for an already-saved plan, using archived artifacts; new
+selections cannot enter those paths. The retired bridge wrapper Solidity sources
+are no longer compiled. Shared bridge reuse still admits the exact reviewed
+historical runtimes and verifies their immutable bindings, sealed peers and wrapped
+mint authority. No contract, balance or policy migration is performed.
 
-For recovery only, an already-submitted version-6 funding batch retains its
-original 450-token `transferFrom`, 300-token transfer to Chiado and 150-token
-bridge deposit. Its receipt checks require consumed allowances and an empty
-executor. Already funded or later private-asset setups retain their original
-balance checks. No new setup offers this funding flow. Obtain test tokens and
-send them to a Safe separately; treasury setup does not call the faucet.
-
-Migration preserves the selected wallet, salt, Safes, confirmations and pending
-calldata. Eligible version-4/5 setups adopt version 6 only before the Chiado
-creation batch and after outstanding requests/reviews resolve. A legacy shared
-asset binding must match the predeployed asset. Later partial setups and active
-treasuries keep their original contracts and funding plan; there is no implicit
-migration of funds or immutable policies. The prior journal is retained before
-migration. Older builds reject version-6 journals: finish with the new UI after
-new transactions have been submitted, rather than restoring an old journal and
-replaying them. No protocol or operator configuration migration is involved.
+Keep the selected journal and its archived build when upgrading the UI. Older UIs
+reject version 11 and the new payment format; do not downgrade or copy a completed
+journal over an unresolved request. Missing wallet responses remain pending until
+the exact sender/nonce/calldata is found and its canonical receipt is verified.
+A reload never resends the transaction. Source publication and transaction history
+continue using their original records. No new `.env` setting is required.
 
 ## Requesting more Test USDC
 
@@ -527,7 +531,7 @@ The named transactions implement this application setup sequence:
 4. Register the owner verifier's L1 alias and close the Chiado setup executor.
    Do not request token approval or move tokens. Empty Safes can complete setup;
    balances remain available for separate ordinary transfers.
-5. Deploy `SplitTreasuryPolicy` with the **alias reader address** as its fourth
+5. Deploy `TreasuryPolicy` with the **alias reader address** as its fourth
    constructor argument. The eight-argument constructor has no merchant argument,
    and the public policy has no invoice entry point. Invoice demonstrations use
    a separate fixture policy only on an isolated devnet.
@@ -766,7 +770,7 @@ example with **Ctrl+Alt+Shift+T**. On the connected treasury:
    otherwise collect the required quorum. The dashboard reads the current L1 owners.
 5. Use **Amount (USDC)**, **Recipient chain** and **Use available funds** in the payment form. Pay 40 on EEZ-X; then split 110 to Chiado (100 Chiado + 10 EEZ-X); reject another 1
    on EEZ-X while its allowance still has 50 available. Wait for natural budget
-   reset before exercising the 10% rule and reverse funding.
+   reset before paying 30 to Chiado and splitting 110 to EEZ-X (10 Chiado + 100 EEZ-X).
 6. Inspect history and reload to verify recovery. Unknown submissions remain
    locked; missing receipts or diagnostics do not authorize a second send.
 
@@ -804,7 +808,7 @@ invoice-closing endpoint or claim a deterministic L1 rollback demonstration.
 
 ## Payment split on a new treasury
 
-Fresh setup deploys `SplitTreasuryPolicy`; no separate activation or upgrade is
+Fresh setup deploys `TreasuryPolicy`; no separate activation or upgrade is
 needed. In **Review a payment**, set the amount and recipient chain, then move
 **Payment split** to choose each Safe's contribution. Review the exact USDC
 amounts before signing. **Use available funds** restores destination-first
@@ -814,8 +818,6 @@ The slider signs exact token amounts, so 100 + 10 remains exact even though its
 percentages are rounded for display. It supports all-Chiado, all-EEZ-X and mixed
 funding, independently of the initiating Safe and recipient chain. An unavailable
 selected contribution rejects the payment instead of silently rebalancing it.
-Percentage-of-holdings rules retain automatic funding of their execution-time
-amount.
 
 The dashboard no longer starts or executes policy handovers. Historical journals
 and receipts remain available without modifying their signed requests. An old

@@ -139,13 +139,7 @@ try {
     fresh = await d.reconcile(readDeployment(JSON.stringify(tracked)));
     record(i === 0 ? 'missing wallet response recovered from real account history, then exact canonical deployment validated'
       : 'actual fee replacement discovered by sender/nonce and confirmed without resubmission');
-    if (i === 0) {
-      const first = structuredClone(fresh);
-      fresh = await d.simplify(fresh);
-      assert.deepEqual(fresh.completed, first.completed); assert.deepEqual(fresh.transactions, first.transactions);
-      assert.equal(fresh.addresses.singletonL1, first.addresses.singletonL1); assert.equal(fresh.salt, first.salt);
-      assert.equal(d.steps(fresh).length, 23); assert.equal(d.steps(fresh)[1].id, 'safeL1');
-    }
+
   }
   assert.deepEqual(await read('l1', fresh.addresses.safeL1, 'getOwners'), [C.address]);
   assert.equal(await read('l1', fresh.addresses.safeL1, 'getThreshold'), 1n);

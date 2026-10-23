@@ -1,12 +1,11 @@
 // Real token/bridge/module deployment on the owned process fixture.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { packSafeCalls } from '../../src/lib/treasury/safeSetup.ts';
 import { encodeFunctionData, concatHex, zeroAddress, zeroHash, keccak256, encodeDeployData, encodeAbiParameters, parseAbiParameters, getContractAddress, getAddress } from 'viem';
 import { buildSafeTransaction, packOwnerApprovals, encodeSafeExecution } from '../../src/lib/treasury/safeTransactions.ts';
-export async function setupPayments(f, { legacy = false } = {}) {
+export async function setupPayments(f) {
   const { network: n, read, rpc, artifact, deploy, send, safeArtifact, A, B, adapter, safeL1, safeL2, manager } = f;
-  const token = artifact('out', 'SharedTestUSDC'), bridge = artifact('out', 'SharedTreasuryBridge'), module = artifact('legacy/out', 'AllowanceModule'), policyArtifact = legacy ? (() => { const frozen = JSON.parse(readFileSync('contracts/legacy/artifacts/TreasuryPolicy.json')); return { abi: frozen.abi, bytecode: { object: frozen.bytecode } }; })() : artifact('out', 'InvoiceTreasuryPolicy');
+  const token = artifact('out', 'SharedTestUSDC'), bridge = artifact('out', 'SharedTreasuryBridge'), module = artifact('legacy/out', 'AllowanceModule'), policyArtifact = artifact('out', 'InvoiceTreasuryPolicy');
   const tokenL1 = await deploy(n.l1, token);
   const bootstrapArtifact = artifact('out', 'TreasuryBootstrap');
   const helperArtifact = artifact('legacy/out', 'MultiSendCallOnly');
@@ -17,12 +16,12 @@ export async function setupPayments(f, { legacy = false } = {}) {
   const bootstrapL1 = await predictedExecutor(n.l1);
   const aliasReaderL1 = getContractAddress({ from: bootstrapL1, nonce: 1n });
   const moduleL1 = getContractAddress({ from: bootstrapL1, nonce: 2n });
-  assert.equal(getAddress(await deploy(n.l1, bootstrapArtifact, [f.submitter.address, [
+  assert.equal(getAddress(await deploy(n.l1, bootstrapArtifact, [[
     creation(aliasReaderL1, artifact('out', 'TreasuryAliasReader'), [n.registry]), creation(moduleL1, module),
   ]])), bootstrapL1);
   const bootstrapL2 = await predictedExecutor(n.l2);
   const helperL2 = getContractAddress({ from: bootstrapL2, nonce: 1n });
-  assert.equal(getAddress(await deploy(n.l2, bootstrapArtifact, [f.submitter.address, [creation(helperL2, helperArtifact)]])), bootstrapL2);
+  assert.equal(getAddress(await deploy(n.l2, bootstrapArtifact, [[creation(helperL2, helperArtifact)]])), bootstrapL2);
   const moduleL2 = getContractAddress({ from: bootstrapL2, nonce: 2n });
   const policy = getContractAddress({ from: bootstrapL2, nonce: 3n });
   const merchantArtifact = artifact('out', 'InvoiceMerchant');
@@ -99,7 +98,7 @@ export async function setupPayments(f, { legacy = false } = {}) {
     assert.equal(await read((onL1 ? n.l1 : n.l2).rpc, safe, safeArtifact.abi, 'isModuleEnabled', [delegate]), false);
   }
   const payments = { aliasReaderL1, policy, alias, tokenL1, tokenL2, moduleL1, moduleL2, bridgeL1, bridgeL2,
-    ...(legacy ? {} : { l1Initiation: true, exactSplits: true }), combinedL2: true, percentageRules: true, invoiceMerchant: merchant, recipient: '0x0000000000000000000000000000000000001234', decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Devnet USDC' };
+    version: 2, invoiceMerchant: merchant, recipient: '0x0000000000000000000000000000000000001234', decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Devnet USDC' };
   f.evidence.payments = payments;
   f.evidence.paymentInitialNonce = String(await read(n.l2.rpc, safeL2, safeArtifact.abi, 'nonce'));
   f.checkpoint();

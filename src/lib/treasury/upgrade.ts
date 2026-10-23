@@ -1,3 +1,4 @@
+import { paymentVersion } from "./savedPayments.ts";
 import { zeroAddress } from "viem";
 import { parseTreasuryConfig } from "./client.ts";
 import type { TreasuryConfig } from "./client.ts";
@@ -14,7 +15,7 @@ export function readUpgrade(raw: string | null, current: TreasuryConfig): Policy
   check((record.version === 1 || record.version === 2) && Array.isArray(record.helpers) && record.helpers.every(c => c === "l1" || c === "l2")
     && new Set(record.helpers).size === record.helpers.length, "Invalid policy upgrade record; keep it for recovery");
   const previous = parseTreasuryConfig(record.previous);
-  check(previous.instance === current.instance && previous.payments && (record.version === 1 ? !previous.payments.l1Initiation && !previous.previousPayments : !previous.payments.exactSplits)
+  check(previous.instance === current.instance && previous.payments && (record.version === 1 ? paymentVersion(previous.payments) === 0 && !previous.previousPayments : paymentVersion(previous.payments) === 0)
     && same(previous.safeL1, current.safeL1) && same(previous.safeL2, current.safeL2), "Upgrade belongs to another treasury");
   check(record.state && readDeployment(JSON.stringify(record.state)) && record.state.version === 2 && !record.state.bidirectional
     && same(record.state.addresses.safeL1!, current.safeL1) && same(record.state.addresses.safeL2!, current.safeL2)

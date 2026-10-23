@@ -6,7 +6,7 @@ import { keccak256, toHex, padHex, parseAbi, encodeFunctionData, zeroAddress } f
 import { runFixture } from './treasury-owners.mjs';
 import { TreasuryClient, parseTreasuryConfig, readIntent } from '../../src/lib/treasury/client.ts';
 import { buildSafeTransaction, packOwnerApprovals, packEOAApprovals, encodeSafeExecution } from '../../src/lib/treasury/safeTransactions.ts';
-import { paymentState, paymentTransaction, tokenAbi, paymentAbi } from '../../src/lib/treasury/payments.ts';
+import { paymentState, paymentTransaction, defaultSplit, tokenAbi, paymentAbi } from '../../src/lib/treasury/payments.ts';
 import { USDC_IMPLEMENTATION_SLOT } from '../../src/lib/treasury/mainnet.ts';
 import { packSafeCalls } from '../../src/lib/treasury/safeSetup.ts';
 import { startComposerAdapter } from '../../scripts/treasury-composer.mjs';
@@ -96,7 +96,7 @@ export async function runStandardBridge(networkFile, evidenceFile) {
       }
       enabled=true;
       const payments={bridgeKind:'standard',bridgeExecutorL1,safeL2Alias,policy,alias,tokenL1,tokenL2,moduleL1,moduleL2,bridgeL1,bridgeL2,
-        l1Initiation:true,combinedL2:true,percentageRules:true,exactSplits:true,recipient:'0x0000000000000000000000000000000000001234',decimals:6,period:600,globalLimit:'150000000',assetLabel:'Devnet USDC'};
+        version: 2,recipient:'0x0000000000000000000000000000000000001234',decimals:6,period:600,globalLimit:'150000000',assetLabel:'Devnet USDC'};
       const bindings=[['l1',bridgeExecutorL1],['l1',f.safeL1],['l2',f.safeL2],['l2',f.adapter],['l1',safeL2Alias],['l1',alias],['l1',tokenL1],['l2',tokenL2],['l1',moduleL1],['l2',moduleL2],['l1',bridgeL1],['l2',bridgeL2],['l2',policy]];
       const code=await Promise.all(bindings.map(async([chain,address])=>({chain,address,hash:keccak256(await f.rpc(n[chain].rpc,'eth_getCode',[address,'latest']))})));
       c=parseTreasuryConfig({...base,instance:keccak256(toHex(policy)),payments,code});client=new TreasuryClient(c);await client.validate();
@@ -119,7 +119,7 @@ export async function runStandardBridge(networkFile, evidenceFile) {
       return prepared;
     }
     async function payment(source,destination,amount,fromL1,extra={}) {
-      return {source,destination,recipient:c.payments.recipient,epoch:String((await paymentState(client)).epoch),amount:String(amount),funding:'split',fromL1:String(fromL1),...extra};
+      return {source,destination,recipient:c.payments.recipient,epoch:String((await paymentState(client)).epoch),amount:String(amount),fromL1:String(fromL1),...extra};
     }
     async function pay(input,signers) {
       const before=await paymentState(client),asset=input.destination==='l1'?tokenL1:tokenL2;
@@ -163,9 +163,9 @@ export async function runStandardBridge(networkFile, evidenceFile) {
     const status=await f.until('global budget rejection',async()=>{const s=await f.rpc(n.l2.rpc,'eez_getCrossChainTransaction',[hash]);return s?.lifecycle==='terminal'?s:false;});
     assert.equal(status.ownership.reason,'PoolDiscarded');assert.equal((await paymentState(client)).spent,150_000_000n);
     f.evidence.cases.push({label:'shared 150 limit rejects with 50 remaining on EEZ-X',hash,stage:'preparation',unchanged:true});f.checkpoint();
-    await newPolicy('all routes and rule');
+    await newPolicy('all routes and fixed payments');
     for(const source of ['l1','l2'])for(const destination of ['l1','l2'])await pay(await payment(source,destination,10_000_000n,5_000_000n));
-    await pay({source:'l2',destination:'l2',recipient:c.payments.recipient,epoch:String((await paymentState(client)).epoch),kind:'rule',bps:'1000',funding:'combined'});
+    await pay(await payment('l2','l2',26_000_000n,0n));
     const { standardBrowser } = await import('./treasury-standard-browser.mjs');
     await standardBrowser(f,c,dirname(evidenceFile));
     const { standardRollback } = await import('./treasury-standard-rollback.mjs');

@@ -28,9 +28,8 @@ contract TreasuryBootstrap {
     event Created(uint256 indexed index, address indexed target, bytes32 initHash);
     event Executed(uint256 indexed sequence, bytes32 actionsHash, bool closed);
 
-    constructor(address owner_, Action[] memory actions) {
-        if (owner_ == address(0) || owner_ != msg.sender) revert Unauthorized();
-        owner = owner_;
+    constructor(Action[] memory actions) {
+        owner = msg.sender;
         _execute(actions, false);
     }
 

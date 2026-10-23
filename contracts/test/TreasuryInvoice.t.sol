@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
+import {TreasuryPolicyBase} from "../src/TreasuryPolicyBase.sol";
 import {TreasuryPolicyFixture} from "./TreasuryPolicy.t.sol";
 import {TreasuryPolicy} from "../src/TreasuryPolicy.sol";
 import {TreasuryAliasReader} from "../src/TreasuryAliasReader.sol";
@@ -109,7 +110,7 @@ contract TreasuryInvoiceTest is TreasuryPolicyFixture {
         vm.expectRevert(InvoiceMerchant.TermsMismatch.selector);
         merchant.accept(id, address(usdc), recipient, U + 1);
         vm.stopPrank();
-        vm.expectRevert(TreasuryPolicy.OnlySafe.selector);
+        vm.expectRevert(TreasuryPolicyBase.OnlySafe.selector);
         InvoiceTreasuryPolicy(address(policy)).payInvoice(address(usdc), recipient, U, id, vm.getBlockTimestamp() / 600);
         bytes32 beforeState = _treasuryState();
         bytes memory data = _invoiceData(id, 2 * U);

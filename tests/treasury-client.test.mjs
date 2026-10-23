@@ -167,28 +167,11 @@ test('reverse funding validates both bridge counterparts, asset, managers and ro
     return encodeFunctionResult({ abi, functionName, result: responses.get(key) });
   };
   await client.validatePayments();
-  // Older configurations keep working without the new policy getter. A fresh
-  // deployment may advertise rules only with the expected denominator.
-  p.percentageRules = true;
-  put('l2', p.policy, { BPS_DENOMINATOR: 10_000n });
-  await client.validatePayments();
-  responses.set(`l2:${p.policy}:BPS_DENOMINATOR`, 100n);
-  await assert.rejects(client.validatePayments(), /Percentage rule configuration changed/);
-  responses.set(`l2:${p.policy}:BPS_DENOMINATOR`, 10_000n);
   for (const [key, original] of [...responses].filter(([key]) => key.includes(p.bridgeL1) || key.includes(p.bridgeL2) || key.endsWith(':bridgeL1'))) {
     responses.set(key, typeof original === 'bigint' ? original + 1n : address('f'));
     await assert.rejects(client.validatePayments(), /Reverse route/);
     responses.set(key, original);
   }
-});
-
-test('percentage-rule capability must be explicit and boolean in a payment configuration', () => {
-  const payments = { policy: address('7'), alias: address('8'), tokenL1: address('9'), tokenL2: address('a'), moduleL1: address('b'), moduleL2: address('c'),
-    bridgeL1: address('d'), bridgeL2: address('e'), recipient: address('f'), combinedL2: true, decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Devnet USDC' };
-  const code = [...config.code, ...['policy', 'tokenL2', 'moduleL2', 'bridgeL2'].map(key => ({ chain: 'l2', address: payments[key], hash: hash(key) })),
-    ...['alias', 'tokenL1', 'moduleL1', 'bridgeL1'].map(key => ({ chain: 'l1', address: payments[key], hash: hash(key) }))];
-  for (const percentageRules of [undefined, false, true]) assert(parseTreasuryConfig({ ...config, code, payments: { ...payments, percentageRules } }));
-  for (const percentageRules of ['true', 1, null]) assert.throws(() => parseTreasuryConfig({ ...config, code, payments: { ...payments, percentageRules } }), /percentage rule capability/);
 });
 
 test('queue removal without fixture evidence does not establish a preparation rejection', async t => {
@@ -374,10 +357,10 @@ test('signing and submission still reject a wallet on the other Safe network', a
   const c = { ...config, l1: { ...config.l1, front: 'http://127.0.0.1:10001/composer/l1' }, payments: {
     policy: address('a'), alias: address('b'), tokenL1: address('c'), tokenL2: address('d'),
     moduleL1: address('e'), moduleL2: address('f'), bridgeL1: address('8'), bridgeL2: address('9'), recipient: address('7'),
-    decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Devnet USDC', l1Initiation: true,
+    decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Devnet USDC', version: 2,
   } };
   for (const source of ['l1', 'l2']) {
-    const payment = { source, recipient: address('7'), destination: 'l2', epoch: '1', amount: '1000000', funding: 'local' };
+    const payment = { source, recipient: address('7'), destination: 'l2', epoch: '1', amount: '1000000', fromL1: '0' };
     const tx = paymentTransaction(c, payment, 0n), client = new TreasuryClient(c);
     const snapshot = { source, owners: [address('7')], threshold: 1, nonce: 0n, value: 0n, fingerprint: '1:A' };
     client.validate = async () => {};

@@ -7,15 +7,15 @@ import { readIntent } from '../src/lib/treasury/client.ts';
 import { safeTransactionHash } from '../src/lib/treasury/safeTransactions.ts';
 const address = n => `0x${String(n).repeat(40)}`;
 const c = { instance: keccak256(stringToHex('invoices')), registry: address(9), safeL1: address(1), safeL2: address(2), l2: { chainId: 420691 },
-  payments: { policy: address(3), alias: address(4), tokenL1: address(5), bridgeL1: address(6), invoiceMerchant: address(7) } };
-const p = { kind: 'invoice', invoiceId: keccak256(stringToHex('invoice-1')), recipient: address(8), amount: '110000000', funding: 'combined', destination: 'l1', epoch: '100' };
+  payments: { version: 2, policy: address(3), alias: address(4), tokenL1: address(5), bridgeL1: address(6), invoiceMerchant: address(7) } };
+const p = { kind: 'invoice', invoiceId: keccak256(stringToHex('invoice-1')), recipient: address(8), amount: '110000000', destination: 'l1', epoch: '100' };
 const tx = paymentTransaction(c, p, 5n), hash = safeTransactionHash(tx);
 const intent = { version: 1, instance: c.instance, value: '0', payment: p, nonce: '5', safeHash: hash, data: '0x1234', sender: address(1), sourceNonce: '0x1', startBlock: '0x1' };
 test('invoice signs identity, terms, period and acceptance through a distinct typed entry point', () => {
   const call = decodeFunctionData({ abi: paymentAbi, data: tx.message.data });
   assert.equal(call.functionName, 'payInvoice');
   assert.deepEqual(call.args, [c.payments.tokenL1, p.recipient, 110000000n, p.invoiceId, 100n]);
-  for (const update of [{ invoiceId: keccak256(stringToHex('other')) }, { amount: '109000000' }, { recipient: address('a') }, { epoch: '101' }, { kind: 'fixed', invoiceId: undefined }]) {
+  for (const update of [{ invoiceId: keccak256(stringToHex('other')) }, { amount: '109000000' }, { recipient: address('a') }, { epoch: '101' }, { kind: 'fixed', invoiceId: undefined, fromL1: '100000000' }]) {
     const next = { ...p, ...update }; if (next.kind === 'fixed') delete next.invoiceId;
     assert.notEqual(safeTransactionHash(paymentTransaction(c, next, 5n)), hash);
   }

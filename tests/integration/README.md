@@ -106,7 +106,7 @@ fixture uses a development miner, a local bundle-forwarding relay and a Beacon
 sidecar fixture; it does not validate production PBS ordering or wallet-extension
 UX. Negative cases are composition rejections, not L1 settlement rollback tests.
 The browser scenario below additionally exercises the shared budget and
-bridge routes to both destinations and a percentage rule over both Safe holdings. The scripted owner scenario remains focused on owners;
+bridge routes to both destinations with exact signed funding splits. The scripted owner scenario remains focused on owners;
 the browser scenario also exercises the invoice settlement-failure act using the existing native relay barrier. The original proved post and blob bytes are unchanged.
 
 The [2026-10-20 evidence record](../../docs/audits/2026-10-20-treasury-owner-integration/README.md)
@@ -204,15 +204,11 @@ To exercise the flow:
    resets the allowances and policy budget, but does not replenish balances.
    Starting the launcher again creates a fresh funded fixture for another full
    walkthrough.
-6. After the next reset, choose **Pay 10% of holdings**. Review **10% × (200 L1 +
-   100 EEZ-X) = 30 USDC estimated**, with 30 funded from L1. The percentage is
-   editable from 0.01 to 100; approvals authorize that fraction, recipient and
-   destination, not the estimate. Collect A+B approvals and submit once. On
-   settlement, the UI shows the observed balances and actual 30-USDC amount.
-   Safe balances become 170 / 100 and spending becomes 30 / 0 / 30. Escrow is not
-   included in combined holdings. A rule that rounds to zero or exceeds a limit
-   is rejected, without reducing the percentage to fit available capacity.
-7. Once the form unlocks automatically, choose **Split 110 to EEZ-X** and review **10 from L1 +
+6. After the next reset, select **Fixed amount**, enter **30**, choose the base
+   chain as recipient chain and **Use available funds**. Review 30 funded from
+   its Safe. Collect A+B approvals and submit once. Safe balances become
+   170 / 100 and spending becomes 30 / 0 / 30.
+7. Once the form unlocks automatically, enter **110**, select **EEZ-X** and choose **Use available funds** and review **10 from L1 +
    100 from EEZ-X**. Sign as A+B and submit once. The recipient gets 100 from the
    local Safe and 10 newly minted tokens backed by an additional 10 in L1 escrow.
    Safe balances become 160 / 0, spending is 40 / 100 / 140 in the new period,
@@ -223,12 +219,10 @@ To exercise the flow:
    no payment budget. The helper uses normal A+B Safe signatures, not a debug
    state mutation.
 
-Review binds the EEZ-X chain, Safe, nonce, canonical token, recipient,
-destination and budget epoch. Fixed payments bind their amount/funding mode;
-percentage rules bind the fraction and use combined funding. Holdings may change
-before rule execution, so the actual amount can differ from its estimate. Editing
-the percentage clears existing approvals. Both the actual rule observations and
-funding event must agree before the UI reports settlement. The application stores submission
+Review binds the initiating chain, Safe, nonce, policy, recipient, destination,
+amount, budget epoch and exact contribution from each Safe. Editing the amount
+or split clears existing approvals. The `Paid` event must match before the UI
+reports settlement. The application stores submission
 identity before opening the wallet and tracks the hash. A speculative L2 receipt
 remains pending. **Settled on L1** requires a canonical safe-chain receipt and
 exact Safe and payment success events. Reloading restores the signed fields and
@@ -285,19 +279,19 @@ wrapped supply, and the policy/alias's zero residual balance. An independent
 follower must reproduce the L2 balances, allowance, budget and Safe nonce.
 
 The scenario then waits for the next **natural L1 ten-minute boundary**, including
-an idle L2, and pays 10% of the combined 300 to L1. It edits the fraction after
-one approval, confirms approvals clear, restores 10%, signs and reloads after
-submission. `RulePaid` must contain 200 / 100 / 1000 bps / 30, agree with `Paid`,
-and match an actual 30-USDC L1 transfer. The follower independently replays the
-rule receipt and 30-USDC debit. It then pays 110 to EEZ-X: 100 from its Safe and
+an idle L2, and pays a fixed 30 to L1. It edits the amount after one approval,
+confirms approvals clear, restores 30, signs and reloads after submission. The
+`Paid` event must match the signed amount and allocation, with a real 30-USDC L1
+transfer. The follower independently replays the receipt and debit. It then pays
+110 to EEZ-X: 100 from its Safe and
 10 from L1, totaling 140 in the same shared period. It checks the
 canonical Safe-to-alias transfer, exact alias approval, alias-to-escrow transfer,
 consumed lock nonce, local transfer and matching mint in one L2 receipt. Escrow
 and wrapped supply both rise from 140 to 150; the alias approval is zero. The
 follower independently reproduces supply, recipient/Safe balances, budget,
 allowance, bridge nonce and Safe nonce. Reload restores the L2 destination and
-combined mode. A final 10% rule estimates 16 against the remaining 160 holdings
-and is rejected by UI preflight with only 10 of global budget left. Allow up to a further ten minutes for the reset; the test does
+exact split. A final fixed 16-USDC payment is rejected by UI preflight with
+only 10 of global budget left. Allow up to a further ten minutes for the reset; the test does
 not warp time or overwrite chain state to manufacture a fresh budget.
 
 For the first-period rejection, the test also bypasses UI preflight and submits a
@@ -309,7 +303,7 @@ L1 inclusion. The contract suite separately tests a controlled final-transfer
 and later-lock failures with synchronous mock cross-chain delivery.
 
 Screenshots and JSON are recorded under the run directory. See the
-[percentage-rule audit](../../docs/audits/2026-10-20-treasury-rules/README.md). The test wallet is an EIP-1193 provider backed by real
+[fixed-payment audit](../../docs/audits/2026-10-23-treasury-fixed-payments/README.md). The test wallet is an EIP-1193 provider backed by real
 fixture-key signing in the Node test process; RPCs and contract execution are
 real. This is not automation of MetaMask/Rabby dialogs or the official Safe app.
 The server and owned devnet processes are stopped after the test.
@@ -333,7 +327,7 @@ barrier or required observations fail, the UI reports unverified evidence; do
 not reinterpret that as rollback or automatically resend the payment.
 
 For the longer stage script, run this after the initial 40 / 110 / rejected 1
-sequence and its natural budget reset, before the percentage rule. The automated
+sequence and its natural budget reset, before the fixed 30-USDC payment. The automated
 browser suite runs it first while allowances are unused, then runs all existing
 payment regressions; no chain clock is warped or storage reset. It also submits
 an already-closed invoice through Composer and displays preparation rejection,
@@ -353,7 +347,7 @@ for passing evidence and any diagnostic failures.
 
 The **Payments** screen includes a browser-local history for the current
 isolated deployment. Completed payments unlock the form automatically and preserve prior attempts. Expand a row to
-see its recipient, destination, signed amount or percentage, budget period,
+see its recipient, destination, signed amount and split, budget period,
 actual settled contributions, Safe/source hashes and canonical block. Invoice
 rollback rows include the earlier transfer order, before/after state and L1
 post/closure hashes. Use **Filter history** to distinguish settlements,
@@ -394,7 +388,7 @@ On reload it explicitly omits only the old invoice's Composer diagnostic lookup;
 all canonical nonces, receipts, traces and state remain real RPC observations.
 Diagnostic retention has no fixed expiry deadline. It checks all eight entries,
 inspects both destination splits and
-the 30-USDC percentage result, opens the old rollback state table and hashes,
+the fixed 30-USDC result, opens the old rollback state table and hashes,
 and exercises filters at desktop, 390px and 320px widths. It also cancels a wallet
 submission and verifies no journal ghost remains, aborts read RPCs to require
 unresolved labels, restores reads and rechecks outcomes. The original seven
@@ -468,3 +462,10 @@ handover UI. The retired executable plan lives only in
 `tests/fixtures/treasury-policy-upgrade.ts` for historical integration coverage;
 production code only reads retained handover receipts. Browser checks do not
 replace the native scenario or a human browser-wallet rehearsal on Chiado.
+
+The setup-batch integration (`node tests/integration/treasury-deployment-batches.mjs`)
+now exercises direct version-11 selection of an existing L1 Safe, shared asset
+reuse, mirror creation/adoption, approvals and receipt recovery. Funding is an
+explicit test action after setup. `treasury-saved-payments.test.mjs` and
+`treasury-deployment-batches.test.mjs` retain recorded-format recovery regressions;
+no test creates a new treasury through the retired migration chain.

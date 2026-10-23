@@ -92,9 +92,12 @@ test('release bundles retain compiler inputs for every new deployment artifact',
   const bundle=JSON.parse(readFileSync(`src/lib/treasury/builds/${current}.json`));
   assert.equal(Object.keys(bundle.contracts).length,18);
   assert.equal(bundle.contracts.InvoiceMerchant, undefined);
-  for (const name of ['SplitTreasuryPolicy','StandardBridgeTreasuryPolicy']) {
+  for (const name of ['TreasuryPolicy','StandardBridgeTreasuryPolicy']) {
     const abi=bundle.contracts[name].abi;
     assert.equal(abi.find(x=>x.type==='constructor').inputs.length,8);
+    assert(abi.some(x=>x.name==='paySplit'));
+    assert(!abi.some(x=>['payRule','RulePaid','BPS_DENOMINATOR','InvalidFraction'].includes(x.name)));
+    assert(!abi.some(x=>x.name==='pay' || x.name==='payRouted'));
     assert(!abi.some(x=>/invoice/i.test(x.name??'')));
     if(name==='StandardBridgeTreasuryPolicy')assert(!abi.some(x=>/aliasReader/i.test(x.name??'')));
   }

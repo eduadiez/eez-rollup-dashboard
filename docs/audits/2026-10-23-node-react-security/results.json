@@ -1,0 +1,380 @@
+{
+  "date": "2026-10-23",
+  "status": "complete; final checks passed; initial failures retained",
+  "branch": "codex/treasury-demo-release",
+  "baseHead": "a96bc5cd3e7df91ac585ce7cdf6303f82fc7bfb6",
+  "protocol": "855fe0602484750861b4c31502a1a91355d33ed6",
+  "contractRelease": "026c1f779c5c3bed2cc56f91707bb7b9eca67c240ef7cfd47ca83017cb868df1",
+  "node": "22.23.4",
+  "npm": "10.9.9",
+  "auditBefore": {
+    "info": 0,
+    "low": 1,
+    "moderate": 2,
+    "high": 7,
+    "critical": 0,
+    "total": 10
+  },
+  "auditAfter": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "dependencyChanges": [
+    {
+      "package": "node_modules/@babel/code-frame",
+      "before": "7.29.0",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/compat-data",
+      "before": "7.29.0",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/core",
+      "before": "7.29.0",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/generator",
+      "before": "7.29.1",
+      "after": "7.29.8"
+    },
+    {
+      "package": "node_modules/@babel/helper-compilation-targets",
+      "before": "7.28.6",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-globals",
+      "before": "7.28.0",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-module-imports",
+      "before": "7.28.6",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-module-transforms",
+      "before": "7.28.6",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-string-parser",
+      "before": "7.27.1",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-validator-identifier",
+      "before": "7.28.5",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helper-validator-option",
+      "before": "7.27.1",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/helpers",
+      "before": "7.28.6",
+      "after": "7.29.10"
+    },
+    {
+      "package": "node_modules/@babel/parser",
+      "before": "7.29.0",
+      "after": "7.29.9"
+    },
+    {
+      "package": "node_modules/@babel/template",
+      "before": "7.28.6",
+      "after": "7.29.7"
+    },
+    {
+      "package": "node_modules/@babel/traverse",
+      "before": "7.29.0",
+      "after": "7.29.10"
+    },
+    {
+      "package": "node_modules/@babel/types",
+      "before": "7.29.0",
+      "after": "7.29.8"
+    },
+    {
+      "package": "node_modules/@types/react",
+      "before": "19.2.14",
+      "after": "19.3.0"
+    },
+    {
+      "package": "node_modules/@types/react-dom",
+      "before": "19.2.3",
+      "after": "19.3.0"
+    },
+    {
+      "package": "node_modules/baseline-browser-mapping",
+      "before": "2.10.0",
+      "after": "2.11.31"
+    },
+    {
+      "package": "node_modules/browserslist",
+      "before": "4.28.1",
+      "after": "4.29.4"
+    },
+    {
+      "package": "node_modules/caniuse-lite",
+      "before": "1.0.30001777",
+      "after": "1.0.30001819"
+    },
+    {
+      "package": "node_modules/electron-to-chromium",
+      "before": "1.5.307",
+      "after": "1.5.463"
+    },
+    {
+      "package": "node_modules/nanoid",
+      "before": "3.3.11",
+      "after": "3.3.20"
+    },
+    {
+      "package": "node_modules/node-releases",
+      "before": "2.0.36",
+      "after": "2.0.60"
+    },
+    {
+      "package": "node_modules/ox",
+      "before": "0.14.0",
+      "after": "0.14.57"
+    },
+    {
+      "package": "node_modules/picomatch",
+      "before": "4.0.3",
+      "after": "4.0.7"
+    },
+    {
+      "package": "node_modules/postcss",
+      "before": "8.5.8",
+      "after": "8.5.31"
+    },
+    {
+      "package": "node_modules/react",
+      "before": "19.2.4",
+      "after": "19.3.1"
+    },
+    {
+      "package": "node_modules/react-dom",
+      "before": "19.2.4",
+      "after": "19.3.1"
+    },
+    {
+      "package": "node_modules/scheduler",
+      "before": "0.27.0",
+      "after": "0.28.0"
+    },
+    {
+      "package": "node_modules/source-map-js",
+      "before": "1.2.1",
+      "after": "1.2.2"
+    },
+    {
+      "package": "node_modules/update-browserslist-db",
+      "before": "1.2.3",
+      "after": "1.3.4"
+    },
+    {
+      "package": "node_modules/viem",
+      "before": "2.47.0",
+      "after": "2.57.10"
+    },
+    {
+      "package": "node_modules/vite",
+      "before": "6.4.1",
+      "after": "6.4.5"
+    },
+    {
+      "package": "node_modules/ws",
+      "before": "8.18.3",
+      "after": "8.21.0"
+    }
+  ],
+  "checks": {
+    "npm-ci": {
+      "result": "pass",
+      "localLog": ".runtime/node-react-security-20261023/npm-ci.log",
+      "sha256": "157c71a49a23c427d883317ef9226e1f2d932cca8bf4f2e5ae62c3ebe944e8bc"
+    },
+    "unit": {
+      "result": "420 passed, zero failed/skipped",
+      "localLog": ".runtime/node-react-security-20261023/unit.log",
+      "sha256": "ae7f75ba1f1efd69e19c18ff3d74731c3fb1da04b94abed781a8028957819fce"
+    },
+    "build": {
+      "result": "pass; existing large-chunk warning",
+      "localLog": ".runtime/node-react-security-20261023/build.log",
+      "sha256": "77e2cd801ddaf202b08bb8f172e2a5defad6791bef4011d5b2bcf5b31c291926"
+    },
+    "release": {
+      "result": "18 immutable artifacts and source/pin agreement",
+      "localLog": ".runtime/node-react-security-20261023/release-check.log",
+      "sha256": "3d658cee7e38ca51bf3e86a88f155cdbd75eb558f0bdc29a13e9716f0d30f2fc"
+    },
+    "source-verification": {
+      "result": "6 real isolated deployments, exact recompilation and restart recovery",
+      "localLog": ".runtime/node-react-security-20261023/source-verification.log",
+      "sha256": "84898c3e2a17f52609c5705dfac2791dc145b7a1250562de88d5fc5445a25cfb"
+    },
+    "docker-verification": {
+      "result": "built",
+      "localLog": ".runtime/node-react-security-20261023/docker-verification.log",
+      "sha256": "a50e40805f3b548cef3566127da180396673a46573f5ebb734ea6dcdbf20aab1"
+    },
+    "docker-ui": {
+      "result": "built",
+      "localLog": ".runtime/node-react-security-20261023/docker-ui.log",
+      "sha256": "1477ad09e8655a9eb03f0b6d3133115ea2f294bd9f55b25f3b171f1077a265f1"
+    },
+    "verification-container": {
+      "result": "Node 22.23.4, ready health check and invalid-job rejection",
+      "localLog": ".runtime/node-react-security-20261023/verification-container-smoke.log",
+      "sha256": "c66229b91b2854b00db11da193f1fb0c62f2049d71e1ae24f581aea8bca49f46"
+    },
+    "bridge-counter-browser": {
+      "result": "112 mocked browser scenarios passed",
+      "localLog": ".runtime/node-react-security-20261023/bridge-browser.log",
+      "sha256": "067dae6988b32e7feca0d313a8bf6c0d1b25b28d7904c6e7243aa33bca259e60"
+    },
+    "treasury-wallet-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-wallet-browser.log",
+      "sha256": "239ba259f42052b9d2a9e8bcab55fa801e4d2e0ab521e35a82f05e384a1eaca4"
+    },
+    "treasury-owners-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-owners-browser.log",
+      "sha256": "f47b0e6987d6d9d86e15c56e76096d75eff216d8df671897bc3913049df46112"
+    },
+    "treasury-setup-completion-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-setup-completion-browser.log",
+      "sha256": "db44328b5c12ae25a7f12e5b4aa45365b5838366a45d08f3e73808a408fb535d"
+    },
+    "treasury-mainnet-setup-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-mainnet-setup-browser.log",
+      "sha256": "4a23de0cd4f3b4743b510ae24bc0da6f93fda8850a0f418678acfc75a9684324"
+    },
+    "treasury-faucet-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-faucet-browser.log",
+      "sha256": "c74d17436450c688da65049093495a8d5d8cb3adee98471a554d26bc0c7e38cd"
+    },
+    "treasury-verification-browser": {
+      "result": "final run passed",
+      "localLog": ".runtime/node-react-security-20261023/treasury-verification-browser.log",
+      "sha256": "67272c17cdbbf5ef2d6516caeeb468061e3a2e26a5736117eafe94f0c4893df9"
+    },
+    "native-standard-bridge": {
+      "result": "pass; both initiating Safes and destinations, exact split funding, standard USDC rollback and independent replay",
+      "localEvidence": ".runtime/treasury-integration/20261023T091257-ew19piic",
+      "summarySha256": "e1531fac3a0b06262f48933c42fc63b1310f0ae71b4a4894189f635cdf6630d3",
+      "scenarioSha256": "e98bb177f79357edae92586f1b033ff17f70d3b25a5498bf84d6859039ae5b14",
+      "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+      "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+      "snapshotSha256": "bdb885590bbee086263328a8ab02fdc196ade917616ff78660697e4b4f4ad253",
+      "independentReplay": {
+        "hash": "0x196773344532febecd5c4d58667d1d96811f8dff7e7ae9036cd45035077ff7f8",
+        "height": 255
+      },
+      "postedAttestationVerified": true,
+      "sourceIdentityChecksPassed": true
+    },
+    "native-ui": {
+      "result": "pass; real owner verification, either initiating Safe, both destinations, shared budget, invoice rollback, history and independent replay",
+      "localEvidence": ".runtime/treasury-integration/20261023T091216-xszzntps",
+      "summarySha256": "57d5b42a060133018f1d0e19312af8cfd16db82f5e48afe2b277358c23ac6eca",
+      "scenarioSha256": "a6f0c0c69ceb6f5fc490ff8c3159e5bf57bc44c4d45480994e769ba99ec49dcf",
+      "runtimeRevision": "fa916b13254a36423cad130080dde367bb18a7d6",
+      "protocolRevision": "855fe0602484750861b4c31502a1a91355d33ed6",
+      "independentReplay": {
+        "hash": "0x52b149c346383b96e9220586c86a6e6ab4982f5372b5f843b5088fc7af3136da",
+        "height": 500
+      },
+      "postedAttestationVerified": true,
+      "sourceIdentityChecksPassed": true
+    }
+  },
+  "images": {
+    "verification": "sha256:50bd7062e533900e4635ef6b7f7948485a889d1cff8264e6eca7f0456283158c",
+    "ui": "sha256:2eca12a747594f67a38d8436e132298a25b10f18d519186ee641e9605375995b"
+  },
+  "firstFailures": [
+    {
+      "log": ".runtime/node-react-security-20261023/treasury-setup-completion-browser-launch-failure.log",
+      "reason": "Absolute evidence path supplied to a relative-path harness; fixed invocation."
+    },
+    {
+      "log": ".runtime/node-react-security-20261023/treasury-mainnet-setup-browser-launch-failure.log",
+      "reason": "Chromium SIGTRAP at launch with shared /tmp; rerun with workspace TMPDIR."
+    },
+    {
+      "log": ".runtime/node-react-security-20261023/bridge-browser-launch-failure.log",
+      "reason": "Chromium SIGTRAP at launch with shared /tmp; rerun with workspace TMPDIR."
+    },
+    {
+      "log": ".runtime/node-react-security-20261023/treasury-faucet-browser-import-failure.log",
+      "reason": "Flaky dynamic fixture import; diagnostic rerun passed with blocked HMR connections. Disabled HMR in frozen test fixture and final original assertions passed."
+    },
+    {
+      "log": ".runtime/node-react-security-20261023/native-ui.log",
+      "reason": "Semantic/replay checks passed, final source-identity check rejected a concurrent faucet-test edit. Not accepted as a clean native run."
+    },
+    {
+      "log": ".runtime/node-react-security-20261023/native-standard-bridge.log",
+      "reason": "Semantic/replay checks passed, final source-identity check rejected a concurrent faucet-test edit. Not accepted as a clean native run."
+    }
+  ],
+  "preservation": {
+    "preExistingPathsUnchangedOutsideAllowedEdits": 674,
+    "envChanged": false,
+    "contractArtifactsChanged": false,
+    "publicBroadcasts": 0,
+    "existingServicesRestarted": false,
+    "browserStorageChanged": false
+  },
+  "limits": [
+    "Local evidence under .runtime is not committed.",
+    "Browser fixtures mock RPC/wallets; native runs use fixture keys.",
+    "Standard-bridge replay uses retained Ethereum runtime bytes and fresh state, not a new mainnet fork.",
+    "No public transaction, actual extension/Safe-app rehearsal, independent contract security audit or production deployment.",
+    "Shared host default Node was not changed; use nvm install and nvm use for local project commands."
+  ],
+  "commands": {
+    "runtime": "Node 22.23.4 selected via PATH from the checksum-verified official archive; npm 10.9.9",
+    "cleanInstall": "npm ci",
+    "advisories": "npm audit --json",
+    "unit": "npm test",
+    "productionBuild": "npm run build",
+    "immutableArtifacts": "npm run check:treasury-release",
+    "sourceVerification": "node tests/integration/treasury-source-verification.mjs",
+    "treasuryBrowser": "node tests/treasury-{wallet,owners,setup-completion,mainnet-setup,faucet,verification}-browser.mjs (individual invocations; relative EEZ_UI_EVIDENCE and dedicated workspace TMPDIR)",
+    "otherBrowser": "node tests/{cross-chain-fees,cross-chain-call-fees,counter-demo,cross-chain-calls}.cjs (individual invocations against a private production preview)",
+    "nativeUi": "python3 scripts/run-treasury-integration.py --runtime ../rollupX --reuse-run .runtime/treasury-integration/20261023T065350-er20ywi2 --ui test",
+    "nativeStandardBridge": "python3 scripts/run-treasury-integration.py --runtime ../rollupX --reuse-run .runtime/treasury-integration/20261023T065350-er20ywi2 --standard-bridge-snapshot .runtime/treasury-integration/20261022T223230-n4c03kfm/mainnet-snapshot.json",
+    "verificationImage": "docker build --pull --target verification -t eez-treasury-verification:node-react-security-20261023 .",
+    "uiImage": "docker build --pull -t eez-rollup-ui:node-react-security-20261023 .",
+    "compose": "docker compose --env-file /dev/null config --quiet",
+    "diff": "git diff --check"
+  },
+  "finalFileSha256": {
+    ".nvmrc": "0c4bf84f9bedd485b2c4eac05f59e35addc86ce7dbf0d90435528e04384c6314",
+    ".github/workflows/treasury.yml": "9b94a76de27633a691e62768f56a0e244211060a8286500a707a5822a8d190dc",
+    "Dockerfile": "5f80bd9af929b28ce2d1af762bba47d6d9b73f60774f152b8d53f271224bc471",
+    "README.md": "095686c27532329738bee55d74d193cd7225f737d5211cf8f7b549f822afb74c",
+    "package.json": "0f3ab1834c2493ea0a892d28de0089e2a506260c2e5fb6368caa11b0f519fd3a",
+    "package-lock.json": "3488d0e935a6710276e82b78369a7cfbbbb88fe43e17d108c83777c414adf6d2",
+    "tests/treasury-faucet-browser.mjs": "64965eecce30265ac7425177849efa0a74636bfe74f2490c764f6e18ef947f22"
+  }
+}

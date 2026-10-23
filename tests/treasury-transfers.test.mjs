@@ -9,7 +9,7 @@ const address = n => getAddress(toHex(n, {size:20})), hash = s => keccak256(toHe
 const c = { version:1, environment:'isolated-devnet', instance:hash('treasury'), l1:{chainId:1337,rpc:'http://127.0.0.1/l1',front:'http://127.0.0.1/front/l1'}, l2:{chainId:1338,rpc:'http://127.0.0.1/l2',front:'http://127.0.0.1/front/l2'},
   safeL1:address(1),safeL2:address(2),registry:address(3),manager:address(4),adapter:address(5),code:[],ownerLabels:{},
   payments:{policy:address(6),alias:address(7),tokenL1:address(8),tokenL2:address(9),bridgeL1:address(10),bridgeL2:address(11),l1Initiation:true,exactSplits:true,combinedL2:true} };
-const p = {kind:'transfer',source:'l1',destination:'l2',recipient:c.safeL2,funding:'local',amount:'427740000',epoch:'5',rollupId:'1'};
+const p = {kind:'transfer',source:'l1',destination:'l2',recipient:c.safeL2,amount:'427740000',epoch:'5',rollupId:'1'};
 const transaction = paymentTransaction(c,p,5n);
 const intent = {version:1,instance:c.instance,nonce:'5',value:'0',safeHash:safeTransactionHash(transaction),data:'0x1234',sender:address(20),sourceNonce:'0x4',startBlock:'0x20',l2StartBlock:'0x30',hash:hash('source'),payment:p};
 test('internal transfer signs an exact approve/bridge/reset batch from the existing L1 Safe', () => {
@@ -39,7 +39,7 @@ test('transfer validation cannot become an arbitrary owner call or silently bypa
   for(const change of [{amount:'0'},{amount:String(1n<<256n)},{source:'l2'},{destination:'l1'},{funding:'split'},{rollupId:'0'},{rollupId:String(1n<<64n)},{fromL1:'1'},{bps:'1000'}])assert.throws(()=>checkedPayment({...p,...change}));
   for(const amount of ['-1','1e6','0','0.0000001'])assert.throws(()=>parseTransferAmount(amount));
   assert.throws(()=>paymentTransaction(c,{...p,recipient:address(30)},5n),/this treasury/);
-  assert.throws(()=>paymentTransaction(c,{source:'l1',destination:'l2',recipient:c.safeL2,funding:'split',fromL1:'40000000',amount:'40000000',epoch:'5'},5n),/Move to EEZ-X Safe/);
+  assert.throws(()=>paymentTransaction(c,{source:'l1',destination:'l2',recipient:c.safeL2,fromL1:'40000000',amount:'40000000',epoch:'5'},5n),/Move to EEZ-X Safe/);
 });
 test('an unverified helper cannot reach owner signing', async () => {
   const client=new TreasuryClient(c);client.validate=async()=>{};client.rpc=async()=> '0x00';

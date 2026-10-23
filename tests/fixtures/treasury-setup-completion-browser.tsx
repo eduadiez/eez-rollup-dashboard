@@ -13,7 +13,7 @@ export function mount(fixture: any) {
   TreasuryDeployment.prototype.validate = async function () {};
   TreasuryDeployment.prototype.rpc = async function () { return "0x1" as any; };
   TreasuryDeployment.prototype.steps = function () { return [{ id: "configureL1", label: "Approve Chiado spending", chain: "l1", artifact: "", args: () => [] }]; };
-  for (const method of ["trackPending", "simplify", "group", "useExistingAsset", "prepareWallet", "withoutFunding"] as const)
+  for (const method of ["trackPending", "prepareWallet"] as const)
     (TreasuryDeployment.prototype as any)[method] = (state: any) => state;
   TreasuryDeployment.prototype.reconcile = async function (state) {
     if (!control.confirm || !state.pending) return state;

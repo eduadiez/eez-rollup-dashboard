@@ -17,7 +17,7 @@ const config = { version: 1, environment: 'dashboard-testnet', instance: hash('w
   registry: address(3), manager: address(4), adapter: address(5), action: address(6), code: [], ownerLabels: {},
   l1: { chainId: 10200, rpc: 'l1', front: 'l1-front' }, l2: { chainId: 906969, rpc: 'l2', front: 'l2-front' },
   payments: { policy: address(11), alias: address(12), tokenL1: address(13), tokenL2: address(14), moduleL1: address(15), moduleL2: address(16),
-    bridgeL1: address(17), bridgeL2: address(18), recipient: address(19), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Test USDC', exactSplits: true, combinedL2: true, l1Initiation: true } };
+    bridgeL1: address(17), bridgeL2: address(18), recipient: address(19), decimals: 6, period: 600, globalLimit: '150000000', assetLabel: 'Test USDC', version: 2 } };
 const server = await createServer({ configFile: false, envFile: false, plugins: [react()], server: { host: '127.0.0.1', port: 0 }, base: '/' });
 await server.listen(); const origin = `http://127.0.0.1:${server.httpServer.address().port}`;
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -114,7 +114,7 @@ try {
   passed.push('owner changes during the network prompt invalidate the review before signing');
 
   for (const source of ['l1', 'l2']) {
-    const payment = { source, recipient: config.payments.recipient, destination: 'l2', epoch: '25', amount: '40000000', funding: 'local' };
+    const payment = { source, recipient: config.payments.recipient, destination: 'l2', epoch: '25', amount: '40000000', fromL1: '0' };
     const intent = { version: 1, instance: config.instance, value: '0', nonce: '4', sender: owners[0], sourceNonce: '0x1', startBlock: '0x106',
       l2StartBlock: '0x106', data: '0x1234', safeHash: safeTransactionHash(paymentTransaction(config, payment, 4n)), payment };
     await load({ chainId: toHex(config[source === 'l1' ? 'l2' : 'l1'].chainId), intent });
@@ -123,7 +123,7 @@ try {
     assert.equal(await page.evaluate(key => localStorage.getItem(key), `eez:treasury:submission:${config.instance}`), JSON.stringify(intent));
   }
   passed.push('restored submissions retain their source and journal without network prompts');
-  await load({ chainId: toHex(config.l1.chainId), config: { ...config, payments: { ...config.payments, l1Initiation: false } } });
+  await load({ chainId: toHex(config.l1.chainId), config: { ...config, payments: { ...config.payments, version: undefined, exactSplits: true, combinedL2: true, l1Initiation: false } } });
   assert.equal(await start.inputValue(), 'l2');
   await review(); await sign.click(); await waitQuorum('1 of 1 approvals');
   assert.deepEqual((await controls()).switches, ['l2']);
@@ -133,7 +133,7 @@ try {
   await page.screenshot({ path: `${directory}/reviewed-mobile.png`, fullPage: true });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.setViewportSize({ width: 1440, height: 1050 });
-  const splitConfig = { ...config, payments: { ...config.payments, exactSplits: true } };
+  const splitConfig = config;
   const slider = page.getByRole('slider', { name: 'EEZ-X share of payment' });
   const setSplit = async value => slider.fill(String(value));
   await load({ config: splitConfig });
@@ -148,7 +148,7 @@ try {
   await review(); await page.getByTestId('funding-preview').filter({ hasText: '10 from Chiado + 30 from EEZ-X' }).waitFor();
   assert(await slider.isDisabled()); await sign.click(); await waitQuorum('1 of 1 approvals');
   const signed = decodeFunctionData({ abi: paymentAbi, data: (await controls()).signatures[0].data });
-  assert.equal(signed.functionName, 'paySplit'); assert.equal(signed.args[5], 10_000_000n);
+  assert.equal(signed.functionName, 'paySplit'); assert.equal(signed.args.at(-1), 10_000_000n);
   passed.push('slider replaces funding selector, locks at review and signs the exact chosen contributions');
   await page.getByRole('button', { name: 'Edit payment', exact: true }).click();
   await slider.focus(); await page.keyboard.press('Home'); assert.equal(await slider.inputValue(), '0');
@@ -166,14 +166,14 @@ try {
   await page.getByLabel('Recipient chain', { exact: true }).selectOption('l1');
   await review(); await page.getByTestId('funding-preview').filter({ hasText: '100 from Chiado + 10 from EEZ-X' }).waitFor();
   await sign.click(); await waitQuorum('1 of 1 approvals');
-  assert.equal(decodeFunctionData({ abi: paymentAbi, data: (await controls()).signatures[0].data }).args[5], 100_000_000n);
+  assert.equal(decodeFunctionData({ abi: paymentAbi, data: (await controls()).signatures[0].data }).args.at(-1), 100_000_000n);
   passed.push('default allocation preserves exactly 100 plus 10 rather than rounding the 110-USDC demo split');
   await page.getByRole('button', { name: 'Edit payment', exact: true }).click();
   await setSplit(5000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: `${directory}/split-mobile.png`, fullPage: true });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-  const payment = { source: 'l2', recipient: config.payments.recipient, destination: 'l1', epoch: '25', amount: '40000000', funding: 'split', fromL1: '12345678' };
+  const payment = { source: 'l2', recipient: config.payments.recipient, destination: 'l1', epoch: '25', amount: '40000000', fromL1: '12345678' };
   const intent = { version: 1, instance: config.instance, value: '0', nonce: '4', sender: owners[0], sourceNonce: '0x1', startBlock: '0x106',
     data: '0x1234', safeHash: safeTransactionHash(paymentTransaction(splitConfig, payment, 4n)), payment };
   await load({ config: splitConfig, intent });

@@ -27,6 +27,20 @@ are needed to discover these public bindings. See the
 The simplified contract build targets fresh treasury setups. It does not migrate
 existing policy contracts or preserve earlier constructor layouts.
 
+New setups also reuse a verified owner adapter when another mirror follows the
+same original Safe on the same EEZ manager. Otherwise the normal batch creates
+it. No wallet address or new environment setting is needed. The selected adapter
+must match both bindings and its registered Safe proxy; a discovery RPC failure
+requires retrying the read, not assuming that a new deployment is needed.
+
+Current policies omit the token argument from fixed payments;
+the signed policy address fixes the asset. Their manifests record `abiVersion: 2`
+and verify `SPLIT_VERSION = 2`. Existing manifests retain their original ABI, and
+unfinished setups retain their source build and bootstrap constructor. Deploy the
+matching dashboard and immutable verification bundle together; updating the UI
+does not change an installed policy or convert outstanding approvals.
+
+
 ## What is compatible
 
 Use an existing Ethereum Safe and deploy a new mirror or connect a mirror already
@@ -42,7 +56,7 @@ signatures is not supported. Safe administration and direct spending remain unde
 control; this shared budget applies only to policy payments.
 
 Both Safe signing domains, both initiation directions, both payment destinations,
-custom splits and percentage rules remain available. Limits stay at 100 USDC per
+custom splits remain available. Limits stay at 100 USDC per
 Safe and 150 shared per ten minutes. No automatic funding, mint or faucet is added
 for Ethereum. Fund the Safes separately with the configured assets.
 
@@ -307,3 +321,11 @@ Old dashboard builds reject `ethereum-mainnet`; do not roll an active mainnet
 client back to them. Existing Chiado manifests and journals are unchanged. A
 proxy implementation change intentionally blocks new mainnet approvals until
 reviewed; retain submitted transaction identities and reconcile them normally.
+
+Current payment manifests use `payments.version = 2` for the asset-bound split
+interface. Existing token-bearing split manifests keep their original selector;
+the UI reads their old interface identity without rewriting the manifest or any
+saved Safe signatures. New requests contain the amount and exact L1 contribution,
+with the remaining amount supplied by EEZ-X. Retired `pay`/`payRouted` encodings
+remain available only for recorded submission/history recovery. Keep the original
+journal and release inputs when updating; earlier UIs cannot submit the new shape.

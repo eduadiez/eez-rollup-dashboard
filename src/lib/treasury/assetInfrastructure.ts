@@ -1,7 +1,7 @@
 import { getAddress, isAddress, keccak256, zeroAddress } from "viem";
 import type { Address, Hex } from "viem";
 import type { TreasuryDeployment } from "./deployment.ts";
-import { discoverSharedInfrastructure } from "./sharedInfrastructure.ts";
+import { discoverSharedInfrastructure, matchesSharedBridge } from "./sharedInfrastructure.ts";
 import profile from "./shared-network.json" with { type: "json" };
 
 /** Existing network assets are verified independently of any test faucet API. */
@@ -22,7 +22,7 @@ export async function verifyAssetInfrastructure(d: TreasuryDeployment, asset: As
   check(blocks.every(Boolean), "Treasury asset confirmation is unavailable");
   for (const [index, chain] of (["l1", "l2"] as const).entries()) {
     const tag = blocks[index]!.number, bridge = chain === "l1" ? asset.bridgeL1 : asset.bridgeL2;
-    check(d.runtimeMatches(await d.rpc<Hex>(chain, "eth_getCode", [bridge, tag]), "SharedTreasuryBridge"), "Treasury bridge code mismatch");
+    check(matchesSharedBridge(d, await d.rpc<Hex>(chain, "eth_getCode", [bridge, tag])), "Treasury bridge code mismatch");
     const read = <T>(name: string) => d.read<T>(chain, bridge, "SharedTreasuryBridge", name, [], tag);
     const [token, manager, local, rollup, admin, peer] = await Promise.all([
       read<Address>("canonicalToken"), read<Address>("manager"), read<bigint>("rollupId"), read<bigint>("treasuryRollupId"), read<Address>("admin"), read<Address>("canonicalBridgeAddress"),

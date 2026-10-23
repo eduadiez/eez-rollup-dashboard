@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { encodeAbiParameters, encodeEventTopics, getAddress, keccak256, parseAbi, toHex, zeroHash } from 'viem';
+import { encodeAbiParameters, encodeDeployData, encodeEventTopics, getAddress, keccak256, parseAbi, toHex, zeroHash } from 'viem';
 import { discoverSafeInfrastructure, validateSafeInfrastructure } from '../src/lib/treasury/safeInfrastructure.ts';
 const artifacts = JSON.parse(readFileSync('src/lib/treasury/deployment-artifacts.json'));
 const names = { singletonL2: 'Safe', factoryL2: 'SafeProxyFactory', multiSendL2: 'MultiSendCallOnly', moduleL2: 'AllowanceModule' };
@@ -65,4 +65,43 @@ test('saved shared bindings reject another address, release hash or changed code
   f.code.set(target.toLowerCase(), '0x6000');
   await assert.rejects(validateSafeInfrastructure(f.d, bindings, { moduleL2: target }), /code changed/);
   await assert.rejects(validateSafeInfrastructure(f.d, { unknown: { address: target, hash: zeroHash } }, {}), /binding/);
+});
+
+function ownerFixture(change = {}) {
+  const f = fixture(), owners = { manager: address(300), safeL1: address(301) }, adapter = address(302), proxy = address(303);
+  const init = encodeDeployData({ abi: artifacts.contracts.L1Owners.abi, bytecode: artifacts.contracts.L1Owners.bytecode, args: [owners.manager, owners.safeL1] });
+  f.logs.push({ topics: encodeEventTopics({ abi: event, eventName: 'Created', args: { index: 0n, target: adapter } }),
+    data: encodeAbiParameters([{ type: 'bytes32' }], [keccak256(init)]), block: 200_005n });
+  f.code.set(adapter.toLowerCase(), artifacts.contracts.L1Owners.runtime);
+  f.code.set(proxy.toLowerCase(), '0x6000');
+  f.d.read = async (chain, target, name, method, args, tag) => {
+    assert.equal(chain, 'l2'); assert.equal(tag, toHex(200_010));
+    if (name === 'Registry') assert.equal(target, owners.manager, 'never read a spoofed manager');
+    if (change.rpc) throw Error('adapter RPC unavailable');
+    return ({ safeL1: owners.safeL1, manager: owners.manager, safeL1Proxy: proxy,
+      computeCrossChainProxyAddress: proxy, authorizedProxies: [true, owners.safeL1, 0n], ...change })[method];
+  };
+  return { ...f, owners, adapter, proxy };
+}
+test('owner adapters are shared only by the same original Safe and manager and are rechecked on resume', async () => {
+  const f = ownerFixture(), binding = await discoverSafeInfrastructure(f.d, 696990, '0x0', f.owners);
+  assert.equal(binding.adapter.address, f.adapter);
+  assert.deepEqual(await discoverSafeInfrastructure(f.d, 696990, '0x0', f.owners), binding);
+  await validateSafeInfrastructure(f.d, binding, { adapter: f.adapter, safeL1: f.owners.safeL1 }, f.owners.manager);
+  for (const owners of [{ ...f.owners, safeL1: address(304) }, { ...f.owners, manager: address(305) }])
+    assert.deepEqual(await discoverSafeInfrastructure(f.d, 696990, '0x0', owners), {});
+  await assert.rejects(validateSafeInfrastructure(f.d, binding, { adapter: f.adapter, safeL1: address(304) }, f.owners.manager), /binding changed/);
+  f.code.set(f.adapter.toLowerCase(), '0x6000');
+  await assert.rejects(validateSafeInfrastructure(f.d, binding, { adapter: f.adapter, safeL1: f.owners.safeL1 }, f.owners.manager), /binding changed/);
+});
+test('matching creation logs cannot authorize forged adapter bindings or hide RPC uncertainty', async () => {
+  for (const change of [{ safeL1: address(400) }, { manager: address(400) }, { safeL1Proxy: address(400) },
+    { authorizedProxies: [false, address(301), 0n] }, { authorizedProxies: [true, address(400), 0n] }, { authorizedProxies: [true, address(301), 1n] }]) {
+    const f = ownerFixture(change);
+    assert.deepEqual(await discoverSafeInfrastructure(f.d, 696990, '0x0', f.owners), {});
+  }
+  const missing = ownerFixture(); missing.code.delete(missing.proxy.toLowerCase());
+  assert.deepEqual(await discoverSafeInfrastructure(missing.d, 696990, '0x0', missing.owners), {});
+  const uncertain = ownerFixture({ rpc: true });
+  await assert.rejects(discoverSafeInfrastructure(uncertain.d, 696990, '0x0', uncertain.owners), /adapter RPC unavailable/);
 });

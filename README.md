@@ -482,6 +482,12 @@ Kurtosis arguments file.
 
 ## Local Vite development
 
+Use the Node version in `.nvmrc` (also pinned in both Node Docker stages and
+used by CI). With nvm installed, run `nvm install` and `nvm use` from this
+repository before installing dependencies. Keep these pins aligned when applying
+Node security updates; rebuilding both the UI and verification images is required
+to update an existing deployment.
+
 With a Kurtosis enclave running:
 
 ```bash
@@ -652,7 +658,7 @@ npm ci
 npm run build
 npm run test:visualizer
 docker compose config --quiet
-# With the combined app running (Node 22+):
+# With the combined app running and the Node version from .nvmrc:
 node src/monitor/tests/test_proxy.mjs
 docker build -t eez-rollup-ui:local .
 ```

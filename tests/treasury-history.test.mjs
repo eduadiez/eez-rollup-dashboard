@@ -6,8 +6,8 @@ import { paymentTransaction } from '../src/lib/treasury/payments.ts';
 import { safeTransactionHash } from '../src/lib/treasury/safeTransactions.ts';
 const address = byte => `0x${byte.repeat(40)}`;
 const hash = text => keccak256(stringToHex(text));
-const config = { instance: hash('history'), l2: { chainId: 420691 }, safeL2: address('1'), payments: { policy: address('2'), tokenL1: address('3') } };
-const payment = { amount: '40000000', recipient: address('4'), funding: 'local', destination: 'l2', epoch: '100' };
+const config = { instance: hash('history'), l2: { chainId: 420691 }, safeL2: address('1'), payments: { version: 2, policy: address('2'), tokenL1: address('3') } };
+const payment = { amount: '40000000', recipient: address('4'), fromL1: '0', destination: 'l2', epoch: '100' };
 const intent = { version: 1, instance: config.instance, value: '0', payment, nonce: '5', safeHash: safeTransactionHash(paymentTransaction(config, payment, 5n)),
   data: '0x1234', sender: address('5'), sourceNonce: '0xa', startBlock: '0x12' };
 function fixture() {

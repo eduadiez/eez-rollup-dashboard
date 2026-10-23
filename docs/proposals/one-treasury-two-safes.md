@@ -9,7 +9,7 @@ verification and passing tests do not constitute a security audit.
 | Field | Value |
 | --- | --- |
 | Design status | Implemented demo with isolated integration evidence. Public explorer acceptance, real-wallet/Safe-app acceptance and independent contract review remain outstanding; see the [release record](../audits/2026-10-22-treasury-release/README.md). |
-| Date | Initial design 2026-10-19; status updated 2026-10-22. |
+| Date | Initial design 2026-10-19; status updated 2026-10-23. |
 | Demo repository | `eduadiez/eez-rollup-dashboard`. This proposal, UI, application contracts and tooling are prepared on `codex/treasury-demo-release`. |
 | UI baseline | `917a365db5b021c970607e3f4c45c35877fcb2b8`: initial hidden preview with simulated data; current connected milestones are recorded below. |
 | Runtime baseline | `eduadiez/rollupX`, commit `fa916b13254a36423cad130080dde367bb18a7d6`. The initial review used its `feat/l2-fee-recovery` checkout with pre-existing Composer, node and E2E changes; implementation evidence must identify the exact tested revision and any patches. |
@@ -22,6 +22,95 @@ The dated sections below retain the design's evolution. For current setup and
 presenter instructions, use the [shared-network](../runbooks/treasury-shared-network.md),
 [mainnet](../runbooks/treasury-mainnet.md) and [rehearsal](../runbooks/treasury-rehearsal.md)
 runbooks. Evidence from an earlier milestone does not validate a later build.
+
+## Accepted direct setup and payment model (2026-10-23)
+
+New treasuries use one direct plan: inspect the selected L1 Safe, reuse verified
+infrastructure and the predeployed asset, deploy/connect its mirror, and configure
+both allowance delegates. No historical setup migrations, token creation or Safe
+funding run when a new treasury is selected. Fixed payments contain an amount and
+an exact L1 contribution; the slider determines that contribution before signing.
+
+Existing treasury addresses and immutable release bindings remain unchanged.
+Saved setups resume their original plan; only the saved-record reader can select
+that recovery path. Never reconstruct pending transactions with current bytecode,
+translate signatures, reset counters or resend a missing wallet response. Existing
+token-bearing split deployments retain their selector at the compatibility boundary;
+old local/automatic payment formats are available only for recorded-request recovery.
+Retain archived build inputs for verification and historical execution identity.
+
+Remove the obsolete ConfiguredTreasuryBridge and BootstrapTreasuryBridge source
+contracts; the shared bridge owns its constructor initialization directly. Exact
+historical shared-bridge identities remain admissible for reuse, with the same
+manager, asset, wrapped token, sealed-peer and canonical-block validation.
+
+Acceptance: current setup has no migration/funding steps; both initiation chains,
+both destination chains, exact splits, internal transfers, owners, invoice fixtures,
+history and rollback remain covered. Pending/review hashes and creation bytes are
+unchanged after reload, including a missing wallet response. No public broadcast
+or environment-variable change is part of this work.
+
+Implementation and validation: [direct setup audit](../audits/2026-10-23-treasury-setup-simplification/README.md).
+
+## Accepted fixed-payment simplification (2026-10-23)
+
+Remove percentage-of-holdings payments from both production policies and the UI.
+The only production payment entry point is `paySplit`: owners approve the exact
+amount, recipient, destination, budget period and each Safe's contribution. The
+UI retains the split slider and can suggest a destination-first split before
+signing; the contract validates that allocation without recalculating it.
+
+Keep initiation from either Safe, both recipient chains, shared live owner
+verification, the 100-per-Safe / 150-global budget, internal transfers, faucets,
+payment history, and the isolated invoice rollback scenario. Remove percentage
+calculation, its event and capability checks, and automatic allocation from the
+production policy. The invoice fixture computes its own destination-first split
+before invoking the same checked payment path.
+
+The fixed-payment ABI and saved fixed/transfer/invoice intents stay unchanged.
+Existing on-chain policies are immutable and retain their deployed entry points;
+new releases omit `payRule`. Previously signed percentage intents are unsupported
+by this release and must never be reinterpreted as fixed payments. Browser
+journals and operator configuration are not rewritten or discarded. Resolve any
+pending percentage request with its original release before switching the UI.
+
+Acceptance: reject both historical `payRule` selectors, preserve the exact signed
+split when balances change, reject obsolete rule intents, and rerun contract,
+client, build/source-verification and isolated native browser/integration checks
+for both bridge paths, including a later-leg rollback. This section supersedes
+percentage-payment requirements in the dated milestones below.
+
+## Accepted feature-preserving simplification (2026-10-22)
+
+Use one abstract payment implementation for owner authorization, aligned allowance
+checks, exact splits, percentage rules, the shared counter and payment events.
+Keep two small bridge adapters: Chiado retains direct EEZ-X submission and its
+lock-then-mint route; the standard bridge retains its authenticated Ethereum
+delegate and supported relay submission. Inheritance introduces no extra deployed
+contract or external call. Forcing both networks through the same transport would
+change the existing Chiado submission feature and is outside this simplification.
+
+New policies expose `paySplit` and `payRule`. A fixed payment from one Safe is an
+exact split with a zero contribution from the other. Percentage rules continue to
+read both balances and route at execution. Never replace a signed split with an
+automatically recalculated allocation. Preserve both Safe signing origins, both
+destinations, the 100/150 limits, owner updates, internal transfers, payment history,
+source verification and atomic failure after an earlier leg.
+
+Remove the old policy-upgrade contracts, executable upgrade workflow and
+constructor-only policy wrappers. Keep read-only display of historical receipts.
+Retain immutable historical compiler inputs for verification and pending journals; new deployments use the simplified artifacts. Keep the existing
+shared Test USDC and its faucet working: replacing that immutable token merely to
+remove its claim workaround would change the configured asset and balances.
+No public contracts are deployed, no environment variables are added, and no
+operator or browser state is migrated by this refactor.
+
+Acceptance: the current contract and client regressions pass against the new
+artifacts; add equivalent split/rule/failure coverage for both bridge adapters;
+exercise setup and exact-source verification, then the isolated cross-chain
+rehearsal with canonical rollback and independent replay. Record the tested build
+and any unrun acceptance checks separately from earlier release evidence.
+See the [consolidation validation record](../audits/2026-10-22-treasury-policy-simplification/README.md).
 
 ## Accepted treasury contract simplification (2026-10-22)
 
@@ -210,12 +299,13 @@ Percentages are display values; base-unit amounts avoid rounding the required
 once moved, keep the user's choice across live balance refreshes. Rules and the
 controlled invoice fixture retain their existing automatic allocation.
 
-The demo now assumes a newly deployed payment policy. Setup version 9 deploys
-`SplitTreasuryPolicy` and exposes the slider immediately, with no separate
-activation or policy-upgrade workflow. Earlier immutable policies are not
-relabelled as split-capable. Keep existing creation artifacts and signed journals
-frozen for historical recovery; retained payment and handover history stays
-readable. The retired handover plan is retained only as a test fixture.
+The demo assumes a newly deployed payment policy with the slider available
+immediately, without a separate activation or policy-upgrade workflow. Setup
+version 9 originally used `SplitTreasuryPolicy`; the 2026-10-22 consolidation uses
+`TreasuryPolicy` with the same split capability. Earlier immutable policies are
+not relabelled as split-capable. Existing creation artifacts and signed journals
+remain frozen for historical recovery; retained payment and handover history stays
+readable. The executable handover fixture was removed in that consolidation.
 
 Acceptance: both initiation chains and destinations, endpoints and mixed funding,
 exact signed calldata and settlement contributions, insufficient-capacity/global
@@ -1459,3 +1549,34 @@ Acceptance checks cover reproducible builds, metadata mismatch rejection, nested
 creations, network isolation, duplicate delivery, restart recovery, reorgs,
 provider failures and pending-versus-complete status. Neither source verification
 nor passing these checks establishes a contract security audit.
+
+
+## Accepted interface and owner-adapter simplification (2026-10-23)
+
+Remove the redundant token argument from the two current payment entry points:
+`paySplit(recipient, amount, onL1, epoch, fromL1)` and
+`payRule(recipient, bps, onL1, epoch)`. The signed policy target fixes the asset
+immutably. Keep one global ceiling constant for both individual amount validation
+and cumulative accounting. `TreasuryBootstrap(actions)` belongs to its creator;
+an owner argument equal to that creator is unnecessary.
+
+For new mirror selection, extend the existing bounded infrastructure search to
+reuse `L1Owners` only for the same original Safe and local EEZ manager. Exact
+creation-code hashes locate candidates; verified runtime, immutable bindings and
+registered proxy identity authorize reuse. Read failures or reorgs never count as
+an absent deployment. Sharing an adapter does not share Safe nonces or signature
+domains. Keep the verifier, policy and bridge delegate separate.
+
+New immutable releases carry the new ABI, identified by `SPLIT_VERSION = 2` and
+manifest `abiVersion: 2`. Existing manifests and in-progress setup journals keep
+their original selectors, constructor and build. No public deployment, automatic
+migration, new environment variables, Safe replacement or balance movement is
+part of this refactor. An old UI cannot operate the new selectors; release the
+matching application and source bundle together. Rolling back the application
+cannot convert already deployed contracts or pending signatures.
+
+Acceptance: both initiating Safes, both destinations, exact allocations, live
+percentage rules, 100-per-Safe/150-global limits and rollback retain their current
+behavior. Verify real bootstrap caller ownership and batch protections; prove
+shared-adapter signatures cannot replay on another mirror; reject wrong Safe,
+manager, proxy and spoofed discovery events; preserve existing setup journals.

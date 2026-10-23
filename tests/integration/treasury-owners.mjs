@@ -51,10 +51,10 @@ async function read(url, address, abi, functionName, args = [], tag = 'latest') 
   const result = await rpc(url, 'eth_call', [{ to: address, data: encodeFunctionData({ abi, functionName, args }) }, tag]);
   return decodeFunctionResult({ abi, functionName, data: result });
 }
-async function submit(chain, to, data, value = 0n) {
-  const nonce = Number(BigInt(await rpc(chain.rpc, 'eth_getTransactionCount', [submitter.address, 'pending'])));
+async function submit(chain, to, data, value = 0n, sender = submitter) {
+  const nonce = Number(BigInt(await rpc(chain.rpc, 'eth_getTransactionCount', [sender.address, 'pending'])));
   const block = await rpc(chain.rpc, 'eth_getBlockByNumber', ['latest', false]);
-  const raw = await submitter.signTransaction({ chainId: chain.chainId, nonce, to, data, value,
+  const raw = await sender.signTransaction({ chainId: chain.chainId, nonce, to, data, value,
     gas: 8_000_000n, type: 'eip1559', maxPriorityFeePerGas: 1_000_000_000n,
     maxFeePerGas: 2n * BigInt(block.baseFeePerGas) + 1_000_000_000n });
   const hash = await rpc(chain.front, 'eth_sendRawTransaction', [raw]);

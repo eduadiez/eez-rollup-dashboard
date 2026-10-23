@@ -1,0 +1,905 @@
+{
+  "empty": {
+    "version": 2,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {},
+    "completed": [],
+    "transactions": []
+  },
+  "v3": {
+    "version": 3,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {},
+    "completed": [],
+    "transactions": [],
+    "simplification": {
+      "preserved": 0,
+      "official": {}
+    }
+  },
+  "v4": {
+    "version": 4,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {},
+    "completed": [],
+    "transactions": [],
+    "simplification": {
+      "preserved": 0,
+      "official": {}
+    },
+    "grouping": {
+      "source": {
+        "version": 3,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        }
+      }
+    }
+  },
+  "v6": {
+    "version": 6,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {
+      "tokenL1": "0x0000000000000000000000000000000000000064",
+      "tokenL2": "0x0000000000000000000000000000000000000065",
+      "bridgeL1": "0x0000000000000000000000000000000000000066",
+      "bridgeL2": "0x0000000000000000000000000000000000000067"
+    },
+    "completed": [],
+    "transactions": [],
+    "simplification": {
+      "preserved": 0,
+      "official": {}
+    },
+    "grouping": {
+      "source": {
+        "version": 3,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        }
+      }
+    },
+    "asset": {
+      "source": {
+        "version": 4,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        },
+        "grouping": {
+          "source": {
+            "version": 3,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "simplification": {
+              "preserved": 0,
+              "official": {}
+            }
+          }
+        }
+      },
+      "binding": {
+        "tokenL1": "0x0000000000000000000000000000000000000064",
+        "tokenL2": "0x0000000000000000000000000000000000000065",
+        "bridgeL1": "0x0000000000000000000000000000000000000066",
+        "bridgeL2": "0x0000000000000000000000000000000000000067",
+        "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+      },
+      "fundingBase": {
+        "l1": "0",
+        "l2": "0"
+      }
+    }
+  },
+  "v8": {
+    "version": 8,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {
+      "tokenL1": "0x0000000000000000000000000000000000000064",
+      "tokenL2": "0x0000000000000000000000000000000000000065",
+      "bridgeL1": "0x0000000000000000000000000000000000000066",
+      "bridgeL2": "0x0000000000000000000000000000000000000067"
+    },
+    "completed": [],
+    "transactions": [],
+    "simplification": {
+      "preserved": 0,
+      "official": {}
+    },
+    "grouping": {
+      "source": {
+        "version": 3,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        }
+      }
+    },
+    "asset": {
+      "source": {
+        "version": 4,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        },
+        "grouping": {
+          "source": {
+            "version": 3,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "simplification": {
+              "preserved": 0,
+              "official": {}
+            }
+          }
+        }
+      },
+      "binding": {
+        "tokenL1": "0x0000000000000000000000000000000000000064",
+        "tokenL2": "0x0000000000000000000000000000000000000065",
+        "bridgeL1": "0x0000000000000000000000000000000000000066",
+        "bridgeL2": "0x0000000000000000000000000000000000000067",
+        "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+      },
+      "fundingBase": {
+        "l1": "0",
+        "l2": "0"
+      }
+    },
+    "fundingSkipped": {
+      "source": {
+        "version": 6,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {
+          "tokenL1": "0x0000000000000000000000000000000000000064",
+          "tokenL2": "0x0000000000000000000000000000000000000065",
+          "bridgeL1": "0x0000000000000000000000000000000000000066",
+          "bridgeL2": "0x0000000000000000000000000000000000000067"
+        },
+        "completed": [],
+        "transactions": [],
+        "simplification": {
+          "preserved": 0,
+          "official": {}
+        },
+        "grouping": {
+          "source": {
+            "version": 3,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "simplification": {
+              "preserved": 0,
+              "official": {}
+            }
+          }
+        },
+        "asset": {
+          "source": {
+            "version": 4,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "simplification": {
+              "preserved": 0,
+              "official": {}
+            },
+            "grouping": {
+              "source": {
+                "version": 3,
+                "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+                "deployer": "0x0000000000000000000000000000000000000063",
+                "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+                "reuse": {},
+                "addresses": {},
+                "completed": [],
+                "transactions": [],
+                "simplification": {
+                  "preserved": 0,
+                  "official": {}
+                }
+              }
+            }
+          },
+          "binding": {
+            "tokenL1": "0x0000000000000000000000000000000000000064",
+            "tokenL2": "0x0000000000000000000000000000000000000065",
+            "bridgeL1": "0x0000000000000000000000000000000000000066",
+            "bridgeL2": "0x0000000000000000000000000000000000000067",
+            "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+          },
+          "fundingBase": {
+            "l1": "0",
+            "l2": "0"
+          }
+        }
+      }
+    }
+  },
+  "v9": {
+    "version": 9,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {
+      "tokenL1": "0x0000000000000000000000000000000000000064",
+      "tokenL2": "0x0000000000000000000000000000000000000065",
+      "bridgeL1": "0x0000000000000000000000000000000000000066",
+      "bridgeL2": "0x0000000000000000000000000000000000000067"
+    },
+    "completed": [],
+    "transactions": [],
+    "bidirectional": true,
+    "grouping": {
+      "source": {
+        "version": 2,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true
+      }
+    },
+    "asset": {
+      "source": {
+        "version": 4,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true,
+        "grouping": {
+          "source": {
+            "version": 2,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true
+          }
+        }
+      },
+      "binding": {
+        "tokenL1": "0x0000000000000000000000000000000000000064",
+        "tokenL2": "0x0000000000000000000000000000000000000065",
+        "bridgeL1": "0x0000000000000000000000000000000000000066",
+        "bridgeL2": "0x0000000000000000000000000000000000000067",
+        "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+      },
+      "fundingBase": {
+        "l1": "0",
+        "l2": "0"
+      }
+    },
+    "fundingSkipped": {
+      "source": {
+        "version": 6,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {
+          "tokenL1": "0x0000000000000000000000000000000000000064",
+          "tokenL2": "0x0000000000000000000000000000000000000065",
+          "bridgeL1": "0x0000000000000000000000000000000000000066",
+          "bridgeL2": "0x0000000000000000000000000000000000000067"
+        },
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true,
+        "grouping": {
+          "source": {
+            "version": 2,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true
+          }
+        },
+        "asset": {
+          "source": {
+            "version": 4,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true,
+            "grouping": {
+              "source": {
+                "version": 2,
+                "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+                "deployer": "0x0000000000000000000000000000000000000063",
+                "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+                "reuse": {},
+                "addresses": {},
+                "completed": [],
+                "transactions": [],
+                "bidirectional": true
+              }
+            }
+          },
+          "binding": {
+            "tokenL1": "0x0000000000000000000000000000000000000064",
+            "tokenL2": "0x0000000000000000000000000000000000000065",
+            "bridgeL1": "0x0000000000000000000000000000000000000066",
+            "bridgeL2": "0x0000000000000000000000000000000000000067",
+            "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+          },
+          "fundingBase": {
+            "l1": "0",
+            "l2": "0"
+          }
+        }
+      }
+    }
+  },
+  "v10": {
+    "version": 10,
+    "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+    "deployer": "0x0000000000000000000000000000000000000063",
+    "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+    "reuse": {},
+    "addresses": {
+      "tokenL1": "0x0000000000000000000000000000000000000064",
+      "tokenL2": "0x0000000000000000000000000000000000000065",
+      "bridgeL1": "0x0000000000000000000000000000000000000066",
+      "bridgeL2": "0x0000000000000000000000000000000000000067"
+    },
+    "completed": [],
+    "transactions": [],
+    "bidirectional": true,
+    "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+    "grouping": {
+      "source": {
+        "version": 2,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true,
+        "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac"
+      }
+    },
+    "asset": {
+      "source": {
+        "version": 4,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {},
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true,
+        "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+        "grouping": {
+          "source": {
+            "version": 2,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true,
+            "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac"
+          }
+        }
+      },
+      "binding": {
+        "tokenL1": "0x0000000000000000000000000000000000000064",
+        "tokenL2": "0x0000000000000000000000000000000000000065",
+        "bridgeL1": "0x0000000000000000000000000000000000000066",
+        "bridgeL2": "0x0000000000000000000000000000000000000067",
+        "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+      },
+      "fundingBase": {
+        "l1": "0",
+        "l2": "0"
+      }
+    },
+    "fundingSkipped": {
+      "source": {
+        "version": 6,
+        "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+        "deployer": "0x0000000000000000000000000000000000000063",
+        "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+        "reuse": {},
+        "addresses": {
+          "tokenL1": "0x0000000000000000000000000000000000000064",
+          "tokenL2": "0x0000000000000000000000000000000000000065",
+          "bridgeL1": "0x0000000000000000000000000000000000000066",
+          "bridgeL2": "0x0000000000000000000000000000000000000067"
+        },
+        "completed": [],
+        "transactions": [],
+        "bidirectional": true,
+        "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+        "grouping": {
+          "source": {
+            "version": 2,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true,
+            "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac"
+          }
+        },
+        "asset": {
+          "source": {
+            "version": 4,
+            "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+            "deployer": "0x0000000000000000000000000000000000000063",
+            "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+            "reuse": {},
+            "addresses": {},
+            "completed": [],
+            "transactions": [],
+            "bidirectional": true,
+            "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac",
+            "grouping": {
+              "source": {
+                "version": 2,
+                "identity": "0xe67f8103aea2b2c33a1f3b3ecb2a2e1fe02f147b34cb89e3e0a8e97fd2268632",
+                "deployer": "0x0000000000000000000000000000000000000063",
+                "salt": "0x99c7240803c38b2a0cc505094f72bf5f1cce416cc6d8ee303d62e3396a93015d",
+                "reuse": {},
+                "addresses": {},
+                "completed": [],
+                "transactions": [],
+                "bidirectional": true,
+                "build": "ef44a9ce1e7823ab2e76549a3773ef68d5f1a483b866c74856dcaafabaaf51ac"
+              }
+            }
+          },
+          "binding": {
+            "tokenL1": "0x0000000000000000000000000000000000000064",
+            "tokenL2": "0x0000000000000000000000000000000000000065",
+            "bridgeL1": "0x0000000000000000000000000000000000000066",
+            "bridgeL2": "0x0000000000000000000000000000000000000067",
+            "tokenCodeHash": "0xfaf44dc0c1ded32b3f716bcb676e3480ad1640f2e7332eb298f27e7268049c3f"
+          },
+          "fundingBase": {
+            "l1": "0",
+            "l2": "0"
+          }
+        }
+      }
+    }
+  },
+  "expected": {
+    "v3": {
+      "order": [
+        "singletonL1",
+        "factoryL1",
+        "safeL1",
+        "singletonL2",
+        "factoryL2",
+        "safeProxy",
+        "adapter",
+        "adapterAlias",
+        "safeL2",
+        "tokenL1",
+        "aliasReaderL1",
+        "bridgeL1",
+        "bridgeL2",
+        "pairL1",
+        "pairL2",
+        "fundL1",
+        "approveBridge",
+        "fundL2",
+        "moduleL1",
+        "moduleL2",
+        "policy",
+        "multiSendL1",
+        "configureL1",
+        "multiSendL2",
+        "configureL2"
+      ],
+      "id": "singletonL1",
+      "dataHash": "0x4b8ed6c92e69d2239f20dd984203675d1df31bdb581f8e0c3f9b9870e70d866d"
+    },
+    "v4": {
+      "order": [
+        "singletonL1",
+        "contractsBatchL1",
+        "contractsBatchL2",
+        "fundingBatchL1",
+        "budgetBatchL2",
+        "configureL1"
+      ],
+      "id": "contractsBatchL1",
+      "dataHash": "0x94f795959be92fecdc387692b64ecfd0718c4c16137711eed5fd8c050e12a9b4",
+      "group": {
+        "executor": "0x8caAA7ED28A8Bb155b800554a838511861E01275",
+        "create": true,
+        "sequence": "0",
+        "finish": false,
+        "actionsHash": "0x59afac48bd71b575b79aa28a86f5974a4eb09f8b7e775fa9bb50e871591c77be",
+        "outputs": [
+          {
+            "key": "factoryL1",
+            "address": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "artifact": "SafeProxyFactory",
+            "index": 0,
+            "initHash": "0xbcb787168bf34d11e35d0bc759dcd6d9c7c19737d34f798bd204b4d1ffaa57d7"
+          },
+          {
+            "key": "safeL1",
+            "address": "0xf9368E63528EA41DACEDe91598c558Fde298CE58",
+            "artifact": "SafeProxy",
+            "index": 1,
+            "factory": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "singleton": "0x00000000000000000000000000000000000001F5"
+          },
+          {
+            "key": "tokenL1",
+            "address": "0xD0cf95F73F760c865ae060DE7BBC83EC018F0AeE",
+            "artifact": "DevnetUSDC",
+            "index": 2,
+            "initHash": "0xe73e785bf380df692c1c39992d16fd6a5a8925c073c10f5cc2a67f9c7218746f"
+          },
+          {
+            "key": "aliasReaderL1",
+            "address": "0x09D7F63E49C83Ef4b730B057BC561DC85522e6E1",
+            "artifact": "TreasuryAliasReader",
+            "index": 3,
+            "initHash": "0xa00f25aba70832ece33e49cb7435f7d3088d9d1b87430c45ec7c0619ddcea81f"
+          },
+          {
+            "key": "bridgeL1",
+            "address": "0x73C48c5800AEF636Dc367aca9b68833ea490213c",
+            "artifact": "BootstrapTreasuryBridge",
+            "index": 4,
+            "initHash": "0x170906b20cf94a209611a867acb0858f0792b6028afe966ed30a51d101fc3db2"
+          },
+          {
+            "key": "moduleL1",
+            "address": "0x1CD419929a1455FBCce230d259b2b9F42384E00A",
+            "artifact": "AllowanceModule",
+            "index": 5,
+            "initHash": "0x2d63294d88be8c774411094ecc22d8f4bf8d065121bcd65c25216205e057022a"
+          },
+          {
+            "key": "multiSendL1",
+            "address": "0xD4A20193Cc183Dac13aECb05A0F02d2b1582C035",
+            "artifact": "MultiSendCallOnly",
+            "index": 6,
+            "initHash": "0x541fe07c9c7d34087447cfc30d3c05a46a4c827e3ea1b5a85568a94eafb023e8"
+          }
+        ]
+      }
+    },
+    "v6": {
+      "order": [
+        "singletonL1",
+        "contractsBatchL1",
+        "contractsBatchL2",
+        "approveFunding",
+        "fundingBatchL1",
+        "budgetBatchL2",
+        "configureL1"
+      ],
+      "id": "contractsBatchL1",
+      "dataHash": "0xe39140fb489c5ced8ab5d31573d87aa80fde6d3e62089fef4e57bec188277dcf",
+      "group": {
+        "executor": "0x8caAA7ED28A8Bb155b800554a838511861E01275",
+        "create": true,
+        "sequence": "0",
+        "finish": false,
+        "actionsHash": "0xa707700aefa71567a5cc8537ce256d30798fdcd66069002e955f6b88ab6e65dd",
+        "outputs": [
+          {
+            "key": "factoryL1",
+            "address": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "artifact": "SafeProxyFactory",
+            "index": 0,
+            "initHash": "0xbcb787168bf34d11e35d0bc759dcd6d9c7c19737d34f798bd204b4d1ffaa57d7"
+          },
+          {
+            "key": "safeL1",
+            "address": "0xf9368E63528EA41DACEDe91598c558Fde298CE58",
+            "artifact": "SafeProxy",
+            "index": 1,
+            "factory": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "singleton": "0x00000000000000000000000000000000000001F5"
+          },
+          {
+            "key": "aliasReaderL1",
+            "address": "0xD0cf95F73F760c865ae060DE7BBC83EC018F0AeE",
+            "artifact": "TreasuryAliasReader",
+            "index": 2,
+            "initHash": "0xa00f25aba70832ece33e49cb7435f7d3088d9d1b87430c45ec7c0619ddcea81f"
+          },
+          {
+            "key": "moduleL1",
+            "address": "0x09D7F63E49C83Ef4b730B057BC561DC85522e6E1",
+            "artifact": "AllowanceModule",
+            "index": 3,
+            "initHash": "0x2d63294d88be8c774411094ecc22d8f4bf8d065121bcd65c25216205e057022a"
+          },
+          {
+            "key": "multiSendL1",
+            "address": "0x73C48c5800AEF636Dc367aca9b68833ea490213c",
+            "artifact": "MultiSendCallOnly",
+            "index": 4,
+            "initHash": "0x541fe07c9c7d34087447cfc30d3c05a46a4c827e3ea1b5a85568a94eafb023e8"
+          }
+        ]
+      }
+    },
+    "v8": {
+      "order": [
+        "singletonL1",
+        "contractsBatchL1",
+        "contractsBatchL2",
+        "fundingBatchL1",
+        "budgetBatchL2",
+        "configureL1"
+      ],
+      "id": "contractsBatchL1",
+      "dataHash": "0xe39140fb489c5ced8ab5d31573d87aa80fde6d3e62089fef4e57bec188277dcf",
+      "group": {
+        "executor": "0x8caAA7ED28A8Bb155b800554a838511861E01275",
+        "create": true,
+        "sequence": "0",
+        "finish": false,
+        "actionsHash": "0xa707700aefa71567a5cc8537ce256d30798fdcd66069002e955f6b88ab6e65dd",
+        "outputs": [
+          {
+            "key": "factoryL1",
+            "address": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "artifact": "SafeProxyFactory",
+            "index": 0,
+            "initHash": "0xbcb787168bf34d11e35d0bc759dcd6d9c7c19737d34f798bd204b4d1ffaa57d7"
+          },
+          {
+            "key": "safeL1",
+            "address": "0xf9368E63528EA41DACEDe91598c558Fde298CE58",
+            "artifact": "SafeProxy",
+            "index": 1,
+            "factory": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "singleton": "0x00000000000000000000000000000000000001F5"
+          },
+          {
+            "key": "aliasReaderL1",
+            "address": "0xD0cf95F73F760c865ae060DE7BBC83EC018F0AeE",
+            "artifact": "TreasuryAliasReader",
+            "index": 2,
+            "initHash": "0xa00f25aba70832ece33e49cb7435f7d3088d9d1b87430c45ec7c0619ddcea81f"
+          },
+          {
+            "key": "moduleL1",
+            "address": "0x09D7F63E49C83Ef4b730B057BC561DC85522e6E1",
+            "artifact": "AllowanceModule",
+            "index": 3,
+            "initHash": "0x2d63294d88be8c774411094ecc22d8f4bf8d065121bcd65c25216205e057022a"
+          },
+          {
+            "key": "multiSendL1",
+            "address": "0x73C48c5800AEF636Dc367aca9b68833ea490213c",
+            "artifact": "MultiSendCallOnly",
+            "index": 4,
+            "initHash": "0x541fe07c9c7d34087447cfc30d3c05a46a4c827e3ea1b5a85568a94eafb023e8"
+          }
+        ]
+      }
+    },
+    "v9": {
+      "order": [
+        "singletonL1",
+        "contractsBatchL1",
+        "contractsBatchL2",
+        "fundingBatchL1",
+        "budgetBatchL2",
+        "configureL1"
+      ],
+      "id": "contractsBatchL1",
+      "dataHash": "0xe39140fb489c5ced8ab5d31573d87aa80fde6d3e62089fef4e57bec188277dcf",
+      "group": {
+        "executor": "0x8caAA7ED28A8Bb155b800554a838511861E01275",
+        "create": true,
+        "sequence": "0",
+        "finish": false,
+        "actionsHash": "0xa707700aefa71567a5cc8537ce256d30798fdcd66069002e955f6b88ab6e65dd",
+        "outputs": [
+          {
+            "key": "factoryL1",
+            "address": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "artifact": "SafeProxyFactory",
+            "index": 0,
+            "initHash": "0xbcb787168bf34d11e35d0bc759dcd6d9c7c19737d34f798bd204b4d1ffaa57d7"
+          },
+          {
+            "key": "safeL1",
+            "address": "0xf9368E63528EA41DACEDe91598c558Fde298CE58",
+            "artifact": "SafeProxy",
+            "index": 1,
+            "factory": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "singleton": "0x00000000000000000000000000000000000001F5"
+          },
+          {
+            "key": "aliasReaderL1",
+            "address": "0xD0cf95F73F760c865ae060DE7BBC83EC018F0AeE",
+            "artifact": "TreasuryAliasReader",
+            "index": 2,
+            "initHash": "0xa00f25aba70832ece33e49cb7435f7d3088d9d1b87430c45ec7c0619ddcea81f"
+          },
+          {
+            "key": "moduleL1",
+            "address": "0x09D7F63E49C83Ef4b730B057BC561DC85522e6E1",
+            "artifact": "AllowanceModule",
+            "index": 3,
+            "initHash": "0x2d63294d88be8c774411094ecc22d8f4bf8d065121bcd65c25216205e057022a"
+          },
+          {
+            "key": "multiSendL1",
+            "address": "0x73C48c5800AEF636Dc367aca9b68833ea490213c",
+            "artifact": "MultiSendCallOnly",
+            "index": 4,
+            "initHash": "0x541fe07c9c7d34087447cfc30d3c05a46a4c827e3ea1b5a85568a94eafb023e8"
+          }
+        ]
+      }
+    },
+    "v10": {
+      "order": [
+        "singletonL1",
+        "contractsBatchL1",
+        "contractsBatchL2",
+        "fundingBatchL1",
+        "budgetBatchL2",
+        "configureL1"
+      ],
+      "id": "contractsBatchL1",
+      "dataHash": "0x667cd76cca80e0efe40879562582cdb85e81ddf5bf6f9906d8fb037d4f081989",
+      "group": {
+        "executor": "0x8caAA7ED28A8Bb155b800554a838511861E01275",
+        "create": true,
+        "sequence": "0",
+        "finish": false,
+        "actionsHash": "0x3575d3448f3348aa783123bec9cbbdb17767d90fe1ac74e8299f55b7e725a29e",
+        "outputs": [
+          {
+            "key": "factoryL1",
+            "address": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "artifact": "SafeProxyFactory",
+            "index": 0,
+            "initHash": "0xbcb787168bf34d11e35d0bc759dcd6d9c7c19737d34f798bd204b4d1ffaa57d7"
+          },
+          {
+            "key": "safeL1",
+            "address": "0xf9368E63528EA41DACEDe91598c558Fde298CE58",
+            "artifact": "SafeProxy",
+            "index": 1,
+            "factory": "0x818381fc50eCC3086c79A0b05BD3B2032711dc88",
+            "singleton": "0x00000000000000000000000000000000000001F5"
+          },
+          {
+            "key": "aliasReaderL1",
+            "address": "0xD0cf95F73F760c865ae060DE7BBC83EC018F0AeE",
+            "artifact": "TreasuryAliasReader",
+            "index": 2,
+            "initHash": "0x54b6dc557ef8046396a6908ff69686b186598948a7d81411d5e3964178205838"
+          },
+          {
+            "key": "moduleL1",
+            "address": "0x09D7F63E49C83Ef4b730B057BC561DC85522e6E1",
+            "artifact": "AllowanceModule",
+            "index": 3,
+            "initHash": "0x2d63294d88be8c774411094ecc22d8f4bf8d065121bcd65c25216205e057022a"
+          },
+          {
+            "key": "multiSendL1",
+            "address": "0x73C48c5800AEF636Dc367aca9b68833ea490213c",
+            "artifact": "MultiSendCallOnly",
+            "index": 4,
+            "initHash": "0x541fe07c9c7d34087447cfc30d3c05a46a4c827e3ea1b5a85568a94eafb023e8"
+          }
+        ]
+      }
+    },
+    "sourceSha256": {
+      "src/lib/treasury/deployment.ts": "8f6d0ed25625533a66538a6a4e79001d9f1b62e687cb7a90c7c830fe6e7bdba6",
+      "src/lib/treasury/deploymentGroups.ts": "1efac55b823fca1ef168175bbed9fc72fa58a844a44bdbccc04a6a2da62c40a9"
+    }
+  }
+}

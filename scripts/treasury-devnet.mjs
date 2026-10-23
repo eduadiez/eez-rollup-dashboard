@@ -58,8 +58,10 @@ try {
   await new Promise(resolve => reservation.close(resolve));
   const invoices = invoiceFixture(fixture, treasury, directory);
   fixture.invoices = invoices;
+  // A frozen browser rehearsal must not reload when local HMR websockets are
+  // unavailable. Interactive devnets retain normal development hot reload.
   server = await createServer({ plugins: [invoices.plugin], configFile: resolve('vite.config.ts'), envDir: false, cacheDir: resolve(directory, 'node_modules/.vite'),
-    server: { host: '127.0.0.1', port, strictPort: true, allowedHosts: ['127.0.0.1'] }, logLevel: 'warn', clearScreen: false });
+    server: { host: '127.0.0.1', port, strictPort: true, allowedHosts: ['127.0.0.1'], hmr: process.env.TREASURY_UI_MODE === 'test' ? false : undefined }, logLevel: 'warn', clearScreen: false });
   await server.listen();
   const address = server.httpServer.address();
   const origin = `http://127.0.0.1:${address.port}`;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
+import {TreasuryPolicyBase} from "../src/TreasuryPolicyBase.sol";
 import {OwnerFixture, ReadThroughManager} from "./helpers/OwnerFixture.sol";
 import {StandardBridgeTreasuryPolicy as TreasuryPolicy} from "../src/StandardBridgeTreasuryPolicy.sol";
 import {StandardBridgeDelegate} from "../src/StandardBridgeDelegate.sol";
@@ -98,18 +99,27 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         );
     }
 
+    function _paymentData(bool routed, bool onL1, uint256 amount) internal view returns (bytes memory) {
+        uint256 fromL1 = onL1 ? amount : 0;
+        if (routed) {
+            uint256[5] memory a = (onL1 ? module1 : module2)
+            .getTokenAllowance(
+                onL1 ? address(safeL1) : address(safeL2),
+                onL1 ? address(executor) : address(policy),
+                onL1 ? address(usdc) : address(wrapped)
+            );
+            uint256 capacity = a[1] < a[0] ? a[0] - a[1] : 0;
+            uint256 balance =
+                (onL1 ? IERC20(address(usdc)) : wrapped).balanceOf(onL1 ? address(safeL1) : address(safeL2));
+            if (capacity > balance) capacity = balance;
+            uint256 local = amount < capacity ? amount : capacity;
+            fromL1 = onL1 ? local : amount - local;
+        }
+        return abi.encodeCall(policy.paySplit, (recipient, amount, onL1, block.timestamp / 600, fromL1));
+    }
+
     function _pay(bool routed, bool onL1, uint256 amount) internal {
-        _callL2(
-            address(policy),
-            abi.encodeWithSelector(
-                routed ? policy.payRouted.selector : policy.pay.selector,
-                address(usdc),
-                recipient,
-                amount,
-                onL1,
-                vm.getBlockTimestamp() / 600
-            )
-        );
+        _callL2(address(policy), _paymentData(routed, onL1, amount));
     }
 
     function _spent(bool onL1) internal view returns (uint256) {
@@ -130,38 +140,36 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         vm.warp((old + 1) * 600);
         assertEq(_spent(true), 0);
         assertEq(_spent(false), 0);
-        vm.expectRevert(TreasuryPolicy.StaleEpoch.selector);
+        vm.expectRevert(TreasuryPolicyBase.StaleEpoch.selector);
         vm.prank(address(safeL2));
-        policy.pay(address(usdc), recipient, U, false, old);
+        policy.paySplit(recipient, U, false, old, 0);
         _pay(false, false, U);
         assertEq(policy.spent(old), 150 * U);
         assertEq(policy.spent(old + 1), U);
     }
 
-    function testOnlySafeCanonicalAssetAndCheckedAmounts() public {
-        vm.expectRevert(TreasuryPolicy.OnlySafe.selector);
-        policy.pay(address(usdc), recipient, U, false, vm.getBlockTimestamp() / 600);
+    function testOnlySafeAndCheckedAmounts() public {
+        vm.expectRevert(TreasuryPolicyBase.OnlySafe.selector);
+        policy.paySplit(recipient, U, false, vm.getBlockTimestamp() / 600, 0);
         vm.startPrank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.InvalidAsset.selector);
-        policy.pay(address(wrapped), recipient, U, false, vm.getBlockTimestamp() / 600);
-        vm.expectRevert(TreasuryPolicy.InvalidAmount.selector);
-        policy.pay(address(usdc), recipient, type(uint256).max, false, vm.getBlockTimestamp() / 600);
-        vm.expectRevert(TreasuryPolicy.InvalidAmount.selector);
-        policy.pay(address(usdc), recipient, 0, false, vm.getBlockTimestamp() / 600);
-        vm.expectRevert(TreasuryPolicy.InvalidRecipient.selector);
-        policy.pay(address(usdc), address(policy), U, false, vm.getBlockTimestamp() / 600);
-        vm.expectRevert(TreasuryPolicy.Capacity.selector);
-        policy.pay(address(usdc), recipient, 101 * U, true, vm.getBlockTimestamp() / 600);
-        vm.expectRevert(TreasuryPolicy.Capacity.selector);
-        policy.pay(address(usdc), recipient, 101 * U, false, vm.getBlockTimestamp() / 600);
+        vm.expectRevert(TreasuryPolicyBase.InvalidAmount.selector);
+        policy.paySplit(recipient, type(uint256).max, false, vm.getBlockTimestamp() / 600, 0);
+        vm.expectRevert(TreasuryPolicyBase.InvalidAmount.selector);
+        policy.paySplit(recipient, 0, false, vm.getBlockTimestamp() / 600, 0);
+        vm.expectRevert(TreasuryPolicyBase.InvalidRecipient.selector);
+        policy.paySplit(address(policy), U, false, vm.getBlockTimestamp() / 600, 0);
+        vm.expectRevert(TreasuryPolicyBase.Capacity.selector);
+        policy.paySplit(recipient, 101 * U, true, vm.getBlockTimestamp() / 600, 101 * U);
+        vm.expectRevert(TreasuryPolicyBase.Capacity.selector);
+        policy.paySplit(recipient, 101 * U, false, vm.getBlockTimestamp() / 600, 0);
         vm.stopPrank();
     }
 
     function testMisalignedAllowanceCannotCrossEpochs() public {
         _setAllowance(true, 100 * U, 11, uint32(vm.getBlockTimestamp() / 60));
-        vm.expectRevert(TreasuryPolicy.UnalignedAllowance.selector);
+        vm.expectRevert(TreasuryPolicyBase.UnalignedAllowance.selector);
         vm.prank(address(safeL2));
-        policy.pay(address(usdc), recipient, U, true, vm.getBlockTimestamp() / 600);
+        policy.paySplit(recipient, U, true, vm.getBlockTimestamp() / 600, U);
     }
 
     function testFuzzLocalPaymentCannotExceedEitherBudget(uint96 amount) public {
@@ -173,7 +181,7 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
     }
 
     function _l1Data(bool onL1, uint256 amount) internal view returns (bytes memory) {
-        return abi.encodeCall(policy.payRouted, (address(usdc), recipient, amount, onL1, block.timestamp / 600));
+        return _paymentData(true, onL1, amount);
     }
 
     function _fromL1(bytes memory data) internal {
@@ -216,7 +224,7 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         uint256 nonce = safeL1.nonce();
         bytes memory data = _l1Data(false, U);
         bytes memory signatures = _signTwo(keccak256(_preimage(safeL1, alias_, data, 0)), A, B);
-        _expectL1Failure(abi.encodeWithSelector(TreasuryPolicy.GlobalLimit.selector));
+        _expectL1Failure(abi.encodeWithSelector(TreasuryPolicyBase.GlobalLimit.selector));
         _execute(safeL1, alias_, data, 0, signatures);
         assertEq(safeL1.nonce(), nonce);
         assertEq(_spent(false), 50 * U);
@@ -263,8 +271,8 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
         policy = _newPolicy();
         l1.getOrCreateCrossChainProxy(address(policy), ROLLUP_ID);
         vm.prank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.InvalidConfiguration.selector);
-        policy.pay(address(usdc), recipient, U, false, block.timestamp / 600);
+        vm.expectRevert(TreasuryPolicyBase.InvalidConfiguration.selector);
+        policy.paySplit(recipient, U, false, block.timestamp / 600, 0);
         assertEq(policy.spent(block.timestamp / 600), 0);
         assertEq(_spent(false), 0);
         assertEq(wrapped.balanceOf(address(safeL2)), 150 * U);
@@ -272,8 +280,8 @@ contract StandardBridgeTreasuryPolicyTest is OwnerFixture {
 
     function testBoundPolicyAliasCannotBeTheRecipient() public {
         vm.prank(address(safeL2));
-        vm.expectRevert(TreasuryPolicy.InvalidRecipient.selector);
-        policy.pay(address(usdc), alias_, U, false, block.timestamp / 600);
+        vm.expectRevert(TreasuryPolicyBase.InvalidRecipient.selector);
+        policy.paySplit(alias_, U, false, block.timestamp / 600, 0);
         assertEq(policy.spent(block.timestamp / 600), 0);
     }
 

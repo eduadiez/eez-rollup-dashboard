@@ -8,8 +8,8 @@ import { safeTransactionHash, safeExecutionAbi } from '../src/lib/treasury/safeT
 const address = n => toHex(n, { size: 20 }), hash = text => keccak256(stringToHex(text));
 const owner = privateKeyToAccount(toHex(123n, { size: 32 }));
 const c = { instance: hash('treasury'), l1: { chainId: 1337, rpc: 'l1', front: 'composer-l1' }, l2: { chainId: 1338, rpc: 'l2', front: 'composer-l2' },
-  safeL1: address(1), safeL2: address(2), adapter: address(3), payments: { policy: address(4), alias: address(5), tokenL1: address(6), l1Initiation: true, combinedL2: true } };
-const payment = { source: 'l1', destination: 'l2', funding: 'combined', recipient: address(7), amount: '110000000', epoch: '100' };
+  safeL1: address(1), safeL2: address(2), adapter: address(3), payments: { version: 2, policy: address(4), alias: address(5), tokenL1: address(6), l1Initiation: true, combinedL2: true } };
+const payment = { source: 'l1', destination: 'l2', fromL1: '10000000', recipient: address(7), amount: '110000000', epoch: '100' };
 const tx = paymentTransaction(c, payment, 8n);
 const intent = { version: 1, instance: c.instance, value: '0', nonce: '8', safeHash: safeTransactionHash(tx), data: '0x1234', sender: owner.address,
   sourceNonce: '0x2', startBlock: '0x10', l2StartBlock: '0x10', hash: hash('l1-payment'), payment };
@@ -21,7 +21,7 @@ test('source Safe determines the signing domain, target and recovery identity in
   assert.deepEqual(readIntent(c, JSON.stringify(intent)), intent);
   for (const change of [{ l2StartBlock: undefined }, { payment: { ...payment, source: 'l2' } }])
     assert.throws(() => readIntent(c, JSON.stringify({ ...intent, ...change })));
-  assert.throws(() => paymentTransaction({ ...c, payments: { ...c.payments, l1Initiation: false } }, payment, 8n), /EEZ-X only/);
+  assert.throws(() => paymentTransaction({ ...c, l1: {...c.l1, front: undefined} }, payment, 8n), /EEZ-X only/);
   assert(!unchanged({ nonce: 8n, fingerprint: 'same', source: 'l1' }, { nonce: 8n, fingerprint: 'same', source: 'l2' }));
 });
 test('prepare uses normal L1 owner signatures and wraps only L2 approvals', async () => {

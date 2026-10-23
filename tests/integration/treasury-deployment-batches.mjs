@@ -150,16 +150,37 @@ try {
     if (chain === 'l2' && method === 'eth_getCode' && Object.values(officialRuntime.contracts).some(item => item.address.toLowerCase() === params[0].toLowerCase())) return '0x';
     return rawRpc(chain, method, params, front);
   };
-  let state = { version: 2, identity: deploymentIdentity, deployer: C.address, salt: toHex(915, { size: 32 }), reuse: {}, addresses: {}, completed: [], transactions: [] };
+  // The operator installs network infrastructure before any treasury is created.
+  // This owned fixture scans from its genesis instead of the Chiado checkpoint.
+  const network = new TreasuryNetworkDeployment(d.target, artifacts);
+  network.validate = async () => {};
+  network.findSharedInfrastructure = () => discoverSharedInfrastructure(network, 0n);
+  const networkSteps = network.steps.bind(network);
+  network.steps = state => networkSteps(state).map(step => ({ ...step, quoted: false }));
+  let infrastructure = await network.start(C.address);
+  while (infrastructure.completed.length < network.steps(infrastructure).length) {
+    const step = network.steps(infrastructure)[infrastructure.completed.length];
+    await rpc(step.chain, 'anvil_setChainId', [profile.chains[step.chain].chainId]);
+    const prepared = await network.prepare(infrastructure, provider(step.chain, C));
+    const receipt = await send(step.chain, C, prepared.pending.to, prepared.pending.data, 0n, true, prepared.request);
+    infrastructure = await network.reconcile(readNetworkDeployment(JSON.stringify({ ...infrastructure, pending: { ...prepared.pending, hash: receipt.transactionHash } })));
+    assert(!infrastructure.pending, 'operator step settles');
+  }
+  const binding = await network.binding(infrastructure);
+  await verifySharedInfrastructure(d, binding);
+  const asset = { tokenL1: binding.tokenL1, tokenL2: binding.tokenL2, bridgeL1: binding.bridgeL1, bridgeL2: binding.bridgeL2,
+    tokenCodeHash: keccak256(await rpc('l1', 'eth_getCode', [binding.tokenL1, 'safe'])) };
+  await verifyAssetInfrastructure(d, asset);
+  record('dedicated operator predeploys, seeds, seals and registers both bridges before treasury creation');
+  d.findSharedInfrastructure = () => discoverSharedInfrastructure(d, 0n);
+  d.findAssetInfrastructure = async () => { await verifyAssetInfrastructure(d, asset); return asset; };
   await rpc('l1', 'anvil_setChainId', [profile.chains.l1.chainId]);
-  const initial = await d.prepare(state, provider('l1', C));
-  const receipt = await send('l1', C, initial.pending.to, initial.pending.data);
-  state = await d.reconcile({ ...state, pending: { ...initial.pending, hash: receipt.transactionHash } });
-  const confirmed = structuredClone(state);
-  state = await d.group(await d.simplify(state));
-  assert.equal(d.steps(state).length, 6); assert.equal(state.completed.length, 1);
-  assert.deepEqual(state.transactions, confirmed.transactions); assert.equal(state.addresses.singletonL1, confirmed.addresses.singletonL1);
-  record('confirmed singleton retained; five remaining transaction phases');
+  const singletonL1 = await deploy('l1', 'Safe');
+  const existingSafe = await newSafe('l1', singletonL1, officialRuntime.contracts.factory.address, [C.address], 1, 915);
+  let state = await d.configure(C.address, getAddress(existingSafe));
+  assert.equal(state.version, 11); assert.equal(d.steps(state).length, 5);
+  assert(!state.grouping && !state.asset && !state.fundingSkipped);
+  record('new setup starts directly with an existing L1 Safe and five transaction phases');
   evidence.phases = [];
   while (state.completed.length < d.steps(state).length) {
     const step = d.steps(state)[state.completed.length];
@@ -191,14 +212,14 @@ try {
     if (step.id === 'contractsBatchL2') assert.equal(await d.read('l2', state.addresses.factoryL2, 'SafeProxyFactory', 'proxyCreationCode'), artifacts.contracts.SafeProxyFactory.proxyCreationCode);
     record(step.id + ' exact canonical receipt and outputs recovered after reload');
   }
-  const a = state.addresses;
+  const a = { ...state.addresses, factoryL1: officialRuntime.contracts.factory.address };
   assert.deepEqual(await read('l1', a.safeL1, 'getOwners'), [C.address]);
   assert.deepEqual(await read('l2', a.safeL2, 'getOwners'), [a.adapter]);
   for (const chain of names) {
     const suffix = chain === 'l1' ? 'L1' : 'L2';
     assert.equal(await d.read(chain, a['bootstrap' + suffix], 'TreasuryBootstrap', 'closed'), true);
-    assert.equal(await d.read(chain, a['bridge' + suffix], 'BootstrapTreasuryBridge', 'admin'), C.address);
-    assert.equal(await d.read(chain, a['token' + suffix], 'DevnetUSDC', 'balanceOf', [a['safe' + suffix]]), chain === 'l1' ? 300_000_000n : 150_000_000n);
+    assert.equal(await d.read(chain, a['bridge' + suffix], 'SharedTreasuryBridge', 'admin'), zeroAddress);
+    assert.equal(await d.read(chain, a['token' + suffix], 'DevnetUSDC', 'balanceOf', [a['safe' + suffix]]), 0n);
     const allowance = await d.read(chain, a['module' + suffix], 'AllowanceModule', 'getTokenAllowance', [a['safe' + suffix], chain === 'l1' ? a.alias : a.policy, a['token' + suffix]]);
     assert.deepEqual(allowance.slice(0, 3), [100_000_000n, 0n, 10n]);
     assert.equal(await read(chain, a['safe' + suffix], 'isModuleEnabled', [a['bootstrap' + suffix]]), false);
@@ -208,7 +229,9 @@ try {
   await admin('l1', a.safeL1, 'addOwnerWithThreshold', [B.address, 2n], [C]);
   const existingL2 = await newSafe('l2', a.singletonL2, a.factoryL2, [A.address, B.address], 2, 926);
   await admin('l2', existingL2, 'enableModule', [a.moduleL2], [A, B]);
-  let reused = await d.group(await d.configure(C.address, a.safeL1, existingL2));
+  let reused = await d.configure(C.address, a.safeL1, existingL2);
+  assert.equal(reused.addresses.adapter, a.adapter, 'reuse the verified adapter for the same original Safe');
+  assert(!d.steps(reused).flatMap(s => s.group?.actions ?? [s]).some(s => s.output === 'adapter'));
   assert.equal(reused.addresses.moduleL2, a.moduleL2, 'reuse the already-enabled shared module');
   assert(!d.steps(reused).flatMap(s => s.group?.actions ?? [s]).some(s => s.output === 'moduleL2'));
   assert.equal(d.steps(reused).length, 6);
@@ -228,50 +251,20 @@ try {
     reused = await d.reconcile(readDeployment(JSON.stringify({ ...reused, pending: { ...prepared.pending, hash: receipt.transactionHash } })));
     assert(!reused.pending);
     evidence.existingSafePhases.push({ id: step.id, hash: receipt.transactionHash });
-    if (step.id === 'contractsBatchL1') {
-      const nonce = BigInt(await rpc('l2', 'eth_getTransactionCount', [C.address, 'pending']));
-      for (const offset of [0n, 1n]) await rpc('l2', 'anvil_setCode', [getContractAddress({ from: C.address, nonce: nonce + offset }), '0x6000']);
-      reused = await d.prepareWallet(reused);
-      assert.equal(reused.grouping.walletPreparation.calls, 2);
-      assert.equal(d.steps(reused).length, 8);
-    }
+
   }
   assert.equal(reused.addresses.safeL1, a.safeL1);
   assert.equal(reused.addresses.safeL2, getAddress(existingL2));
   assert.equal(await read('l1', a.safeL1, 'getThreshold'), 2n);
   assert.deepEqual(await read('l2', existingL2, 'getOwners'), [reused.addresses.adapter]);
   record('existing 2-of-2 Safes retain addresses and L1 owners; old EEZ-X quorum approves adoption; L1 quorum approves both new allowance batches');
-  // The operator installs network infrastructure before any treasury is created.
-  // This owned fixture scans from its genesis instead of the Chiado checkpoint.
-  const network = new TreasuryNetworkDeployment(d.target, artifacts);
-  network.validate = async () => {};
-  network.findSharedInfrastructure = () => discoverSharedInfrastructure(network, 0n);
-  const networkSteps = network.steps.bind(network);
-  network.steps = state => networkSteps(state).map(step => ({ ...step, quoted: false }));
-  let infrastructure = await network.start(C.address);
-  while (infrastructure.completed.length < network.steps(infrastructure).length) {
-    const step = network.steps(infrastructure)[infrastructure.completed.length];
-    await rpc(step.chain, 'anvil_setChainId', [profile.chains[step.chain].chainId]);
-    const prepared = await network.prepare(infrastructure, provider(step.chain, C));
-    const receipt = await send(step.chain, C, prepared.pending.to, prepared.pending.data, 0n, true, prepared.request);
-    infrastructure = await network.reconcile(readNetworkDeployment(JSON.stringify({ ...infrastructure, pending: { ...prepared.pending, hash: receipt.transactionHash } })));
-    assert(!infrastructure.pending, 'operator step settles');
-  }
-  const binding = await network.binding(infrastructure);
-  await verifySharedInfrastructure(d, binding);
-  const asset = { tokenL1: binding.tokenL1, tokenL2: binding.tokenL2, bridgeL1: binding.bridgeL1, bridgeL2: binding.bridgeL2,
-    tokenCodeHash: keccak256(await rpc('l1', 'eth_getCode', [binding.tokenL1, 'safe'])) };
-  await verifyAssetInfrastructure(d, asset);
-  record('dedicated operator predeploys, seeds, seals and registers both bridges before treasury creation');
-  d.findSharedInfrastructure = () => discoverSharedInfrastructure(d, 0n);
-  d.findAssetInfrastructure = async () => { await verifyAssetInfrastructure(d, asset); return asset; };
   let includedBeforeSafe = 0;
   advanceSafeHead = false;
   async function sharedSetup(account, withoutFunding = false) {
     await rpc('l1', 'anvil_setChainId', [profile.chains.l1.chainId]);
     const existingL1 = await newSafe('l1', a.singletonL1, a.factoryL1, [account.address], 1, BigInt(account.address) + (withoutFunding ? 1n : 0n));
-    let next = await d.useExistingAsset(await d.group(await d.configure(account.address, existingL1)));
-    assert.equal(next.version, 6);
+    let next = await d.configure(account.address, existingL1);
+    assert.equal(next.version, 11);
     const plan = d.steps(next), actions = plan.flatMap(s => s.group?.actions ?? [s]);
     for (const key of ['singletonL2', 'factoryL2', 'multiSendL2', 'moduleL2']) {
       assert.equal(next.addresses[key], a[key], `reuse shared ${key} across wallets`);
@@ -279,27 +272,14 @@ try {
     }
     assert(!actions.some(s => ['tokenL1', 'bridgeL1', 'bridgeL2'].includes(s.output)));
     assert(!actions.some(s => s.method === 'claim' || s.method === 'registerBridges'));
-    let supplyBeforeFunding, walletBeforeFunding;
-    if (withoutFunding) {
-      supplyBeforeFunding = await d.read('l1', binding.tokenL1, 'SharedTestUSDC', 'totalSupply');
-      walletBeforeFunding = await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [account.address]);
-      assert.equal(walletBeforeFunding, 0n, 'setup starts with no tokens in the wallet');
-      const confirmed = JSON.stringify({ completed: next.completed, transactions: next.transactions, addresses: next.addresses });
-      next = readDeployment(JSON.stringify(d.withoutFunding(next)));
-      assert.equal(next.version, artifacts.build ? 10 : 9);
-      assert.equal(JSON.stringify({ completed: next.completed, transactions: next.transactions, addresses: next.addresses }), confirmed);
-      assert(!d.steps(next).some(call => call.id === 'approveFunding'));
-    }
+    const supplyBeforeFunding = await d.read('l1', binding.tokenL1, 'SharedTestUSDC', 'totalSupply');
+    const walletBeforeFunding = await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [account.address]);
+    assert.equal(walletBeforeFunding, 0n, 'setup starts with no tokens in the wallet');
+    next = readDeployment(JSON.stringify(next));
+    assert(!d.steps(next).some(call => call.id === 'approveFunding'));
     while (next.completed.length < d.steps(next).length) {
       const step = d.steps(next)[next.completed.length];
       await rpc(step.chain, 'anvil_setChainId', [profile.chains[step.chain].chainId]);
-      if (step.id === 'approveFunding') {
-        await assert.rejects(d.prepare(next, provider(step.chain, account)), /wallet needs 450/);
-        // Explicit faucet transaction is outside the treasury plan and journal.
-        await send('l1', account, binding.tokenL1, encodeFunctionData({ abi: d.abi('SharedTestUSDC'), functionName: 'claim' }));
-        supplyBeforeFunding = await d.read('l1', binding.tokenL1, 'SharedTestUSDC', 'totalSupply');
-        assert.equal(await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [account.address]), 450_000_000n);
-      }
       if (step.safe) {
         next.review = await d.reviewStep(next);
         next.review.approvals.push(await d.approve(next, provider(step.chain, account)));
@@ -310,7 +290,8 @@ try {
       assert.equal(JSON.stringify(next), saved, 'preparing a quote preserves the saved setup and approvals');
       assert.equal(calls.filter(method => method === 'eth_signTypedData_v4').length, signatures, 'submission reuses the approved Safe step');
       if (step.id === 'budgetBatchL2') {
-        assert(size(prepared.request.data) > 12_288 && size(prepared.request.data) <= 65_536);
+        assert(size(prepared.request.data) <= 65_536, 'budget batch fits the quote profile');
+        assert(prepared.request.data.includes(artifacts.contracts.TreasuryPolicy.bytecode.slice(2)), 'quote includes the complete policy deployment');
         assert.equal(prepared.pending.safeHash, next.review.safeHash);
       }
       const receipt = await send(step.chain, account, prepared.pending.to, prepared.pending.data, 0n, true, prepared.request);
@@ -321,10 +302,18 @@ try {
       assert.deepEqual(next.inclusions[receipt.transactionHash], { blockNumber: receipt.blockNumber, blockHash: receipt.blockHash });
       if (step.id === 'fundingBatchL1') {
         assert.equal(await d.read('l1', binding.tokenL1, 'SharedTestUSDC', 'totalSupply'), supplyBeforeFunding, 'funding never mints');
-        assert.equal(await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [account.address]), withoutFunding ? walletBeforeFunding : 0n);
+        assert.equal(await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [account.address]), walletBeforeFunding);
         assert.equal(await d.read('l1', binding.tokenL1, 'ERC20', 'allowance', [account.address, next.addresses.bootstrapL1]), 0n);
         assert.equal(await d.read('l1', binding.tokenL1, 'ERC20', 'balanceOf', [next.addresses.bootstrapL1]), 0n);
       }
+    }
+    if (!withoutFunding) {
+      // Explicit ordinary funding is outside the setup plan and its journal.
+      await rpc('l1', 'anvil_setChainId', [profile.chains.l1.chainId]);
+      await send('l1', account, binding.tokenL1, encodeFunctionData({ abi: d.abi('SharedTestUSDC'), functionName: 'claim', args: [] }));
+      await send('l1', account, binding.tokenL1, encodeFunctionData({ abi: d.abi('ERC20'), functionName: 'transfer', args: [next.addresses.safeL1, 300_000_000n] }));
+      await send('l1', account, binding.tokenL1, encodeFunctionData({ abi: d.abi('ERC20'), functionName: 'approve', args: [binding.bridgeL1, 150_000_000n] }));
+      await send('l1', account, binding.bridgeL1, encodeFunctionData({ abi: d.abi('SharedTreasuryBridge'), functionName: 'bridgeTokens', args: [binding.tokenL1, 150_000_000n, BigInt(profile.rollupId), next.addresses.safeL2] }));
     }
     return next;
   }
@@ -355,11 +344,11 @@ try {
   advanceSafeHead = true;
   assert(includedBeforeSafe >= 7, 'setup must advance for real receipts while the safe head is behind');
   evidence.includedBeforeSafe = includedBeforeSafe;
-  record('both wallet-funded setups complete with current-state Safe reviews before the safe checkpoint');
-  for (const type of ['0x0', '0x2']) assert(evidence.feeQuotes.some(q => q.chain === 'l2' && q.type === type && q.inputBytes > 12_288));
+  record('both direct setups complete with current-state Safe reviews before the safe checkpoint');
+  for (const type of ['0x0', '0x2']) assert(evidence.feeQuotes.some(q => q.chain === 'l2' && q.type === type && q.inputBytes >= size(artifacts.contracts.TreasuryPolicy.bytecode)));
   record('legacy and type-2 budget batches retain approvals across reload and pass the real fee helper without truncating calldata');
-  assert.deepEqual(secondShared.asset.binding, asset);
-  record('both treasuries reject unfunded wallets, then consume exact ERC20 approvals and wallet balances without minting');
+  assert.deepEqual(secondShared.assetBinding, asset);
+  record('both treasuries complete setup without token approvals or transfers; explicit funding stays separate');
   for (const key of ['tokenL1', 'tokenL2', 'bridgeL1', 'bridgeL2']) assert.equal(firstShared.addresses[key], secondShared.addresses[key]);
   for (const treasury of [firstShared, secondShared]) {
     const x = treasury.addresses;
@@ -375,8 +364,15 @@ try {
     const x = treasury.addresses;
     await rpc('l2', 'anvil_setChainId', [profile.chains.l2.chainId]);
     const epoch = BigInt((await rpc('l2', 'eth_getBlockByNumber', ['latest', false])).timestamp) / 600n;
+    const chain = onL1 ? 'l1' : 'l2', suffix = onL1 ? 'L1' : 'L2';
+    const allowance = await d.read(chain, x['module' + suffix], 'AllowanceModule', 'getTokenAllowance',
+      [x['safe' + suffix], onL1 ? x.alias : x.policy, x['token' + suffix]]);
+    const balance = await bal(chain, treasury, x['safe' + suffix]);
+    const remaining = allowance[0] > allowance[1] ? allowance[0] - allowance[1] : 0n;
+    const capacity = balance < remaining ? balance : remaining, local = amount < capacity ? amount : capacity;
+    const fromL1 = onL1 ? local : amount - local;
     const tx = buildSafeTransaction({ chainId: BigInt(profile.chains.l2.chainId), safe: x.safeL2, to: x.policy,
-      data: encodeFunctionData({ abi: d.abi('TreasuryPolicy'), functionName: 'payRouted', args: [x.tokenL1, C.address, amount, onL1, epoch] }), nonce: await read('l2', x.safeL2, 'nonce') });
+      data: encodeFunctionData({ abi: d.abi('TreasuryPolicy'), functionName: 'paySplit', args: [C.address, amount, onL1, epoch, fromL1] }), nonce: await read('l2', x.safeL2, 'nonce') });
     const signature = await account.signTypedData(tx);
     return send('l2', account, x.safeL2, encodeSafeExecution(tx, await packOwnerApprovals(tx, x.adapter, [account.address], 1, [{ owner: account.address, signature }])), 0n, expectSuccess);
   }

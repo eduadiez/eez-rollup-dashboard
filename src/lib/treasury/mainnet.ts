@@ -1,3 +1,4 @@
+import { paymentVersion, verifiesL1Initiation, verifiesReverseFunding } from "./savedPayments.ts";
 import { decodeFunctionResult, encodeFunctionData, isAddress, keccak256, parseAbi, toHex, zeroAddress } from "viem";
 import type { Abi, Address, Hex } from "viem";
 import type { TreasuryClient, TreasuryConfig } from "./client.ts";
@@ -33,8 +34,8 @@ export function parseMainnetBindings(c: TreasuryConfig) {
     "Mainnet requires existing Safe implementations and payments without demo fixtures");
   check(p.tokenL1 && same(p.tokenL1, ETHEREUM_USDC) && p.assetLabel === "USDC", "Mainnet requires Circle's Ethereum USDC");
   check(p.bridgeKind === "standard" && p.safeL2Alias, "Mainnet requires the standard bridge and mirror Safe relay profile");
-  check(p.combinedL2 === true && p.l1Initiation === true && p.exactSplits === true && p.percentageRules === true,
-    "Mainnet treasury requires the bidirectional split and rule policy");
+  check(paymentVersion(p) > 0 && verifiesL1Initiation(p) && verifiesReverseFunding(p),
+    "Mainnet treasury requires the bidirectional split policy");
   check(bound(c, "l1", m.usdcImplementation), "Missing USDC implementation code identity");
   for (const chain of ["l1", "l2"] as const) {
     const b = m.bridgeImplementations?.[chain];

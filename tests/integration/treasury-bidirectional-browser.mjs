@@ -14,6 +14,7 @@ export async function bidirectionalBrowser(f, page, ui, sign, waitText, session,
   await ui.getByLabel('Start from', { exact: true }).selectOption('l1');
   await ui.getByLabel('Amount (USDC)', { exact: true }).fill('10');
   await ui.getByLabel('Recipient chain', { exact: true }).selectOption('l2');
+  await ui.getByRole('button', { name: 'Use available funds', exact: true }).click();
   await ui.getByRole('button', { name: 'Review payment', exact: true }).click();
   await waitText('funding-preview', '10 from Ethereum + 0 from EEZ-X');
   assert.equal(await ui.getByRole('button', { name: 'Switch to L1', exact: true }).count(), 0);
